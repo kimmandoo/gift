@@ -1,5 +1,6 @@
 .worktrees
 .worktrees/
+.antigravitycli/
 
 .dart_tool/
 .flutter-plugins
