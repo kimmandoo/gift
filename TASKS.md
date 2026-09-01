@@ -7,13 +7,13 @@
 ## 📊 Progress Overview
 
 - **Total Tasks:** 14
-- **Completed:** 3 / 14 (21.4%)
-- **Current Active Task:** `Task 4: Repository Handles & Welcome Screen`
+- **Completed:** 4 / 14 (28.6%)
+- **Current Active Task:** `Task 5: Porcelain v2 Status & Changes View`
 
 ```mermaid
 pie title Task Progress
-    "Completed (Task 1 - 3)" : 3
-    "Pending (Task 4 - 14)" : 11
+    "Completed (Task 1 - 4)" : 4
+    "Pending (Task 5 - 14)" : 10
 ```
 
 ---
@@ -25,7 +25,7 @@ pie title Task Progress
 | **1** | Scaffold & Bridge | `native/`, `api::health()`, FRB v2 codegen | `BranchlineApp` shell, `app_boot_test.dart` | ✅ Completed |
 | **2** | Behavior Ledger & Test Harness | `TestRepo`, `bare_remote`, safe sandbox | Clean-room scenario ledger (`STATUS-01` ~ `REMOTE-01`) | ✅ Completed |
 | **3** | Git Executor & Discovery | `ProcessGitRunner`, `GitError`, redaction, PATH scan | FRB settings bridge (`get_git_installation`) | ✅ Completed |
-| **4** | Repository Registry & Open | `AppState`, opaque `RepositoryId`, root validation | `WelcomeScreen`, `RecentRepositoryStore`, Git settings dialog | ⏳ Pending |
+| **4** | Repository Registry & Open | `AppState`, opaque `RepositoryId`, root validation | `WelcomeScreen`, `RecentRepositoryStore`, Git settings dialog | ✅ Completed |
 | **5** | Status Parser & Changes | Porcelain v2 `-z` stream parser, snapshot hashing | `ChangesScreen`, grouped changes list (`Conflicts/Staged/...`) | ⏳ Pending |
 | **6** | Unified Diff Viewer | Bounded 5MB/20K line diff stream, rename detection | Monospace `UnifiedDiffView`, lazy hunk builder | ⏳ Pending |
 | **7** | Staging & Mutation | Serialized `git add`/`restore --staged` via NUL stdin | Checkbox selection, Stage/Unstage action buttons | ⏳ Pending |
@@ -61,12 +61,12 @@ pie title Task Progress
 - [x] Expose `get_git_installation()` and `configure_git_path(path)` settings APIs
 - [x] Rust integration tests with spaces and shell metacharacters (`native/tests/git_executor.rs`)
 
-### ⏳ Task 4: Repository Handles & Welcome Screen
-- [ ] Random UUID `RepositoryId` and in-memory `AppState` registry
-- [ ] Shell-free root validation via `rev-parse --show-toplevel`
-- [ ] Abstract `GitGateway` Flutter boundary & `FrbGitGateway` adapter
-- [ ] `WelcomeScreen` with recent repository list (max 10, persisted via SharedPreferences)
-- [ ] Git executable settings modal with path selection & retry flow
+### ✅ Task 4: Repository Handles & Welcome Screen
+- [x] Random UUID `RepositoryId` and in-memory `AppState` registry
+- [x] Shell-free root validation via `rev-parse --show-toplevel`
+- [x] Abstract `GitGateway` Flutter boundary & `FrbGitGateway` adapter
+- [x] `WelcomeScreen` with recent repository list (max 10, persisted via SharedPreferences)
+- [x] Git executable settings modal with path selection & retry flow
 
 ### ⏳ Task 5: Porcelain v2 Status & Changes View
 - [ ] Zero-copy/lossy NUL-delimited `git status --porcelain=v2 -z --branch` parser

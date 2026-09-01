@@ -1,5 +1,7 @@
+pub mod repository_api;
 pub mod settings_api;
 
+pub use repository_api::open_repository;
 pub use settings_api::{configure_git_path, get_git_installation};
 
 pub struct Health {

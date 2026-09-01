@@ -10,3 +10,19 @@ When a feature is added, a bug is fixed, or any breaking change is introduced, u
 The changelog should be written in the past tense and follow the same format as the commit messages.
 Group changelog entries under reverse-chronological `## YYYY-MM-DD` headings using the date of the change.
 Add new entries under the current date heading, creating it when needed.
+
+## Intermediate checkpoints and continuation
+
+- Maintain `docs/WORK_CHECKPOINT.md` as the repository handoff record for work
+  that may continue in a later query session.
+- At the start of a resumed session, read `docs/WORK_CHECKPOINT.md`, this file,
+  `TASKS.md`, and the active implementation-plan section before changing code.
+- Confirm `git status --short --branch` and the latest commit. Continue the
+  exact active task and recorded plan step; never infer that a task is complete
+  from a commit title or jump to the next task because the working tree is
+  clean.
+- Before ending a session, update the checkpoint with the active task, exact
+  next action, changed files, verification commands and results, and blockers.
+- Commit the checkpoint together with the session's changes. If work is still
+  incomplete, keep the task active and record the next RED/GREEN or diagnostic
+  step. Mark completion only after the plan's required verification passes.

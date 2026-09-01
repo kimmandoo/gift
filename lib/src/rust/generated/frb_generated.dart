@@ -4,12 +4,14 @@
 // ignore_for_file: unused_import, unused_element, unnecessary_import, duplicate_ignore, invalid_use_of_internal_member, annotate_overrides, non_constant_identifier_names, curly_braces_in_flow_control_structures, prefer_const_literals_to_create_immutables, unused_field
 
 import 'api.dart';
+import 'api/repository_api.dart';
 import 'api/settings_api.dart';
 
 import 'dart:async';
 import 'dart:convert';
 
 import 'domain.dart';
+import 'domain/repository.dart';
 import 'error.dart';
 import 'frb_generated.dart';
 import 'frb_generated.io.dart'
@@ -70,7 +72,7 @@ class RustLib extends BaseEntrypoint<RustLibApi, RustLibApiImpl, RustLibWire> {
   String get codegenVersion => '2.13.0';
 
   @override
-  int get rustContentHash => -556452597;
+  int get rustContentHash => 182425215;
 
   static const kDefaultExternalLibraryLoaderConfig =
       ExternalLibraryLoaderConfig(
@@ -89,6 +91,10 @@ abstract class RustLibApi extends BaseApi {
   Future<GitInstallation> crateApiSettingsApiGetGitInstallation();
 
   Future<Health> crateApiHealth();
+
+  Future<RepositoryOpened> crateApiRepositoryApiOpenRepository({
+    required String path,
+  });
 }
 
 class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
@@ -183,6 +189,36 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   TaskConstMeta get kCrateApiHealthConstMeta =>
       const TaskConstMeta(debugName: "health", argNames: []);
 
+  @override
+  Future<RepositoryOpened> crateApiRepositoryApiOpenRepository({
+    required String path,
+  }) {
+    return handler.executeNormal(
+      NormalTask(
+        callFfi: (port_) {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_String(path, serializer);
+          pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 4,
+            port: port_,
+          );
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_repository_opened,
+          decodeErrorData: sse_decode_git_error,
+        ),
+        constMeta: kCrateApiRepositoryApiOpenRepositoryConstMeta,
+        argValues: [path],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiRepositoryApiOpenRepositoryConstMeta =>
+      const TaskConstMeta(debugName: "open_repository", argNames: ["path"]);
+
   @protected
   String dco_decode_String(dynamic raw) {
     // Codec=Dco (DartCObject based), see doc to use other codecs
@@ -262,6 +298,27 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   int? dco_decode_opt_box_autoadd_i_32(dynamic raw) {
     // Codec=Dco (DartCObject based), see doc to use other codecs
     return raw == null ? null : dco_decode_box_autoadd_i_32(raw);
+  }
+
+  @protected
+  RepositoryId dco_decode_repository_id(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    final arr = raw as List<dynamic>;
+    if (arr.length != 1)
+      throw Exception('unexpected arr length: expect 1 but see ${arr.length}');
+    return RepositoryId(value: dco_decode_String(arr[0]));
+  }
+
+  @protected
+  RepositoryOpened dco_decode_repository_opened(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    final arr = raw as List<dynamic>;
+    if (arr.length != 2)
+      throw Exception('unexpected arr length: expect 2 but see ${arr.length}');
+    return RepositoryOpened(
+      repositoryId: dco_decode_repository_id(arr[0]),
+      root: dco_decode_String(arr[1]),
+    );
   }
 
   @protected
@@ -363,6 +420,21 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  RepositoryId sse_decode_repository_id(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    var var_value = sse_decode_String(deserializer);
+    return RepositoryId(value: var_value);
+  }
+
+  @protected
+  RepositoryOpened sse_decode_repository_opened(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    var var_repositoryId = sse_decode_repository_id(deserializer);
+    var var_root = sse_decode_String(deserializer);
+    return RepositoryOpened(repositoryId: var_repositoryId, root: var_root);
+  }
+
+  @protected
   int sse_decode_u_8(SseDeserializer deserializer) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     return deserializer.buffer.getUint8();
@@ -451,6 +523,22 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     if (self != null) {
       sse_encode_box_autoadd_i_32(self, serializer);
     }
+  }
+
+  @protected
+  void sse_encode_repository_id(RepositoryId self, SseSerializer serializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_String(self.value, serializer);
+  }
+
+  @protected
+  void sse_encode_repository_opened(
+    RepositoryOpened self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_repository_id(self.repositoryId, serializer);
+    sse_encode_String(self.root, serializer);
   }
 
   @protected

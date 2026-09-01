@@ -4,6 +4,7 @@
 // ignore_for_file: unused_import, unused_element, unnecessary_import, duplicate_ignore, invalid_use_of_internal_member, annotate_overrides, non_constant_identifier_names, curly_braces_in_flow_control_structures, prefer_const_literals_to_create_immutables, unused_field
 
 import 'api.dart';
+import 'api/repository_api.dart';
 import 'api/settings_api.dart';
 
 import 'dart:async';
@@ -11,6 +12,7 @@ import 'dart:convert';
 import 'dart:ffi' as ffi;
 
 import 'domain.dart';
+import 'domain/repository.dart';
 import 'error.dart';
 import 'frb_generated.dart';
 
@@ -55,6 +57,12 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   int? dco_decode_opt_box_autoadd_i_32(dynamic raw);
 
   @protected
+  RepositoryId dco_decode_repository_id(dynamic raw);
+
+  @protected
+  RepositoryOpened dco_decode_repository_opened(dynamic raw);
+
+  @protected
   int dco_decode_u_8(dynamic raw);
 
   @protected
@@ -89,6 +97,12 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   int? sse_decode_opt_box_autoadd_i_32(SseDeserializer deserializer);
+
+  @protected
+  RepositoryId sse_decode_repository_id(SseDeserializer deserializer);
+
+  @protected
+  RepositoryOpened sse_decode_repository_opened(SseDeserializer deserializer);
 
   @protected
   int sse_decode_u_8(SseDeserializer deserializer);
@@ -134,6 +148,15 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   void sse_encode_opt_box_autoadd_i_32(int? self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_repository_id(RepositoryId self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_repository_opened(
+    RepositoryOpened self,
+    SseSerializer serializer,
+  );
 
   @protected
   void sse_encode_u_8(int self, SseSerializer serializer);

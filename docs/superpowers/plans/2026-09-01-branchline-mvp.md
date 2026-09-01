@@ -357,11 +357,11 @@ Commit:
 - Test: `test/features/repository/welcome_screen_test.dart`
 - Test: `test/features/settings/git_settings_dialog_test.dart`
 
-- [ ] **Step 1: Write failing Rust repository tests**
+- [x] **Step 1: Write failing Rust repository tests**
 
 Test that opening a nested directory returns the canonical top-level path and an opaque `RepositoryId`. Test that a non-repository returns `NotRepository` and a deleted repository returns `RepositoryMoved` on the next lookup. Assert that IDs from one registry cannot resolve in another.
 
-- [ ] **Step 2: Run and observe failure**
+- [x] **Step 2: Run and observe failure**
 
 Run:
 
@@ -369,15 +369,15 @@ Run:
 
 Expected: FAIL because repository state and APIs are absent.
 
-- [ ] **Step 3: Implement repository registry and API**
+- [x] **Step 3: Implement repository registry and API**
 
 Use a random UUID token as `RepositoryId` and store canonical `PathBuf`, generation, and a Tokio mutation mutex in `AppState`. `open_repository` must run `rev-parse --show-toplevel` and `rev-parse --is-bare-repository`, reject bare repositories for UI opening, then return `RepositoryOpened`. Every later lookup must revalidate that the root still exists.
 
-- [ ] **Step 4: Write a failing Flutter welcome-screen test**
+- [x] **Step 4: Write a failing Flutter welcome-screen test**
 
 Create a hand-written `FakeGitGateway`. Test successful folder selection, recent-path insertion, missing recent-path display, removal, and `NotRepository` error presentation. Also test Git-not-found startup, executable selection, version rejection, persistence of a valid explicit Git path, and retry. Do not call the static generated bridge from widget tests.
 
-- [ ] **Step 5: Run and observe failure**
+- [x] **Step 5: Run and observe failure**
 
 Run:
 
@@ -385,11 +385,11 @@ Run:
 
 Expected: FAIL because controller/store/widgets are absent.
 
-- [ ] **Step 6: Implement the Flutter repository boundary**
+- [x] **Step 6: Implement the Flutter repository boundary**
 
 Define `GitGateway` as the only feature-facing interface. Implement `FrbGitGateway` by adapting generated types. Store recent repository paths and the explicit Git executable path with `shared_preferences`, cap the ordered recent list at 10, and reopen paths through Rust to obtain fresh IDs. On startup, validate the stored Git path before enabling repository actions; keep the settings dialog reachable when validation fails.
 
-- [ ] **Step 7: Regenerate, verify, and commit**
+- [x] **Step 7: Regenerate, verify, and commit**
 
 Run:
 

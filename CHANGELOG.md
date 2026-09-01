@@ -2,6 +2,7 @@
 
 ## 2026-09-02
 
+- feat(task4): added opaque repository handles, recent paths, and Git settings flow.
 - fix(task3): drained stream output without reporting capture overflow.
 - feat(task3): added the safe Git executor, discovery, redaction, and settings bridge.
 - docs(task3): specified the safe Git executor and installation design.

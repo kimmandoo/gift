@@ -1,24 +1,37 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:branchline/src/features/repository/recent_repository_store.dart';
+import 'package:branchline/src/features/repository/welcome_screen.dart';
+import 'package:branchline/src/rust/frb_git_gateway.dart';
+import 'package:branchline/src/rust/git_gateway.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
-class BranchlineApp extends ConsumerWidget {
-  const BranchlineApp({super.key});
+class BranchlineApp extends StatelessWidget {
+  const BranchlineApp({
+    super.key,
+    this.gateway,
+    this.recentStore,
+    this.preferences,
+    this.autoInitialize = false,
+  });
+
+  final GitGateway? gateway;
+  final RecentRepositoryStore? recentStore;
+  final SharedPreferences? preferences;
+  final bool autoInitialize;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Branchline',
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.indigo),
         useMaterial3: true,
       ),
-      home: Scaffold(
-        body: Center(
-          child: FilledButton(
-            onPressed: null,
-            child: const Text('Open Repository'),
-          ),
-        ),
+      home: WelcomeScreen(
+        gateway: gateway ?? const FrbGitGateway(),
+        recentStore: recentStore ?? RecentRepositoryStore.inMemory(),
+        preferences: preferences,
+        autoInitialize: autoInitialize,
       ),
     );
   }
