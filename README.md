@@ -26,6 +26,15 @@ build is permitted, run the non-UI bridge smoke check with:
 & C:\Users\USER\flutter\bin\flutter.bat test integration_test/bridge_smoke_test.dart -d windows
 ```
 
+After changing the Rust bridge API, run the two-pass generator drift check:
+
+```powershell
+.\tool\check_frb_drift.ps1
+```
+
+It fails if FRB output differs between generations or from the committed bridge
+bindings. Format only hand-authored Rust files after generation.
+
 A few resources to get you started if this is your first Flutter project:
 
 - [Learn Flutter](https://docs.flutter.dev/get-started/learn-flutter)
