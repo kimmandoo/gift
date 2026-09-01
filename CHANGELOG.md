@@ -2,6 +2,7 @@
 
 ## 2026-09-02
 
+- docs(task3): specified the safe Git executor and installation design.
 - docs(repo): documented date-grouped changelog entries.
 - fix(scaffold): resolved the FRB code generator from PATH instead of a user-specific path.
 
