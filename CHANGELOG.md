@@ -1,6 +1,12 @@
 # Changelog
 
+## 2026-09-02
+
+- docs(repo): documented date-grouped changelog entries.
 - fix(scaffold): resolved the FRB code generator from PATH instead of a user-specific path.
+
+## 2026-09-01
+
 - docs(tasks): extracted and established centralized task tracking board.
 - test(harness): verified bare remote repository support and finalized clean-room test harness.
 - fix(harness): hardened test repository isolation from global Git signing and unsafe paths.
