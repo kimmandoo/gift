@@ -16,6 +16,7 @@
 - Create an isolated feature worktree with `@superpowers:using-git-worktrees` before Task 1.
 - Apply `@superpowers:test-driven-development` to every behavior change: failing test, observed failure, minimal implementation, observed pass.
 - Use `@superpowers:systematic-debugging` for unexpected failures and `@superpowers:verification-before-completion` before every completion claim.
+- Follow `AGENTS.md` for each commit: use `type(scope): subject`, and after a feature, bug fix, or breaking change upsert `CHANGELOG.md` with a past-tense entry in the same format.
 - Run repository commands through `rtk` as required by `AGENTS.md`. If `rtk` is still absent, document that diagnostic once and use raw commands only for debugging.
 - Do not add JetBrains code, binaries, screenshots, icons, fonts, trademarks, or license-bypass behavior.
 - Commit `pubspec.lock` and `native/Cargo.lock`. Do not hand-edit files generated under `lib/src/rust/generated/`.
