@@ -180,19 +180,20 @@ bridge의 공개 API는 명령 문자열 대신 의도가 드러나는 함수로
 open_repository(path) -> RepositoryOpened
 get_status(repository_id) -> RepositorySnapshot
 get_file_diff(repository_id, change_id, options) -> FileDiff
-get_commit_file_diff(repository_id, commit_id, parent_index, history_file_id, options) -> FileDiff
+get_commit_file_diff(repository_id, commit_id, parent_index?, history_file_id, options) -> FileDiff
 stage_files(repository_id, change_ids) -> MutationResult
 unstage_files(repository_id, change_ids) -> MutationResult
 prepare_discard(repository_id, change_ids) -> DiscardPreview
 discard_files(repository_id, confirmation_token) -> MutationResult
 commit(repository_id, message) -> CommitResult
 get_log_page(repository_id, cursor, page_size) -> CommitPage
-get_commit_details(repository_id, object_id) -> CommitDetails
+get_commit_details(repository_id, object_id, parent_index?) -> CommitDetails
 list_branches(repository_id) -> BranchList
+list_remotes(repository_id) -> RemoteList
 create_branch(repository_id, name, start_point) -> MutationResult
 switch_branch(repository_id, branch_ref) -> MutationResult
 create_tracking_branch_and_switch(repository_id, remote_branch_ref, local_name) -> MutationResult
-fetch(repository_id, remote) -> OperationId
+fetch(repository_id, remote_id) -> OperationId
 pull_ff_only(repository_id) -> OperationId
 push(repository_id) -> OperationId
 push_set_upstream(repository_id, remote_id, remote_branch_name) -> OperationId
@@ -202,7 +203,9 @@ cancel_operation(operation_id) -> CancelResult
 
 `prepare_discard`는 현재 status를 다시 읽고 지원되는 대상인지 확인한 뒤 대상 경로, 폐기될 working-tree 상태, 보존될 staged 상태, snapshot generation을 포함한 `DiscardPreview`와 60초 동안 유효한 confirmation token을 반환한다. Flutter는 이 preview로 확인 대화상자를 표시한다. `discard_files`는 token에 묶인 대상만 처리하며 새 change ID를 받지 않는다. 실행 직전에 generation과 대상 상태가 달라졌으면 `StaleConfirmation`으로 거부한다. 단순 boolean은 실수나 stale UI로 인한 삭제를 막기에 부족하므로 사용하지 않는다.
 
-`get_commit_details`가 반환하는 각 `HistoryFileChange`에는 불투명 history file ID, 이전/현재 표시 경로와 변경 종류가 있다. `get_commit_file_diff`는 이 ID를 사용하며 표시 경로를 pathspec으로 재사용하지 않는다. root commit은 empty tree와 비교하고, 일반 commit은 첫 번째 parent를 기본값으로 사용한다. merge commit에서는 UI가 parent를 선택할 수 있으며 `parent_index`는 `CommitDetails.parents` 범위 안에서 Rust가 검증한다.
+`get_commit_details`와 `get_commit_file_diff`는 동일한 optional `parent_index` 규칙을 사용한다. root commit은 parent가 없으므로 `None`만 허용하고 empty tree와 비교한다. parent가 하나 이상이면 `Some(index)`만 허용하며 UI의 기본값은 `Some(0)`이다. merge commit에서 parent 선택을 바꾸면 `get_commit_details`를 다시 호출해 그 parent와 비교한 `HistoryFileChange` 목록을 새로 받는다. 따라서 file ID는 선택한 commit, parent 기준과 generation에 묶이고 다른 기준의 diff 요청에 재사용할 수 없다.
+
+각 `HistoryFileChange`에는 불투명 history file ID, 이전/현재 표시 경로와 변경 종류가 있다. `get_commit_file_diff`는 이 ID를 사용하며 표시 경로를 pathspec으로 재사용하지 않는다. Rust는 `parent_index`가 commit의 실제 parent 범위와 file ID에 기록된 기준에 모두 일치하는지 검증한다.
 
 ### 6.4 핵심 모델
 
@@ -211,10 +214,11 @@ cancel_operation(operation_id) -> CancelResult
 - `FileDiff`: 파일 메타데이터, hunks, truncated 여부, binary 여부
 - `DiffHunk` / `DiffLine`: 범위, line kind, old/new line number, text
 - `CommitSummary`: object ID, parents, graph lane 정보, author, timestamp, subject, refs
-- `CommitDetails`: summary, body, parent 목록, `HistoryFileChange` 목록, 통계
+- `CommitDetails`: summary, body, parent 목록, 선택된 optional parent index, 해당 비교 기준의 `HistoryFileChange` 목록과 통계
 - `HistoryFileChange`: 불투명 file ID, 이전/현재 표시 경로, change kind
 - `BranchRef`: 불투명 ref ID, 표시 이름, local/remote, current, upstream, ahead/behind
-- `RemoteRef`: 불투명 remote ID, 표시 이름, fetch/push URL의 redacted 형태
+- `RemoteInfo`: 불투명 remote ID, 표시 이름, fetch/push URL의 redacted 형태
+- `RemoteList`: repository generation과 `RemoteInfo` 목록
 - `DiscardPreview`: confirmation token, 만료 시각, generation, 폐기/보존 상태 설명
 - `OperationEvent`: started, progress, output summary, completed, failed, cancelled
 - `GitError`: category, user message, diagnostic, retryability, exit code
@@ -241,7 +245,9 @@ MVP는 자동 merge commit, 자동 rebase, 강제 push, 자동 stash를 수행�
 
 discard는 working-tree facet이 있는 tracked modified/deleted/type-changed 파일에만 제공한다. staged와 unstaged 변경이 동시에 있으면 `git restore --worktree`로 working tree를 index 상태로 복원하므로 staged 내용은 보존된다. staged-only, untracked, conflicted, renamed/copied 항목에는 MVP의 discard를 제공하지 않고 이유를 표시한다. 사용자는 staged-only 변경을 먼저 unstage한 뒤 discard할 수 있다. untracked 파일 삭제와 conflict 해결은 외부 도구에서 수행한다. 이 정책은 `git clean`, index 손실, rename 양쪽 경로의 부분 삭제를 피한다.
 
-upstream이 없는 branch에서는 pull과 기본 push를 비활성화한다. remote가 정확히 하나일 때 “upstream 설정 후 push” 확인 화면에서 `push_set_upstream`을 호출한다. remote가 여러 개면 사용자가 remote와 유효한 branch 이름을 선택한 뒤 같은 API를 호출한다. Rust는 현재 local branch를 동작 직전에 다시 확인하고 `git push --set-upstream <remote> <local>:<remote-branch>`를 실행한다. detached HEAD에서는 이 동작을 허용하지 않는다.
+`list_remotes`는 Git remote 이름을 불투명 remote ID로 바꿔 반환한다. `fetch`와 `push_set_upstream`은 이 ID만 받고 실행 직전에 같은 repository의 현재 remote인지 재검증한다. 표시 이름이나 redacted URL을 다시 명령 인자로 사용하지 않는다.
+
+upstream이 없는 branch에서는 pull과 기본 push를 비활성화한다. remote가 정확히 하나일 때 “upstream 설정 후 push” 확인 화면에서 `push_set_upstream`을 호출한다. remote가 여러 개면 사용자가 `RemoteList`의 항목과 유효한 branch 이름을 선택한 뒤 같은 API를 호출한다. Rust는 현재 local branch를 동작 직전에 다시 확인하고 `git push --set-upstream <remote> <local>:<remote-branch>`를 실행한다. detached HEAD에서는 이 동작을 허용하지 않는다.
 
 branch popup에서 local branch를 선택하면 `switch_branch`를 사용한다. remote branch를 선택했을 때는 detached HEAD로 checkout하지 않는다. 동일 remote branch를 추적하는 local branch가 있으면 그 local branch로 전환하고, 없으면 제안된 local 이름을 확인한 후 `create_tracking_branch_and_switch`가 `git switch --track -c <local> <remote-ref>`를 실행한다.
 
@@ -337,7 +343,9 @@ Rust는 오류를 다음 category로 분류한다.
 - HookRejected / Cancelled / Timeout
 - ParseFailure / UnsupportedRepositoryState / Internal
 
-원격 Git process는 pseudo-terminal을 만들지 않고 stdin을 닫은 상태로 실행하며 `GIT_TERMINAL_PROMPT=0`을 설정한다. 사용자가 이미 구성한 OS credential helper, GUI AskPass, SSH agent와 `GIT_ASKPASS`/`SSH_ASKPASS` 환경은 그대로 사용할 수 있다. 앱 내부 username/password/token/passphrase 입력창과 SSH host-key 승인창은 MVP에서 제공하지 않는다. terminal 입력이 필요한 helper나 SSH prompt는 빠르게 실패해야 하며, host key 신뢰가 필요한 경우 사용자가 터미널에서 먼저 연결을 설정하도록 안내한다.
+원격 Git process는 pseudo-terminal을 만들지 않고 stdin을 닫은 상태로 실행하며 `GIT_TERMINAL_PROMPT=0`을 설정한다. Unix에서는 Git child를 `setsid`로 새 session에 넣어 controlling terminal을 제거하고, Windows에서는 새 process group과 console window를 만들지 않는 creation flags를 사용한다. 따라서 descendant OpenSSH가 `/dev/tty`나 console 입력을 요구할 수 없고 terminal 전용 prompt는 실패한다.
+
+사용자가 이미 구성한 OS credential helper, 별도 GUI AskPass, SSH agent와 `GIT_ASKPASS`/`SSH_ASKPASS` 환경은 그대로 사용할 수 있다. 이 외부 helper는 terminal이 없어도 독립 GUI 또는 agent protocol로 동작한다. 앱 내부 username/password/token/passphrase 입력창과 SSH host-key 승인창은 MVP에서 제공하지 않는다. GUI AskPass가 구성되지 않은 passphrase key나 host-key 신뢰가 필요한 경우 사용자가 터미널에서 먼저 agent/known_hosts를 설정하도록 안내한다.
 
 외부 credential helper가 자체 GUI를 표시하는 동안 process는 실행 상태로 유지되며 사용자는 언제든 취소할 수 있다. 인증 관련 exit와 redacted stderr는 `AuthenticationRequired` 또는 `PermissionDenied`로 분류한다. 별도의 `authentication-required` stream event로 비밀을 요청하지 않는다. 이 정책으로 Flutter/Rust bridge를 통해 credential이 이동하거나 보이지 않는 stdin prompt 때문에 작업이 무기한 멈추는 상황을 피한다.
 
@@ -361,7 +369,7 @@ Rust는 오류를 다음 category로 분류한다.
 
 ### 13.1 공통
 
-각 운영체제 산출물은 해당 운영체제의 CI runner에서 빌드한다. release에는 SHA-256 checksum과 Git 최소 버전, unsigned 여부, 최초 실행 방법을 포함한다.
+각 운영체제 산출물은 해당 운영체제의 CI runner에서 빌드한다. release에는 SHA-256 checksum과 Git 최소 버전, signing/notarization 상태, 최초 실행 방법을 포함한다.
 
 - Windows: x64 portable ZIP을 기본 산출물로 제공하고 설치형 패키지는 후속 release로 둔다.
 - Linux: x64 AppImage와 `.deb`를 제공하고 필요한 GTK/system library를 명시한다.
@@ -369,7 +377,7 @@ Rust는 오류를 다음 category로 분류한다.
 
 추가 CPU architecture는 Flutter와 CI runner 지원을 검증한 뒤 별도 release target으로 추가한다. MVP의 “세 OS 지원”은 위 기본 architecture 산출물을 뜻한다.
 
-### 13.2 macOS unsigned 배포
+### 13.2 macOS ad-hoc signed 배포
 
 Apple Developer ID와 notarization 없이 배포하는 MVP에서는 self-signed certificate가 아니라 ad-hoc signing을 사용한다. release script는 Flutter framework, Rust dynamic library와 다른 nested Mach-O를 안쪽부터 명시적으로 서명한 뒤 마지막에 outer `.app`을 서명한다. `--deep`은 누락된 nested component를 대신 서명하는 수단으로 사용하지 않고 최종 검증에만 사용한다.
 
@@ -379,7 +387,7 @@ codesign --force --sign - Branchline.app
 codesign --verify --deep --strict Branchline.app
 ```
 
-ad-hoc signing은 앱 번들의 로컬 무결성을 확인하지만 Apple이 신뢰하는 배포 서명이 아니며 Gatekeeper를 자동 통과시키지 않는다. 다운로드한 앱의 최초 실행은 Finder에서 우클릭 후 `Open`을 선택하거나 System Settings의 Privacy & Security에서 사용자가 직접 허용해야 한다. 이 절차를 release 문서에 설명한다.
+release에는 “ad-hoc signed이며 Developer ID signed 또는 notarized 상태가 아님”을 명시한다. ad-hoc signing은 앱 번들의 로컬 무결성을 확인하지만 Apple이 신뢰하는 배포 서명이 아니며 Gatekeeper를 자동 통과시키지 않는다. 다운로드한 앱의 최초 실행은 Finder에서 우클릭 후 `Open`을 선택하거나 System Settings의 Privacy & Security에서 사용자가 직접 허용해야 한다. 이 절차를 release 문서에 설명한다.
 
 앱 자체가 quarantine attribute를 제거하거나 Gatekeeper 설정을 변경하거나 사용자 승인 없이 보안 정책을 우회해서는 안 된다. 향후 Apple Developer 계정이 준비되면 동일 build pipeline에 Developer ID signing과 notarization 단계를 추가할 수 있다.
 
@@ -403,8 +411,10 @@ ad-hoc signing은 앱 번들의 로컬 무결성을 확인하지만 Apple이 신
 - untracked/conflicted/renamed 항목에서 discard 비활성화
 - branch create/switch와 dirty worktree 거부
 - paginated log와 merge topology fixture
+- root commit의 `None` 기준과 merge commit의 parent별 file list/diff
 - local bare remote를 이용한 fetch/pull/push 및 non-fast-forward 실패
 - remote branch에서 tracking local branch 생성, upstream 최초 설정 push, detached HEAD 거부
+- stale/다른 repository의 remote ID 거부
 - 비대화형 credential/SSH 실패가 hang 없이 typed error로 끝나는지 검증
 - 공백, 대시, shell metacharacter가 포함된 경로
 - hook 실패와 사용자 config 누락
@@ -437,7 +447,7 @@ MVP는 다음 항목을 모두 만족해야 완료로 판단한다.
 4. destructive discard가 확인 없이 실행되지 않는다.
 5. UI isolate가 Git process 또는 patch parsing 때문에 block되지 않는다.
 6. 지원 배포 artifact와 checksum을 CI가 생성한다.
-7. macOS 앱은 ad-hoc signature 검증을 통과하며 unsigned 최초 실행 안내가 포함된다.
+7. macOS 앱은 ad-hoc signature 검증을 통과하며 Developer ID 미서명·미공증 상태의 최초 실행 안내가 포함된다.
 8. JetBrains의 코드, 상표, 아이콘, 캡처 자산이 결과물에 포함되지 않는다.
 
 ## 16. 구현 순서의 경계
