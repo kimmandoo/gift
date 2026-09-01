@@ -1,2 +1,10 @@
 .worktrees
 .worktrees/
+
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.idea/
+*.iml
+build/
+native/target/
