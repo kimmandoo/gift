@@ -287,7 +287,7 @@ Commit:
 - Modify: `native/src/lib.rs`
 - Test: `native/tests/git_executor.rs`
 
-- [ ] **Step 1: Write failing parsing and redaction tests**
+- [x] **Step 1: Write failing parsing and redaction tests**
 
 Cover:
 
@@ -299,7 +299,7 @@ Cover:
 
 Also create a real process test in a temporary directory whose name contains spaces and `&`; run `git rev-parse --show-toplevel` with discrete argv and assert the returned path is exact.
 
-- [ ] **Step 2: Run tests and observe failure**
+- [x] **Step 2: Run tests and observe failure**
 
 Run:
 
@@ -307,21 +307,21 @@ Run:
 
 Expected: FAIL because discovery, invocation, and redaction modules are absent.
 
-- [ ] **Step 3: Implement the error contract**
+- [x] **Step 3: Implement the error contract**
 
 Define `GitErrorCategory` with every category from design section 11 and a `GitError { category, user_message, diagnostic, retryable, exit_code }`. Add constructors that accept byte stderr, perform lossy display conversion only after redaction, and never include stdin or raw credential-bearing URLs.
 
-- [ ] **Step 4: Implement `GitInvocation` and bounded process execution**
+- [x] **Step 4: Implement `GitInvocation` and bounded process execution**
 
 `GitInvocation` must hold `program: PathBuf`, `args: Vec<OsString>`, `cwd: PathBuf`, `stdin: Option<Vec<u8>>`, `kind: Read | Mutation | Remote`, and an `OutputPolicy`. Support `Capture { max_bytes }` for small machine-readable commands and `Stream` for parsers/progress consumers. `ProcessGitRunner` must use `tokio::process::Command::new`, pipe stdout/stderr concurrently, enforce the requested capture bound, set `kill_on_drop(true)`, and return a typed overflow error only for `Capture`. `Stream` must apply backpressure or drain discarded data so a large child output cannot deadlock or allocate without bound.
 
-- [ ] **Step 5: Implement Git discovery**
+- [x] **Step 5: Implement Git discovery**
 
 Search the explicit configured path first, then PATH. Run `git --version`, parse semantic components including vendor suffixes, and reject versions below 2.35 with `UnsupportedGitVersion`.
 
 Expose `get_git_installation()` and `configure_git_path(path)` from `settings_api.rs`. The latter must canonicalize a file path, run the same version check, update only the in-memory executor after success, and leave the previous valid installation unchanged after failure.
 
-- [ ] **Step 6: Verify and commit**
+- [x] **Step 6: Verify and commit**
 
 Run:
 

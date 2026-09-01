@@ -2,6 +2,7 @@
 
 ## 2026-09-02
 
+- fix(task3): drained stream output without reporting capture overflow.
 - feat(task3): added the safe Git executor, discovery, redaction, and settings bridge.
 - docs(task3): specified the safe Git executor and installation design.
 - docs(repo): documented date-grouped changelog entries.

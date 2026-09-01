@@ -7,13 +7,13 @@
 ## 📊 Progress Overview
 
 - **Total Tasks:** 14
-- **Completed:** 2 / 14 (14.3%)
-- **Current Active Task:** `Task 3: Safe Git Executor, Discovery & Redaction`
+- **Completed:** 3 / 14 (21.4%)
+- **Current Active Task:** `Task 4: Repository Handles & Welcome Screen`
 
 ```mermaid
 pie title Task Progress
-    "Completed (Task 1, 2)" : 2
-    "Pending (Task 3 - 14)" : 12
+    "Completed (Task 1 - 3)" : 3
+    "Pending (Task 4 - 14)" : 11
 ```
 
 ---
@@ -24,7 +24,7 @@ pie title Task Progress
 |---|---|---|---|:---:|
 | **1** | Scaffold & Bridge | `native/`, `api::health()`, FRB v2 codegen | `BranchlineApp` shell, `app_boot_test.dart` | ✅ Completed |
 | **2** | Behavior Ledger & Test Harness | `TestRepo`, `bare_remote`, safe sandbox | Clean-room scenario ledger (`STATUS-01` ~ `REMOTE-01`) | ✅ Completed |
-| **3** | Git Executor & Discovery | `ProcessGitRunner`, `GitError`, redaction, PATH scan | FRB settings bridge (`get_git_installation`) | ⏳ Pending |
+| **3** | Git Executor & Discovery | `ProcessGitRunner`, `GitError`, redaction, PATH scan | FRB settings bridge (`get_git_installation`) | ✅ Completed |
 | **4** | Repository Registry & Open | `AppState`, opaque `RepositoryId`, root validation | `WelcomeScreen`, `RecentRepositoryStore`, Git settings dialog | ⏳ Pending |
 | **5** | Status Parser & Changes | Porcelain v2 `-z` stream parser, snapshot hashing | `ChangesScreen`, grouped changes list (`Conflicts/Staged/...`) | ⏳ Pending |
 | **6** | Unified Diff Viewer | Bounded 5MB/20K line diff stream, rename detection | Monospace `UnifiedDiffView`, lazy hunk builder | ⏳ Pending |
@@ -54,12 +54,12 @@ pie title Task Progress
 - [x] GPG signing bypass and relative path directory traversal safeguards
 - [x] Bare remote repository initialization helper (`TestRepo::bare_remote()`)
 
-### ⏳ Task 3: Safe Git Executor, Discovery & Redaction
-- [ ] Implement `GitErrorCategory` taxonomy and credential-safe redaction (`native/src/error.rs`)
-- [ ] Shell-free `GitInvocation` with `Capture` (bounded 16MB) and `Stream` policies (`native/src/executor/`)
-- [ ] Git executable discovery & minimum version check (Git >= 2.35)
-- [ ] Expose `get_git_installation()` and `configure_git_path(path)` settings APIs
-- [ ] Rust integration tests with spaces and shell metacharacters (`native/tests/git_executor.rs`)
+### ✅ Task 3: Safe Git Executor, Discovery & Redaction
+- [x] Implement `GitErrorCategory` taxonomy and credential-safe redaction (`native/src/error.rs`)
+- [x] Shell-free `GitInvocation` with `Capture` (bounded 16MB) and `Stream` policies (`native/src/executor/`)
+- [x] Git executable discovery & minimum version check (Git >= 2.35)
+- [x] Expose `get_git_installation()` and `configure_git_path(path)` settings APIs
+- [x] Rust integration tests with spaces and shell metacharacters (`native/tests/git_executor.rs`)
 
 ### ⏳ Task 4: Repository Handles & Welcome Screen
 - [ ] Random UUID `RepositoryId` and in-memory `AppState` registry

@@ -90,7 +90,9 @@ impl ProcessGitRunner {
 
         let stdout = stdout_result.map_err(|error| io_error("stdout", error))?;
         let stderr = stderr_result.map_err(|error| io_error("stderr", error))?;
-        if stdout.exceeded || stderr.exceeded {
+        if matches!(invocation.output_policy, OutputPolicy::Capture { .. })
+            && (stdout.exceeded || stderr.exceeded)
+        {
             return Err(GitError::new(
                 GitErrorCategory::OutputOverflow,
                 "Git returned more output than the configured limit.",
@@ -130,9 +132,9 @@ async fn read_pipe<R>(mut pipe: R, policy: &OutputPolicy) -> io::Result<ReadResu
 where
     R: AsyncRead + Unpin,
 {
-    let limit = match policy {
-        OutputPolicy::Capture { max_bytes } => *max_bytes,
-        OutputPolicy::Stream { max_chunk_bytes } => *max_chunk_bytes,
+    let (limit, reject_overflow) = match policy {
+        OutputPolicy::Capture { max_bytes } => (*max_bytes, true),
+        OutputPolicy::Stream { max_chunk_bytes } => (*max_chunk_bytes, false),
     };
     let mut bytes = Vec::with_capacity(limit.min(8192));
     let mut buffer = [0_u8; 8192];
@@ -146,7 +148,7 @@ where
         let remaining = limit.saturating_sub(bytes.len());
         let retained = remaining.min(read);
         bytes.extend_from_slice(&buffer[..retained]);
-        exceeded |= retained < read;
+        exceeded |= reject_overflow && retained < read;
     }
 
     Ok(ReadResult { bytes, exceeded })

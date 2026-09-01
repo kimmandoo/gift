@@ -91,6 +91,31 @@ async fn reports_capture_overflow_without_retaining_unbounded_output() {
 }
 
 #[tokio::test]
+async fn drains_large_stream_output_without_reporting_capture_overflow() {
+    let fixture = tempdir().expect("created fixture directory");
+    init_repository(fixture.path());
+    let blob = write_blob(fixture.path());
+    let batch_input = format!("{blob}\n").repeat(256).into_bytes();
+    let invocation = GitInvocation::new(
+        git_executable(),
+        args(["cat-file", "--batch"]),
+        fixture.path().to_path_buf(),
+        Some(batch_input),
+        GitOperationKind::Read,
+        OutputPolicy::Stream {
+            max_chunk_bytes: 64,
+        },
+    );
+
+    let output = ProcessGitRunner::new()
+        .run(invocation)
+        .await
+        .expect("stream output must be drained without a capture overflow");
+
+    assert_eq!(output.stdout.len(), 64);
+}
+
+#[tokio::test]
 async fn discovers_git_from_path_and_preserves_previous_installation_on_failure() {
     let git_path = git_executable();
     let mut service = GitInstallationService::new(None);
