@@ -1,8 +1,11 @@
 $ErrorActionPreference = 'Stop'
 
 $repoRoot = Split-Path -Parent $PSScriptRoot
-$codegen = 'C:\Users\USER\.cargo\bin\flutter_rust_bridge_codegen.exe'
-$flutterBin = 'C:\Users\USER\flutter\bin'
+$codegenCommand = Get-Command flutter_rust_bridge_codegen -ErrorAction SilentlyContinue
+if ($null -eq $codegenCommand) {
+    throw 'flutter_rust_bridge_codegen was not found on PATH. Install the pinned 2.13.0 code generator or add its bin directory to PATH.'
+}
+$codegen = $codegenCommand.Source
 $generatedFiles = @(
     'lib/src/rust/generated/api.dart',
     'lib/src/rust/generated/frb_generated.dart',
@@ -13,8 +16,6 @@ $generatedFiles = @(
 
 Push-Location $repoRoot
 try {
-    $env:PATH = "$flutterBin;$env:PATH"
-
     & $codegen generate
     if ($LASTEXITCODE -ne 0) {
         throw "flutter_rust_bridge_codegen exited with $LASTEXITCODE."

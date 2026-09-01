@@ -1,5 +1,6 @@
 # Changelog
 
+- fix(scaffold): resolved the FRB code generator from PATH instead of a user-specific path.
 - docs(tasks): extracted and established centralized task tracking board.
 - test(harness): verified bare remote repository support and finalized clean-room test harness.
 - fix(harness): hardened test repository isolation from global Git signing and unsafe paths.
