@@ -243,7 +243,7 @@ Unix의 비 UTF-8 파일명은 Rust 내부에서 원시 바이트를 보존한�
 
 MVP는 자동 merge commit, 자동 rebase, 강제 push, 자동 stash를 수행하지 않는다. fast-forward가 불가능하거나 dirty worktree 때문에 전환할 수 없으면 Git 상태를 바꾸지 않고 원인과 사용자가 다음에 할 수 있는 작업을 설명한다.
 
-discard는 working-tree facet이 있는 tracked modified/deleted/type-changed 파일에만 제공한다. staged와 unstaged 변경이 동시에 있으면 `git restore --worktree`로 working tree를 index 상태로 복원하므로 staged 내용은 보존된다. staged-only, untracked, conflicted, renamed/copied 항목에는 MVP의 discard를 제공하지 않고 이유를 표시한다. 사용자는 staged-only 변경을 먼저 unstage한 뒤 discard할 수 있다. untracked 파일 삭제와 conflict 해결은 외부 도구에서 수행한다. 이 정책은 `git clean`, index 손실, rename 양쪽 경로의 부분 삭제를 피한다.
+discard는 working-tree facet이 있는 tracked modified/deleted/type-changed 파일에만 제공한다. staged와 unstaged 변경이 동시에 있으면 `git restore --worktree`로 working tree를 index 상태로 복원하므로 staged 내용은 보존된다. staged-only, untracked, conflicted, renamed/copied 항목에는 MVP의 discard를 제공하지 않고 이유를 표시한다. staged-only tracked modification/deletion/type-change는 먼저 unstage한 뒤 discard할 수 있다. staged-added 파일은 unstage하면 untracked가 되므로 여전히 MVP discard 대상이 아니다. untracked 파일 삭제와 conflict 해결은 외부 도구에서 수행한다. 이 정책은 `git clean`, index 손실, rename 양쪽 경로의 부분 삭제를 피한다.
 
 `list_remotes`는 Git remote 이름을 불투명 remote ID로 바꿔 반환한다. `fetch`와 `push_set_upstream`은 이 ID만 받고 실행 직전에 같은 repository의 현재 remote인지 재검증한다. 표시 이름이나 redacted URL을 다시 명령 인자로 사용하지 않는다.
 
@@ -341,6 +341,7 @@ Rust는 오류를 다음 category로 분류한다.
 - DirtyWorktree / MergeConflict / NonFastForward
 - AuthenticationRequired / PermissionDenied / NetworkUnavailable
 - HookRejected / Cancelled / Timeout
+- StaleConfirmation / InvalidOpaqueId / StaleOpaqueId
 - ParseFailure / UnsupportedRepositoryState / Internal
 
 원격 Git process는 pseudo-terminal을 만들지 않고 stdin을 닫은 상태로 실행하며 `GIT_TERMINAL_PROMPT=0`을 설정한다. Unix에서는 Git child를 `setsid`로 새 session에 넣어 controlling terminal을 제거하고, Windows에서는 새 process group과 console window를 만들지 않는 creation flags를 사용한다. 따라서 descendant OpenSSH가 `/dev/tty`나 console 입력을 요구할 수 없고 terminal 전용 prompt는 실패한다.
