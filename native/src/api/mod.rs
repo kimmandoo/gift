@@ -1,3 +1,7 @@
+pub mod settings_api;
+
+pub use settings_api::{configure_git_path, get_git_installation};
+
 pub struct Health {
     pub product: String,
     pub core_version: String,

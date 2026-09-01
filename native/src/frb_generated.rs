@@ -39,7 +39,7 @@ flutter_rust_bridge::frb_generated_boilerplate!(
     default_rust_auto_opaque = RustAutoOpaqueMoi,
 );
 pub(crate) const FLUTTER_RUST_BRIDGE_CODEGEN_VERSION: &str = "2.13.0";
-pub(crate) const FLUTTER_RUST_BRIDGE_CODEGEN_CONTENT_HASH: i32 = -454323084;
+pub(crate) const FLUTTER_RUST_BRIDGE_CODEGEN_CONTENT_HASH: i32 = -556452597;
 
 // Section: executor
 
@@ -47,6 +47,78 @@ flutter_rust_bridge::frb_generated_default_handler!();
 
 // Section: wire_funcs
 
+fn wire__crate__api__settings_api__configure_git_path_impl(
+    port_: flutter_rust_bridge::for_generated::MessagePort,
+    ptr_: flutter_rust_bridge::for_generated::PlatformGeneralizedUint8ListPtr,
+    rust_vec_len_: i32,
+    data_len_: i32,
+) {
+    FLUTTER_RUST_BRIDGE_HANDLER.wrap_async::<flutter_rust_bridge::for_generated::SseCodec, _, _, _>(
+        flutter_rust_bridge::for_generated::TaskInfo {
+            debug_name: "configure_git_path",
+            port: Some(port_),
+            mode: flutter_rust_bridge::for_generated::FfiCallMode::Normal,
+        },
+        move || {
+            let message = unsafe {
+                flutter_rust_bridge::for_generated::Dart2RustMessageSse::from_wire(
+                    ptr_,
+                    rust_vec_len_,
+                    data_len_,
+                )
+            };
+            let mut deserializer =
+                flutter_rust_bridge::for_generated::SseDeserializer::new(message);
+            let api_path = <String>::sse_decode(&mut deserializer);
+            deserializer.end();
+            move |context| async move {
+                transform_result_sse::<_, crate::error::GitError>(
+                    (move || async move {
+                        let output_ok =
+                            crate::api::settings_api::configure_git_path(api_path).await?;
+                        std::result::Result::Ok(output_ok)
+                    })()
+                    .await,
+                )
+            }
+        },
+    )
+}
+fn wire__crate__api__settings_api__get_git_installation_impl(
+    port_: flutter_rust_bridge::for_generated::MessagePort,
+    ptr_: flutter_rust_bridge::for_generated::PlatformGeneralizedUint8ListPtr,
+    rust_vec_len_: i32,
+    data_len_: i32,
+) {
+    FLUTTER_RUST_BRIDGE_HANDLER.wrap_async::<flutter_rust_bridge::for_generated::SseCodec, _, _, _>(
+        flutter_rust_bridge::for_generated::TaskInfo {
+            debug_name: "get_git_installation",
+            port: Some(port_),
+            mode: flutter_rust_bridge::for_generated::FfiCallMode::Normal,
+        },
+        move || {
+            let message = unsafe {
+                flutter_rust_bridge::for_generated::Dart2RustMessageSse::from_wire(
+                    ptr_,
+                    rust_vec_len_,
+                    data_len_,
+                )
+            };
+            let mut deserializer =
+                flutter_rust_bridge::for_generated::SseDeserializer::new(message);
+            deserializer.end();
+            move |context| async move {
+                transform_result_sse::<_, crate::error::GitError>(
+                    (move || async move {
+                        let output_ok = crate::api::settings_api::get_git_installation().await?;
+                        std::result::Result::Ok(output_ok)
+                    })()
+                    .await,
+                )
+            }
+        },
+    )
+}
 fn wire__crate__api__health_impl(
     port_: flutter_rust_bridge::for_generated::MessagePort,
     ptr_: flutter_rust_bridge::for_generated::PlatformGeneralizedUint8ListPtr,
@@ -90,6 +162,79 @@ impl SseDecode for String {
     }
 }
 
+impl SseDecode for bool {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        deserializer.cursor.read_u8().unwrap() != 0
+    }
+}
+
+impl SseDecode for crate::error::GitError {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut var_category = <crate::error::GitErrorCategory>::sse_decode(deserializer);
+        let mut var_userMessage = <String>::sse_decode(deserializer);
+        let mut var_diagnostic = <String>::sse_decode(deserializer);
+        let mut var_retryable = <bool>::sse_decode(deserializer);
+        let mut var_exitCode = <Option<i32>>::sse_decode(deserializer);
+        return crate::error::GitError {
+            category: var_category,
+            user_message: var_userMessage,
+            diagnostic: var_diagnostic,
+            retryable: var_retryable,
+            exit_code: var_exitCode,
+        };
+    }
+}
+
+impl SseDecode for crate::error::GitErrorCategory {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut inner = <i32>::sse_decode(deserializer);
+        return match inner {
+            0 => crate::error::GitErrorCategory::GitNotFound,
+            1 => crate::error::GitErrorCategory::UnsupportedGitVersion,
+            2 => crate::error::GitErrorCategory::NotRepository,
+            3 => crate::error::GitErrorCategory::RepositoryMoved,
+            4 => crate::error::GitErrorCategory::InvalidRevision,
+            5 => crate::error::GitErrorCategory::DetachedHead,
+            6 => crate::error::GitErrorCategory::UnbornBranch,
+            7 => crate::error::GitErrorCategory::DirtyWorktree,
+            8 => crate::error::GitErrorCategory::MergeConflict,
+            9 => crate::error::GitErrorCategory::NonFastForward,
+            10 => crate::error::GitErrorCategory::AuthenticationRequired,
+            11 => crate::error::GitErrorCategory::PermissionDenied,
+            12 => crate::error::GitErrorCategory::NetworkUnavailable,
+            13 => crate::error::GitErrorCategory::HookRejected,
+            14 => crate::error::GitErrorCategory::Cancelled,
+            15 => crate::error::GitErrorCategory::Timeout,
+            16 => crate::error::GitErrorCategory::StaleConfirmation,
+            17 => crate::error::GitErrorCategory::InvalidOpaqueId,
+            18 => crate::error::GitErrorCategory::StaleOpaqueId,
+            19 => crate::error::GitErrorCategory::ParseFailure,
+            20 => crate::error::GitErrorCategory::UnsupportedRepositoryState,
+            21 => crate::error::GitErrorCategory::Internal,
+            22 => crate::error::GitErrorCategory::InvalidGitPath,
+            23 => crate::error::GitErrorCategory::ProcessSpawnFailed,
+            24 => crate::error::GitErrorCategory::ProcessFailed,
+            25 => crate::error::GitErrorCategory::OutputOverflow,
+            _ => unreachable!("Invalid variant for GitErrorCategory: {}", inner),
+        };
+    }
+}
+
+impl SseDecode for crate::domain::GitInstallation {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut var_executablePath = <String>::sse_decode(deserializer);
+        let mut var_version = <String>::sse_decode(deserializer);
+        return crate::domain::GitInstallation {
+            executable_path: var_executablePath,
+            version: var_version,
+        };
+    }
+}
+
 impl SseDecode for crate::api::Health {
     // Codec=Sse (Serialization based), see doc to use other codecs
     fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
@@ -99,6 +244,13 @@ impl SseDecode for crate::api::Health {
             product: var_product,
             core_version: var_coreVersion,
         };
+    }
+}
+
+impl SseDecode for i32 {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        deserializer.cursor.read_i32::<NativeEndian>().unwrap()
     }
 }
 
@@ -114,6 +266,17 @@ impl SseDecode for Vec<u8> {
     }
 }
 
+impl SseDecode for Option<i32> {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        if (<bool>::sse_decode(deserializer)) {
+            return Some(<i32>::sse_decode(deserializer));
+        } else {
+            return None;
+        }
+    }
+}
+
 impl SseDecode for u8 {
     // Codec=Sse (Serialization based), see doc to use other codecs
     fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
@@ -126,20 +289,6 @@ impl SseDecode for () {
     fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {}
 }
 
-impl SseDecode for i32 {
-    // Codec=Sse (Serialization based), see doc to use other codecs
-    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
-        deserializer.cursor.read_i32::<NativeEndian>().unwrap()
-    }
-}
-
-impl SseDecode for bool {
-    // Codec=Sse (Serialization based), see doc to use other codecs
-    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
-        deserializer.cursor.read_u8().unwrap() != 0
-    }
-}
-
 fn pde_ffi_dispatcher_primary_impl(
     func_id: i32,
     port: flutter_rust_bridge::for_generated::MessagePort,
@@ -149,7 +298,19 @@ fn pde_ffi_dispatcher_primary_impl(
 ) {
     // Codec=Pde (Serialization + dispatch), see doc to use other codecs
     match func_id {
-        1 => wire__crate__api__health_impl(port, ptr, rust_vec_len, data_len),
+        1 => wire__crate__api__settings_api__configure_git_path_impl(
+            port,
+            ptr,
+            rust_vec_len,
+            data_len,
+        ),
+        2 => wire__crate__api__settings_api__get_git_installation_impl(
+            port,
+            ptr,
+            rust_vec_len,
+            data_len,
+        ),
+        3 => wire__crate__api__health_impl(port, ptr, rust_vec_len, data_len),
         _ => unreachable!(),
     }
 }
@@ -168,6 +329,91 @@ fn pde_ffi_dispatcher_sync_impl(
 
 // Section: rust2dart
 
+// Codec=Dco (DartCObject based), see doc to use other codecs
+impl flutter_rust_bridge::IntoDart for crate::error::GitError {
+    fn into_dart(self) -> flutter_rust_bridge::for_generated::DartAbi {
+        [
+            self.category.into_into_dart().into_dart(),
+            self.user_message.into_into_dart().into_dart(),
+            self.diagnostic.into_into_dart().into_dart(),
+            self.retryable.into_into_dart().into_dart(),
+            self.exit_code.into_into_dart().into_dart(),
+        ]
+        .into_dart()
+    }
+}
+impl flutter_rust_bridge::for_generated::IntoDartExceptPrimitive for crate::error::GitError {}
+impl flutter_rust_bridge::IntoIntoDart<crate::error::GitError> for crate::error::GitError {
+    fn into_into_dart(self) -> crate::error::GitError {
+        self
+    }
+}
+// Codec=Dco (DartCObject based), see doc to use other codecs
+impl flutter_rust_bridge::IntoDart for crate::error::GitErrorCategory {
+    fn into_dart(self) -> flutter_rust_bridge::for_generated::DartAbi {
+        match self {
+            Self::GitNotFound => 0.into_dart(),
+            Self::UnsupportedGitVersion => 1.into_dart(),
+            Self::NotRepository => 2.into_dart(),
+            Self::RepositoryMoved => 3.into_dart(),
+            Self::InvalidRevision => 4.into_dart(),
+            Self::DetachedHead => 5.into_dart(),
+            Self::UnbornBranch => 6.into_dart(),
+            Self::DirtyWorktree => 7.into_dart(),
+            Self::MergeConflict => 8.into_dart(),
+            Self::NonFastForward => 9.into_dart(),
+            Self::AuthenticationRequired => 10.into_dart(),
+            Self::PermissionDenied => 11.into_dart(),
+            Self::NetworkUnavailable => 12.into_dart(),
+            Self::HookRejected => 13.into_dart(),
+            Self::Cancelled => 14.into_dart(),
+            Self::Timeout => 15.into_dart(),
+            Self::StaleConfirmation => 16.into_dart(),
+            Self::InvalidOpaqueId => 17.into_dart(),
+            Self::StaleOpaqueId => 18.into_dart(),
+            Self::ParseFailure => 19.into_dart(),
+            Self::UnsupportedRepositoryState => 20.into_dart(),
+            Self::Internal => 21.into_dart(),
+            Self::InvalidGitPath => 22.into_dart(),
+            Self::ProcessSpawnFailed => 23.into_dart(),
+            Self::ProcessFailed => 24.into_dart(),
+            Self::OutputOverflow => 25.into_dart(),
+            _ => unreachable!(),
+        }
+    }
+}
+impl flutter_rust_bridge::for_generated::IntoDartExceptPrimitive
+    for crate::error::GitErrorCategory
+{
+}
+impl flutter_rust_bridge::IntoIntoDart<crate::error::GitErrorCategory>
+    for crate::error::GitErrorCategory
+{
+    fn into_into_dart(self) -> crate::error::GitErrorCategory {
+        self
+    }
+}
+// Codec=Dco (DartCObject based), see doc to use other codecs
+impl flutter_rust_bridge::IntoDart for crate::domain::GitInstallation {
+    fn into_dart(self) -> flutter_rust_bridge::for_generated::DartAbi {
+        [
+            self.executable_path.into_into_dart().into_dart(),
+            self.version.into_into_dart().into_dart(),
+        ]
+        .into_dart()
+    }
+}
+impl flutter_rust_bridge::for_generated::IntoDartExceptPrimitive
+    for crate::domain::GitInstallation
+{
+}
+impl flutter_rust_bridge::IntoIntoDart<crate::domain::GitInstallation>
+    for crate::domain::GitInstallation
+{
+    fn into_into_dart(self) -> crate::domain::GitInstallation {
+        self
+    }
+}
 // Codec=Dco (DartCObject based), see doc to use other codecs
 impl flutter_rust_bridge::IntoDart for crate::api::Health {
     fn into_dart(self) -> flutter_rust_bridge::for_generated::DartAbi {
@@ -192,11 +438,84 @@ impl SseEncode for String {
     }
 }
 
+impl SseEncode for bool {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        serializer.cursor.write_u8(self as _).unwrap();
+    }
+}
+
+impl SseEncode for crate::error::GitError {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <crate::error::GitErrorCategory>::sse_encode(self.category, serializer);
+        <String>::sse_encode(self.user_message, serializer);
+        <String>::sse_encode(self.diagnostic, serializer);
+        <bool>::sse_encode(self.retryable, serializer);
+        <Option<i32>>::sse_encode(self.exit_code, serializer);
+    }
+}
+
+impl SseEncode for crate::error::GitErrorCategory {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <i32>::sse_encode(
+            match self {
+                crate::error::GitErrorCategory::GitNotFound => 0,
+                crate::error::GitErrorCategory::UnsupportedGitVersion => 1,
+                crate::error::GitErrorCategory::NotRepository => 2,
+                crate::error::GitErrorCategory::RepositoryMoved => 3,
+                crate::error::GitErrorCategory::InvalidRevision => 4,
+                crate::error::GitErrorCategory::DetachedHead => 5,
+                crate::error::GitErrorCategory::UnbornBranch => 6,
+                crate::error::GitErrorCategory::DirtyWorktree => 7,
+                crate::error::GitErrorCategory::MergeConflict => 8,
+                crate::error::GitErrorCategory::NonFastForward => 9,
+                crate::error::GitErrorCategory::AuthenticationRequired => 10,
+                crate::error::GitErrorCategory::PermissionDenied => 11,
+                crate::error::GitErrorCategory::NetworkUnavailable => 12,
+                crate::error::GitErrorCategory::HookRejected => 13,
+                crate::error::GitErrorCategory::Cancelled => 14,
+                crate::error::GitErrorCategory::Timeout => 15,
+                crate::error::GitErrorCategory::StaleConfirmation => 16,
+                crate::error::GitErrorCategory::InvalidOpaqueId => 17,
+                crate::error::GitErrorCategory::StaleOpaqueId => 18,
+                crate::error::GitErrorCategory::ParseFailure => 19,
+                crate::error::GitErrorCategory::UnsupportedRepositoryState => 20,
+                crate::error::GitErrorCategory::Internal => 21,
+                crate::error::GitErrorCategory::InvalidGitPath => 22,
+                crate::error::GitErrorCategory::ProcessSpawnFailed => 23,
+                crate::error::GitErrorCategory::ProcessFailed => 24,
+                crate::error::GitErrorCategory::OutputOverflow => 25,
+                _ => {
+                    unimplemented!("");
+                }
+            },
+            serializer,
+        );
+    }
+}
+
+impl SseEncode for crate::domain::GitInstallation {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <String>::sse_encode(self.executable_path, serializer);
+        <String>::sse_encode(self.version, serializer);
+    }
+}
+
 impl SseEncode for crate::api::Health {
     // Codec=Sse (Serialization based), see doc to use other codecs
     fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
         <String>::sse_encode(self.product, serializer);
         <String>::sse_encode(self.core_version, serializer);
+    }
+}
+
+impl SseEncode for i32 {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        serializer.cursor.write_i32::<NativeEndian>(self).unwrap();
     }
 }
 
@@ -206,6 +525,16 @@ impl SseEncode for Vec<u8> {
         <i32>::sse_encode(self.len() as _, serializer);
         for item in self {
             <u8>::sse_encode(item, serializer);
+        }
+    }
+}
+
+impl SseEncode for Option<i32> {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <bool>::sse_encode(self.is_some(), serializer);
+        if let Some(value) = self {
+            <i32>::sse_encode(value, serializer);
         }
     }
 }
@@ -220,20 +549,6 @@ impl SseEncode for u8 {
 impl SseEncode for () {
     // Codec=Sse (Serialization based), see doc to use other codecs
     fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {}
-}
-
-impl SseEncode for i32 {
-    // Codec=Sse (Serialization based), see doc to use other codecs
-    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
-        serializer.cursor.write_i32::<NativeEndian>(self).unwrap();
-    }
-}
-
-impl SseEncode for bool {
-    // Codec=Sse (Serialization based), see doc to use other codecs
-    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
-        serializer.cursor.write_u8(self as _).unwrap();
-    }
 }
 
 #[cfg(not(target_family = "wasm"))]
