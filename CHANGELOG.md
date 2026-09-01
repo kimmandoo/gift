@@ -1,5 +1,6 @@
 # Changelog
 
+- fix(harness): hardened test repository isolation from global Git signing and unsafe paths.
 - fix(scaffold): excluded generated bridge bindings from Rust formatting.
 - fix(scaffold): preserved canonical generated bridge output after Rust formatting.
 - build(scaffold): integrated Cargokit so desktop builds package the Rust bridge.
