@@ -99,7 +99,7 @@
 - Test: `native/src/api/mod.rs`
 - Test: `test/app_boot_test.dart`
 
-- [ ] **Step 1: Record the available toolchain**
+- [x] **Step 1: Record the available toolchain**
 
 Run:
 
@@ -111,7 +111,7 @@ Run:
 
 Expected: Flutter desktop support is enabled, Rust is stable, and Git is at least 2.35. Record the exact values in `tool/versions.json`.
 
-- [ ] **Step 2: Generate the desktop shell and Rust crate**
+- [x] **Step 2: Generate the desktop shell and Rust crate**
 
 Run:
 
@@ -140,7 +140,7 @@ Remove Flutter's generated counter-app `test/widget_test.dart` before adding Bra
 
 Resolve one compatible FRB release and pin that exact version in Dart, Rust, and the installed codegen; record it in `tool/versions.json`. Do not allow three independent unversioned FRB resolutions to remain in the lockfiles.
 
-- [ ] **Step 3: Write a failing Rust bridge health test**
+- [x] **Step 3: Write a failing Rust bridge health test**
 
 First add `pub mod api;` to `native/src/lib.rs` so Cargo discovers tests in `api/mod.rs`. Then add to `native/src/api/mod.rs`:
 
@@ -156,7 +156,7 @@ First add `pub mod api;` to `native/src/lib.rs` so Cargo discovers tests in `api
         }
     }
 
-- [ ] **Step 4: Run the targeted Rust test and observe failure**
+- [x] **Step 4: Run the targeted Rust test and observe failure**
 
 Run:
 
@@ -164,11 +164,11 @@ Run:
 
 Expected: FAIL because `health` and `Health` do not exist.
 
-- [ ] **Step 5: Implement the minimal health API**
+- [x] **Step 5: Implement the minimal health API**
 
 In `native/src/api/mod.rs` define a FRB-visible `Health { product: String, core_version: String }` and `pub fn health() -> Health` using `env!("CARGO_PKG_VERSION")`.
 
-- [ ] **Step 6: Configure and generate the bridge**
+- [x] **Step 6: Configure and generate the bridge**
 
 Set `flutter_rust_bridge.yaml` to:
 
@@ -184,7 +184,7 @@ Run:
 
 Expected: generated Dart/Rust bindings compile without manual edits.
 
-- [ ] **Step 7: Write a failing Flutter boot test**
+- [x] **Step 7: Write a failing Flutter boot test**
 
 Create `test/app_boot_test.dart`:
 
@@ -200,7 +200,7 @@ Create `test/app_boot_test.dart`:
       });
     }
 
-- [ ] **Step 8: Run the Flutter test and observe failure**
+- [x] **Step 8: Run the Flutter test and observe failure**
 
 Run:
 
@@ -208,11 +208,11 @@ Run:
 
 Expected: FAIL because `BranchlineApp` is absent.
 
-- [ ] **Step 9: Implement the minimal app shell**
+- [x] **Step 9: Implement the minimal app shell**
 
 Create `BranchlineApp` as a `ConsumerWidget` returning a Material 3 `MaterialApp` with an `Open Repository` label and a disabled scaffold control; Task 4 replaces it with the real repository action. Initialize generated Rust bindings in `main.dart` before `runApp`.
 
-- [ ] **Step 10: Verify scaffold and commit**
+- [x] **Step 10: Verify scaffold and commit**
 
 Run:
 
@@ -237,15 +237,15 @@ Commit:
 - Create: `native/tests/support/test_repo.rs`
 - Create: `native/tests/behavior_contract.rs`
 
-- [ ] **Step 1: Write the behavior ledger**
+- [x] **Step 1: Write the behavior ledger**
 
 Document these neutral scenario IDs with input state, user intent, expected visible state, expected Git state, and source type `approved design`: `STATUS-01`, `DIFF-01`, `STAGE-01`, `DISCARD-01`, `COMMIT-01`, `LOG-01`, `BRANCH-01`, `REMOTE-01`. State that later authorized observations append versioned notes without storing proprietary captures.
 
-- [ ] **Step 2: Write a failing test-repository harness test**
+- [x] **Step 2: Write a failing test-repository harness test**
 
 In `native/tests/behavior_contract.rs` create a test that calls `TestRepo::new()`, writes `hello.txt`, commits it, and asserts `git status --porcelain` is empty. The helper must set repository-local `user.name` and `user.email` so tests never depend on global configuration.
 
-- [ ] **Step 3: Run it and observe failure**
+- [x] **Step 3: Run it and observe failure**
 
 Run:
 
@@ -253,11 +253,11 @@ Run:
 
 Expected: FAIL because `TestRepo` is absent.
 
-- [ ] **Step 4: Implement the test harness**
+- [x] **Step 4: Implement the test harness**
 
 Implement `TestRepo` with `tempfile::TempDir` and direct `std::process::Command` calls used only by tests. Provide `write`, `git`, `commit_all`, `path`, and `bare_remote` helpers. Each helper must include stdout/stderr in assertion failures and use argument arrays rather than a shell.
 
-- [ ] **Step 5: Verify and commit**
+- [x] **Step 5: Verify and commit**
 
 Run:
 

@@ -92,7 +92,6 @@ impl TestRepo {
         self.git(["commit", "--quiet", "--no-gpg-sign", "-m", message]);
     }
 
-    #[allow(dead_code)]
     pub fn bare_remote() -> TempDir {
         let remote = tempdir().expect("created temporary bare Git remote directory");
         let output = Command::new("git")

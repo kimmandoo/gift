@@ -65,3 +65,20 @@ fn write_rejects_absolute_paths() {
 
     assert!(error.contains("relative path"), "unexpected error: {error}");
 }
+
+#[test]
+fn bare_remote_creates_valid_bare_git_repository() {
+    let remote = TestRepo::bare_remote();
+    let repo = TestRepo::new();
+    repo.write("remote_test.txt", "remote test\n")
+        .expect("wrote remote test file");
+    repo.commit_all("Add remote test file");
+    repo.git([
+        "remote",
+        "add",
+        "origin",
+        remote.path().to_str().expect("valid path"),
+    ]);
+    let push_output = repo.git(["push", "origin", "HEAD"]);
+    assert!(push_output.status.success());
+}
