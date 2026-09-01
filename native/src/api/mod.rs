@@ -18,6 +18,6 @@ mod tests {
     fn health_exposes_product_and_core_version() {
         let result = health();
         assert_eq!(result.product, "Branchline");
-        assert!(!result.core_version.is_empty());
+        assert_eq!(result.core_version, env!("CARGO_PKG_VERSION"));
     }
 }
