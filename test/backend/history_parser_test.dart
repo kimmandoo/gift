@@ -72,7 +72,7 @@ void main() {
       limit: 10,
     );
 
-    expect(page.commits.map((commit) => commit.lane), [0, 0, 1]);
+    expect(page.commits.map((commit) => commit.lane), [0, 0, 0]);
     expect(page.commits.first.laneCount, 2);
     expect(
       page.commits.first.graphSegments.map(
@@ -83,6 +83,12 @@ void main() {
     expect(page.commits.first.graphHasIncoming, isFalse);
     expect(page.commits[1].graphHasIncoming, isTrue);
     expect(page.commits[2].graphHasIncoming, isTrue);
+    expect(
+      page.commits[1].graphSegments.map(
+        (segment) => '${segment.fromLane}->${segment.toLane}',
+      ),
+      ['1->0'],
+    );
   });
 
   test('recomputes lanes across an appended page boundary', () {
@@ -145,14 +151,15 @@ void main() {
         limit: 10,
       );
 
-      expect(page.commits.map((commit) => commit.lane), [0, 0, 1]);
+      expect(page.commits.map((commit) => commit.lane), [0, 0, 0]);
       expect(
         page.commits[1].graphSegments.map(
           (segment) => '${segment.fromLane}->${segment.toLane}',
         ),
-        ['1->1', '0->1'],
+        ['1->0', '0->0'],
       );
       expect(page.commits[1].laneCount, 2);
+      expect(page.commits[2].laneCount, 1);
     },
   );
 }

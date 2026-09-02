@@ -433,6 +433,9 @@ diagonal stair-step transitions expose branch splits and joins without
 anti-aliasing away the pixel aesthetic. Square commit markers, larger outlined
 merge markers, and selected-row halos keep commit state distinct. Each painted
 row also exposes its lane and merge status as an accessibility image label.
+When a branch joins or ends, the lane allocator removes every vacated slot and
+shifts surviving ancestry left. Later commits therefore connect to the nearest
+available lane instead of retaining an empty parallel column.
 
 ## Safe advanced branch operations (Task 20)
 

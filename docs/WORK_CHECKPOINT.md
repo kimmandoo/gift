@@ -5,31 +5,29 @@ This file is the handoff record for continuing work across query sessions.
 ## Current checkpoint
 
 - Date: 2026-09-03
-- Active task: the requested history graph topology and pixel-style refinement
-  is complete on `main`; Task 20 remains complete and Task 21 has not been
-  activated.
+- Active task: the requested history graph lane compaction fix is complete on
+  `main`; Task 20 remains complete and Task 21 has not been activated.
 - Branch: `main`; no new branch or worktree was created.
 - History cleanup: removed the pull-request merge commit from local and remote
   `main` with a lease-protected force update; the branding commits and Task 18
   content remain in a linear history. The two remaining obsolete branding
   labels in reachable commit messages were also replaced, and the rewrite
   backup ref was removed.
-- Changed files: history graph rendering and widget coverage, architecture,
-  changelog, and this checkpoint. The follow-up replaced smooth graph paths
-  with three-pixel dotted lanes, stair-step lane changes, and square pixel
-  commit/merge markers so branch topology remains visible.
-- Verification: the focused history screen suite passed all 6 tests and the
-  history parser suite passed all 5 tests; `flutter analyze` passed with no
-  issues. The preceding full suite completed with 110 passing tests and the
-  same 2 known Windows-platform expectation failures in
-  `dart_git_backend_test.dart` (UTF-8 process output and CRLF newline
-  normalization). Final `git diff --check` passed.
+- Changed files: the history lane allocator and parser coverage, architecture,
+  changelog, and this checkpoint. Vacated interior lanes are now compacted as
+  soon as a branch joins or ends, so surviving commits move left and do not
+  retain an unnecessary parallel column.
+- Verification: the history parser suite passed all 5 tests, the focused
+  history screen suite passed all 6 tests, and `flutter analyze` passed with
+  no issues. The full suite completed with 110 passing tests and the same 2
+  known Windows-platform expectation failures in `dart_git_backend_test.dart`
+  (UTF-8 process output and CRLF newline normalization). Formatting and final
+  `git diff --check` passed.
 - Next action: activate Task21 by recording its behavior scenarios and first
   RED test in a later requested session.
-- First failing signal: user review found that the anti-aliased curves did not
-  make existing split/join segments visually distinct. Backend topology tests
-  already proved the merge (`0->0`, `0->1`) and join (`1->1`, `0->1`) data;
-  the painter now renders those transitions as visible dotted stair-steps.
+- First failing signal: the active-parent join scenario expected the surviving
+  commit sequence on lanes `[0, 0, 0]` but returned `[0, 0, 1]`, proving that
+  an interior empty lane was retained after the join.
 - Blockers: none.
 
 ## Previous checkpoint

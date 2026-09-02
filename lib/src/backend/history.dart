@@ -318,9 +318,10 @@ List<GitCommit> assignGraphLanes(List<GitCommit> commits) {
             after.insert(lane + index, parent);
           }
         }
-        while (after.isNotEmpty && after.last == null) {
-          after.removeLast();
-        }
+        // Once a lane has joined or ended, close its empty slot immediately.
+        // Leaving an interior null in place makes the surviving ancestry drift
+        // right and renders an unnecessary parallel column on later rows.
+        after.removeWhere((oid) => oid == null);
         final segments = <GitGraphSegment>[];
         void addSegment(int from, int to) {
           if (!segments.any(
