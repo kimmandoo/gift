@@ -373,7 +373,12 @@ class _ChangesScreenBodyState extends ConsumerState<_ChangesScreenBody> {
       key: const Key('commit-success'),
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
       color: Theme.of(context).colorScheme.tertiaryContainer,
-      child: Text('Committed $shortOid.'),
+      child: Text(
+        'Committed $shortOid.',
+        style: TextStyle(
+          color: Theme.of(context).colorScheme.onTertiaryContainer,
+        ),
+      ),
     );
   }
 
@@ -383,7 +388,7 @@ class _ChangesScreenBodyState extends ConsumerState<_ChangesScreenBody> {
       child: Text(
         error.userMessage,
         key: const Key('commit-error'),
-        style: const TextStyle(color: Colors.red),
+        style: TextStyle(color: Theme.of(context).colorScheme.error),
       ),
     );
   }
@@ -588,7 +593,7 @@ class _ChangesScreenBodyState extends ConsumerState<_ChangesScreenBody> {
             Text(
               error.userMessage,
               key: const Key('mutation-error'),
-              style: TextStyle(color: Colors.red),
+              style: TextStyle(color: Theme.of(context).colorScheme.error),
             ),
           ],
           if (state.discardError case final error?) ...[
@@ -596,7 +601,7 @@ class _ChangesScreenBodyState extends ConsumerState<_ChangesScreenBody> {
             Text(
               error.userMessage,
               key: const Key('discard-error'),
-              style: TextStyle(color: Colors.red),
+              style: TextStyle(color: Theme.of(context).colorScheme.error),
             ),
           ],
           if (state.isDiscardPreparing || state.isMutating)
@@ -608,7 +613,7 @@ class _ChangesScreenBodyState extends ConsumerState<_ChangesScreenBody> {
             Text(
               error.userMessage,
               key: const Key('diff-error'),
-              style: TextStyle(color: Colors.red),
+              style: TextStyle(color: Theme.of(context).colorScheme.error),
             ),
           ],
           const SizedBox(height: 12),
@@ -867,7 +872,14 @@ class _ChangesScreenBodyState extends ConsumerState<_ChangesScreenBody> {
             color: Theme.of(context).colorScheme.onErrorContainer,
           ),
           const SizedBox(width: 8),
-          Expanded(child: Text(error.userMessage)),
+          Expanded(
+            child: Text(
+              error.userMessage,
+              style: TextStyle(
+                color: Theme.of(context).colorScheme.onErrorContainer,
+              ),
+            ),
+          ),
         ],
       ),
     );

@@ -23,6 +23,45 @@ void main() {
     expect(theme.textTheme.bodyMedium?.fontFamily, pixelFontFamily);
     expect(light.brightness, Brightness.light);
     expect(light.scaffoldBackgroundColor, pixelLightCanvas);
+    for (final scheme in [theme.colorScheme, light.colorScheme]) {
+      expect(
+        contrast(scheme.onSurface, scheme.surface),
+        greaterThanOrEqualTo(4.5),
+      );
+      expect(
+        contrast(scheme.onSurfaceVariant, scheme.surface),
+        greaterThanOrEqualTo(4.5),
+      );
+      expect(
+        contrast(scheme.onPrimary, scheme.primary),
+        greaterThanOrEqualTo(4.5),
+      );
+      expect(
+        contrast(scheme.onSecondary, scheme.secondary),
+        greaterThanOrEqualTo(4.5),
+      );
+      expect(
+        contrast(scheme.onTertiary, scheme.tertiary),
+        greaterThanOrEqualTo(4.5),
+      );
+      expect(contrast(scheme.onError, scheme.error), greaterThanOrEqualTo(4.5));
+      expect(
+        contrast(scheme.onPrimaryContainer, scheme.primaryContainer),
+        greaterThanOrEqualTo(4.5),
+      );
+      expect(
+        contrast(scheme.onSecondaryContainer, scheme.secondaryContainer),
+        greaterThanOrEqualTo(4.5),
+      );
+      expect(
+        contrast(scheme.onTertiaryContainer, scheme.tertiaryContainer),
+        greaterThanOrEqualTo(4.5),
+      );
+      expect(
+        contrast(scheme.onErrorContainer, scheme.errorContainer),
+        greaterThanOrEqualTo(4.5),
+      );
+    }
   });
 
   testWidgets('switches and persists the light theme', (tester) async {
@@ -57,4 +96,16 @@ void main() {
     expect(tester.takeException(), isNull);
     expect(find.text('Open Repository'), findsOneWidget);
   });
+}
+
+double contrast(Color foreground, Color background) {
+  final foregroundLuminance = foreground.computeLuminance();
+  final backgroundLuminance = background.computeLuminance();
+  final lighter = foregroundLuminance > backgroundLuminance
+      ? foregroundLuminance
+      : backgroundLuminance;
+  final darker = foregroundLuminance > backgroundLuminance
+      ? backgroundLuminance
+      : foregroundLuminance;
+  return (lighter + 0.05) / (darker + 0.05);
 }

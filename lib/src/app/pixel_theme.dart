@@ -19,6 +19,22 @@ const pixelLightMint = Color(0xFF087F5B);
 const pixelLightSky = Color(0xFF1769AA);
 const pixelLightAmber = Color(0xFF9A6700);
 const pixelLightCoral = Color(0xFFB42318);
+const pixelPrimaryContainer = Color(0xFF164A3A);
+const pixelOnPrimaryContainer = Color(0xFFB8F7DF);
+const pixelSecondaryContainer = Color(0xFF143A55);
+const pixelOnSecondaryContainer = Color(0xFFC2E7FF);
+const pixelTertiaryContainer = Color(0xFF4A390B);
+const pixelOnTertiaryContainer = Color(0xFFFFE8A3);
+const pixelErrorContainer = Color(0xFF5A201C);
+const pixelOnErrorContainer = Color(0xFFFFDAD6);
+const pixelLightPrimaryContainer = Color(0xFFB7E4D3);
+const pixelLightOnPrimaryContainer = Color(0xFF063B2B);
+const pixelLightSecondaryContainer = Color(0xFFC5E5FF);
+const pixelLightOnSecondaryContainer = Color(0xFF043451);
+const pixelLightTertiaryContainer = Color(0xFFFFE6A6);
+const pixelLightOnTertiaryContainer = Color(0xFF2B2100);
+const pixelLightErrorContainer = Color(0xFFFFDAD6);
+const pixelLightOnErrorContainer = Color(0xFF410002);
 
 ThemeData buildPixelTheme({Brightness brightness = Brightness.dark}) {
   final dark = brightness == Brightness.dark;
@@ -28,19 +44,53 @@ ThemeData buildPixelTheme({Brightness brightness = Brightness.dark}) {
   final ink = dark ? pixelInk : pixelLightInk;
   final muted = dark ? pixelMuted : pixelLightMuted;
   final primary = dark ? pixelMint : pixelLightMint;
-  final secondary = dark ? pixelSky : pixelLightSky;
-  final tertiary = dark ? pixelAmber : pixelLightAmber;
-  final error = dark ? pixelCoral : pixelLightCoral;
-  final scheme = ColorScheme.fromSeed(
-    seedColor: primary,
-    brightness: brightness,
-    surface: panel,
-    primary: primary,
-    secondary: secondary,
-    tertiary: tertiary,
-    error: error,
-    onSurface: ink,
-  ).copyWith(surfaceContainerHighest: raised);
+  final scheme = dark
+      ? const ColorScheme.dark(
+          surface: pixelPanel,
+          onSurface: pixelInk,
+          surfaceContainerHighest: pixelPanelRaised,
+          primary: pixelMint,
+          onPrimary: pixelCanvas,
+          primaryContainer: pixelPrimaryContainer,
+          onPrimaryContainer: pixelOnPrimaryContainer,
+          secondary: pixelSky,
+          onSecondary: pixelCanvas,
+          secondaryContainer: pixelSecondaryContainer,
+          onSecondaryContainer: pixelOnSecondaryContainer,
+          tertiary: pixelAmber,
+          onTertiary: pixelCanvas,
+          tertiaryContainer: pixelTertiaryContainer,
+          onTertiaryContainer: pixelOnTertiaryContainer,
+          error: pixelCoral,
+          onError: pixelCanvas,
+          errorContainer: pixelErrorContainer,
+          onErrorContainer: pixelOnErrorContainer,
+          outline: pixelMuted,
+          onSurfaceVariant: pixelMuted,
+        )
+      : const ColorScheme.light(
+          surface: pixelLightPanel,
+          onSurface: pixelLightInk,
+          surfaceContainerHighest: pixelLightRaised,
+          primary: pixelLightMint,
+          onPrimary: pixelLightPanel,
+          primaryContainer: pixelLightPrimaryContainer,
+          onPrimaryContainer: pixelLightOnPrimaryContainer,
+          secondary: pixelLightSky,
+          onSecondary: pixelLightPanel,
+          secondaryContainer: pixelLightSecondaryContainer,
+          onSecondaryContainer: pixelLightOnSecondaryContainer,
+          tertiary: pixelLightAmber,
+          onTertiary: pixelLightPanel,
+          tertiaryContainer: pixelLightTertiaryContainer,
+          onTertiaryContainer: pixelLightOnTertiaryContainer,
+          error: pixelLightCoral,
+          onError: pixelLightPanel,
+          errorContainer: pixelLightErrorContainer,
+          onErrorContainer: pixelLightOnErrorContainer,
+          outline: pixelLightMuted,
+          onSurfaceVariant: pixelLightMuted,
+        );
   final border = BorderSide(color: muted.withValues(alpha: 0.55));
   final square = RoundedRectangleBorder(
     borderRadius: BorderRadius.zero,
@@ -75,6 +125,7 @@ ThemeData buildPixelTheme({Brightness brightness = Brightness.dark}) {
     appBarTheme: AppBarTheme(
       backgroundColor: panel,
       foregroundColor: ink,
+      surfaceTintColor: Colors.transparent,
       elevation: 0,
       centerTitle: false,
       titleTextStyle: TextStyle(
@@ -87,13 +138,19 @@ ThemeData buildPixelTheme({Brightness brightness = Brightness.dark}) {
     cardTheme: CardThemeData(
       color: panel,
       elevation: 0,
+      surfaceTintColor: Colors.transparent,
       margin: EdgeInsets.zero,
       shape: square,
     ),
     dialogTheme: DialogThemeData(
       backgroundColor: panel,
       elevation: 0,
+      surfaceTintColor: Colors.transparent,
       shape: square,
+    ),
+    snackBarTheme: SnackBarThemeData(
+      backgroundColor: raised,
+      contentTextStyle: TextStyle(color: ink, fontFamily: pixelFontFamily),
     ),
     inputDecorationTheme: InputDecorationTheme(
       filled: true,

@@ -85,6 +85,9 @@ This file is the handoff record for continuing work across query sessions.
   and all 70 tests. Added compact 320x480 welcome, compact 360x640 Changes and
   History, theme persistence, wide graph, merge/fork, and already-active
   parent lane coverage. Font and icon asset validation passed.
+- Palette pass replaced generated/direct color mixing with explicit semantic
+  light and dark roles, matching `on*` text colors for status containers, and
+  a 4.5:1 contrast regression suite. Direct red error text was removed.
 - Changed implementation files: `lib/src/app/gitflu_app.dart`,
   `lib/src/app/pixel_theme.dart`, `lib/src/backend/history.dart`, core
   repository screens/dialogs, `pubspec.yaml`, desktop icon resources, tests,

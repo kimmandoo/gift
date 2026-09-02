@@ -306,7 +306,10 @@ class _HistoryScreenState extends State<HistoryScreen> {
       key: const Key('history-error-banner'),
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
       color: Theme.of(context).colorScheme.errorContainer,
-      child: Text(error.userMessage),
+      child: Text(
+        error.userMessage,
+        style: TextStyle(color: Theme.of(context).colorScheme.onErrorContainer),
+      ),
     );
   }
 

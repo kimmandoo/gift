@@ -73,15 +73,21 @@ roles and contrast relationships.
 
 | Token | Value | Use |
 | --- | --- | --- |
-| `pixelCanvas` | `#11161C` | App background |
-| `pixelPanel` | `#1A222C` | Navigation and content panels |
-| `pixelPanelRaised` | `#222D39` | Focused row and raised surface |
-| `pixelInk` | `#F2F4E8` | Primary text |
-| `pixelMuted` | `#AAB5B2` | Secondary text |
-| `pixelMint` | `#79E2B8` | Safe/selected/ready state |
-| `pixelAmber` | `#F4C95D` | Attention and pending state |
-| `pixelCoral` | `#F47C7C` | Error and destructive state |
-| `pixelSky` | `#79BDE8` | Links and informational state |
+| `pixelCanvas` | `#0D1117` | Dark app background |
+| `pixelPanel` | `#151B23` | Dark navigation and content panels |
+| `pixelPanelRaised` | `#202938` | Dark focused row and raised surface |
+| `pixelInk` | `#F5F7E9` | Dark primary text |
+| `pixelMuted` | `#9AA8A8` | Dark secondary text and outlines |
+| `pixelMint` | `#63E6BE` | Dark safe/selected/ready state |
+| `pixelAmber` | `#FFCC66` | Dark attention and pending state |
+| `pixelCoral` | `#FF7B72` | Dark error and destructive state |
+| `pixelSky` | `#79C0FF` | Dark links and informational state |
+| `pixelLightCanvas` | `#F5F1E8` | Light app background |
+| `pixelLightPanel` | `#FFFCF5` | Light navigation and content panels |
+| `pixelLightInk` | `#17212B` | Light primary text |
+| `pixelLightMuted` | `#5E6B70` | Light secondary text and outlines |
+| `pixelLightMint` | `#087F5B` | Light safe/selected/ready state |
+| `pixelLightSky` | `#1769AA` | Light links and informational state |
 
 The light palette mirrors each semantic role with warm paper-like surfaces and
 dark ink. Theme switching is available from every top-level workflow and is
@@ -91,6 +97,9 @@ where exact character alignment matters.
 
 Text must remain readable without relying on color alone. Both palettes and
 the pixel font must be tested at compact desktop sizes and normal text scale.
+All foreground/background pairs use the matching `ColorScheme` on-color role;
+the test suite keeps primary text and interactive/status surfaces at a minimum
+4.5:1 contrast ratio.
 
 ### Git graph contract
 

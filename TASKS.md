@@ -181,6 +181,8 @@ Task 15 is implemented and awaits local Linux bundle verification.
   and continuation segments that survive pagination.
 - [x] Added persistent light/dark theme switching and bundled the readable
   OFL-licensed Pixelify Sans pixel font.
+- [x] Replaced mixed generated/direct colors with explicit semantic light and
+  dark `ColorScheme` roles and contrast regression checks.
 - [x] Hardened compact-window layouts for the welcome, changes, history, and
   operation-dialog surfaces.
 - [x] Generated Windows and macOS release icons from
