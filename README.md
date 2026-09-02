@@ -20,8 +20,8 @@ navigation, while a pure Dart backend talks to the Git executable installed on
 the user's machine.
 
 > **Project status:** Early development. The repository, change review,
-> history, branch, and remote workflows are in place; packaging and CI are the
-> next milestone.
+> history, branch, remote workflows, desktop builds, and release-only CI are in
+> place.
 
 ## Highlights
 
@@ -237,7 +237,9 @@ dart run tool/verify.dart
 ```
 
 See [`docs/RELEASING.md`](docs/RELEASING.md) for release output paths and the
-GitHub Actions workflow used for cross-platform checks.
+GitHub Actions workflow used for release-only cross-platform checks. CI runs
+automatically for `release(scope): subject` commits; normal commits remain
+local-only until a release is intentionally prepared.
 
 For a quick map of the call flow, read
 [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md). For behavior scenarios and

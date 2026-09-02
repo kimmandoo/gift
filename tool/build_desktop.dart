@@ -15,7 +15,12 @@ Future<void> main(List<String> arguments) async {
   final target = arguments.single;
   final flutter = Platform.isWindows ? 'flutter.bat' : 'flutter';
   await runCommand(flutter, ['pub', 'get']);
-  await runCommand(flutter, ['build', target, '--release']);
+  await runCommand(flutter, [
+    'build',
+    target,
+    '--release',
+    if (target == 'macos') '--no-codesign',
+  ]);
 
   stdout.writeln('\nRelease bundle: ${artifactPath(target)}');
 }

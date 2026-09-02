@@ -37,6 +37,13 @@ This file is the handoff record for continuing work across query sessions.
 - Follow-up setup documentation added common Flutter SDK verification plus
   Linux, macOS, and Windows PATH and desktop toolchain instructions to
   `README.md`.
+- Follow-up CI changes gated Actions jobs to `release(scope):` commits, added
+  Linux desktop dependencies and target activation, made the macOS build
+  unsigned for CI, and removed Unix-only commands from cross-platform tests.
+- CI repair verification passed `dart run tool/verify.dart`, the Linux release
+  build helper, Dart analysis for the build helper, and workflow YAML parsing.
+  macOS and Windows runners are configured in the matrix but are not available
+  in this Linux workspace for local execution.
 - Blockers: none. The pre-existing untracked `.serena/` directory was left
   untouched and is not part of the commit.
 - Next action: none for the planned MVP. Add a new task to `TASKS.md` before

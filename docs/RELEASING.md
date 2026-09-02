@@ -48,6 +48,11 @@ The helper prints the output location after a successful build:
 ## Continuous integration
 
 `.github/workflows/ci.yml` runs verification on Ubuntu, macOS, and Windows.
+The jobs run automatically only when the `main` branch receives a commit whose
+subject starts with `release(scope):`, such as
+`release(v1.0.0): publish desktop artifacts`. Ordinary commits create no
+runner job; use the workflow's manual dispatch when a maintainer needs a
+deliberate rerun.
 After all three checks pass, it builds one release bundle per platform and
 uploads the bundles as workflow artifacts. A tagged public release can attach
 those artifacts after a maintainer has reviewed and signed them.

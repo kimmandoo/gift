@@ -4,6 +4,15 @@ Commit per each query session.
 Commit messages must follow `type(scope): subject`, for example `feat(trading): harden futures runtime`.
 When strategy code, strategy defaults, or strategy selection behavior changes, run the relevant backtest before completion and report the result.
 
+## CI
+
+- Run GitHub Actions automatically only for a release commit whose subject
+  starts with `release(scope):`, for example
+  `release(v1.0.0): publish desktop artifacts`.
+- Ordinary feature, fix, documentation, and build commits must not use the
+  `release(scope):` prefix. Keep `workflow_dispatch` available for a manual
+  release verification or rerun.
+
 # Changelog
 
 When a feature is added, a bug is fixed, or any breaking change is introduced, upsert to the CHANGELOG.md file.

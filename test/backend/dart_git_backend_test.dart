@@ -480,11 +480,13 @@ void main() {
         'echo "pre-commit hook rejected this commit" >&2\n'
         'exit 1\n',
       );
-      final chmod = await Process.run('chmod', [
-        '+x',
-        hook.path,
-      ], runInShell: false);
-      expect(chmod.exitCode, 0);
+      if (!Platform.isWindows) {
+        final chmod = await Process.run('chmod', [
+          '+x',
+          hook.path,
+        ], runInShell: false);
+        expect(chmod.exitCode, 0);
+      }
 
       final backend = DartGitBackend();
       final opened = await backend.openRepository(directory.path);
@@ -643,10 +645,16 @@ void main() {
     'cancels a running process and returns a typed cancellation error',
     () async {
       final token = GitCancellationToken();
+      final program = Platform.isWindows
+          ? (Platform.environment['ComSpec'] ?? 'cmd.exe')
+          : 'sleep';
+      final args = Platform.isWindows
+          ? const ['/d', '/c', 'ping', '127.0.0.1', '-n', '6', '>', 'NUL']
+          : const ['5'];
       final future = const ProcessGitRunner().run(
         GitInvocation(
-          program: 'sleep',
-          args: const ['5'],
+          program: program,
+          args: args,
           cwd: Directory.systemTemp.path,
           kind: GitOperationKind.remote,
           outputPolicy: const OutputPolicy.capture(maxBytes: 1024),
