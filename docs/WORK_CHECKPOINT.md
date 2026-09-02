@@ -74,8 +74,10 @@ This file is the handoff record for continuing work across query sessions.
 - UI stabilization replaced one-line commit markers with graph-row segment
   models for incoming, continuation, fork, merge, and compressed wide-lane
   rendering. Pagination recomputes the complete visible graph.
-- Added persisted light/dark theme switching, the bundled OFL Silkscreen font,
-  compact 360x640 layout coverage, and responsive dialog bounds.
+- Replaced the first-pass Silkscreen font with the more legible OFL Pixelify
+  Sans font and applied a readable 13/15/16/18/22 px type scale.
+- Added persisted light/dark theme switching, compact 360x640 layout coverage,
+  and responsive dialog bounds.
 - `assets/images/gitflu_icon.png` is now the release icon source. Generated
   macOS AppIcon PNGs and the Windows multi-size ICO use that asset; Flutter
   also bundles it for Linux packaging.

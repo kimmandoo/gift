@@ -1,12 +1,13 @@
 # Third-party notices
 
-## Silkscreen font
+## Pixelify Sans font
 
-gitflu bundles the Silkscreen Regular and Bold font files from the Google
-Fonts repository.
+gitflu bundles the Pixelify Sans variable font from the Google Fonts
+repository.
 
-Copyright 2001 The Silkscreen Project Authors
-(https://github.com/googlefonts/silkscreen)
+Copyright 2021 The Pixelify Sans Project Authors
+(https://github.com/eifetx/Pixelify-Sans)
 
 The font software is licensed under the SIL Open Font License, Version 1.1.
-The full license text is included at `assets/fonts/SIL-OFL-1.1.txt`.
+The full license text is included at
+`assets/fonts/PIXELIFY-SANS-OFL.txt`.

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-const pixelFontFamily = 'Silkscreen';
+const pixelFontFamily = 'Pixelify Sans';
 const pixelCanvas = Color(0xFF0D1117);
 const pixelPanel = Color(0xFF151B23);
 const pixelPanelRaised = Color(0xFF202938);
@@ -58,8 +58,18 @@ ThemeData buildPixelTheme({Brightness brightness = Brightness.dark}) {
     scaffoldBackgroundColor: canvas,
     canvasColor: canvas,
   );
+  final textTheme = base.textTheme.copyWith(
+    bodyLarge: const TextStyle(fontSize: 16, height: 1.35),
+    bodyMedium: const TextStyle(fontSize: 15, height: 1.35),
+    bodySmall: const TextStyle(fontSize: 13, height: 1.3),
+    labelLarge: const TextStyle(fontSize: 13, height: 1.2),
+    labelSmall: const TextStyle(fontSize: 12, height: 1.2),
+    titleMedium: const TextStyle(fontSize: 16, height: 1.25),
+    titleLarge: const TextStyle(fontSize: 18, height: 1.25),
+    headlineSmall: const TextStyle(fontSize: 22, height: 1.2),
+  );
   return base.copyWith(
-    textTheme: base.textTheme.apply(fontFamily: pixelFontFamily),
+    textTheme: textTheme.apply(fontFamily: pixelFontFamily),
     primaryTextTheme: base.primaryTextTheme.apply(fontFamily: pixelFontFamily),
     dividerTheme: DividerThemeData(color: border.color, thickness: 1),
     appBarTheme: AppBarTheme(

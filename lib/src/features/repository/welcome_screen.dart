@@ -77,7 +77,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
     }
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Gitflu'),
+        title: const Text('gitflu'),
         actions: [
           const PixelThemeToggle(),
           if (_gitSettingsController != null)

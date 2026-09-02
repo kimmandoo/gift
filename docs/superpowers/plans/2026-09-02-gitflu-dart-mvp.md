@@ -181,7 +181,8 @@ system Git 2.35+.
 
 1. Replaced commit-only graph markers with typed row segments for incoming
    lines, continuations, forks, merges, lane shifts, and wide-graph spacing.
-2. Added persisted light/dark themes and bundled the OFL Silkscreen pixel font.
+2. Added persisted light/dark themes and bundled the readable OFL Pixelify
+   Sans pixel font with an explicit desktop type scale.
 3. Added compact-window handling for core screens, commit controls, and
    operation dialogs.
 4. Generated macOS and Windows release icon resources from the canonical

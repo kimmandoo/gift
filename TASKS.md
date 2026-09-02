@@ -179,8 +179,8 @@ Task 15 is implemented and awaits local Linux bundle verification.
 - [x] Added an MIT license and tag-only release workflow triggers.
 - [x] Replaced isolated history markers with connected multi-lane fork, merge,
   and continuation segments that survive pagination.
-- [x] Added persistent light/dark theme switching and bundled the OFL-licensed
-  Silkscreen pixel font.
+- [x] Added persistent light/dark theme switching and bundled the readable
+  OFL-licensed Pixelify Sans pixel font.
 - [x] Hardened compact-window layouts for the welcome, changes, history, and
   operation-dialog surfaces.
 - [x] Generated Windows and macOS release icons from

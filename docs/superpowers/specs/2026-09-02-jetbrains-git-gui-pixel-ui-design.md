@@ -85,8 +85,8 @@ roles and contrast relationships.
 
 The light palette mirrors each semantic role with warm paper-like surfaces and
 dark ink. Theme switching is available from every top-level workflow and is
-persisted locally. Text uses the bundled Silkscreen family under the SIL Open
-Font License; source and diff content may retain a denser monospace treatment
+persisted locally. Text uses the bundled Pixelify Sans family under the SIL
+Open Font License; source and diff content may retain a denser monospace treatment
 where exact character alignment matters.
 
 Text must remain readable without relying on color alone. Both palettes and
