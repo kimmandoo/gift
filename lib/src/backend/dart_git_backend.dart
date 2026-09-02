@@ -15,14 +15,19 @@ import 'status.dart';
 /// This class coordinates services. It intentionally does not contain the
 /// details of process I/O or repository parsing.
 class DartGitBackend {
-  DartGitBackend({GitInstallationService? installationService, AppState? state})
-    : _installationService = installationService ?? GitInstallationService(),
-      _state = state ?? AppState();
+  DartGitBackend({
+    GitInstallationService? installationService,
+    AppState? state,
+    ProcessGitRunner? runner,
+  }) : _installationService = installationService ?? GitInstallationService(),
+       _state = state ?? AppState(),
+       _runner = runner ?? const ProcessGitRunner();
 
   static const version = '1.0.0';
 
   final GitInstallationService _installationService;
   final AppState _state;
+  final ProcessGitRunner _runner;
 
   Health health() => const Health(product: 'gift', coreVersion: version);
 
@@ -38,6 +43,7 @@ class DartGitBackend {
     return RepositoryService(
       gitPath: installation.executablePath,
       state: _state,
+      runner: _runner,
     ).openRepository(path);
   }
 
@@ -46,6 +52,7 @@ class DartGitBackend {
     return RepositoryService(
       gitPath: installation.executablePath,
       state: _state,
+      runner: _runner,
     ).getStatus(repositoryId);
   }
 
@@ -192,15 +199,40 @@ class DartGitBackend {
     ).unstagePatch(repositoryId, selection);
   }
 
-  Future<GitCommitResult> commit(
+  Future<GitCommitPreflight> preflightCommit(
+    RepositoryId repositoryId, {
+    GitCommitOptions options = const GitCommitOptions(),
+  }) async {
+    final installation = await getGitInstallation();
+    return RepositoryService(
+      gitPath: installation.executablePath,
+      state: _state,
+      runner: _runner,
+    ).preflightCommit(repositoryId, options: options);
+  }
+
+  Future<GitCommitTemplate> loadCommitTemplate(
     RepositoryId repositoryId,
-    String message,
   ) async {
     final installation = await getGitInstallation();
     return RepositoryService(
       gitPath: installation.executablePath,
       state: _state,
-    ).commit(repositoryId, message);
+      runner: _runner,
+    ).loadCommitTemplate(repositoryId);
+  }
+
+  Future<GitCommitResult> commit(
+    RepositoryId repositoryId,
+    String message, {
+    GitCommitOptions options = const GitCommitOptions(),
+  }) async {
+    final installation = await getGitInstallation();
+    return RepositoryService(
+      gitPath: installation.executablePath,
+      state: _state,
+      runner: _runner,
+    ).commit(repositoryId, message, options: options);
   }
 
   Future<DiscardPreview> createDiscardPreview(

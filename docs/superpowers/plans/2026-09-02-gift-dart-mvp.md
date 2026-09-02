@@ -218,3 +218,16 @@ system Git 2.35+.
 5. Passed the partial-staging backend fixtures, full Flutter test suite,
    formatting, analysis, and responsive Changes screen coverage. Task 17 is
    complete; Task 18 is next.
+
+## Completed vertical: complete commit workflow
+
+1. Recorded identity preflight, commit options, template reset, amend warning,
+   and history-change outcome scenarios in the behavior ledger.
+2. Added failing real-Git coverage for empty messages and staged sets, missing
+   identity, amend on an unborn branch, UTF-8, sign-off/cleanup/author options,
+   templates, rejected hooks, and configured signing failures.
+3. Implemented typed commit options and preflight, bounded template loading,
+   redacted failure classification, and refresh outcome tracking.
+4. Added a collapsible guided options panel and responsive widget coverage.
+5. Passed the commit workflow backend tests, full Flutter test suite,
+   formatting, and analysis. Task 18 is complete; Task 19 is next.

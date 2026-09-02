@@ -1,3 +1,7 @@
+/// A failed commit can still have changed history when a post-commit hook or
+/// the follow-up status read failed after Git moved HEAD.
+enum GitCommitOutcome { notCreated, createdButRefreshFailed }
+
 /// Stable categories used to decide what message and recovery action Flutter
 /// should show for a backend failure.
 enum GitErrorCategory {
@@ -29,6 +33,11 @@ enum GitErrorCategory {
   processSpawnFailed,
   processFailed,
   outputOverflow,
+  missingIdentity,
+  invalidCommitOptions,
+  signingFailed,
+  commitRefreshFailed,
+  invalidGitConfig,
 }
 
 /// A backend error has a short user-facing message and a separately redacted
@@ -40,6 +49,7 @@ class GitError implements Exception {
     required this.diagnostic,
     required this.retryable,
     this.exitCode,
+    this.commitOutcome,
   });
 
   final GitErrorCategory category;
@@ -47,6 +57,7 @@ class GitError implements Exception {
   final String diagnostic;
   final bool retryable;
   final int? exitCode;
+  final GitCommitOutcome? commitOutcome;
 
   GitError copyWith({
     GitErrorCategory? category,
@@ -54,6 +65,7 @@ class GitError implements Exception {
     String? diagnostic,
     bool? retryable,
     int? exitCode,
+    GitCommitOutcome? commitOutcome,
   }) {
     return GitError(
       category: category ?? this.category,
@@ -61,6 +73,7 @@ class GitError implements Exception {
       diagnostic: diagnostic ?? this.diagnostic,
       retryable: retryable ?? this.retryable,
       exitCode: exitCode ?? this.exitCode,
+      commitOutcome: commitOutcome ?? this.commitOutcome,
     );
   }
 

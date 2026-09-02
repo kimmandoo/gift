@@ -42,6 +42,8 @@ class ChangesState {
     this.mutationError,
     this.commitResult,
     this.commitError,
+    this.commitPreflight,
+    this.commitPreflightError,
     this.discardPreview,
     this.discardError,
     this.isLoading = false,
@@ -49,6 +51,7 @@ class ChangesState {
     this.isDiffLoading = false,
     this.isMutating = false,
     this.isCommitting = false,
+    this.isCommitPreflighting = false,
     this.isDiscardPreparing = false,
     this.diffScope = GitDiffScope.workingTree,
     this.selectedDiffHunks = const <int>{},
@@ -63,6 +66,8 @@ class ChangesState {
   final GitError? mutationError;
   final GitCommitResult? commitResult;
   final GitError? commitError;
+  final GitCommitPreflight? commitPreflight;
+  final GitError? commitPreflightError;
   final DiscardPreview? discardPreview;
   final GitError? discardError;
   final bool isLoading;
@@ -70,6 +75,7 @@ class ChangesState {
   final bool isDiffLoading;
   final bool isMutating;
   final bool isCommitting;
+  final bool isCommitPreflighting;
   final bool isDiscardPreparing;
   final GitDiffScope diffScope;
   final Set<int> selectedDiffHunks;
@@ -92,6 +98,10 @@ class ChangesState {
     bool clearCommitResult = false,
     GitError? commitError,
     bool clearCommitError = false,
+    GitCommitPreflight? commitPreflight,
+    bool clearCommitPreflight = false,
+    GitError? commitPreflightError,
+    bool clearCommitPreflightError = false,
     DiscardPreview? discardPreview,
     bool clearDiscardPreview = false,
     GitError? discardError,
@@ -101,6 +111,7 @@ class ChangesState {
     bool? isDiffLoading,
     bool? isMutating,
     bool? isCommitting,
+    bool? isCommitPreflighting,
     bool? isDiscardPreparing,
     GitDiffScope? diffScope,
     Set<int>? selectedDiffHunks,
@@ -122,6 +133,12 @@ class ChangesState {
           ? null
           : commitResult ?? this.commitResult,
       commitError: clearCommitError ? null : commitError ?? this.commitError,
+      commitPreflight: clearCommitPreflight
+          ? null
+          : commitPreflight ?? this.commitPreflight,
+      commitPreflightError: clearCommitPreflightError
+          ? null
+          : commitPreflightError ?? this.commitPreflightError,
       discardPreview: clearDiscardPreview
           ? null
           : discardPreview ?? this.discardPreview,
@@ -133,6 +150,7 @@ class ChangesState {
       isDiffLoading: isDiffLoading ?? this.isDiffLoading,
       isMutating: isMutating ?? this.isMutating,
       isCommitting: isCommitting ?? this.isCommitting,
+      isCommitPreflighting: isCommitPreflighting ?? this.isCommitPreflighting,
       isDiscardPreparing: isDiscardPreparing ?? this.isDiscardPreparing,
       diffScope: diffScope ?? this.diffScope,
       selectedDiffHunks: clearDiffSelection
@@ -162,6 +180,7 @@ class ChangesController extends ChangeNotifier {
   var _requestInFlight = false;
   var _mutationInFlight = false;
   var _diffRequest = 0;
+  var _commitPreflightRequest = 0;
   var _discardPreviewRequest = 0;
   int? _lastDiffLineIndex;
   var _started = false;
@@ -524,8 +543,51 @@ class ChangesController extends ChangeNotifier {
 
   bool get canCommit => _state.snapshot?.staged.isNotEmpty == true;
 
+  /// Runs the non-mutating checks used by the guided commit options panel.
+  Future<GitCommitPreflight?> preflightCommit({
+    GitCommitOptions options = const GitCommitOptions(),
+  }) async {
+    if (_disposed) return null;
+    final request = ++_commitPreflightRequest;
+    _setState(
+      _state.copyWith(
+        clearCommitPreflight: true,
+        clearCommitPreflightError: true,
+        isCommitPreflighting: true,
+      ),
+    );
+    try {
+      final preflight = await gateway.preflightCommit(
+        repositoryId,
+        options: options,
+      );
+      if (request != _commitPreflightRequest || _disposed) return null;
+      _setState(
+        _state.copyWith(
+          commitPreflight: preflight,
+          clearCommitPreflightError: true,
+          isCommitPreflighting: false,
+        ),
+      );
+      return preflight;
+    } on GitError catch (error) {
+      if (request == _commitPreflightRequest && !_disposed) {
+        _setState(
+          _state.copyWith(
+            commitPreflightError: error,
+            isCommitPreflighting: false,
+          ),
+        );
+      }
+      return null;
+    }
+  }
+
   /// Commits every staged path and applies Git's post-commit status snapshot.
-  Future<void> commit(String message) async {
+  Future<void> commit(
+    String message, {
+    GitCommitOptions options = const GitCommitOptions(),
+  }) async {
     if (_disposed || _mutationInFlight || !canCommit) return;
     _mutationInFlight = true;
     _setState(
@@ -533,6 +595,8 @@ class ChangesController extends ChangeNotifier {
         clearMutationError: true,
         clearCommitResult: true,
         clearCommitError: true,
+        clearCommitPreflight: true,
+        clearCommitPreflightError: true,
         clearDiscardPreview: true,
         clearDiscardError: true,
         clearDiff: true,
@@ -543,7 +607,11 @@ class ChangesController extends ChangeNotifier {
       ),
     );
     try {
-      final result = await gateway.commit(repositoryId, message);
+      final result = await gateway.commit(
+        repositoryId,
+        message,
+        options: options,
+      );
       if (_disposed) return;
       final selectedPath = _state.selectedPath;
       final selected = selectedPath == null

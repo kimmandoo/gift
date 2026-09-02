@@ -4,30 +4,28 @@ This file is the handoff record for continuing work across query sessions.
 
 ## Current checkpoint
 
-- Date: 2026-09-02
-- Active task: completed the current product identity rename to `gift` and
-  replaced the mascot/logo with the approved 2D pixel-game GIFT artwork on the
-  isolated `feat/gift-branding` worktree branch. The branch is ready to commit
-  and integrate.
-- Changed files: renamed the Dart package/imports, `GiftApp` source file and
-  symbols, desktop metadata, Linux AppStream file, CI artifact paths, README,
-  tests, and current documentation; generated the square GIFT mascot,
-  deterministic wordmark, macOS icon sizes, and Windows ICO.
-- Verification: `dart format --output=none --set-exit-if-changed lib test
-  integration_test tool` passed for 53 files; `flutter analyze` passed;
-  `flutter test --no-pub` completed with 89 passing and 2 unrelated
-  Windows-platform expectation failures in `dart_git_backend_test.dart`
-  (UTF-8 process output and CRLF newline normalization); `dart run
-  tool/verify.dart` completed pub get, formatting, and analysis, then reported
-  the same 2 test failures; `git diff --check` passed; the repository-wide
-  legacy identity scan passed; and asset validation passed for the 1024px
-  source icon, 1280x512 wordmark, all macOS sizes, and the six-entry PNG ICO.
-- Next action: commit this completed branding vertical on
-  `feat/gift-branding`, then use the branch-completion workflow to integrate
-  it into `main`.
-- Blockers: `flutter build windows --release` remains blocked by the host's
-  disabled Windows Developer Mode symlink requirement. The two backend test
-  failures are platform-specific expectations outside this branding change.
+- Date: 2026-09-03
+- Active task: Task 18, the guided commit workflow, is complete on `main`.
+  The repository now supports amend, sign-off, cleanup mode, commit templates,
+  optional author overrides, identity preflight, redacted hook/signing errors,
+  and explicit history-change outcomes.
+- Branch: `main`; no new branch or worktree was created.
+- Branding verification: the current tree and artifact paths contain no
+  legacy branding occurrences or filenames; package metadata, desktop
+  metadata, CI artifacts, and generated output paths use `gift`. Historical
+  commits were intentionally not rewritten.
+- Changed files: commit backend models and service, Dart gateway/backend,
+  changes controller and screen, commit workflow tests and gateway fakes, Task
+  18 documentation, roadmap/task ledger, changelog, and architecture notes.
+- Verification: the 7 commit workflow tests passed; the 12 changes-screen tests
+  passed; `flutter analyze` passed; the full suite completed with 97 passing
+  and 2 known Windows-platform expectation failures in
+  `dart_git_backend_test.dart` (UTF-8 process output and CRLF newline
+  normalization); `dart format --output=none --set-exit-if-changed` passed;
+  `git diff --check` passed; and the repository-wide legacy identity scan
+  passed.
+- Next action: wait for the next requested task; Task 19 has not been started.
+- Blockers: only the two unrelated Windows-platform test expectations remain.
 
 ## Previous checkpoint
 

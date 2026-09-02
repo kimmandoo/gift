@@ -2,6 +2,7 @@
 
 ## 2026-09-02
 
+- feat(task18): added guided commit options, identity preflight, templates, and history-change outcomes.
 - breaking(branding): renamed the product identity and desktop metadata to gift and replaced the mascot with a 2D pixel-game logo.
 - feat(task17): added safe hunk and line staging with stale selection guards.
 - breaking(branding): renamed the product identity, package, assets, and desktop metadata to gift.

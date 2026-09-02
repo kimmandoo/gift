@@ -241,8 +241,11 @@ class FakeHistoryGateway with GitPatchGatewayStub implements GitGateway {
       throw UnimplementedError();
 
   @override
-  Future<GitCommitResult> commit(RepositoryId repositoryId, String message) =>
-      throw UnimplementedError();
+  Future<GitCommitResult> commit(
+    RepositoryId repositoryId,
+    String message, {
+    GitCommitOptions options = const GitCommitOptions(),
+  }) => throw UnimplementedError();
 
   @override
   Future<List<GitBranch>> getBranches(RepositoryId repositoryId) =>

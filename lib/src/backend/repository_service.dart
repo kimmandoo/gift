@@ -587,40 +587,119 @@ class RepositoryService {
     reverse: true,
   );
 
+  /// Checks repository state and identity without changing Git history.
+  Future<GitCommitPreflight> preflightCommit(
+    RepositoryId repositoryId, {
+    GitCommitOptions options = const GitCommitOptions(),
+  }) async {
+    _validateCommitOptions(options);
+    final status = await getStatus(repositoryId);
+    final handle = await state.lookup(repositoryId);
+    final headOid = await _readHeadOid(handle);
+    final identity = await _readCommitIdentity(handle);
+    GitError? failure;
+    if (status.staged.isEmpty) {
+      failure = _commitFailure(
+        category: GitErrorCategory.dirtyWorktree,
+        userMessage: 'Stage at least one change before committing.',
+        diagnostic: 'commit preflight found no staged changes',
+      );
+    } else if (!identity.isComplete) {
+      failure = _commitFailure(
+        category: GitErrorCategory.missingIdentity,
+        userMessage:
+            'Git user.name and user.email are required before committing.',
+        diagnostic:
+            'effective identity was incomplete in ${identity.source}; '
+            '${identity.guidance}',
+      );
+    } else if (options.amend && headOid == null) {
+      failure = _commitFailure(
+        category: GitErrorCategory.unbornBranch,
+        userMessage: 'Amend is unavailable before the first commit.',
+        diagnostic: 'commit --amend requested while HEAD has no commit',
+      );
+    }
+    return GitCommitPreflight(
+      status: status,
+      identity: identity,
+      hasHead: headOid != null,
+      headOid: headOid,
+      options: options,
+      failure: failure,
+    );
+  }
+
+  /// Loads the effective commit template without allowing an unbounded file
+  /// read to reach the editor.
+  Future<GitCommitTemplate> loadCommitTemplate(
+    RepositoryId repositoryId,
+  ) async {
+    final handle = await state.lookup(repositoryId);
+    final configuredPath = await _readConfigValue(handle, const [
+      'config',
+      '--get',
+      'commit.template',
+    ]);
+    if (configuredPath == null || configuredPath.trim().isEmpty) {
+      return const GitCommitTemplate();
+    }
+    final file = File(_resolveTemplatePath(handle.root, configuredPath));
+    try {
+      final length = await file.length();
+      if (length > _maxCommitTemplateBytes) {
+        throw const GitError(
+          category: GitErrorCategory.outputOverflow,
+          userMessage: 'The configured commit template is too large to load.',
+          diagnostic: 'commit.template exceeded the bounded file size',
+          retryable: false,
+        );
+      }
+      final contents = utf8.decode(
+        await file.readAsBytes(),
+        allowMalformed: true,
+      );
+      return GitCommitTemplate(path: file.path, contents: contents);
+    } on GitError {
+      rethrow;
+    } on FileSystemException catch (error) {
+      throw GitError(
+        category: GitErrorCategory.invalidGitConfig,
+        userMessage: 'The configured commit template could not be read.',
+        diagnostic: 'commit.template ${file.path}: ${error.message}',
+        retryable: false,
+      );
+    }
+  }
+
   /// Creates a commit from all currently staged content.
   ///
   /// The message is sent as UTF-8 on stdin through `--file=-`. This keeps
   /// arbitrary user text out of argv and preserves shell-safe execution.
   Future<GitCommitResult> commit(
     RepositoryId repositoryId,
-    String message,
-  ) async {
+    String message, {
+    GitCommitOptions options = const GitCommitOptions(),
+  }) async {
     if (message.trim().isEmpty) {
-      throw const GitError(
+      throw _commitFailure(
         category: GitErrorCategory.parseFailure,
         userMessage: 'Enter a commit message.',
         diagnostic: 'commit message was empty or whitespace only',
-        retryable: false,
       );
     }
 
     return state.runMutation(repositoryId, () async {
-      final before = await getStatus(repositoryId);
-      if (before.staged.isEmpty) {
-        throw const GitError(
-          category: GitErrorCategory.dirtyWorktree,
-          userMessage: 'Stage at least one change before committing.',
-          diagnostic: 'commit requested without staged changes',
-          retryable: false,
-        );
-      }
+      final preflight = await preflightCommit(repositoryId, options: options);
+      if (preflight.failure case final failure?) throw failure;
 
       final handle = await state.lookup(repositoryId);
+      final beforeHead = preflight.headOid;
       try {
         await _runner.run(
           GitInvocation(
             program: gitPath,
-            args: const ['commit', '--file=-'],
+            args: ['commit', ...options.toGitArguments(), '--file=-'],
             cwd: handle.root,
             stdin: utf8.encode(message),
             kind: GitOperationKind.mutation,
@@ -628,23 +707,55 @@ class RepositoryService {
           ),
         );
       } on GitError catch (error, stackTrace) {
-        Error.throwWithStackTrace(_mapCommitError(error), stackTrace);
+        var afterHead = beforeHead;
+        try {
+          afterHead = await _readHeadOid(handle);
+        } on GitError {
+          // Preserve the conservative not-created outcome when the recovery
+          // probe itself cannot read HEAD.
+        }
+        final outcome = beforeHead != afterHead
+            ? GitCommitOutcome.createdButRefreshFailed
+            : GitCommitOutcome.notCreated;
+        Error.throwWithStackTrace(
+          _mapCommitError(error).copyWith(commitOutcome: outcome),
+          stackTrace,
+        );
       }
 
-      final status = await getStatus(repositoryId);
+      late final GitStatusSnapshot status;
+      try {
+        status = await getStatus(repositoryId);
+      } on GitError catch (error, stackTrace) {
+        Error.throwWithStackTrace(
+          error.copyWith(
+            category: GitErrorCategory.commitRefreshFailed,
+            userMessage:
+                'Commit created, but refreshing repository status failed. '
+                'Verify history before retrying.',
+            retryable: true,
+            commitOutcome: GitCommitOutcome.createdButRefreshFailed,
+          ),
+          stackTrace,
+        );
+      }
       final commitOid = status.branch.oid;
       if (commitOid == null || commitOid.isEmpty) {
-        throw const GitError(
-          category: GitErrorCategory.parseFailure,
-          userMessage: 'Git created a commit without returning its ID.',
+        throw _commitFailure(
+          category: GitErrorCategory.commitRefreshFailed,
+          userMessage:
+              'Commit created, but Git did not return its new history ID. '
+              'Verify history before retrying.',
           diagnostic: 'post-commit status did not contain branch.oid',
-          retryable: false,
+          retryable: true,
+          outcome: GitCommitOutcome.createdButRefreshFailed,
         );
       }
       return GitCommitResult(
         repositoryId: repositoryId,
         commitOid: commitOid,
         status: status,
+        options: options,
       );
     });
   }
@@ -814,6 +925,82 @@ class RepositoryService {
     });
   }
 
+  Future<GitCommitIdentity> _readCommitIdentity(RepositoryHandle handle) async {
+    final localName = await _readConfigValue(handle, const [
+      'config',
+      '--local',
+      '--get',
+      'user.name',
+    ]);
+    final localEmail = await _readConfigValue(handle, const [
+      'config',
+      '--local',
+      '--get',
+      'user.email',
+    ]);
+    final globalName = await _readConfigValue(handle, const [
+      'config',
+      '--global',
+      '--get',
+      'user.name',
+    ]);
+    final globalEmail = await _readConfigValue(handle, const [
+      'config',
+      '--global',
+      '--get',
+      'user.email',
+    ]);
+    return GitCommitIdentity(
+      localName: localName,
+      localEmail: localEmail,
+      globalName: globalName,
+      globalEmail: globalEmail,
+    );
+  }
+
+  Future<String?> _readConfigValue(
+    RepositoryHandle handle,
+    List<String> args,
+  ) async {
+    try {
+      final output = await _runner.run(
+        GitInvocation(
+          program: gitPath,
+          args: args,
+          cwd: handle.root,
+          kind: GitOperationKind.read,
+          outputPolicy: const OutputPolicy.capture(maxBytes: 16 * 1024),
+        ),
+      );
+      return utf8.decode(output.stdout, allowMalformed: true).trim();
+    } on GitError catch (error) {
+      // `git config --get` uses exit code 1 with no stderr when a key is
+      // absent. Treat that expected lookup result as a missing value.
+      if (error.exitCode == 1 && error.diagnostic.trim().isEmpty) return null;
+      rethrow;
+    }
+  }
+
+  Future<String?> _readHeadOid(RepositoryHandle handle) async {
+    try {
+      final output = await _runner.run(
+        GitInvocation(
+          program: gitPath,
+          args: const ['rev-parse', '--verify', '--quiet', 'HEAD'],
+          cwd: handle.root,
+          kind: GitOperationKind.read,
+          outputPolicy: const OutputPolicy.capture(maxBytes: 128),
+        ),
+      );
+      final oid = utf8.decode(output.stdout, allowMalformed: true).trim();
+      return oid.isEmpty ? null : oid;
+    } on GitError catch (error) {
+      // An unborn repository has no HEAD and rev-parse reports that as 1.
+      if (error.exitCode == 1 && error.diagnostic.trim().isEmpty) return null;
+      rethrow;
+    }
+  }
+
   void _validatePath(String path) {
     if (path.isEmpty || path.contains('\u0000')) {
       throw const GitError(
@@ -855,6 +1042,54 @@ class _RepositoryRecord {
   int statusGeneration = 0;
 }
 
+const _maxCommitTemplateBytes = 512 * 1024;
+
+String _resolveTemplatePath(String root, String configuredPath) {
+  var path = configuredPath.trim();
+  if (path == '~' || path.startsWith('~/') || path.startsWith('~\\')) {
+    final home =
+        Platform.environment['HOME'] ?? Platform.environment['USERPROFILE'];
+    if (home != null && home.isNotEmpty) {
+      path = '$home${path.substring(1)}';
+    }
+  }
+  if (Uri.file(path).isAbsolute) return path;
+  return '$root${Platform.pathSeparator}$path';
+}
+
+GitError _commitFailure({
+  required GitErrorCategory category,
+  required String userMessage,
+  required String diagnostic,
+  bool retryable = false,
+  GitCommitOutcome outcome = GitCommitOutcome.notCreated,
+}) {
+  return GitError(
+    category: category,
+    userMessage: userMessage,
+    diagnostic: diagnostic,
+    retryable: retryable,
+    commitOutcome: outcome,
+  );
+}
+
+void _validateCommitOptions(GitCommitOptions options) {
+  final author = options.author;
+  if (author == null) return;
+  final invalid =
+      author.name.trim().isEmpty ||
+      author.email.trim().isEmpty ||
+      author.name.contains(RegExp(r'[\r\n<>]')) ||
+      author.email.contains(RegExp(r'[\r\n<>]'));
+  if (invalid) {
+    throw _commitFailure(
+      category: GitErrorCategory.invalidCommitOptions,
+      userMessage: 'Enter a valid author name and email.',
+      diagnostic: 'author override contained an empty or unsafe identity',
+    );
+  }
+}
+
 GitChange? _findChange(GitStatusSnapshot snapshot, String path) {
   for (final change in snapshot.changes) {
     if (change.path == path) return change;
@@ -873,18 +1108,28 @@ GitError _staleDiscardError(String diagnostic) {
 }
 
 GitError _mapCommitError(GitError error) {
-  if (error.category != GitErrorCategory.processFailed ||
-      !RegExp(
-        r'\b(?:hook|pre-commit|commit-msg|pre-merge-commit|post-commit)\b',
-        caseSensitive: false,
-      ).hasMatch(error.diagnostic)) {
-    return error;
+  if (error.category != GitErrorCategory.processFailed) return error;
+  if (RegExp(
+    r'(?:gpg|gpg2|signing|secret key|cannot sign)',
+    caseSensitive: false,
+  ).hasMatch(error.diagnostic)) {
+    return error.copyWith(
+      category: GitErrorCategory.signingFailed,
+      userMessage: 'Git could not sign this commit.',
+      retryable: false,
+    );
   }
-  return error.copyWith(
-    category: GitErrorCategory.hookRejected,
-    userMessage: 'The commit hook rejected this commit.',
-    retryable: false,
-  );
+  if (RegExp(
+    r'\b(?:hook|pre-commit|commit-msg|pre-merge-commit|post-commit)\b',
+    caseSensitive: false,
+  ).hasMatch(error.diagnostic)) {
+    return error.copyWith(
+      category: GitErrorCategory.hookRejected,
+      userMessage: 'The commit hook rejected this commit.',
+      retryable: false,
+    );
+  }
+  return error;
 }
 
 GitError _mapBranchError(GitError error) {

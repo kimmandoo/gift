@@ -80,7 +80,18 @@ abstract interface class GitGateway {
     GitPatchSelection selection,
   );
 
-  Future<GitCommitResult> commit(RepositoryId repositoryId, String message);
+  Future<GitCommitPreflight> preflightCommit(
+    RepositoryId repositoryId, {
+    GitCommitOptions options = const GitCommitOptions(),
+  });
+
+  Future<GitCommitTemplate> loadCommitTemplate(RepositoryId repositoryId);
+
+  Future<GitCommitResult> commit(
+    RepositoryId repositoryId,
+    String message, {
+    GitCommitOptions options = const GitCommitOptions(),
+  });
 
   Future<DiscardPreview> createDiscardPreview(
     RepositoryId repositoryId,

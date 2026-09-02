@@ -290,7 +290,11 @@ class FakeGitGateway with GitPatchGatewayStub implements GitGateway {
   }
 
   @override
-  Future<GitCommitResult> commit(RepositoryId repositoryId, String message) {
+  Future<GitCommitResult> commit(
+    RepositoryId repositoryId,
+    String message, {
+    GitCommitOptions options = const GitCommitOptions(),
+  }) {
     throw UnimplementedError();
   }
 

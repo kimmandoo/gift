@@ -418,6 +418,123 @@ void main() {
     controller.dispose();
   });
 
+  testWidgets('shows guided commit options, template controls, and identity', (
+    tester,
+  ) async {
+    final repository = const RepositoryOpened(
+      repositoryId: RepositoryId(value: 'repository-id'),
+      root: '/workspace/project',
+    );
+    final stagedSnapshot = snapshot(
+      repository,
+      changes: [
+        GitChange(
+          type: GitChangeType.tracked,
+          path: 'lib/app.dart',
+          indexStatus: 'M',
+          worktreeStatus: '.',
+          submoduleStatus: 'N...',
+        ),
+      ],
+    );
+    final gateway = FakeChangesGateway(
+      snapshots: [stagedSnapshot],
+      commitResult: GitCommitResult(
+        repositoryId: repository.repositoryId,
+        commitOid: '0123456789abcdef0123456789abcdef01234567',
+        status: snapshot(repository, changes: const <GitChange>[]),
+      ),
+      commitPreflight: GitCommitPreflight(
+        status: stagedSnapshot,
+        identity: const GitCommitIdentity(
+          localName: 'Gift Test',
+          localEmail: 'gift@example.test',
+        ),
+        hasHead: true,
+        options: const GitCommitOptions(),
+      ),
+      commitTemplate: const GitCommitTemplate(
+        path: '/workspace/project/.gitmessage',
+        contents: 'Template subject\n\nDetails\n',
+      ),
+    );
+    final controller = ChangesController(
+      gateway: gateway,
+      repositoryId: repository.repositoryId,
+      pollInterval: const Duration(hours: 1),
+    );
+    await controller.refresh();
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: ChangesScreen(
+          gateway: gateway,
+          repository: repository,
+          controller: controller,
+          autoInitialize: false,
+        ),
+      ),
+    );
+    await tester.tap(find.byKey(const Key('commit-options-toggle')));
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const Key('commit-amend')), findsOneWidget);
+    expect(find.byKey(const Key('commit-signoff')), findsOneWidget);
+    expect(find.byKey(const Key('commit-cleanup')), findsOneWidget);
+    expect(
+      find.textContaining('Replaces the current HEAD commit'),
+      findsOneWidget,
+    );
+    expect(find.textContaining('Identity: Gift Test'), findsOneWidget);
+
+    await tester.drag(
+      find.byKey(const Key('commit-options-scroll')),
+      const Offset(0, -300),
+    );
+    await tester.pump();
+    await tester.tap(find.byKey(const Key('commit-load-template')));
+    await tester.pumpAndSettle();
+    expect(
+      tester
+          .widget<TextField>(find.byKey(const Key('commit-message')))
+          .controller!
+          .text,
+      'Template subject\n\nDetails\n',
+    );
+    await tester.tap(find.byKey(const Key('commit-reset-template')));
+    await tester.pump();
+    expect(
+      tester
+          .widget<TextField>(find.byKey(const Key('commit-message')))
+          .controller!
+          .text,
+      'Template subject\n\nDetails\n',
+    );
+
+    await tester.drag(
+      find.byKey(const Key('commit-options-scroll')),
+      const Offset(0, 300),
+    );
+    await tester.pump();
+    await tester.tap(find.byKey(const Key('commit-amend')));
+    await tester.tap(find.byKey(const Key('commit-signoff')));
+    await tester.enterText(
+      find.byKey(const Key('commit-author-name')),
+      'Override Author',
+    );
+    await tester.enterText(
+      find.byKey(const Key('commit-author-email')),
+      'override@example.test',
+    );
+    await tester.tap(find.byKey(const Key('commit-staged')));
+    await tester.pumpAndSettle();
+
+    expect(gateway.lastCommitOptions?.amend, isTrue);
+    expect(gateway.lastCommitOptions?.signOff, isTrue);
+    expect(gateway.lastCommitOptions?.author?.email, 'override@example.test');
+    controller.dispose();
+  });
+
   testWidgets('refreshes from the visible Ctrl+R shortcut and status strip', (
     tester,
   ) async {
@@ -727,6 +844,8 @@ class FakeChangesGateway with GitPatchGatewayStub implements GitGateway {
     this.stagePatchError,
     this.unstagePatchError,
     this.commitResult,
+    this.commitPreflight,
+    this.commitTemplate,
     this.discardPreview,
     this.discardSnapshot,
   });
@@ -740,6 +859,8 @@ class FakeChangesGateway with GitPatchGatewayStub implements GitGateway {
   final GitError? stagePatchError;
   final GitError? unstagePatchError;
   final GitCommitResult? commitResult;
+  final GitCommitPreflight? commitPreflight;
+  final GitCommitTemplate? commitTemplate;
   final DiscardPreview? discardPreview;
   final GitStatusSnapshot? discardSnapshot;
   var diffCalls = 0;
@@ -752,6 +873,7 @@ class FakeChangesGateway with GitPatchGatewayStub implements GitGateway {
   GitPatchSelection? lastUnstagePatchSelection;
   var commitCalls = 0;
   String? lastCommitMessage;
+  GitCommitOptions? lastCommitOptions;
   var discardCalls = 0;
   var _index = 0;
 
@@ -889,11 +1011,28 @@ class FakeChangesGateway with GitPatchGatewayStub implements GitGateway {
   @override
   Future<GitCommitResult> commit(
     RepositoryId repositoryId,
-    String message,
-  ) async {
+    String message, {
+    GitCommitOptions options = const GitCommitOptions(),
+  }) async {
     commitCalls++;
     lastCommitMessage = message;
+    lastCommitOptions = options;
     return commitResult!;
+  }
+
+  @override
+  Future<GitCommitPreflight> preflightCommit(
+    RepositoryId repositoryId, {
+    GitCommitOptions options = const GitCommitOptions(),
+  }) async {
+    return commitPreflight!;
+  }
+
+  @override
+  Future<GitCommitTemplate> loadCommitTemplate(
+    RepositoryId repositoryId,
+  ) async {
+    return commitTemplate ?? const GitCommitTemplate();
   }
 
   @override

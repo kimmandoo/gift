@@ -7,8 +7,8 @@
 ## Progress
 
 - **Total Tasks:** 25
-- **Completed:** 16 / 25
-- **Current Active Task:** `17 — Partial staging`
+- **Completed:** 18 / 25
+- **Current Active Task:** `19 — Searchable history and commit inspection`
 
 | # | Scope | Dart backend deliverables | Flutter deliverables | Status |
 |---|---|---|---|:---:|
@@ -215,7 +215,17 @@ covered by CI.
   markers, rename-only and binary states, patch rejection, compact UI, and
   recoverable controller errors.
 
-Task 17 is complete. Task 18 is the next implementation task.
+Task 17 is complete.
+
+### Task 18: Complete commit workflow
+
+- [x] Added typed amend, sign-off, cleanup, and author override options.
+- [x] Added local/global identity preflight and exact configuration guidance.
+- [x] Added bounded commit-template loading and reset controls.
+- [x] Distinguished unchanged history from a created commit with failed refresh.
+- [x] Added guided responsive commit options and real-Git failure coverage.
+
+Task 18 is complete. Task 19 is the next implementation task.
 
 ## Post-MVP backlog
 

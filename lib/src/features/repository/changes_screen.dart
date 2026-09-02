@@ -79,11 +79,21 @@ class _ChangesScreenBodyState extends ConsumerState<_ChangesScreenBody> {
   ChangesController? _manualController;
   late final ChangesControllerArgs _providerArgs;
   late final TextEditingController _commitMessageController;
+  late final TextEditingController _authorNameController;
+  late final TextEditingController _authorEmailController;
+  var _commitOptionsExpanded = false;
+  var _amend = false;
+  var _signOff = false;
+  var _cleanup = GitCommitCleanupMode.defaultMode;
+  String? _loadedTemplate;
+  GitError? _templateError;
 
   @override
   void initState() {
     super.initState();
     _commitMessageController = TextEditingController();
+    _authorNameController = TextEditingController();
+    _authorEmailController = TextEditingController();
     _providerArgs = ChangesControllerArgs(
       gateway: widget.gateway,
       repositoryId: widget.repository.repositoryId,
@@ -103,6 +113,8 @@ class _ChangesScreenBodyState extends ConsumerState<_ChangesScreenBody> {
   @override
   void dispose() {
     _commitMessageController.dispose();
+    _authorNameController.dispose();
+    _authorEmailController.dispose();
     _manualController?.removeListener(_onChanged);
     super.dispose();
   }
@@ -218,6 +230,10 @@ class _ChangesScreenBodyState extends ConsumerState<_ChangesScreenBody> {
             if (state.commitResult case final result?)
               _commitSuccess(context, result),
             if (state.commitError case final error?) _commitError(error),
+            if (state.commitPreflightError case final error?)
+              _commitPreflightError(error),
+            if (state.commitPreflight?.failure case final error?)
+              _commitPreflightError(error),
             if (snapshot != null && snapshot.staged.isNotEmpty)
               _commitPanel(context, controller, state),
             Expanded(
@@ -379,53 +395,237 @@ class _ChangesScreenBodyState extends ConsumerState<_ChangesScreenBody> {
         margin: EdgeInsets.zero,
         child: Padding(
           padding: EdgeInsets.all(compact ? 10 : 14),
-          child: LayoutBuilder(
-            builder: (context, constraints) {
-              final editor = TextField(
-                key: const Key('commit-message'),
-                controller: _commitMessageController,
-                enabled: !state.isMutating,
-                minLines: 1,
-                maxLines: 3,
-                textInputAction: TextInputAction.newline,
-                decoration: const InputDecoration(
-                  labelText: 'Commit staged changes',
-                  border: OutlineInputBorder(),
-                  hintText: 'Describe the staged changes',
-                ),
-                onChanged: (_) => setState(() {}),
-              );
-              final button = FilledButton.icon(
-                key: const Key('commit-staged'),
-                onPressed: canSubmit
-                    ? () => unawaited(_submitCommit(controller))
-                    : null,
-                icon: state.isCommitting
-                    ? const SizedBox(
-                        width: 16,
-                        height: 16,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                    : const Icon(Icons.check, size: 18),
-                label: const Text('Commit'),
-              );
-              if (constraints.maxWidth < 540) {
-                return Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [editor, const SizedBox(height: 10), button],
-                );
-              }
-              return Row(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              LayoutBuilder(
+                builder: (context, constraints) {
+                  final editor = TextField(
+                    key: const Key('commit-message'),
+                    controller: _commitMessageController,
+                    enabled: !state.isMutating,
+                    minLines: 1,
+                    maxLines: 3,
+                    textInputAction: TextInputAction.newline,
+                    decoration: const InputDecoration(
+                      labelText: 'Commit staged changes',
+                      border: OutlineInputBorder(),
+                      hintText: 'Describe the staged changes',
+                    ),
+                    onChanged: (_) => setState(() {}),
+                  );
+                  final button = FilledButton.icon(
+                    key: const Key('commit-staged'),
+                    onPressed: canSubmit
+                        ? () => unawaited(_submitCommit(controller))
+                        : null,
+                    icon: state.isCommitting
+                        ? const SizedBox(
+                            width: 16,
+                            height: 16,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : const Icon(Icons.check, size: 18),
+                    label: const Text('Commit'),
+                  );
+                  if (constraints.maxWidth < 540) {
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        editor,
+                        _commitCharacterGuidance(context),
+                        const SizedBox(height: 10),
+                        button,
+                      ],
+                    );
+                  }
+                  return Row(
+                    children: [
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [editor, _commitCharacterGuidance(context)],
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      button,
+                    ],
+                  );
+                },
+              ),
+              const SizedBox(height: 4),
+              ExpansionTile(
+                key: const Key('commit-options-toggle'),
+                initiallyExpanded: _commitOptionsExpanded,
+                onExpansionChanged: (expanded) {
+                  setState(() => _commitOptionsExpanded = expanded);
+                  if (expanded) _requestCommitPreflight(controller);
+                },
+                tilePadding: EdgeInsets.zero,
+                title: const Text('Commit options'),
+                subtitle: const Text('Identity, amend, sign-off, and cleanup'),
                 children: [
-                  Expanded(child: editor),
-                  const SizedBox(width: 10),
-                  button,
+                  ConstrainedBox(
+                    constraints: BoxConstraints(maxHeight: compact ? 180 : 200),
+                    child: SingleChildScrollView(
+                      key: const Key('commit-options-scroll'),
+                      child: _commitOptionsPanel(context, controller, state),
+                    ),
+                  ),
                 ],
-              );
-            },
+              ),
+            ],
           ),
         ),
       ),
+    );
+  }
+
+  Widget _commitCharacterGuidance(BuildContext context) {
+    final length = _commitMessageController.text.length;
+    return Padding(
+      padding: const EdgeInsets.only(top: 4),
+      child: Text(
+        '$length characters. Keep the subject line concise; use a blank line before details.',
+        key: const Key('commit-character-guidance'),
+        style: Theme.of(context).textTheme.labelSmall,
+      ),
+    );
+  }
+
+  Widget _commitOptionsPanel(
+    BuildContext context,
+    ChangesController controller,
+    ChangesState state,
+  ) {
+    final preflight = state.commitPreflight;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        CheckboxListTile(
+          key: const Key('commit-amend'),
+          value: _amend,
+          onChanged: state.isMutating
+              ? null
+              : (value) {
+                  setState(() => _amend = value ?? false);
+                  _requestCommitPreflight(controller);
+                },
+          title: const Text('Amend previous commit'),
+          subtitle: const Text(
+            'Replaces the current HEAD commit. Review this destructive option carefully.',
+          ),
+          controlAffinity: ListTileControlAffinity.leading,
+          contentPadding: EdgeInsets.zero,
+        ),
+        CheckboxListTile(
+          key: const Key('commit-signoff'),
+          value: _signOff,
+          onChanged: state.isMutating
+              ? null
+              : (value) {
+                  setState(() => _signOff = value ?? false);
+                  _requestCommitPreflight(controller);
+                },
+          title: const Text('Add sign-off'),
+          subtitle: const Text('Append a Signed-off-by trailer.'),
+          controlAffinity: ListTileControlAffinity.leading,
+          contentPadding: EdgeInsets.zero,
+        ),
+        DropdownButtonFormField<GitCommitCleanupMode>(
+          key: const Key('commit-cleanup'),
+          initialValue: _cleanup,
+          decoration: const InputDecoration(labelText: 'Message cleanup'),
+          items: GitCommitCleanupMode.values
+              .map(
+                (mode) => DropdownMenuItem(
+                  value: mode,
+                  child: Text(_cleanupLabel(mode)),
+                ),
+              )
+              .toList(),
+          onChanged: state.isMutating
+              ? null
+              : (mode) {
+                  if (mode == null) return;
+                  setState(() => _cleanup = mode);
+                  _requestCommitPreflight(controller);
+                },
+        ),
+        const SizedBox(height: 10),
+        TextField(
+          key: const Key('commit-author-name'),
+          controller: _authorNameController,
+          enabled: !state.isMutating,
+          decoration: const InputDecoration(
+            labelText: 'Author override name (optional)',
+          ),
+          onChanged: (_) => setState(() {}),
+        ),
+        const SizedBox(height: 8),
+        TextField(
+          key: const Key('commit-author-email'),
+          controller: _authorEmailController,
+          enabled: !state.isMutating,
+          decoration: const InputDecoration(
+            labelText: 'Author override email (optional)',
+          ),
+          onChanged: (_) => setState(() {}),
+        ),
+        const SizedBox(height: 10),
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: [
+            OutlinedButton.icon(
+              key: const Key('commit-load-template'),
+              onPressed: state.isMutating
+                  ? null
+                  : () => unawaited(_loadCommitTemplate()),
+              icon: const Icon(Icons.download_outlined),
+              label: const Text('Load template'),
+            ),
+            OutlinedButton.icon(
+              key: const Key('commit-reset-template'),
+              onPressed: state.isMutating
+                  ? null
+                  : () {
+                      final template = _loadedTemplate ?? '';
+                      _commitMessageController.text = template;
+                      _commitMessageController.selection =
+                          TextSelection.collapsed(offset: template.length);
+                      setState(() {});
+                    },
+              icon: const Icon(Icons.restart_alt),
+              label: const Text('Reset template'),
+            ),
+          ],
+        ),
+        if (_templateError case final error?)
+          Padding(
+            padding: const EdgeInsets.only(top: 8),
+            child: Text(
+              error.userMessage,
+              key: const Key('commit-template-error'),
+              style: TextStyle(color: Theme.of(context).colorScheme.error),
+            ),
+          ),
+        if (preflight != null)
+          Padding(
+            padding: const EdgeInsets.only(top: 8),
+            child: Text(
+              preflight.identity.isComplete
+                  ? 'Identity: ${preflight.identity.name} <${preflight.identity.email}> (${preflight.identity.source}).'
+                  : preflight.identity.guidance,
+              key: const Key('commit-identity-status'),
+            ),
+          ),
+        if (state.isCommitPreflighting)
+          const Padding(
+            padding: EdgeInsets.only(top: 8),
+            child: LinearProgressIndicator(),
+          ),
+      ],
     );
   }
 
@@ -438,7 +638,7 @@ class _ChangesScreenBodyState extends ConsumerState<_ChangesScreenBody> {
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
       color: Theme.of(context).colorScheme.tertiaryContainer,
       child: Text(
-        'Committed $shortOid.',
+        'Committed $shortOid. History updated.',
         style: TextStyle(
           color: Theme.of(context).colorScheme.onTertiaryContainer,
         ),
@@ -447,20 +647,79 @@ class _ChangesScreenBodyState extends ConsumerState<_ChangesScreenBody> {
   }
 
   Widget _commitError(GitError error) {
+    final historyMessage =
+        error.commitOutcome == GitCommitOutcome.createdButRefreshFailed
+        ? 'History changed, but the repository status could not be refreshed. '
+              'Verify history before retrying.'
+        : 'History was not changed.';
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 10, 20, 0),
-      child: Text(
-        error.userMessage,
+      child: Column(
         key: const Key('commit-error'),
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text(
+            error.userMessage,
+            style: TextStyle(color: Theme.of(context).colorScheme.error),
+          ),
+          Text(historyMessage),
+        ],
+      ),
+    );
+  }
+
+  Widget _commitPreflightError(GitError error) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 8, 20, 0),
+      child: Text(
+        error.category == GitErrorCategory.missingIdentity
+            ? '${error.userMessage} ${error.diagnostic}'
+            : error.userMessage,
+        key: const Key('commit-preflight-error'),
         style: TextStyle(color: Theme.of(context).colorScheme.error),
       ),
     );
   }
 
+  GitCommitOptions _buildCommitOptions() {
+    final name = _authorNameController.text.trim();
+    final email = _authorEmailController.text.trim();
+    return GitCommitOptions(
+      amend: _amend,
+      signOff: _signOff,
+      cleanup: _cleanup,
+      author: name.isEmpty && email.isEmpty
+          ? null
+          : GitCommitAuthor(name: name, email: email),
+    );
+  }
+
+  void _requestCommitPreflight(ChangesController controller) {
+    unawaited(controller.preflightCommit(options: _buildCommitOptions()));
+  }
+
+  Future<void> _loadCommitTemplate() async {
+    setState(() => _templateError = null);
+    try {
+      final template = await widget.gateway.loadCommitTemplate(
+        widget.repository.repositoryId,
+      );
+      if (!mounted) return;
+      _loadedTemplate = template.contents;
+      _commitMessageController.text = template.contents;
+      _commitMessageController.selection = TextSelection.collapsed(
+        offset: template.contents.length,
+      );
+      setState(() {});
+    } on GitError catch (error) {
+      if (mounted) setState(() => _templateError = error);
+    }
+  }
+
   Future<void> _submitCommit(ChangesController controller) async {
     final message = _commitMessageController.text;
     if (message.trim().isEmpty) return;
-    await controller.commit(message);
+    await controller.commit(message, options: _buildCommitOptions());
     if (!mounted || controller.state.commitResult == null) return;
     _commitMessageController.clear();
     setState(() {});
@@ -478,7 +737,7 @@ class _ChangesScreenBodyState extends ConsumerState<_ChangesScreenBody> {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               SizedBox(
-                height: constraints.maxHeight * 0.42,
+                height: constraints.maxHeight * 0.32,
                 child: _groupedChanges(context, snapshot, state),
               ),
               const Divider(height: 1),
@@ -638,6 +897,7 @@ class _ChangesScreenBodyState extends ConsumerState<_ChangesScreenBody> {
     }
 
     final compact = MediaQuery.sizeOf(context).width < 480;
+    final smallHeight = MediaQuery.sizeOf(context).height < 700;
     final header = <Widget>[
       Text(
         selected.path,
@@ -699,6 +959,9 @@ class _ChangesScreenBodyState extends ConsumerState<_ChangesScreenBody> {
       ],
       const SizedBox(height: 12),
     ];
+    if (!compact && smallHeight) {
+      return _smallHeightDetails(context, selected, state);
+    }
     return Padding(
       padding: EdgeInsets.fromLTRB(
         compact ? 12 : 20,
@@ -724,6 +987,81 @@ class _ChangesScreenBodyState extends ConsumerState<_ChangesScreenBody> {
                 Expanded(child: _diffBody(context, state)),
               ],
             ),
+    );
+  }
+
+  /// Keeps the diff viewport usable on short desktop windows. The regular
+  /// details header is intentionally spacious, so short windows get a small
+  /// independently scrollable header while the diff keeps its own viewport.
+  Widget _smallHeightDetails(
+    BuildContext context,
+    GitChange selected,
+    ChangesState state,
+  ) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 8, 20, 0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(
+            height: 160,
+            child: ListView(
+              key: const Key('short-details-header-scroll'),
+              padding: EdgeInsets.zero,
+              children: [
+                Text(
+                  selected.path,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: Theme.of(context).textTheme.titleLarge,
+                ),
+                const SizedBox(height: 4),
+                Row(
+                  children: [
+                    Text('Status ${selected.shortStatus}'),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        _groupText(selected),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
+                ),
+                if (selected.isStaged || selected.isUnstaged) ...[
+                  const SizedBox(height: 6),
+                  _scopeSelector(context, selected, state),
+                ],
+                if (_activeController.canStagePatch ||
+                    _activeController.canUnstagePatch ||
+                    _activeController.canStageSelected ||
+                    _activeController.canUnstageSelected ||
+                    _activeController.canDiscardSelected) ...[
+                  const SizedBox(height: 6),
+                  _mutationActions(context, state),
+                ],
+                if (state.mutationError case final error?)
+                  Text(
+                    error.userMessage,
+                    key: const Key('mutation-error'),
+                    style: TextStyle(
+                      color: Theme.of(context).colorScheme.error,
+                    ),
+                  ),
+                if (state.discardError case final error?)
+                  Text(
+                    error.userMessage,
+                    key: const Key('discard-error'),
+                    style: TextStyle(
+                      color: Theme.of(context).colorScheme.error,
+                    ),
+                  ),
+              ],
+            ),
+          ),
+          Expanded(child: _diffBody(context, state)),
+        ],
+      ),
     );
   }
 
@@ -1138,5 +1476,13 @@ String _remoteOperationLabel(GitRemoteOperation operation) =>
       GitRemoteOperation.pull => 'Pull',
       GitRemoteOperation.push => 'Push',
     };
+
+String _cleanupLabel(GitCommitCleanupMode mode) => switch (mode) {
+  GitCommitCleanupMode.defaultMode => 'Git default',
+  GitCommitCleanupMode.strip => 'Strip whitespace',
+  GitCommitCleanupMode.whitespace => 'Clean whitespace only',
+  GitCommitCleanupMode.verbatim => 'Verbatim',
+  GitCommitCleanupMode.scissors => 'Scissors marker',
+};
 
 enum _ChangesMenuAction { remotes, branches, history, refresh }

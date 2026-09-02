@@ -119,8 +119,21 @@ class DartGitGateway implements GitGateway, DiscardPreviewCancellationGateway {
   ) => backend.unstagePatch(repositoryId, selection);
 
   @override
-  Future<GitCommitResult> commit(RepositoryId repositoryId, String message) =>
-      backend.commit(repositoryId, message);
+  Future<GitCommitPreflight> preflightCommit(
+    RepositoryId repositoryId, {
+    GitCommitOptions options = const GitCommitOptions(),
+  }) => backend.preflightCommit(repositoryId, options: options);
+
+  @override
+  Future<GitCommitTemplate> loadCommitTemplate(RepositoryId repositoryId) =>
+      backend.loadCommitTemplate(repositoryId);
+
+  @override
+  Future<GitCommitResult> commit(
+    RepositoryId repositoryId,
+    String message, {
+    GitCommitOptions options = const GitCommitOptions(),
+  }) => backend.commit(repositoryId, message, options: options);
 
   @override
   Future<DiscardPreview> createDiscardPreview(

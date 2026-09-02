@@ -395,3 +395,18 @@ GiftApp
   fake gateway가 호출 경계를 어떻게 대신하는지 확인합니다.
 - `test/features/settings/git_settings_dialog_test.dart`는 저장된 Git
   경로와 재시도 상태가 컨트롤러를 통해 화면에 반영되는 흐름을 보여줍니다.
+
+## Commit workflow (Task 18)
+
+The commit editor keeps its message in UTF-8 stdin and sends only typed
+options in argv. `ChangesController` exposes a non-mutating preflight so the
+UI can show staged-state, effective local/global identity, and amend safety
+before Git starts. A missing identity includes exact `git config --local` and
+`git config --global` commands.
+
+The options panel supports amend, sign-off, cleanup mode, an optional author
+override, and loading the bounded effective `commit.template` file. Reset
+returns the editor to the last loaded template. The backend compares `HEAD`
+around failures and labels a failed operation as either `notCreated` or
+`createdButRefreshFailed`; the UI displays that history outcome next to every
+commit error.
