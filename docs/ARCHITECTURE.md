@@ -428,10 +428,11 @@ controls, and keyboard up/down traversal while reassigning graph lanes across
 appended pages.
 
 The history graph uses a fixed 16-pixel lane rhythm instead of stretching
-lanes to fill the available width. Anti-aliased cubic paths make branch shifts
-and forks readable, while circular markers, merge rings, and selected-row
-halos keep commit state distinct. Each painted row also exposes its lane and
-merge status as an accessibility image label.
+lanes to fill the available width. Three-pixel dots form each lane, and
+diagonal stair-step transitions expose branch splits and joins without
+anti-aliasing away the pixel aesthetic. Square commit markers, larger outlined
+merge markers, and selected-row halos keep commit state distinct. Each painted
+row also exposes its lane and merge status as an accessibility image label.
 
 ## Safe advanced branch operations (Task 20)
 

@@ -643,6 +643,57 @@ class _CommitGraphPainter extends CustomPainter {
     return (20.0 + value * 16.0).clamp(10.0, size.width - 10.0);
   }
 
+  void _drawDottedLine(
+    Canvas canvas,
+    Offset start,
+    Offset end,
+    Color color, {
+    double dotSize = 3,
+  }) {
+    final delta = end - start;
+    final distance = delta.distance;
+    final steps = (distance / 4).ceil().clamp(1, 1000);
+    final paint = Paint()
+      ..color = color
+      ..isAntiAlias = false
+      ..style = PaintingStyle.fill;
+    for (var index = 0; index <= steps; index++) {
+      final progress = index / steps;
+      final point = start + delta * progress;
+      final snapped = Offset(
+        point.dx.roundToDouble(),
+        point.dy.roundToDouble(),
+      );
+      canvas.drawRect(
+        Rect.fromCenter(center: snapped, width: dotSize, height: dotSize),
+        paint,
+      );
+    }
+  }
+
+  void _drawSegment(
+    Canvas canvas,
+    Offset start,
+    Offset end,
+    Color color, {
+    required bool changesLane,
+  }) {
+    if (!changesLane) {
+      _drawDottedLine(canvas, start, end, color);
+      return;
+    }
+
+    // Lane changes use a short diagonal staircase between two vertical runs.
+    // Keeping the bend away from the row edges makes adjacent rows join
+    // cleanly while the branch split or merge remains unmistakable.
+    final direction = end.dy >= start.dy ? 1.0 : -1.0;
+    final bendStart = Offset(start.dx, start.dy + 8 * direction);
+    final bendEnd = Offset(end.dx, end.dy - 8 * direction);
+    _drawDottedLine(canvas, start, bendStart, color);
+    _drawDottedLine(canvas, bendStart, bendEnd, color);
+    _drawDottedLine(canvas, bendEnd, end, color);
+  }
+
   @override
   void paint(Canvas canvas, Size size) {
     final middle = size.height / 2;
@@ -653,87 +704,59 @@ class _CommitGraphPainter extends CustomPainter {
       final colorLane = startsAtNode && segment.fromLane != segment.toLane
           ? segment.toLane
           : segment.fromLane;
-      final paint = Paint()
-        ..color = colors[colorLane % colors.length].withValues(alpha: 0.88)
-        ..strokeWidth = 2.25
-        ..strokeCap = StrokeCap.round
-        ..strokeJoin = StrokeJoin.round
-        ..isAntiAlias = true
-        ..style = PaintingStyle.stroke;
-      final path = Path();
-      if (from == to) {
-        path
-          ..moveTo(from, startsAtNode ? middle : 0)
-          ..lineTo(to, size.height);
-      } else if (startsAtNode) {
-        path
-          ..moveTo(from, middle)
-          ..cubicTo(from, middle + 9, to, middle + 9, to, size.height);
-      } else {
-        path
-          ..moveTo(from, 0)
-          ..lineTo(from, middle - 9)
-          ..cubicTo(from, middle - 2, to, middle + 2, to, middle + 9)
-          ..lineTo(to, size.height);
-      }
-      canvas.drawPath(path, paint);
+      final color = colors[colorLane % colors.length];
+      final start = Offset(from, startsAtNode ? middle : 0);
+      final end = Offset(to, size.height);
+      _drawSegment(canvas, start, end, color, changesLane: from != to);
     }
     final nodeColor = colors[lane % colors.length];
     final center = Offset(_laneX(lane, size), middle);
     if (hasIncoming) {
-      canvas.drawLine(
-        Offset(center.dx, 0),
-        center,
-        Paint()
-          ..color = nodeColor
-          ..strokeWidth = 2.25
-          ..strokeCap = StrokeCap.round
-          ..isAntiAlias = true,
-      );
+      _drawDottedLine(canvas, Offset(center.dx, 0), center, nodeColor);
     }
     if (isSelected) {
-      canvas.drawCircle(
-        center,
-        parentCount > 1 ? 10 : 9,
+      final haloSize = parentCount > 1 ? 22.0 : 18.0;
+      canvas.drawRect(
+        Rect.fromCenter(center: center, width: haloSize, height: haloSize),
         Paint()
           ..color = nodeColor.withValues(alpha: 0.16)
-          ..isAntiAlias = true,
+          ..isAntiAlias = false,
       );
     }
-    final outerRadius = parentCount > 1 ? 7.0 : 6.0;
-    canvas.drawCircle(
-      center,
-      outerRadius,
+    final outerSize = parentCount > 1 ? 14.0 : 10.0;
+    canvas.drawRect(
+      Rect.fromCenter(center: center, width: outerSize, height: outerSize),
       Paint()
         ..color = surface
         ..style = PaintingStyle.fill
-        ..isAntiAlias = true,
+        ..isAntiAlias = false,
     );
-    canvas.drawCircle(
-      center,
-      outerRadius,
+    canvas.drawRect(
+      Rect.fromCenter(center: center, width: outerSize, height: outerSize),
       Paint()
         ..color = nodeColor
-        ..strokeWidth = parentCount > 1 ? 2.5 : 2.25
+        ..strokeWidth = 2
         ..style = PaintingStyle.stroke
-        ..isAntiAlias = true,
+        ..isAntiAlias = false,
     );
-    canvas.drawCircle(
-      center,
-      parentCount > 1 ? 3.0 : 2.75,
+    canvas.drawRect(
+      Rect.fromCenter(
+        center: center,
+        width: parentCount > 1 ? 6 : 4,
+        height: parentCount > 1 ? 6 : 4,
+      ),
       Paint()
         ..color = nodeColor
-        ..isAntiAlias = true,
+        ..isAntiAlias = false,
     );
     if (parentCount > 1) {
-      canvas.drawCircle(
-        center,
-        9,
+      canvas.drawRect(
+        Rect.fromCenter(center: center, width: 18, height: 18),
         Paint()
           ..color = outline.withValues(alpha: 0.34)
           ..strokeWidth = 1
           ..style = PaintingStyle.stroke
-          ..isAntiAlias = true,
+          ..isAntiAlias = false,
       );
     }
   }
