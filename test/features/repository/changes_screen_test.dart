@@ -164,6 +164,66 @@ void main() {
     expect(gateway.diffCalls, 2);
     controller.dispose();
   });
+
+  testWidgets('stages the selected path and refreshes its status facet', (
+    tester,
+  ) async {
+    final repository = const RepositoryOpened(
+      repositoryId: RepositoryId(value: 'repository-id'),
+      root: '/workspace/project',
+    );
+    final gateway = FakeChangesGateway(
+      snapshots: [
+        snapshot(repository, changes: [change('lib/app.dart')]),
+      ],
+      stageSnapshot: snapshot(
+        repository,
+        changes: [
+          GitChange(
+            type: GitChangeType.tracked,
+            path: 'lib/app.dart',
+            indexStatus: 'M',
+            worktreeStatus: '.',
+            submoduleStatus: 'N...',
+          ),
+        ],
+      ),
+    );
+    final controller = ChangesController(
+      gateway: gateway,
+      repositoryId: repository.repositoryId,
+      pollInterval: const Duration(hours: 1),
+    );
+    await controller.refresh();
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: ChangesScreen(
+          gateway: gateway,
+          repository: repository,
+          controller: controller,
+          autoInitialize: false,
+        ),
+      ),
+    );
+
+    await tester.tap(find.byKey(const ValueKey('unstaged:lib/app.dart')));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('stage-selected')), findsOneWidget);
+
+    await tester.tap(find.byKey(const Key('stage-selected')));
+    await tester.pumpAndSettle();
+    expect(gateway.stageCalls, 1);
+    expect(find.text('Staged (1)'), findsOneWidget);
+    expect(find.byKey(const Key('unstage-selected')), findsOneWidget);
+
+    await tester.tap(find.byKey(const Key('unstage-selected')));
+    await tester.pumpAndSettle();
+    expect(gateway.unstageCalls, 1);
+    expect(find.text('Unstaged (1)'), findsOneWidget);
+    expect(find.byKey(const Key('stage-selected')), findsOneWidget);
+    controller.dispose();
+  });
 }
 
 GitChange change(String path) {
@@ -206,11 +266,20 @@ GitDiffSnapshot diff(
 }
 
 class FakeChangesGateway implements GitGateway {
-  FakeChangesGateway({required this.snapshots, this.diffs = const {}});
+  FakeChangesGateway({
+    required this.snapshots,
+    this.diffs = const {},
+    this.stageSnapshot,
+    this.unstageSnapshot,
+  });
 
   final List<GitStatusSnapshot> snapshots;
   final Map<String, GitDiffSnapshot> diffs;
+  final GitStatusSnapshot? stageSnapshot;
+  final GitStatusSnapshot? unstageSnapshot;
   var diffCalls = 0;
+  var stageCalls = 0;
+  var unstageCalls = 0;
   var _index = 0;
 
   @override
@@ -251,5 +320,23 @@ class FakeChangesGateway implements GitGateway {
           lines: const [],
           contentHash: 'empty',
         );
+  }
+
+  @override
+  Future<GitStatusSnapshot> stage(
+    RepositoryId repositoryId,
+    String path,
+  ) async {
+    stageCalls++;
+    return stageSnapshot ?? snapshots.last;
+  }
+
+  @override
+  Future<GitStatusSnapshot> unstage(
+    RepositoryId repositoryId,
+    String path,
+  ) async {
+    unstageCalls++;
+    return unstageSnapshot ?? snapshots.last;
   }
 }

@@ -69,6 +69,8 @@ system Git 2.35+.
   generation-aware snapshots.
 - [x] Grouped Changes screen with timer refresh and selection retention.
 - [x] Bounded staged/working-tree diff snapshots and lazy selected-file view.
+- [x] Serialized stage/unstage mutations with refreshed status snapshots and
+  selection actions.
 - [x] Removed the previous native implementation and generated bridge assets.
 
 ## Product direction
@@ -95,8 +97,16 @@ system Git 2.35+.
 3. Rendered a lazy diff view while preserving the selected change.
 4. Passed `flutter analyze` and `flutter test`.
 
-## Next vertical: staging and mutation
+## Completed vertical: staging and mutation
 
-1. Add failing tests for staging and un-staging selected paths.
-2. Implement serialized `git add` and `git restore --staged` operations.
-3. Add selection-aware actions and refresh the status snapshot after mutation.
+1. Added failing tests for staging and un-staging selected paths.
+2. Implemented serialized `git add` and `git restore --staged` operations.
+3. Added selection-aware actions and refreshed the status snapshot after
+   mutation.
+4. Passed `flutter analyze` and `flutter test`.
+
+## Next vertical: discard changes
+
+1. Add failing tests for preview tokens and tracked working-tree discard.
+2. Implement expiring, path-bound discard operations.
+3. Add a confirmation dialog and refresh the selected change after discard.

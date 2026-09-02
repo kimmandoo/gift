@@ -56,6 +56,28 @@ class DartGitBackend {
     ).getDiff(repositoryId, path, scope: scope, originalPath: originalPath);
   }
 
+  Future<GitStatusSnapshot> stage(
+    RepositoryId repositoryId,
+    String path,
+  ) async {
+    final installation = await getGitInstallation();
+    return RepositoryService(
+      gitPath: installation.executablePath,
+      state: _state,
+    ).stage(repositoryId, path);
+  }
+
+  Future<GitStatusSnapshot> unstage(
+    RepositoryId repositoryId,
+    String path,
+  ) async {
+    final installation = await getGitInstallation();
+    return RepositoryService(
+      gitPath: installation.executablePath,
+      state: _state,
+    ).unstage(repositoryId, path);
+  }
+
   Future<RepositoryHandle> lookup(RepositoryId repositoryId) =>
       _state.lookup(repositoryId);
 }

@@ -7,8 +7,8 @@
 ## Progress
 
 - **Total Tasks:** 14
-- **Completed:** 6 / 14 (42.9%)
-- **Current Active Task:** `Task 7: Staging & Mutation`
+- **Completed:** 7 / 14 (50.0%)
+- **Current Active Task:** `Task 8: Discard Changes`
 
 | # | Scope | Dart backend deliverables | Flutter deliverables | Status |
 |---|---|---|---|:---:|
@@ -18,7 +18,7 @@
 | **4** | Repository registry & open | `AppState`, opaque IDs, root validation | Welcome screen and recent paths | ✅ |
 | **5** | Status parser & changes | Porcelain v2 `-z` parser and snapshots | Grouped changes list | ✅ |
 | **6** | Unified diff | Bounded diff parser and rename detection | Lazy unified diff view | ✅ |
-| **7** | Staging & mutation | Serialized `git add`/`restore --staged` | Selection and action buttons | ⏳ |
+| **7** | Staging & mutation | Serialized `git add`/`restore --staged` | Selection and action buttons | ✅ |
 | **8** | Discard changes | Expiring preview token and safe restore | Confirmation dialog | ⏳ |
 | **9** | Commit panel | UTF-8 message stdin and hook mapping | Commit editor and shortcuts | ⏳ |
 | **10** | History & graph | Paginated log and deterministic lanes | History screen and details | ⏳ |
@@ -43,6 +43,8 @@
 - [x] Polling `ChangesController` and grouped changes screen.
 - [x] Bounded staged/working-tree unified diff parsing, rename metadata, and
   lazy selected-file rendering.
+- [x] Serialized stage/unstage mutations with immediate status snapshots and
+  selection actions.
 - [x] Removed FFI, generated bindings, native build plugins, and the former
   native implementation.
 
@@ -76,13 +78,21 @@
 - [x] Added lazy selected-file rendering with line numbers, binary handling,
   and scope switching.
 
+### ✅ Task 7: Staging & Mutation
+
+- [x] Added shell-free `git add -- path` and
+  `git restore --staged -- path` backend operations.
+- [x] Serialized mutations per repository handle and returned a refreshed
+  status snapshot after each operation.
+- [x] Added selected-file Stage/Unstage actions with loading and error state.
+
 ## Active task
 
-### ⏳ Task 7: Staging & Mutation
+### ⏳ Task 8: Discard Changes
 
-- [ ] Add failing tests for staging and un-staging selected paths.
-- [ ] Implement serialized `git add` and `git restore --staged` operations.
-- [ ] Add selection-aware staging actions and status refresh.
+- [ ] Add failing tests for preview tokens and tracked working-tree discard.
+- [ ] Implement expiring, path-bound discard operations.
+- [ ] Add a confirmation dialog and refresh the selected change after discard.
 
 Tasks 6–14 retain the same product scope above and will build on the Dart
 backend contracts established here.

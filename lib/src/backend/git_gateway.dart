@@ -21,4 +21,8 @@ abstract interface class GitGateway {
     GitDiffScope scope = GitDiffScope.workingTree,
     String? originalPath,
   });
+
+  Future<GitStatusSnapshot> stage(RepositoryId repositoryId, String path);
+
+  Future<GitStatusSnapshot> unstage(RepositoryId repositoryId, String path);
 }

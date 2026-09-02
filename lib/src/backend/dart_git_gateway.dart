@@ -40,4 +40,12 @@ class DartGitGateway implements GitGateway {
     scope: scope,
     originalPath: originalPath,
   );
+
+  @override
+  Future<GitStatusSnapshot> stage(RepositoryId repositoryId, String path) =>
+      backend.stage(repositoryId, path);
+
+  @override
+  Future<GitStatusSnapshot> unstage(RepositoryId repositoryId, String path) =>
+      backend.unstage(repositoryId, path);
 }

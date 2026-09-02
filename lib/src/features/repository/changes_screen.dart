@@ -337,6 +337,19 @@ class _ChangesScreenBodyState extends ConsumerState<_ChangesScreenBody> {
             const SizedBox(height: 16),
             _scopeSelector(context, selected, state),
           ],
+          if (_activeController.canStageSelected ||
+              _activeController.canUnstageSelected) ...[
+            const SizedBox(height: 16),
+            _mutationActions(context, state),
+          ],
+          if (state.mutationError case final error?) ...[
+            const SizedBox(height: 10),
+            Text(
+              error.userMessage,
+              key: const Key('mutation-error'),
+              style: TextStyle(color: Colors.red),
+            ),
+          ],
           const SizedBox(height: 16),
           if (state.isDiffLoading) const LinearProgressIndicator(),
           if (state.diffError case final error?) ...[
@@ -351,6 +364,30 @@ class _ChangesScreenBodyState extends ConsumerState<_ChangesScreenBody> {
           Expanded(child: _diffBody(context, state)),
         ],
       ),
+    );
+  }
+
+  Widget _mutationActions(BuildContext context, ChangesState state) {
+    final controller = _activeController;
+    return Wrap(
+      spacing: 8,
+      runSpacing: 8,
+      children: [
+        if (controller.canStageSelected)
+          FilledButton.icon(
+            key: const Key('stage-selected'),
+            onPressed: state.isMutating ? null : controller.stageSelected,
+            icon: const Icon(Icons.add, size: 18),
+            label: const Text('Stage'),
+          ),
+        if (controller.canUnstageSelected)
+          OutlinedButton.icon(
+            key: const Key('unstage-selected'),
+            onPressed: state.isMutating ? null : controller.unstageSelected,
+            icon: const Icon(Icons.remove, size: 18),
+            label: const Text('Unstage'),
+          ),
+      ],
     );
   }
 

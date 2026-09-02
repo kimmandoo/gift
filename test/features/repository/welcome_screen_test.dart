@@ -219,4 +219,14 @@ class FakeGitGateway implements GitGateway {
   }) {
     throw UnimplementedError();
   }
+
+  @override
+  Future<GitStatusSnapshot> stage(RepositoryId repositoryId, String path) {
+    throw UnimplementedError();
+  }
+
+  @override
+  Future<GitStatusSnapshot> unstage(RepositoryId repositoryId, String path) {
+    throw UnimplementedError();
+  }
 }

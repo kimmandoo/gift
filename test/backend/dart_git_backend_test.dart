@@ -1,5 +1,7 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
+import 'dart:math';
 
 import 'package:branchline/src/backend/dart_git_backend.dart';
 import 'package:branchline/src/backend/diff.dart';
@@ -7,6 +9,7 @@ import 'package:branchline/src/backend/domain.dart';
 import 'package:branchline/src/backend/error.dart';
 import 'package:branchline/src/backend/executor.dart';
 import 'package:branchline/src/backend/git_installation_service.dart';
+import 'package:branchline/src/backend/repository_service.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
@@ -346,6 +349,90 @@ void main() {
       });
     },
   );
+
+  test(
+    'stages and unstages a selected path, including shell characters',
+    () async {
+      await withTempDirectory((directory) async {
+        await expectGitSuccess([
+          'init',
+          '--quiet',
+        ], workingDirectory: directory.path);
+        await expectGitSuccess([
+          'config',
+          'user.name',
+          'Branchline Test',
+        ], workingDirectory: directory.path);
+        await expectGitSuccess([
+          'config',
+          'user.email',
+          'branchline@example.test',
+        ], workingDirectory: directory.path);
+
+        final path = 'notes & plan.txt';
+        final file = File('${directory.path}/$path');
+        await file.writeAsString('initial\n');
+        await expectGitSuccess([
+          'add',
+          '--',
+          path,
+        ], workingDirectory: directory.path);
+        await expectGitSuccess([
+          'commit',
+          '--quiet',
+          '-m',
+          'initial',
+        ], workingDirectory: directory.path);
+
+        final backend = DartGitBackend();
+        final opened = await backend.openRepository(directory.path);
+        await file.writeAsString('changed\n');
+
+        final staged = await backend.stage(opened.repositoryId, path);
+        expect(staged.staged.map((change) => change.path), contains(path));
+        expect(staged.unstaged, isEmpty);
+
+        final unstaged = await backend.unstage(opened.repositoryId, path);
+        expect(unstaged.staged, isEmpty);
+        expect(unstaged.unstaged.map((change) => change.path), contains(path));
+      });
+    },
+  );
+
+  test('serializes mutations for one repository handle', () async {
+    final state = AppState();
+    final repository = state.register(Directory.systemTemp.path);
+    final firstStarted = Completer<void>();
+    final releaseFirst = Completer<void>();
+    var active = 0;
+    var maximumActive = 0;
+    var secondStarted = false;
+
+    Future<int> mutation(Future<void> Function() body) {
+      return state.runMutation(repository.repositoryId, () async {
+        active++;
+        maximumActive = max(maximumActive, active);
+        await body();
+        active--;
+        return maximumActive;
+      });
+    }
+
+    final first = mutation(() async {
+      firstStarted.complete();
+      await releaseFirst.future;
+    });
+    await firstStarted.future;
+    final second = mutation(() async {
+      secondStarted = true;
+    });
+    await Future<void>.delayed(const Duration(milliseconds: 10));
+    expect(secondStarted, isFalse);
+
+    releaseFirst.complete();
+    await Future.wait([first, second]);
+    expect(maximumActive, 1);
+  });
 }
 
 Future<void> withTempDirectory(Future<void> Function(Directory) action) async {

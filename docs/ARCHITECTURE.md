@@ -93,6 +93,29 @@ ChangesScreen
    drain합니다. 오래 걸리거나 이전 선택에 대한 응답은 현재 선택을
    덮어쓰지 않습니다.
 
+## 선택 파일 stage/unstage 흐름
+
+```text
+ChangesScreen
+  └─ ChangesController.stageSelected()/unstageSelected()
+       └─ GitGateway.stage()/unstage()
+            └─ DartGitBackend
+                 └─ RepositoryService._mutatePath()
+                      ├─ AppState.runMutation(repositoryId)  (serialized)
+                      ├─ git add -- path
+                      │    또는 git restore --staged -- path
+                      └─ getStatus() → refreshed GitStatusSnapshot
+```
+
+1. 컨트롤러는 현재 선택이 있을 때만 액션을 노출하고, 충돌 파일에는
+   mutation 버튼을 노출하지 않습니다.
+2. backend는 화면이 보낸 경로를 opaque repository ID로 찾은 root에서
+   별도의 argv 값으로 전달합니다. 경로에 공백이나 셸 문자가 있어도
+   셸 문자열로 조합하지 않습니다.
+3. 같은 repository ID의 mutation은 `AppState` queue에서 한 번에 하나씩
+   실행합니다. 각 명령이 끝나면 status를 다시 읽어 staged/unstaged
+   그룹과 generation을 즉시 갱신합니다.
+
 ## 폴더별 역할
 
 | 경로 | 역할 |

@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'dart:math';
@@ -14,6 +15,7 @@ import 'status.dart';
 /// later operations will resolve an ID through this object first.
 class AppState {
   final Map<RepositoryId, _RepositoryRecord> _repositories = {};
+  final Map<RepositoryId, _MutationQueue> _mutationQueues = {};
 
   RepositoryOpened register(String root) {
     final repositoryId = RepositoryId(value: _newRepositoryId());
@@ -57,6 +59,29 @@ class AppState {
       record.statusGeneration++;
     }
     return record.statusGeneration;
+  }
+
+  /// Serializes mutations for one repository while allowing different
+  /// repositories to continue independently.
+  Future<T> runMutation<T>(
+    RepositoryId repositoryId,
+    Future<T> Function() action,
+  ) {
+    final queue = _mutationQueues.putIfAbsent(repositoryId, _MutationQueue.new);
+    return queue.run(action);
+  }
+}
+
+class _MutationQueue {
+  Future<void> _tail = Future<void>.value();
+
+  Future<T> run<T>(Future<T> Function() action) {
+    final previous = _tail;
+    final finished = Completer<void>();
+    _tail = finished.future;
+    return previous.then((_) => action()).whenComplete(() {
+      if (!finished.isCompleted) finished.complete();
+    });
   }
 }
 
@@ -211,6 +236,45 @@ class RepositoryService {
       path: path,
       scope: scope,
     ).copyWith(repositoryId: repositoryId);
+  }
+
+  Future<GitStatusSnapshot> stage(RepositoryId repositoryId, String path) =>
+      _mutatePath(repositoryId, const ['add'], path);
+
+  Future<GitStatusSnapshot> unstage(RepositoryId repositoryId, String path) =>
+      _mutatePath(repositoryId, const ['restore', '--staged'], path);
+
+  Future<GitStatusSnapshot> _mutatePath(
+    RepositoryId repositoryId,
+    List<String> command,
+    String path,
+  ) async {
+    _validatePath(path);
+    return state.runMutation(repositoryId, () async {
+      final handle = await state.lookup(repositoryId);
+      await _runner.run(
+        GitInvocation(
+          program: gitPath,
+          args: [...command, '--', path],
+          cwd: handle.root,
+          kind: GitOperationKind.mutation,
+          outputPolicy: const OutputPolicy.capture(maxBytes: 64 * 1024),
+        ),
+      );
+      // Return the post-mutation snapshot so the UI can update immediately.
+      return getStatus(repositoryId);
+    });
+  }
+
+  void _validatePath(String path) {
+    if (path.isEmpty || path.contains('\u0000')) {
+      throw const GitError(
+        category: GitErrorCategory.parseFailure,
+        userMessage: 'Git could not update that file path.',
+        diagnostic: 'mutation path was empty or contained a NUL byte',
+        retryable: false,
+      );
+    }
   }
 
   Future<ProcessOutput> _runGit(String cwd, List<String> args) => _runner.run(
