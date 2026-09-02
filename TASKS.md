@@ -180,7 +180,7 @@ Task 15 is implemented and awaits local Linux bundle verification.
 - [x] Replaced isolated history markers with connected multi-lane fork, merge,
   and continuation segments that survive pagination.
 - [x] Added persistent light/dark theme switching and bundled the readable
-  OFL-licensed Pixelify Sans pixel font.
+  OFL-licensed Jersey 15 pixel font.
 - [x] Replaced mixed generated/direct colors with explicit semantic light and
   dark `ColorScheme` roles and contrast regression checks.
 - [x] Hardened compact-window layouts for the welcome, changes, history, and

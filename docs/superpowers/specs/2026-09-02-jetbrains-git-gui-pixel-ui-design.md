@@ -85,19 +85,19 @@ roles and contrast relationships.
 | `pixelLightCanvas` | `#F5F1E8` | Light app background |
 | `pixelLightPanel` | `#FFFCF5` | Light navigation and content panels |
 | `pixelLightInk` | `#17212B` | Light primary text |
-| `pixelLightMuted` | `#5E6B70` | Light secondary text and outlines |
-| `pixelLightMint` | `#087F5B` | Light safe/selected/ready state |
-| `pixelLightSky` | `#1769AA` | Light links and informational state |
+| `pixelLightMuted` | `#526067` | Light secondary text and outlines |
+| `pixelLightMint` | `#056B4A` | Light safe/selected/ready state |
+| `pixelLightSky` | `#145A90` | Light links and informational state |
 
 The light palette mirrors each semantic role with warm paper-like surfaces and
 dark ink. Theme switching is available from every top-level workflow and is
-persisted locally. Text uses the bundled Pixelify Sans family under the SIL
-Open Font License. The compact desktop type scale is 12 px for small metadata,
-13 px for labels and diff text, 15 px for normal body text, 16 px for
+persisted locally. Text uses the bundled Jersey 15 family under the SIL Open
+Font License. Jersey 15 was chosen for its heavier, simpler pixel glyphs;
+source and diff content may retain a denser monospace treatment where exact
+character alignment matters. The compact desktop type scale is 12 px for
+small metadata, 13 px for labels and diff text, 15 px for normal body text, 16 px for
 prominent body text, 18 px for screen titles, 22 px for detail headings, and
-24 px for the welcome heading. Source and diff content may retain a denser
-monospace treatment where exact character alignment matters, with line-height
-preserved for scanning.
+24 px for the welcome heading, with line-height preserved for scanning.
 
 Text must remain readable without relying on color alone. Both palettes and
 the pixel font must be tested at compact desktop sizes and normal text scale.

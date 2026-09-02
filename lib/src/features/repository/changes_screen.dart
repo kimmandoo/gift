@@ -273,7 +273,7 @@ class _ChangesScreenBodyState extends ConsumerState<_ChangesScreenBody> {
     return Container(
       key: const Key('status-strip'),
       color: Theme.of(context).colorScheme.surfaceContainerHighest,
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
       child: LayoutBuilder(
         builder: (context, constraints) {
           final icon = Icon(
@@ -499,7 +499,7 @@ class _ChangesScreenBodyState extends ConsumerState<_ChangesScreenBody> {
 
   Widget _sectionHeader(BuildContext context, String title, int count) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 12, 12, 4),
+      padding: const EdgeInsets.fromLTRB(20, 12, 20, 4),
       child: Text(
         '$title ($count)',
         style: Theme.of(context).textTheme.labelLarge
@@ -573,7 +573,7 @@ class _ChangesScreenBodyState extends ConsumerState<_ChangesScreenBody> {
     }
 
     return Padding(
-      padding: const EdgeInsets.fromLTRB(28, 24, 28, 0),
+      padding: const EdgeInsets.fromLTRB(20, 24, 20, 0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [

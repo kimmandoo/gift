@@ -4,8 +4,10 @@
 
 - feat(ui): rebuilt the Git graph and added persistent light and dark pixel themes.
 - fix(ui): replaced the low-legibility pixel font with Pixelify Sans and raised the type scale.
+- fix(ui): replaced Pixelify Sans with the heavier Jersey 15 pixel font for clearer UI text.
 - fix(ui): aligned light and dark semantic color roles and added contrast checks.
 - fix(ui): refined the compact pixel type scale and prevented text and button overflow.
+- fix(ui): corrected light-theme contrast, tightened button proportions, and aligned screen gutters.
 - fix(ui): hardened compact layouts across core screens and operation dialogs.
 - build(icon): generated desktop release icons from the gitflu icon asset.
 - docs(roadmap): planned the ordered post-MVP work through signed public releases.

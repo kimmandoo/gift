@@ -8,7 +8,21 @@ void main() {
   testWidgets('boots into the repository welcome screen', (tester) async {
     await tester.pumpWidget(const GitfluApp());
     expect(find.text('Open Repository'), findsOneWidget);
+    expect(find.byKey(const Key('welcome-logo')), findsOneWidget);
     expect(find.byType(MaterialApp), findsOneWidget);
+  });
+
+  testWidgets('keeps the welcome action compact and aligned with the logo', (
+    tester,
+  ) async {
+    await tester.pumpWidget(const GitfluApp());
+
+    final action = find.widgetWithText(FilledButton, 'Open Repository');
+    expect(tester.getSize(action).height, lessThanOrEqualTo(44));
+    expect(
+      tester.getTopLeft(find.byKey(const Key('welcome-logo'))).dx,
+      closeTo(tester.getTopLeft(find.text('Open a Git repository')).dx, 1),
+    );
   });
 
   test('uses the documented pixel theme tokens', () {
@@ -31,14 +45,16 @@ void main() {
     expect(theme.appBarTheme.titleTextStyle?.fontSize, pixelTitleLargeSize);
     expect(
       theme.filledButtonTheme.style?.minimumSize?.resolve({}),
-      const Size(48, 44),
+      const Size(44, 40),
     );
     expect(
       theme.outlinedButtonTheme.style?.minimumSize?.resolve({}),
-      const Size(48, 44),
+      const Size(44, 40),
     );
+    expect(theme.colorScheme.surfaceContainerHighest, pixelPanelRaised);
     expect(light.brightness, Brightness.light);
     expect(light.scaffoldBackgroundColor, pixelLightCanvas);
+    expect(light.colorScheme.surfaceContainerHighest, pixelLightRaised);
     for (final scheme in [theme.colorScheme, light.colorScheme]) {
       expect(
         contrast(scheme.onSurface, scheme.surface),
@@ -75,6 +91,22 @@ void main() {
       );
       expect(
         contrast(scheme.onErrorContainer, scheme.errorContainer),
+        greaterThanOrEqualTo(4.5),
+      );
+      expect(
+        contrast(scheme.primary, scheme.surfaceContainerHighest),
+        greaterThanOrEqualTo(4.5),
+      );
+      expect(
+        contrast(scheme.secondary, scheme.surfaceContainerHighest),
+        greaterThanOrEqualTo(4.5),
+      );
+      expect(
+        contrast(scheme.tertiary, scheme.surfaceContainerHighest),
+        greaterThanOrEqualTo(4.5),
+      );
+      expect(
+        contrast(scheme.error, scheme.surfaceContainerHighest),
         greaterThanOrEqualTo(4.5),
       );
     }

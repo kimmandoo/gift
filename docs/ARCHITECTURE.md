@@ -248,7 +248,7 @@ ChangesScreen
 GitfluApp
   ├─ persisted ThemeMode
   └─ buildPixelTheme(light/dark)
-       ├─ bundled Pixelify Sans pixel font
+       ├─ bundled Jersey 15 pixel font
        ├─ light/dark canvas + flat panel tokens
        ├─ square borders + visible focus color
        └─ screen CallbackShortcuts
@@ -259,7 +259,7 @@ GitfluApp
             └─ Ctrl+Enter → commit
 ```
 
-1. `lib/src/app/pixel_theme.dart`에 두 palette, Pixelify Sans typography,
+1. `lib/src/app/pixel_theme.dart`에 두 palette, Jersey 15 typography,
    표면 규칙과 theme toggle을 모아 두어 화면마다 임의의 색을 다시 정하지
    않습니다. 선택 상태는 색상뿐 아니라 semantics와 텍스트로도 드러납니다.
 2. Changes와 History는 넓은 창에서 목록/상세 pane을 나란히 보여주고,

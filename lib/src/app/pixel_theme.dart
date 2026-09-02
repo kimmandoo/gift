@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-const pixelFontFamily = 'Pixelify Sans';
+const pixelFontFamily = 'Jersey 15';
 const pixelCanvas = Color(0xFF0D1117);
 const pixelPanel = Color(0xFF151B23);
 const pixelPanelRaised = Color(0xFF202938);
@@ -14,11 +14,11 @@ const pixelLightCanvas = Color(0xFFF5F1E8);
 const pixelLightPanel = Color(0xFFFFFCF5);
 const pixelLightRaised = Color(0xFFE9E3D7);
 const pixelLightInk = Color(0xFF17212B);
-const pixelLightMuted = Color(0xFF5E6B70);
-const pixelLightMint = Color(0xFF087F5B);
-const pixelLightSky = Color(0xFF1769AA);
-const pixelLightAmber = Color(0xFF9A6700);
-const pixelLightCoral = Color(0xFFB42318);
+const pixelLightMuted = Color(0xFF526067);
+const pixelLightMint = Color(0xFF056B4A);
+const pixelLightSky = Color(0xFF145A90);
+const pixelLightAmber = Color(0xFF7A4F00);
+const pixelLightCoral = Color(0xFF9F1C16);
 const pixelPrimaryContainer = Color(0xFF164A3A);
 const pixelOnPrimaryContainer = Color(0xFFB8F7DF);
 const pixelSecondaryContainer = Color(0xFF143A55);
@@ -37,8 +37,8 @@ const pixelLightErrorContainer = Color(0xFFFFDAD6);
 const pixelLightOnErrorContainer = Color(0xFF410002);
 
 // Keep the desktop type scale in one place so every screen stays readable as
-// the pixel UI grows. Pixelify Sans needs a little more room than a typical
-// proportional UI font, especially for metadata and compact labels.
+// the pixel UI grows. Jersey 15 keeps the pixel silhouette while using
+// heavier, simpler glyphs than the first-pass display font.
 const pixelBodyLargeSize = 16.0;
 const pixelBodyMediumSize = 15.0;
 const pixelBodySmallSize = 13.0;
@@ -61,7 +61,14 @@ ThemeData buildPixelTheme({Brightness brightness = Brightness.dark}) {
       ? const ColorScheme.dark(
           surface: pixelPanel,
           onSurface: pixelInk,
+          surfaceDim: pixelCanvas,
+          surfaceBright: pixelPanelRaised,
+          surfaceContainerLowest: pixelCanvas,
+          surfaceContainerLow: pixelPanel,
+          surfaceContainer: pixelPanel,
+          surfaceContainerHigh: pixelPanelRaised,
           surfaceContainerHighest: pixelPanelRaised,
+          surfaceTint: Colors.transparent,
           primary: pixelMint,
           onPrimary: pixelCanvas,
           primaryContainer: pixelPrimaryContainer,
@@ -84,7 +91,14 @@ ThemeData buildPixelTheme({Brightness brightness = Brightness.dark}) {
       : const ColorScheme.light(
           surface: pixelLightPanel,
           onSurface: pixelLightInk,
+          surfaceDim: pixelLightRaised,
+          surfaceBright: pixelLightPanel,
+          surfaceContainerLowest: pixelLightPanel,
+          surfaceContainerLow: pixelLightPanel,
+          surfaceContainer: pixelLightPanel,
+          surfaceContainerHigh: pixelLightRaised,
           surfaceContainerHighest: pixelLightRaised,
+          surfaceTint: Colors.transparent,
           primary: pixelLightMint,
           onPrimary: pixelLightPanel,
           primaryContainer: pixelLightPrimaryContainer,
@@ -233,9 +247,10 @@ ThemeData buildPixelTheme({Brightness brightness = Brightness.dark}) {
         foregroundColor: dark ? pixelCanvas : pixelLightPanel,
         textStyle: buttonTextStyle,
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
         shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
         side: BorderSide(color: primary, width: 2),
-        minimumSize: const Size(48, 44),
+        minimumSize: const Size(44, 40),
       ),
     ),
     outlinedButtonTheme: OutlinedButtonThemeData(
@@ -243,9 +258,10 @@ ThemeData buildPixelTheme({Brightness brightness = Brightness.dark}) {
         foregroundColor: primary,
         textStyle: buttonTextStyle,
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
         shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
         side: BorderSide(color: primary),
-        minimumSize: const Size(48, 44),
+        minimumSize: const Size(44, 40),
       ),
     ),
     textButtonTheme: TextButtonThemeData(
@@ -253,7 +269,8 @@ ThemeData buildPixelTheme({Brightness brightness = Brightness.dark}) {
         foregroundColor: primary,
         textStyle: buttonTextStyle,
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-        minimumSize: const Size(48, 44),
+        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+        minimumSize: const Size(44, 40),
       ),
     ),
     listTileTheme: ListTileThemeData(

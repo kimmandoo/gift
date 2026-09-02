@@ -18,7 +18,7 @@ This file is the handoff record for continuing work across query sessions.
 - Verification: restored the pinned Flutter 3.47.2 SDK with Dart 3.13.2 in
   `/home/mgkim/.local/flutter`; passed `flutter analyze`, the full Flutter test
   suite, and `PATH=/home/mgkim/.local/flutter/bin:$PATH dart run
-  tool/verify.dart` (formatting, analysis, and all 70 tests).
+  tool/verify.dart` (formatting, analysis, and all 71 tests).
 - Commit identity cleanup: rewrote all reachable commits to
   `kimmandoo <mingyu5675@gmail.com>`, removed the temporary rewrite refs, and
   force-pushed `main` to GitHub. `git log --all` reports only that identity.
@@ -75,7 +75,8 @@ This file is the handoff record for continuing work across query sessions.
   models for incoming, continuation, fork, merge, and compressed wide-lane
   rendering. Pagination recomputes the complete visible graph.
 - Replaced the first-pass Silkscreen font with the more legible OFL Pixelify
-  Sans font and applied a compact 12/13/15/16/18/22/24 px type scale with
+  Sans font, then replaced it with Jersey 15 for heavier, simpler glyphs, and
+  kept the compact 12/13/15/16/18/22/24 px type scale with
   explicit line spacing, button sizing, and centralized heading tokens.
 - Added persisted light/dark theme switching, compact 360x640 layout coverage,
   and responsive dialog bounds.
@@ -83,15 +84,17 @@ This file is the handoff record for continuing work across query sessions.
   macOS AppIcon PNGs and the Windows multi-size ICO use that asset; Flutter
   also bundles it for Linux packaging.
 - UI verification: `dart run tool/verify.dart` passed formatting, analysis,
-  and all 70 tests. Added compact 320x480 welcome, compact 360x640 Changes and
+  and all 71 tests. Added compact 320x480 welcome, compact 360x640 Changes and
   History, theme persistence, wide graph, merge/fork, and already-active
   parent lane coverage. Font and icon asset validation passed.
 - Palette pass replaced generated/direct color mixing with explicit semantic
   light and dark roles, matching `on*` text colors for status containers, and
   a 4.5:1 contrast regression suite. Direct red error text was removed.
-- Current UI refinement lowered the overall type scale, strengthened Pixelify
-  Sans body weight and line spacing, moved screen headings to shared theme
-  tokens, and added common button text/padding rules.
+- Current UI refinement lowered the overall type scale, strengthened Jersey 15
+  body weight and line spacing, moved screen headings to shared theme tokens,
+  and added common button text/padding rules.
+- Current font pass replaced Pixelify Sans with Jersey 15, darkened all light
+  accent roles for raised-surface contrast, and bundled the matching OFL text.
 - Current layout hardening made narrow summary/status rows wrap safely, added
   branch-input stacking below 300 px, and enabled dialog action overflow
   spacing so text and buttons do not collide.

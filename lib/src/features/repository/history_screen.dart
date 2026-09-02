@@ -104,7 +104,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
                 key: const Key('history-status-strip'),
                 color: Theme.of(context).colorScheme.surfaceContainerHighest,
                 padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
+                  horizontal: 20,
                   vertical: 8,
                 ),
                 child: const Text('Ctrl+R refresh · Esc back'),
@@ -263,7 +263,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
     }
     final narrow = MediaQuery.sizeOf(context).width < 500;
     return SingleChildScrollView(
-      padding: EdgeInsets.fromLTRB(narrow ? 16 : 28, 20, narrow ? 16 : 28, 24),
+      padding: EdgeInsets.fromLTRB(narrow ? 16 : 20, 20, narrow ? 16 : 20, 24),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [

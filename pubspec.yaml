@@ -64,9 +64,9 @@ flutter:
   assets:
     - assets/images/gitflu_icon.png
   fonts:
-    - family: Pixelify Sans
+    - family: Jersey 15
       fonts:
-        - asset: assets/fonts/PixelifySans-Variable.ttf
+        - asset: assets/fonts/Jersey15-Regular.ttf
 
   # To add assets to your application, add an assets section, like this:
   # assets:

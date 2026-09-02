@@ -94,9 +94,21 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 720),
             child: Padding(
-              padding: const EdgeInsets.all(32),
+              padding: const EdgeInsets.fromLTRB(24, 28, 24, 24),
               child: ListView(
                 children: [
+                  const Align(
+                    alignment: Alignment.centerLeft,
+                    child: Image(
+                      key: Key('welcome-logo'),
+                      image: AssetImage('assets/images/gitflu_icon.png'),
+                      width: 96,
+                      height: 96,
+                      filterQuality: FilterQuality.none,
+                      semanticLabel: 'gitflu mascot',
+                    ),
+                  ),
+                  const SizedBox(height: 16),
                   Text(
                     'Open a Git repository',
                     style: textTheme.headlineMedium,
