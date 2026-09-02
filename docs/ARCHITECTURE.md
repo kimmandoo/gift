@@ -436,6 +436,10 @@ row also exposes its lane and merge status as an accessibility image label.
 When a branch joins or ends, the lane allocator removes every vacated slot and
 shifts surviving ancestry left. Later commits therefore connect to the nearest
 available lane instead of retaining an empty parallel column.
+If the history snapshot contains only one local branch tip, every displayed
+commit is placed on lane zero and connected to the adjacent row. Historical
+merge parents do not create persistent side lanes unless multiple local branch
+tips are actually being displayed.
 
 ## Safe advanced branch operations (Task 20)
 

@@ -191,11 +191,14 @@ class HistoryController extends ChangeNotifier {
         _state.copyWith(
           page: GitHistoryPage(
             repositoryId: page.repositoryId,
-            commits: assignGraphLanes([...page.commits, ...nextPage.commits]),
+            commits: page.collapseToSingleLane
+                ? assignSingleGraphLane([...page.commits, ...nextPage.commits])
+                : assignGraphLanes([...page.commits, ...nextPage.commits]),
             offset: page.offset,
             limit: page.limit,
             hasMore: nextPage.hasMore,
             nextCursor: nextPage.nextCursor,
+            collapseToSingleLane: page.collapseToSingleLane,
           ),
           clearError: true,
           isLoadingMore: false,

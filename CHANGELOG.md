@@ -2,6 +2,7 @@
 
 ## 2026-09-03
 
+- fix(graph): rendered single-branch history as one connected lane of commit nodes.
 - fix(graph): compacted closed history lanes so surviving commit ancestry no longer drifted into parallel columns.
 - fix(graph): clarified branch topology with dotted lanes, stepped transitions, and pixel commit markers.
 - feat(task20): added preview-bound advanced branch operations and explicit recovery states.

@@ -5,7 +5,7 @@ This file is the handoff record for continuing work across query sessions.
 ## Current checkpoint
 
 - Date: 2026-09-03
-- Active task: the requested history graph lane compaction fix is complete on
+- Active task: the requested single-branch history graph fix is complete on
   `main`; Task 20 remains complete and Task 21 has not been activated.
 - Branch: `main`; no new branch or worktree was created.
 - History cleanup: removed the pull-request merge commit from local and remote
@@ -13,21 +13,20 @@ This file is the handoff record for continuing work across query sessions.
   content remain in a linear history. The two remaining obsolete branding
   labels in reachable commit messages were also replaced, and the rewrite
   backup ref was removed.
-- Changed files: the history lane allocator and parser coverage, architecture,
-  changelog, and this checkpoint. Vacated interior lanes are now compacted as
-  soon as a branch joins or ends, so surviving commits move left and do not
-  retain an unnecessary parallel column.
-- Verification: the history parser suite passed all 5 tests, the focused
-  history screen suite passed all 6 tests, and `flutter analyze` passed with
-  no issues. The full suite completed with 110 passing tests and the same 2
-  known Windows-platform expectation failures in `dart_git_backend_test.dart`
+- Changed files: the history model/parser, repository snapshot decision,
+  pagination controller, parser coverage, architecture, changelog, and this
+  checkpoint. A snapshot with one local branch tip now connects every visible
+  commit node on lane zero; multi-tip snapshots retain topology lanes.
+- Verification: the history parser, history screen, and history exploration
+  suites passed all 15 tests, and `flutter analyze` passed with no issues. The
+  full suite completed with 112 passing tests and the same 2 known
+  Windows-platform expectation failures in `dart_git_backend_test.dart`
   (UTF-8 process output and CRLF newline normalization). Formatting and final
   `git diff --check` passed.
 - Next action: activate Task21 by recording its behavior scenarios and first
   RED test in a later requested session.
-- First failing signal: the active-parent join scenario expected the surviving
-  commit sequence on lanes `[0, 0, 0]` but returned `[0, 0, 1]`, proving that
-  an interior empty lane was retained after the join.
+- First failing signal: a single-tip merge-history regression could not request
+  single-lane rendering because `parseGitHistory` lacked the mode entirely.
 - Blockers: none.
 
 ## Previous checkpoint

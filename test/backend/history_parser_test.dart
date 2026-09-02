@@ -91,6 +91,44 @@ void main() {
     );
   });
 
+  test('keeps a single-tip history on one connected lane', () {
+    final merge = 'm' * 40;
+    final firstParent = 'p' * 40;
+    final secondParent = 's' * 40;
+    final page = parseGitHistory(
+      utf8.encode(
+        [
+          historyRecord(
+            oid: merge,
+            parents: '$firstParent $secondParent',
+            subject: 'Merge old work into main',
+          ),
+          historyRecord(oid: firstParent, parents: '', subject: 'main line'),
+          historyRecord(oid: secondParent, parents: '', subject: 'old work'),
+        ].join(),
+      ),
+      repositoryId: repositoryId,
+      offset: 0,
+      limit: 10,
+      collapseToSingleLane: true,
+    );
+
+    expect(page.commits.map((commit) => commit.lane), [0, 0, 0]);
+    expect(page.commits.map((commit) => commit.laneCount), [1, 1, 1]);
+    expect(
+      page.commits.map(
+        (commit) => commit.graphSegments
+            .map((segment) => '${segment.fromLane}->${segment.toLane}')
+            .toList(),
+      ),
+      [
+        ['0->0'],
+        ['0->0'],
+        <String>[],
+      ],
+    );
+  });
+
   test('recomputes lanes across an appended page boundary', () {
     final merge = 'm' * 40;
     final firstParent = 'p' * 40;

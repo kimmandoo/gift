@@ -383,6 +383,14 @@ class RepositoryService {
             refs: requestedCursor.snapshotRefs,
           );
     final position = requestedCursor?.position ?? offset;
+    final localBranchTips = snapshot.refs
+        .where((ref) => ref.name.startsWith('refs/heads/'))
+        .map((ref) => ref.targetOid)
+        .toSet();
+    final collapseToSingleLane = filters.ref.isNotEmpty ||
+        (localBranchTips.isNotEmpty
+            ? localBranchTips.length == 1
+            : snapshot.tips.toSet().length == 1);
     final pageCursor = GitHistoryCursor(
       snapshotTips: snapshot.tips,
       snapshotRefs: snapshot.refs,
@@ -396,6 +404,7 @@ class RepositoryService {
         offset: position,
         limit: effectiveLimit,
         hasMore: false,
+        collapseToSingleLane: true,
       );
     }
     final args = <String>[
@@ -441,6 +450,7 @@ class RepositoryService {
         limit: effectiveLimit,
         cursor: pageCursor,
         snapshotRefs: snapshot.refs,
+        collapseToSingleLane: collapseToSingleLane,
       );
     } on FormatException catch (error, stackTrace) {
       Error.throwWithStackTrace(

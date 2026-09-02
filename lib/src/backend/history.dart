@@ -210,6 +210,7 @@ class GitHistoryPage {
     required this.limit,
     required this.hasMore,
     this.nextCursor,
+    this.collapseToSingleLane = false,
   });
 
   final RepositoryId repositoryId;
@@ -218,6 +219,7 @@ class GitHistoryPage {
   final int limit;
   final bool hasMore;
   final GitHistoryCursor? nextCursor;
+  final bool collapseToSingleLane;
 }
 
 /// Parses the NUL-separated fields and record separators emitted by
@@ -231,6 +233,7 @@ GitHistoryPage parseGitHistory(
   GitHistoryCursor? cursor,
   Iterable<GitCommitRef> snapshotRefs = const <GitCommitRef>[],
   String queryKey = '',
+  bool collapseToSingleLane = false,
 }) {
   final text = utf8.decode(output, allowMalformed: true);
   final parsed = <GitCommit>[];
@@ -278,12 +281,30 @@ GitHistoryPage parseGitHistory(
       : null;
   return GitHistoryPage(
     repositoryId: repositoryId,
-    commits: assignGraphLanes(pageCommits),
+    commits: collapseToSingleLane
+        ? assignSingleGraphLane(pageCommits)
+        : assignGraphLanes(pageCommits),
     offset: offset,
     limit: limit,
     hasMore: hasMore,
     nextCursor: nextCursor,
+    collapseToSingleLane: collapseToSingleLane,
   );
+}
+
+/// Connects the displayed commit rows on one axis when history has one tip.
+List<GitCommit> assignSingleGraphLane(List<GitCommit> commits) {
+  return [
+    for (var index = 0; index < commits.length; index++)
+      commits[index].withGraph(
+        lane: 0,
+        laneCount: 1,
+        graphSegments: index + 1 < commits.length
+            ? const [GitGraphSegment(fromLane: 0, toLane: 0)]
+            : const [],
+        graphHasIncoming: index > 0,
+      ),
+  ];
 }
 
 /// Recomputes lanes for a complete visible sequence. Call this again after

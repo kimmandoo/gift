@@ -6,6 +6,53 @@ import 'package:gift/src/backend/dart_git_backend.dart';
 import 'package:gift/src/backend/history.dart';
 
 void main() {
+  test(
+    'renders a repository with one local branch on one graph lane',
+    () async {
+      final directory = await Directory.systemTemp.createTemp(
+        'gift-single-branch-history-',
+      );
+      addTearDown(() => directory.delete(recursive: true));
+
+      await git(directory.path, ['init', '--quiet']);
+      await git(directory.path, ['config', 'user.name', 'History Tester']);
+      await git(directory.path, ['config', 'user.email', 'history@test']);
+      await File('${directory.path}/main.txt').writeAsString('main\n');
+      await git(directory.path, ['add', '--', 'main.txt']);
+      await git(directory.path, ['commit', '--quiet', '-m', 'initial']);
+      final mainBranch = (await gitOutput(directory.path, [
+        'branch',
+        '--show-current',
+      ])).trim();
+
+      await git(directory.path, ['switch', '--quiet', '--create', 'old-work']);
+      await File('${directory.path}/side.txt').writeAsString('side\n');
+      await git(directory.path, ['add', '--', 'side.txt']);
+      await git(directory.path, ['commit', '--quiet', '-m', 'old work']);
+      await git(directory.path, ['switch', '--quiet', mainBranch]);
+      await File('${directory.path}/main.txt').writeAsString('main\nnext\n');
+      await git(directory.path, ['add', '--', 'main.txt']);
+      await git(directory.path, ['commit', '--quiet', '-m', 'main work']);
+      await git(directory.path, [
+        'merge',
+        '--quiet',
+        '--no-ff',
+        'old-work',
+        '-m',
+        'merge old work',
+      ]);
+      await git(directory.path, ['branch', '--delete', 'old-work']);
+
+      final backend = DartGitBackend();
+      final opened = await backend.openRepository(directory.path);
+      final history = await backend.getHistory(opened.repositoryId);
+
+      expect(history.collapseToSingleLane, isTrue);
+      expect(history.commits.map((commit) => commit.lane).toSet(), {0});
+      expect(history.commits.map((commit) => commit.laneCount).toSet(), {1});
+    },
+  );
+
   test('keeps a bounded history cursor stable while refs advance and inspects a commit', () async {
     final directory = await Directory.systemTemp.createTemp('gift-history-');
     addTearDown(() => directory.delete(recursive: true));
