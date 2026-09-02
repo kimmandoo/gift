@@ -1,4 +1,5 @@
 import 'domain.dart';
+import 'commit.dart';
 import 'discard.dart';
 import 'diff.dart';
 import 'git_installation_service.dart';
@@ -77,6 +78,17 @@ class DartGitBackend {
       gitPath: installation.executablePath,
       state: _state,
     ).unstage(repositoryId, path);
+  }
+
+  Future<GitCommitResult> commit(
+    RepositoryId repositoryId,
+    String message,
+  ) async {
+    final installation = await getGitInstallation();
+    return RepositoryService(
+      gitPath: installation.executablePath,
+      state: _state,
+    ).commit(repositoryId, message);
   }
 
   Future<DiscardPreview> createDiscardPreview(

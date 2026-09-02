@@ -140,6 +140,34 @@ ChangesScreen
    사라지면 selection도 함께 비우고, staged facet이 남으면 선택을 유지해
    새 diff를 읽습니다.
 
+## staged commit 흐름
+
+```text
+ChangesScreen
+  └─ commit message editor
+       └─ ChangesController.commit(message)
+            └─ GitGateway.commit(repositoryId, message)
+                 └─ DartGitBackend
+                      └─ RepositoryService.commit()
+                           ├─ AppState.runMutation(repositoryId)  (serialized)
+                           ├─ git commit --file=-  + UTF-8 stdin
+                           ├─ hook/process error → typed GitError
+                           └─ getStatus() → GitCommitResult
+                                └─ clear staged UI and show commit ID
+```
+
+1. 편집기는 staged facet이 하나 이상 있을 때만 보입니다. 빈 메시지는
+   버튼을 비활성화하고, commit 중에는 다른 mutation과 편집을 잠급니다.
+2. 백엔드는 모든 staged 경로를 한 번에 commit합니다. 메시지를 argv에
+   넣지 않고 `--file=-`와 UTF-8 stdin으로 전달하므로 한글, 악센트,
+   이모지와 셸 문자가 포함된 메시지도 같은 경로로 처리됩니다.
+3. commit 뒤 status를 다시 읽어 새 HEAD의 `branch.oid`와 staged 상태를
+   함께 반환합니다. 성공하면 선택이 사라진 파일은 선택 해제하고,
+   working-tree facet이 남은 파일은 선택을 유지합니다.
+4. Git의 process failure 진단에 hook 관련 표식이 있으면
+   `GitErrorCategory.hookRejected`로 분류해 화면에 원인을 짧게 보여줍니다.
+   원본 stderr는 실행기에서 redaction된 진단으로만 보존됩니다.
+
 ## 폴더별 역할
 
 | 경로 | 역할 |
@@ -148,6 +176,7 @@ ChangesScreen
 | `lib/src/app/` | 최상위 Material 앱과 테마 |
 | `lib/src/features/` | 화면별 UI와 컨트롤러 |
 | `lib/src/backend/domain.dart` | 백엔드와 UI가 주고받는 값 객체 |
+| `lib/src/backend/commit.dart` | commit ID와 post-commit status 결과 |
 | `lib/src/backend/error.dart` | 사용자 메시지와 진단 정보를 가진 오류 |
 | `lib/src/backend/executor.dart` | Git 프로세스 실행, 출력 제한, 비밀값 가리기 |
 | `lib/src/backend/git_installation_service.dart` | Git 경로 검색과 버전 검사 |
@@ -167,7 +196,7 @@ ChangesScreen
 
 새 기능은 다음 순서로 추가하면 흐름을 잃지 않습니다.
 
-1. `domain.dart`에 UI에 필요한 결과 타입을 추가합니다.
+1. `domain.dart` 또는 기능별 모델 파일에 UI에 필요한 결과 타입을 추가합니다.
 2. `error.dart`에 사용자가 이해할 오류 분류가 필요한지 결정합니다.
 3. `executor.dart`에서 사용할 `GitInvocation`의 인자 목록을 설계합니다.
 4. 백엔드 service를 만들고 `DartGitBackend`에 의도를 드러내는 메서드를

@@ -1,4 +1,5 @@
 import 'package:branchline/src/backend/domain.dart';
+import 'package:branchline/src/backend/commit.dart';
 import 'package:branchline/src/backend/discard.dart';
 import 'package:branchline/src/backend/diff.dart';
 import 'package:branchline/src/backend/git_gateway.dart';
@@ -276,6 +277,74 @@ void main() {
     expect(find.text('Working tree is clean.'), findsOneWidget);
     controller.dispose();
   });
+
+  testWidgets('commits staged changes from the editor and refreshes the list', (
+    tester,
+  ) async {
+    final repository = const RepositoryOpened(
+      repositoryId: RepositoryId(value: 'repository-id'),
+      root: '/workspace/project',
+    );
+    final gateway = FakeChangesGateway(
+      snapshots: [
+        snapshot(
+          repository,
+          changes: [
+            GitChange(
+              type: GitChangeType.tracked,
+              path: 'lib/app.dart',
+              indexStatus: 'M',
+              worktreeStatus: '.',
+              submoduleStatus: 'N...',
+            ),
+          ],
+        ),
+      ],
+      commitResult: GitCommitResult(
+        repositoryId: repository.repositoryId,
+        commitOid: '0123456789abcdef0123456789abcdef01234567',
+        status: snapshot(repository, changes: const <GitChange>[]),
+      ),
+    );
+    final controller = ChangesController(
+      gateway: gateway,
+      repositoryId: repository.repositoryId,
+      pollInterval: const Duration(hours: 1),
+    );
+    await controller.refresh();
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: ChangesScreen(
+          gateway: gateway,
+          repository: repository,
+          controller: controller,
+          autoInitialize: false,
+        ),
+      ),
+    );
+
+    expect(find.text('Commit staged changes'), findsOneWidget);
+    await tester.enterText(
+      find.byKey(const Key('commit-message')),
+      '수정: café 🚀',
+    );
+    await tester.pump();
+    expect(
+      tester
+          .widget<FilledButton>(find.byKey(const Key('commit-staged')))
+          .onPressed,
+      isNotNull,
+    );
+    await tester.tap(find.byKey(const Key('commit-staged')));
+    await tester.pumpAndSettle();
+
+    expect(gateway.commitCalls, 1);
+    expect(gateway.lastCommitMessage, '수정: café 🚀');
+    expect(find.byKey(const Key('commit-success')), findsOneWidget);
+    expect(find.text('Working tree is clean.'), findsOneWidget);
+    controller.dispose();
+  });
 }
 
 GitChange change(String path) {
@@ -323,6 +392,7 @@ class FakeChangesGateway implements GitGateway {
     this.diffs = const {},
     this.stageSnapshot,
     this.unstageSnapshot,
+    this.commitResult,
     this.discardPreview,
     this.discardSnapshot,
   });
@@ -331,11 +401,14 @@ class FakeChangesGateway implements GitGateway {
   final Map<String, GitDiffSnapshot> diffs;
   final GitStatusSnapshot? stageSnapshot;
   final GitStatusSnapshot? unstageSnapshot;
+  final GitCommitResult? commitResult;
   final DiscardPreview? discardPreview;
   final GitStatusSnapshot? discardSnapshot;
   var diffCalls = 0;
   var stageCalls = 0;
   var unstageCalls = 0;
+  var commitCalls = 0;
+  String? lastCommitMessage;
   var discardCalls = 0;
   var _index = 0;
 
@@ -395,6 +468,16 @@ class FakeChangesGateway implements GitGateway {
   ) async {
     unstageCalls++;
     return unstageSnapshot ?? snapshots.last;
+  }
+
+  @override
+  Future<GitCommitResult> commit(
+    RepositoryId repositoryId,
+    String message,
+  ) async {
+    commitCalls++;
+    lastCommitMessage = message;
+    return commitResult!;
   }
 
   @override

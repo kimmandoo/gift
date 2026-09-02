@@ -4,6 +4,7 @@ import 'dart:io';
 import 'dart:math';
 
 import 'domain.dart';
+import 'commit.dart';
 import 'discard.dart';
 import 'diff.dart';
 import 'error.dart';
@@ -316,6 +317,68 @@ class RepositoryService {
   Future<GitStatusSnapshot> unstage(RepositoryId repositoryId, String path) =>
       _mutatePath(repositoryId, const ['restore', '--staged'], path);
 
+  /// Creates a commit from all currently staged content.
+  ///
+  /// The message is sent as UTF-8 on stdin through `--file=-`. This keeps
+  /// arbitrary user text out of argv and preserves shell-safe execution.
+  Future<GitCommitResult> commit(
+    RepositoryId repositoryId,
+    String message,
+  ) async {
+    if (message.trim().isEmpty) {
+      throw const GitError(
+        category: GitErrorCategory.parseFailure,
+        userMessage: 'Enter a commit message.',
+        diagnostic: 'commit message was empty or whitespace only',
+        retryable: false,
+      );
+    }
+
+    return state.runMutation(repositoryId, () async {
+      final before = await getStatus(repositoryId);
+      if (before.staged.isEmpty) {
+        throw const GitError(
+          category: GitErrorCategory.dirtyWorktree,
+          userMessage: 'Stage at least one change before committing.',
+          diagnostic: 'commit requested without staged changes',
+          retryable: false,
+        );
+      }
+
+      final handle = await state.lookup(repositoryId);
+      try {
+        await _runner.run(
+          GitInvocation(
+            program: gitPath,
+            args: const ['commit', '--file=-'],
+            cwd: handle.root,
+            stdin: utf8.encode(message),
+            kind: GitOperationKind.mutation,
+            outputPolicy: const OutputPolicy.capture(maxBytes: 256 * 1024),
+          ),
+        );
+      } on GitError catch (error, stackTrace) {
+        Error.throwWithStackTrace(_mapCommitError(error), stackTrace);
+      }
+
+      final status = await getStatus(repositoryId);
+      final commitOid = status.branch.oid;
+      if (commitOid == null || commitOid.isEmpty) {
+        throw const GitError(
+          category: GitErrorCategory.parseFailure,
+          userMessage: 'Git created a commit without returning its ID.',
+          diagnostic: 'post-commit status did not contain branch.oid',
+          retryable: false,
+        );
+      }
+      return GitCommitResult(
+        repositoryId: repositoryId,
+        commitOid: commitOid,
+        status: status,
+      );
+    });
+  }
+
   Future<DiscardPreview> createDiscardPreview(
     RepositoryId repositoryId,
     String path,
@@ -466,6 +529,21 @@ GitError _staleDiscardError(String diagnostic) {
         'The file changed before it could be discarded. Review it again.',
     diagnostic: diagnostic,
     retryable: true,
+  );
+}
+
+GitError _mapCommitError(GitError error) {
+  if (error.category != GitErrorCategory.processFailed ||
+      !RegExp(
+        r'\b(?:hook|pre-commit|commit-msg|pre-merge-commit|post-commit)\b',
+        caseSensitive: false,
+      ).hasMatch(error.diagnostic)) {
+    return error;
+  }
+  return error.copyWith(
+    category: GitErrorCategory.hookRejected,
+    userMessage: 'The commit hook rejected this commit.',
+    retryable: false,
   );
 }
 

@@ -20,7 +20,8 @@ navigation, while a pure Dart backend talks to the Git executable installed on
 the user's machine.
 
 > **Project status:** Early development. The repository and Git execution
-> foundations are in place; the changes view is the next active milestone.
+> foundations, changes view, and local commit flow are in place; history is
+> the next active milestone.
 
 ## Highlights
 
@@ -117,7 +118,8 @@ work is tracked in [`TASKS.md`](TASKS.md).
 - [x] Unified diff viewer with staged and unstaged scopes.
 - [x] Staging selected paths with serialized backend mutations.
 - [x] Safe confirmation-based discard for tracked working-tree changes.
-- [ ] Commit, branch, history, and remote workflows.
+- [x] Commit staged changes with UTF-8 messages and hook feedback.
+- [ ] Branch, history, and remote workflows.
 - [ ] Responsive pixel UI, desktop shortcuts, packaging, and CI.
 
 ## Contributing

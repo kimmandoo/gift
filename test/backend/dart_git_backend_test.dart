@@ -4,6 +4,7 @@ import 'dart:io';
 import 'dart:math';
 
 import 'package:branchline/src/backend/dart_git_backend.dart';
+import 'package:branchline/src/backend/commit.dart';
 import 'package:branchline/src/backend/discard.dart';
 import 'package:branchline/src/backend/diff.dart';
 import 'package:branchline/src/backend/domain.dart';
@@ -433,6 +434,84 @@ void main() {
     releaseFirst.complete();
     await Future.wait([first, second]);
     expect(maximumActive, 1);
+  });
+
+  test(
+    'commits a UTF-8 message through stdin and returns fresh status',
+    () async {
+      await withTempDirectory((directory) async {
+        await createCommittedRepository(directory.path, 'tracked.txt');
+        final file = File('${directory.path}/tracked.txt');
+        await file.writeAsString('updated\n');
+
+        final backend = DartGitBackend();
+        final opened = await backend.openRepository(directory.path);
+        await backend.stage(opened.repositoryId, 'tracked.txt');
+
+        const message = '수정: café 🚀';
+        final result = await backend.commit(opened.repositoryId, message);
+
+        expect(result, isA<GitCommitResult>());
+        expect(result.commitOid, hasLength(40));
+        expect(result.status.isClean, isTrue);
+        expect(result.status.branch.oid, result.commitOid);
+
+        final log = await Process.run(
+          'git',
+          const ['log', '-1', '--format=%B'],
+          workingDirectory: directory.path,
+          runInShell: false,
+        );
+        expect(log.exitCode, 0);
+        expect((log.stdout as String).trim(), message);
+      });
+    },
+  );
+
+  test('maps a rejected commit hook to hookRejected', () async {
+    await withTempDirectory((directory) async {
+      await createCommittedRepository(directory.path, 'tracked.txt');
+      await File('${directory.path}/tracked.txt').writeAsString('updated\n');
+
+      final hook = File('${directory.path}/.git/hooks/pre-commit');
+      await hook.writeAsString(
+        '#!/bin/sh\n'
+        'echo "pre-commit hook rejected this commit" >&2\n'
+        'exit 1\n',
+      );
+      final chmod = await Process.run('chmod', [
+        '+x',
+        hook.path,
+      ], runInShell: false);
+      expect(chmod.exitCode, 0);
+
+      final backend = DartGitBackend();
+      final opened = await backend.openRepository(directory.path);
+      await backend.stage(opened.repositoryId, 'tracked.txt');
+
+      await expectLater(
+        backend.commit(opened.repositoryId, 'will be rejected'),
+        throwsA(
+          isA<GitError>()
+              .having(
+                (error) => error.category,
+                'category',
+                GitErrorCategory.hookRejected,
+              )
+              .having(
+                (error) => error.userMessage,
+                'userMessage',
+                'The commit hook rejected this commit.',
+              ),
+        ),
+      );
+
+      final status = await backend.getStatus(opened.repositoryId);
+      expect(
+        status.staged.map((change) => change.path),
+        contains('tracked.txt'),
+      );
+    });
   });
 
   test('discards only the working-tree side after a fresh preview', () async {

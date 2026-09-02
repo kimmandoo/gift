@@ -1,4 +1,5 @@
 import 'domain.dart';
+import 'commit.dart';
 import 'discard.dart';
 import 'diff.dart';
 import 'status.dart';
@@ -26,6 +27,8 @@ abstract interface class GitGateway {
   Future<GitStatusSnapshot> stage(RepositoryId repositoryId, String path);
 
   Future<GitStatusSnapshot> unstage(RepositoryId repositoryId, String path);
+
+  Future<GitCommitResult> commit(RepositoryId repositoryId, String message);
 
   Future<DiscardPreview> createDiscardPreview(
     RepositoryId repositoryId,

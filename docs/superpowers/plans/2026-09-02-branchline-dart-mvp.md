@@ -38,6 +38,7 @@ system Git 2.35+.
 ## Dart backend file map
 
 - `lib/src/backend/domain.dart` — public value objects and health contract.
+- `lib/src/backend/commit.dart` — commit ID and post-commit status result.
 - `lib/src/backend/error.dart` — typed Git error categories.
 - `lib/src/backend/executor.dart` — direct process runner, bounded output, and
   redaction.
@@ -114,8 +115,17 @@ system Git 2.35+.
 3. Added a confirmation dialog and refreshed the selected change after discard.
 4. Passed `flutter analyze` and `flutter test`.
 
-## Next vertical: commit panel
+## Completed vertical: commit panel
 
-1. Add failing tests for UTF-8 commit messages and hook failures.
-2. Implement stdin-based commit operations with typed error mapping.
-3. Add a commit editor and staged-state refresh.
+1. Added real Git coverage for UTF-8 commit messages and rejected hooks.
+2. Implemented serialized `git commit --file=-` with UTF-8 stdin, staged
+   preflight, post-commit status, and typed hook errors.
+3. Added a staged-only commit editor with loading, success, error, and clean
+   state feedback.
+4. Passed `flutter analyze` and the backend and Changes screen tests.
+
+## Next vertical: history and graph
+
+1. Add failing tests for bounded log parsing, pagination, and merge parents.
+2. Implement typed history pages and deterministic graph lane assignment.
+3. Add a history screen with commit details and refresh behavior.

@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:branchline/src/backend/commit.dart';
 import 'package:branchline/src/backend/domain.dart';
 import 'package:branchline/src/backend/diff.dart';
 import 'package:branchline/src/backend/error.dart';
@@ -64,10 +65,12 @@ class _ChangesScreenBody extends ConsumerStatefulWidget {
 class _ChangesScreenBodyState extends ConsumerState<_ChangesScreenBody> {
   ChangesController? _manualController;
   late final ChangesControllerArgs _providerArgs;
+  late final TextEditingController _commitMessageController;
 
   @override
   void initState() {
     super.initState();
+    _commitMessageController = TextEditingController();
     _providerArgs = ChangesControllerArgs(
       gateway: widget.gateway,
       repositoryId: widget.repository.repositoryId,
@@ -86,6 +89,7 @@ class _ChangesScreenBodyState extends ConsumerState<_ChangesScreenBody> {
 
   @override
   void dispose() {
+    _commitMessageController.dispose();
     _manualController?.removeListener(_onChanged);
     super.dispose();
   }
@@ -133,6 +137,11 @@ class _ChangesScreenBodyState extends ConsumerState<_ChangesScreenBody> {
               if (state.error case final error?) _errorBanner(context, error),
             ],
             if (state.isLoading) const LinearProgressIndicator(),
+            if (state.commitResult case final result?)
+              _commitSuccess(context, result),
+            if (state.commitError case final error?) _commitError(error),
+            if (snapshot != null && snapshot.staged.isNotEmpty)
+              _commitPanel(context, controller, state),
             Expanded(
               child: snapshot == null && state.error != null
                   ? _errorState(state.error!)
@@ -168,6 +177,94 @@ class _ChangesScreenBodyState extends ConsumerState<_ChangesScreenBody> {
         ],
       ),
     );
+  }
+
+  Widget _commitPanel(
+    BuildContext context,
+    ChangesController controller,
+    ChangesState state,
+  ) {
+    final canSubmit =
+        controller.canCommit &&
+        !state.isMutating &&
+        _commitMessageController.text.trim().isNotEmpty;
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 12, 20, 4),
+      child: Card(
+        margin: EdgeInsets.zero,
+        child: Padding(
+          padding: const EdgeInsets.all(14),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Expanded(
+                child: TextField(
+                  key: const Key('commit-message'),
+                  controller: _commitMessageController,
+                  enabled: !state.isMutating,
+                  minLines: 1,
+                  maxLines: 3,
+                  textInputAction: TextInputAction.newline,
+                  decoration: const InputDecoration(
+                    labelText: 'Commit staged changes',
+                    border: OutlineInputBorder(),
+                    hintText: 'Describe the staged changes',
+                  ),
+                  onChanged: (_) => setState(() {}),
+                ),
+              ),
+              const SizedBox(width: 10),
+              FilledButton.icon(
+                key: const Key('commit-staged'),
+                onPressed: canSubmit
+                    ? () => unawaited(_submitCommit(controller))
+                    : null,
+                icon: state.isCommitting
+                    ? const SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Icon(Icons.check, size: 18),
+                label: const Text('Commit'),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _commitSuccess(BuildContext context, GitCommitResult result) {
+    final shortOid = result.commitOid.length > 7
+        ? result.commitOid.substring(0, 7)
+        : result.commitOid;
+    return Container(
+      key: const Key('commit-success'),
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+      color: Theme.of(context).colorScheme.tertiaryContainer,
+      child: Text('Committed $shortOid.'),
+    );
+  }
+
+  Widget _commitError(GitError error) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 10, 20, 0),
+      child: Text(
+        error.userMessage,
+        key: const Key('commit-error'),
+        style: const TextStyle(color: Colors.red),
+      ),
+    );
+  }
+
+  Future<void> _submitCommit(ChangesController controller) async {
+    final message = _commitMessageController.text;
+    if (message.trim().isEmpty) return;
+    await controller.commit(message);
+    if (!mounted || controller.state.commitResult == null) return;
+    _commitMessageController.clear();
+    setState(() {});
   }
 
   Widget _changesLayout(

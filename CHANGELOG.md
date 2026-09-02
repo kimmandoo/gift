@@ -6,6 +6,7 @@
 - feat(task6): added bounded staged and working-tree unified diff viewing.
 - feat(task7): added serialized staging and un-staging actions.
 - feat(task8): added expiring confirmation-based working-tree discard.
+- feat(task9): added UTF-8 stdin commits and commit-hook feedback.
 - docs(branding): updated the README logo with an original pixel-game Git mascot.
 - docs(spec): defined the desktop Git behavior target and minimal pixel UI direction.
 - breaking(architecture): migrated the Git backend from a native bridge to pure Dart.

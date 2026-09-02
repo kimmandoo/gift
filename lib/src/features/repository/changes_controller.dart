@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:branchline/src/backend/commit.dart';
 import 'package:branchline/src/backend/domain.dart';
 import 'package:branchline/src/backend/discard.dart';
 import 'package:branchline/src/backend/diff.dart';
@@ -39,12 +40,15 @@ class ChangesState {
     this.diff,
     this.diffError,
     this.mutationError,
+    this.commitResult,
+    this.commitError,
     this.discardPreview,
     this.discardError,
     this.isLoading = false,
     this.isRefreshing = false,
     this.isDiffLoading = false,
     this.isMutating = false,
+    this.isCommitting = false,
     this.isDiscardPreparing = false,
     this.diffScope = GitDiffScope.workingTree,
   });
@@ -55,12 +59,15 @@ class ChangesState {
   final GitDiffSnapshot? diff;
   final GitError? diffError;
   final GitError? mutationError;
+  final GitCommitResult? commitResult;
+  final GitError? commitError;
   final DiscardPreview? discardPreview;
   final GitError? discardError;
   final bool isLoading;
   final bool isRefreshing;
   final bool isDiffLoading;
   final bool isMutating;
+  final bool isCommitting;
   final bool isDiscardPreparing;
   final GitDiffScope diffScope;
 
@@ -77,6 +84,10 @@ class ChangesState {
     bool clearDiffError = false,
     GitError? mutationError,
     bool clearMutationError = false,
+    GitCommitResult? commitResult,
+    bool clearCommitResult = false,
+    GitError? commitError,
+    bool clearCommitError = false,
     DiscardPreview? discardPreview,
     bool clearDiscardPreview = false,
     GitError? discardError,
@@ -85,6 +96,7 @@ class ChangesState {
     bool? isRefreshing,
     bool? isDiffLoading,
     bool? isMutating,
+    bool? isCommitting,
     bool? isDiscardPreparing,
     GitDiffScope? diffScope,
   }) {
@@ -99,6 +111,10 @@ class ChangesState {
       mutationError: clearMutationError
           ? null
           : mutationError ?? this.mutationError,
+      commitResult: clearCommitResult
+          ? null
+          : commitResult ?? this.commitResult,
+      commitError: clearCommitError ? null : commitError ?? this.commitError,
       discardPreview: clearDiscardPreview
           ? null
           : discardPreview ?? this.discardPreview,
@@ -109,6 +125,7 @@ class ChangesState {
       isRefreshing: isRefreshing ?? this.isRefreshing,
       isDiffLoading: isDiffLoading ?? this.isDiffLoading,
       isMutating: isMutating ?? this.isMutating,
+      isCommitting: isCommitting ?? this.isCommitting,
       isDiscardPreparing: isDiscardPreparing ?? this.isDiscardPreparing,
       diffScope: diffScope ?? this.diffScope,
     );
@@ -204,6 +221,7 @@ class ChangesController extends ChangeNotifier {
         clearDiff: true,
         clearDiffError: true,
         clearMutationError: true,
+        clearCommitError: true,
         clearDiscardPreview: true,
         clearDiscardError: true,
         isDiscardPreparing: false,
@@ -277,6 +295,69 @@ class ChangesController extends ChangeNotifier {
 
   Future<void> unstageSelected() => _mutateSelected(gateway.unstage);
 
+  bool get canCommit => _state.snapshot?.staged.isNotEmpty == true;
+
+  /// Commits every staged path and applies Git's post-commit status snapshot.
+  Future<void> commit(String message) async {
+    if (_disposed || _mutationInFlight || !canCommit) return;
+    _mutationInFlight = true;
+    _setState(
+      _state.copyWith(
+        clearMutationError: true,
+        clearCommitResult: true,
+        clearCommitError: true,
+        clearDiscardPreview: true,
+        clearDiscardError: true,
+        clearDiff: true,
+        clearDiffError: true,
+        isMutating: true,
+        isCommitting: true,
+      ),
+    );
+    try {
+      final result = await gateway.commit(repositoryId, message);
+      if (_disposed) return;
+      final selectedPath = _state.selectedPath;
+      final selected = selectedPath == null
+          ? null
+          : result.status.changes
+                .where((candidate) => candidate.path == selectedPath)
+                .firstOrNull;
+      _setState(
+        _state.copyWith(
+          snapshot: result.status,
+          commitResult: result,
+          clearCommitError: true,
+          selectedPath: selected?.path,
+          clearSelectedPath: selected == null,
+          clearDiff: true,
+          clearDiffError: true,
+          isMutating: false,
+          isCommitting: false,
+        ),
+      );
+      if (selected != null) {
+        await loadDiff(
+          selected.path,
+          originalPath: selected.originalPath,
+          scope: _defaultDiffScope(selected),
+        );
+      }
+    } on GitError catch (error) {
+      if (!_disposed) {
+        _setState(
+          _state.copyWith(
+            commitError: error,
+            isMutating: false,
+            isCommitting: false,
+          ),
+        );
+      }
+    } finally {
+      _mutationInFlight = false;
+    }
+  }
+
   bool get canDiscardSelected {
     final change = _selectedChange;
     return change != null &&
@@ -348,6 +429,8 @@ class ChangesController extends ChangeNotifier {
       _state.copyWith(
         clearDiscardPreview: true,
         clearDiscardError: true,
+        clearCommitResult: true,
+        clearCommitError: true,
         isDiscardPreparing: false,
         isMutating: true,
         clearDiff: true,
@@ -398,6 +481,8 @@ class ChangesController extends ChangeNotifier {
     _setState(
       _state.copyWith(
         clearMutationError: true,
+        clearCommitResult: true,
+        clearCommitError: true,
         clearDiscardPreview: true,
         clearDiscardError: true,
         clearDiff: true,

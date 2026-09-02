@@ -7,8 +7,8 @@
 ## Progress
 
 - **Total Tasks:** 14
-- **Completed:** 8 / 14 (57.1%)
-- **Current Active Task:** `Task 9: Commit Panel`
+- **Completed:** 9 / 14 (64.3%)
+- **Current Active Task:** `Task 10: History & graph`
 
 | # | Scope | Dart backend deliverables | Flutter deliverables | Status |
 |---|---|---|---|:---:|
@@ -20,7 +20,7 @@
 | **6** | Unified diff | Bounded diff parser and rename detection | Lazy unified diff view | ✅ |
 | **7** | Staging & mutation | Serialized `git add`/`restore --staged` | Selection and action buttons | ✅ |
 | **8** | Discard changes | Expiring preview token and safe restore | Confirmation dialog | ✅ |
-| **9** | Commit panel | UTF-8 message stdin and hook mapping | Commit editor and shortcuts | ⏳ |
+| **9** | Commit panel | UTF-8 message stdin and hook mapping | Commit editor and shortcuts | ✅ |
 | **10** | History & graph | Paginated log and deterministic lanes | History screen and details | ⏳ |
 | **11** | Branch management | Ref parsing, validation, and switch | Branch popup and tracking flow | ⏳ |
 | **12** | Remotes & cancellation | Fetch/pull/push and operation cancellation | Progress bar and controls | ⏳ |
@@ -47,6 +47,8 @@
   selection actions.
 - [x] Expiring, path-bound discard previews with safe working-tree restore and
   confirmation dialog.
+- [x] UTF-8 stdin commits, hook rejection mapping, and staged commit editor
+  feedback.
 - [x] Removed FFI, generated bindings, native build plugins, and the former
   native implementation.
 
@@ -96,13 +98,22 @@
   preservation and untracked/conflict rejection.
 - [x] Added confirmation dialog, stale-token feedback, and selection refresh.
 
+### ✅ Task 9: Commit Panel
+
+- [x] Added UTF-8 commit messages through shell-free `git commit --file=-`
+  stdin.
+- [x] Added staged preflight, serialized commit mutations, post-commit status,
+  and hook rejection error mapping.
+- [x] Added a staged-only commit editor with loading, success, error, and clean
+  state feedback.
+
 ## Active task
 
-### ⏳ Task 9: Commit Panel
+### ⏳ Task 10: History & graph
 
-- [ ] Add failing tests for UTF-8 commit messages and hook failures.
-- [ ] Implement stdin-based commit operations with typed error mapping.
-- [ ] Add a commit editor and staged-state refresh.
+- [ ] Add bounded log parsing, pagination, and merge-parent tests.
+- [ ] Implement deterministic history pages and graph lanes.
+- [ ] Add a history screen and commit details.
 
-Tasks 6–14 retain the same product scope above and will build on the Dart
+Tasks 11–14 retain the same product scope above and will build on the Dart
 backend contracts established here.
