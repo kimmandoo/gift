@@ -791,11 +791,14 @@ class _ChangesScreenBodyState extends ConsumerState<_ChangesScreenBody> {
       return const Center(child: Text('No changes in this scope.'));
     }
 
-    return ListView.builder(
-      key: const Key('diff-lines'),
-      itemCount: diff.lines.length,
-      itemBuilder: (context, index) =>
-          _diffLine(context, diff.lines[index], index),
+    return SelectionArea(
+      key: const Key('diff-selection-area'),
+      child: ListView.builder(
+        key: const Key('diff-lines'),
+        itemCount: diff.lines.length,
+        itemBuilder: (context, index) =>
+            _diffLine(context, diff.lines[index], index),
+      ),
     );
   }
 
@@ -820,11 +823,11 @@ class _ChangesScreenBodyState extends ConsumerState<_ChangesScreenBody> {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _lineNumber(line.oldLineNumber),
-          _lineNumber(line.newLineNumber),
+          SelectionContainer.disabled(child: _lineNumber(line.oldLineNumber)),
+          SelectionContainer.disabled(child: _lineNumber(line.newLineNumber)),
           const SizedBox(width: 10),
           Expanded(
-            child: SelectableText(
+            child: Text(
               line.text,
               style: TextStyle(
                 color: foreground,

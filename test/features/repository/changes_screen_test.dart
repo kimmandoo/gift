@@ -126,6 +126,12 @@ void main() {
               text: '+working change',
               newLineNumber: 2,
             ),
+            GitDiffLine(
+              kind: GitDiffLineKind.context,
+              text: 'context line',
+              oldLineNumber: 3,
+              newLineNumber: 3,
+            ),
           ],
         ),
         'lib/app.dart:staged': diff(
@@ -163,6 +169,17 @@ void main() {
     await tester.tap(find.byKey(const ValueKey('unstaged:lib/app.dart')));
     await tester.pumpAndSettle();
     expect(find.text('+working change'), findsOneWidget);
+    expect(find.byKey(const Key('diff-selection-area')), findsOneWidget);
+    await tester.scrollUntilVisible(
+      find.byKey(const ValueKey('diff-line-1')),
+      40,
+      scrollable: find.descendant(
+        of: find.byKey(const Key('diff-lines')),
+        matching: find.byType(Scrollable),
+      ),
+    );
+    expect(find.text('context line'), findsOneWidget);
+    expect(find.byType(SelectableText), findsNothing);
     expect(gateway.diffCalls, 1);
 
     await tester.tap(find.text('Staged'));

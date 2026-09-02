@@ -8,6 +8,7 @@
 - fix(ui): aligned light and dark semantic color roles and added contrast checks.
 - fix(ui): refined the compact pixel type scale and prevented text and button overflow.
 - fix(ui): corrected light-theme contrast, tightened button proportions, and aligned screen gutters.
+- fix(ui): enabled continuous multi-line selection across rendered diff rows.
 - fix(ui): hardened compact layouts across core screens and operation dialogs.
 - build(icon): generated desktop release icons from the gitflu icon asset.
 - docs(roadmap): planned the ordered post-MVP work through signed public releases.

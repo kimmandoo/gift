@@ -95,11 +95,15 @@ This file is the handoff record for continuing work across query sessions.
   and added common button text/padding rules.
 - Current font pass replaced Pixelify Sans with Jersey 15, darkened all light
   accent roles for raised-surface contrast, and bundled the matching OFL text.
+- Current diff fix wrapped rendered lines in one `SelectionArea`, changed line
+  bodies to selectable `Text`, and excluded line numbers from copied content so
+  dragging across multiple rows stays continuous.
 - Current layout hardening made narrow summary/status rows wrap safely, added
   branch-input stacking below 300 px, and enabled dialog action overflow
   spacing so text and buttons do not collide.
 - Current session verification passed `flutter analyze`, `flutter test`, and
-  `PATH=/home/mgkim/.local/flutter/bin:$PATH dart run tool/verify.dart`.
+  `PATH=/home/mgkim/.local/flutter/bin:$PATH dart run tool/verify.dart` with
+  all 71 tests passing.
 - Changed implementation files: `lib/src/app/gitflu_app.dart`,
   `lib/src/app/pixel_theme.dart`, `lib/src/backend/history.dart`, core
   repository screens/dialogs, `pubspec.yaml`, desktop icon resources, tests,
