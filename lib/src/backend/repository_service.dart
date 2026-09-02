@@ -4,6 +4,7 @@ import 'dart:io';
 import 'dart:math';
 
 import 'domain.dart';
+import 'discard.dart';
 import 'diff.dart';
 import 'error.dart';
 import 'executor.dart';
@@ -14,8 +15,14 @@ import 'status.dart';
 /// The registry deliberately never accepts a root supplied back by the UI:
 /// later operations will resolve an ID through this object first.
 class AppState {
+  AppState({DateTime Function()? now}) : _now = now ?? DateTime.now;
+
   final Map<RepositoryId, _RepositoryRecord> _repositories = {};
   final Map<RepositoryId, _MutationQueue> _mutationQueues = {};
+  final Map<String, _DiscardPreviewRecord> _discardPreviews = {};
+  final DateTime Function() _now;
+
+  static const discardPreviewLifetime = Duration(minutes: 2);
 
   RepositoryOpened register(String root) {
     final repositoryId = RepositoryId(value: _newRepositoryId());
@@ -70,6 +77,71 @@ class AppState {
     final queue = _mutationQueues.putIfAbsent(repositoryId, _MutationQueue.new);
     return queue.run(action);
   }
+
+  DiscardPreview issueDiscardPreview({
+    required RepositoryId repositoryId,
+    required String path,
+    required String statusHash,
+    required String diffHash,
+  }) {
+    final token = _newOpaqueToken();
+    final expiresAt = _now().add(discardPreviewLifetime);
+    _discardPreviews[token] = _DiscardPreviewRecord(
+      repositoryId: repositoryId,
+      path: path,
+      statusHash: statusHash,
+      diffHash: diffHash,
+      expiresAt: expiresAt,
+    );
+    return DiscardPreview(
+      repositoryId: repositoryId,
+      token: token,
+      path: path,
+      expiresAt: expiresAt,
+    );
+  }
+
+  _DiscardPreviewRecord _validateDiscardPreview(
+    RepositoryId repositoryId,
+    DiscardPreview preview,
+  ) {
+    final record = _discardPreviews[preview.token];
+    if (record == null ||
+        record.repositoryId != repositoryId ||
+        record.repositoryId != preview.repositoryId ||
+        record.path != preview.path ||
+        !record.expiresAt.isAfter(_now())) {
+      _discardPreviews.remove(preview.token);
+      throw const GitError(
+        category: GitErrorCategory.staleConfirmation,
+        userMessage:
+            'This discard confirmation has expired or is no longer valid.',
+        diagnostic: 'discard preview token was missing, changed, or expired',
+        retryable: false,
+      );
+    }
+    return record;
+  }
+
+  void consumeDiscardPreview(String token) {
+    _discardPreviews.remove(token);
+  }
+}
+
+class _DiscardPreviewRecord {
+  const _DiscardPreviewRecord({
+    required this.repositoryId,
+    required this.path,
+    required this.statusHash,
+    required this.diffHash,
+    required this.expiresAt,
+  });
+
+  final RepositoryId repositoryId;
+  final String path;
+  final String statusHash;
+  final String diffHash;
+  final DateTime expiresAt;
 }
 
 class _MutationQueue {
@@ -244,6 +316,79 @@ class RepositoryService {
   Future<GitStatusSnapshot> unstage(RepositoryId repositoryId, String path) =>
       _mutatePath(repositoryId, const ['restore', '--staged'], path);
 
+  Future<DiscardPreview> createDiscardPreview(
+    RepositoryId repositoryId,
+    String path,
+  ) async {
+    _validatePath(path);
+    final status = await getStatus(repositoryId);
+    final change = _findChange(status, path);
+    if (change == null ||
+        change.isUntracked ||
+        change.isConflicted ||
+        !change.isUnstaged) {
+      throw const GitError(
+        category: GitErrorCategory.dirtyWorktree,
+        userMessage: 'Only tracked working-tree changes can be discarded.',
+        diagnostic: 'discard preview requested for a non-discardable status',
+        retryable: false,
+      );
+    }
+    final diff = await getDiff(
+      repositoryId,
+      path,
+      originalPath: change.originalPath,
+    );
+    return state.issueDiscardPreview(
+      repositoryId: repositoryId,
+      path: path,
+      statusHash: status.contentHash,
+      diffHash: diff.contentHash,
+    );
+  }
+
+  Future<GitStatusSnapshot> discard(
+    RepositoryId repositoryId,
+    DiscardPreview preview,
+  ) {
+    return state.runMutation(repositoryId, () async {
+      final record = state._validateDiscardPreview(repositoryId, preview);
+      final status = await getStatus(repositoryId);
+      final change = _findChange(status, record.path);
+      if (status.contentHash != record.statusHash ||
+          change == null ||
+          change.isUntracked ||
+          change.isConflicted ||
+          !change.isUnstaged) {
+        throw _staleDiscardError('status changed after the discard preview');
+      }
+      final diff = await getDiff(
+        repositoryId,
+        record.path,
+        originalPath: change.originalPath,
+      );
+      if (diff.contentHash != record.diffHash) {
+        throw _staleDiscardError('working-tree content changed after preview');
+      }
+
+      final handle = await state.lookup(repositoryId);
+      // The path is supplied as a separate argv value after the `--` marker.
+      // Keeping this invocation separate makes the preview token the only
+      // source of the path used for the destructive operation.
+      await _runner.run(
+        GitInvocation(
+          program: gitPath,
+          args: ['restore', '--worktree', '--', record.path],
+          cwd: handle.root,
+          kind: GitOperationKind.mutation,
+          outputPolicy: const OutputPolicy.capture(maxBytes: 64 * 1024),
+        ),
+      );
+      state.consumeDiscardPreview(preview.token);
+      return getStatus(repositoryId);
+    });
+  }
+
   Future<GitStatusSnapshot> _mutatePath(
     RepositoryId repositoryId,
     List<String> command,
@@ -307,6 +452,23 @@ class _RepositoryRecord {
   int statusGeneration = 0;
 }
 
+GitChange? _findChange(GitStatusSnapshot snapshot, String path) {
+  for (final change in snapshot.changes) {
+    if (change.path == path) return change;
+  }
+  return null;
+}
+
+GitError _staleDiscardError(String diagnostic) {
+  return GitError(
+    category: GitErrorCategory.staleConfirmation,
+    userMessage:
+        'The file changed before it could be discarded. Review it again.',
+    diagnostic: diagnostic,
+    retryable: true,
+  );
+}
+
 Future<String> _canonicalizeDirectory(String path, {bool moved = false}) async {
   final directory = Directory(path);
   try {
@@ -357,3 +519,5 @@ String _newRepositoryId() {
   return '${hex.substring(0, 8)}-${hex.substring(8, 12)}-${hex.substring(12, 16)}-'
       '${hex.substring(16, 20)}-${hex.substring(20)}';
 }
+
+String _newOpaqueToken() => _newRepositoryId();

@@ -338,7 +338,8 @@ class _ChangesScreenBodyState extends ConsumerState<_ChangesScreenBody> {
             _scopeSelector(context, selected, state),
           ],
           if (_activeController.canStageSelected ||
-              _activeController.canUnstageSelected) ...[
+              _activeController.canUnstageSelected ||
+              _activeController.canDiscardSelected) ...[
             const SizedBox(height: 16),
             _mutationActions(context, state),
           ],
@@ -350,6 +351,16 @@ class _ChangesScreenBodyState extends ConsumerState<_ChangesScreenBody> {
               style: TextStyle(color: Colors.red),
             ),
           ],
+          if (state.discardError case final error?) ...[
+            const SizedBox(height: 10),
+            Text(
+              error.userMessage,
+              key: const Key('discard-error'),
+              style: TextStyle(color: Colors.red),
+            ),
+          ],
+          if (state.isDiscardPreparing || state.isMutating)
+            const LinearProgressIndicator(),
           const SizedBox(height: 16),
           if (state.isDiffLoading) const LinearProgressIndicator(),
           if (state.diffError case final error?) ...[
@@ -376,19 +387,67 @@ class _ChangesScreenBodyState extends ConsumerState<_ChangesScreenBody> {
         if (controller.canStageSelected)
           FilledButton.icon(
             key: const Key('stage-selected'),
-            onPressed: state.isMutating ? null : controller.stageSelected,
+            onPressed: state.isMutating || state.isDiscardPreparing
+                ? null
+                : controller.stageSelected,
             icon: const Icon(Icons.add, size: 18),
             label: const Text('Stage'),
           ),
         if (controller.canUnstageSelected)
           OutlinedButton.icon(
             key: const Key('unstage-selected'),
-            onPressed: state.isMutating ? null : controller.unstageSelected,
+            onPressed: state.isMutating || state.isDiscardPreparing
+                ? null
+                : controller.unstageSelected,
             icon: const Icon(Icons.remove, size: 18),
             label: const Text('Unstage'),
           ),
+        if (controller.canDiscardSelected)
+          OutlinedButton.icon(
+            key: const Key('discard-selected'),
+            onPressed: state.isMutating || state.isDiscardPreparing
+                ? null
+                : () => unawaited(_showDiscardDialog(context, controller)),
+            icon: const Icon(Icons.delete_outline, size: 18),
+            label: const Text('Discard'),
+          ),
       ],
     );
+  }
+
+  Future<void> _showDiscardDialog(
+    BuildContext context,
+    ChangesController controller,
+  ) async {
+    final preview = await controller.prepareDiscard();
+    if (!context.mounted || preview == null) return;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Discard changes?'),
+        content: Text(
+          'Discard the working-tree changes in ${preview.path}? '
+          'Staged changes will be kept.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            key: const Key('confirm-discard'),
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text('Discard'),
+          ),
+        ],
+      ),
+    );
+    if (!context.mounted) return;
+    if (confirmed == true) {
+      await controller.confirmDiscard(preview);
+    } else {
+      controller.cancelDiscardPreview();
+    }
   }
 
   Widget _scopeSelector(

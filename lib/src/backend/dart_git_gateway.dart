@@ -1,5 +1,6 @@
 import 'dart_git_backend.dart';
 import 'domain.dart';
+import 'discard.dart';
 import 'diff.dart';
 import 'git_gateway.dart';
 import 'status.dart';
@@ -48,4 +49,16 @@ class DartGitGateway implements GitGateway {
   @override
   Future<GitStatusSnapshot> unstage(RepositoryId repositoryId, String path) =>
       backend.unstage(repositoryId, path);
+
+  @override
+  Future<DiscardPreview> createDiscardPreview(
+    RepositoryId repositoryId,
+    String path,
+  ) => backend.createDiscardPreview(repositoryId, path);
+
+  @override
+  Future<GitStatusSnapshot> discard(
+    RepositoryId repositoryId,
+    DiscardPreview preview,
+  ) => backend.discard(repositoryId, preview);
 }

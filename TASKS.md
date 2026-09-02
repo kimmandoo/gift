@@ -7,8 +7,8 @@
 ## Progress
 
 - **Total Tasks:** 14
-- **Completed:** 7 / 14 (50.0%)
-- **Current Active Task:** `Task 8: Discard Changes`
+- **Completed:** 8 / 14 (57.1%)
+- **Current Active Task:** `Task 9: Commit Panel`
 
 | # | Scope | Dart backend deliverables | Flutter deliverables | Status |
 |---|---|---|---|:---:|
@@ -19,7 +19,7 @@
 | **5** | Status parser & changes | Porcelain v2 `-z` parser and snapshots | Grouped changes list | ✅ |
 | **6** | Unified diff | Bounded diff parser and rename detection | Lazy unified diff view | ✅ |
 | **7** | Staging & mutation | Serialized `git add`/`restore --staged` | Selection and action buttons | ✅ |
-| **8** | Discard changes | Expiring preview token and safe restore | Confirmation dialog | ⏳ |
+| **8** | Discard changes | Expiring preview token and safe restore | Confirmation dialog | ✅ |
 | **9** | Commit panel | UTF-8 message stdin and hook mapping | Commit editor and shortcuts | ⏳ |
 | **10** | History & graph | Paginated log and deterministic lanes | History screen and details | ⏳ |
 | **11** | Branch management | Ref parsing, validation, and switch | Branch popup and tracking flow | ⏳ |
@@ -45,6 +45,8 @@
   lazy selected-file rendering.
 - [x] Serialized stage/unstage mutations with immediate status snapshots and
   selection actions.
+- [x] Expiring, path-bound discard previews with safe working-tree restore and
+  confirmation dialog.
 - [x] Removed FFI, generated bindings, native build plugins, and the former
   native implementation.
 
@@ -86,13 +88,21 @@
   status snapshot after each operation.
 - [x] Added selected-file Stage/Unstage actions with loading and error state.
 
+### ✅ Task 8: Discard Changes
+
+- [x] Added two-minute preview tokens bound to repository, path, status, and
+  diff fingerprints.
+- [x] Added safe `git restore --worktree -- path` with staged-change
+  preservation and untracked/conflict rejection.
+- [x] Added confirmation dialog, stale-token feedback, and selection refresh.
+
 ## Active task
 
-### ⏳ Task 8: Discard Changes
+### ⏳ Task 9: Commit Panel
 
-- [ ] Add failing tests for preview tokens and tracked working-tree discard.
-- [ ] Implement expiring, path-bound discard operations.
-- [ ] Add a confirmation dialog and refresh the selected change after discard.
+- [ ] Add failing tests for UTF-8 commit messages and hook failures.
+- [ ] Implement stdin-based commit operations with typed error mapping.
+- [ ] Add a commit editor and staged-state refresh.
 
 Tasks 6–14 retain the same product scope above and will build on the Dart
 backend contracts established here.

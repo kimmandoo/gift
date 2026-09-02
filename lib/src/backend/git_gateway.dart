@@ -1,4 +1,5 @@
 import 'domain.dart';
+import 'discard.dart';
 import 'diff.dart';
 import 'status.dart';
 
@@ -25,4 +26,14 @@ abstract interface class GitGateway {
   Future<GitStatusSnapshot> stage(RepositoryId repositoryId, String path);
 
   Future<GitStatusSnapshot> unstage(RepositoryId repositoryId, String path);
+
+  Future<DiscardPreview> createDiscardPreview(
+    RepositoryId repositoryId,
+    String path,
+  );
+
+  Future<GitStatusSnapshot> discard(
+    RepositoryId repositoryId,
+    DiscardPreview preview,
+  );
 }

@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:branchline/src/backend/domain.dart';
+import 'package:branchline/src/backend/discard.dart';
 import 'package:branchline/src/backend/diff.dart';
 import 'package:branchline/src/backend/error.dart';
 import 'package:branchline/src/backend/git_gateway.dart';
@@ -38,10 +39,13 @@ class ChangesState {
     this.diff,
     this.diffError,
     this.mutationError,
+    this.discardPreview,
+    this.discardError,
     this.isLoading = false,
     this.isRefreshing = false,
     this.isDiffLoading = false,
     this.isMutating = false,
+    this.isDiscardPreparing = false,
     this.diffScope = GitDiffScope.workingTree,
   });
 
@@ -51,10 +55,13 @@ class ChangesState {
   final GitDiffSnapshot? diff;
   final GitError? diffError;
   final GitError? mutationError;
+  final DiscardPreview? discardPreview;
+  final GitError? discardError;
   final bool isLoading;
   final bool isRefreshing;
   final bool isDiffLoading;
   final bool isMutating;
+  final bool isDiscardPreparing;
   final GitDiffScope diffScope;
 
   ChangesState copyWith({
@@ -70,10 +77,15 @@ class ChangesState {
     bool clearDiffError = false,
     GitError? mutationError,
     bool clearMutationError = false,
+    DiscardPreview? discardPreview,
+    bool clearDiscardPreview = false,
+    GitError? discardError,
+    bool clearDiscardError = false,
     bool? isLoading,
     bool? isRefreshing,
     bool? isDiffLoading,
     bool? isMutating,
+    bool? isDiscardPreparing,
     GitDiffScope? diffScope,
   }) {
     return ChangesState(
@@ -87,10 +99,17 @@ class ChangesState {
       mutationError: clearMutationError
           ? null
           : mutationError ?? this.mutationError,
+      discardPreview: clearDiscardPreview
+          ? null
+          : discardPreview ?? this.discardPreview,
+      discardError: clearDiscardError
+          ? null
+          : discardError ?? this.discardError,
       isLoading: isLoading ?? this.isLoading,
       isRefreshing: isRefreshing ?? this.isRefreshing,
       isDiffLoading: isDiffLoading ?? this.isDiffLoading,
       isMutating: isMutating ?? this.isMutating,
+      isDiscardPreparing: isDiscardPreparing ?? this.isDiscardPreparing,
       diffScope: diffScope ?? this.diffScope,
     );
   }
@@ -113,6 +132,7 @@ class ChangesController extends ChangeNotifier {
   var _requestInFlight = false;
   var _mutationInFlight = false;
   var _diffRequest = 0;
+  var _discardPreviewRequest = 0;
   var _started = false;
   var _disposed = false;
 
@@ -146,6 +166,7 @@ class ChangesController extends ChangeNotifier {
           selectedPath != null &&
           snapshot.changes.any((change) => change.path == selectedPath);
       if (!selectionStillExists) _diffRequest++;
+      if (!selectionStillExists) _discardPreviewRequest++;
       _setState(
         _state.copyWith(
           snapshot: snapshot,
@@ -155,6 +176,11 @@ class ChangesController extends ChangeNotifier {
           clearDiff: !selectionStillExists,
           clearDiffError: !selectionStillExists,
           clearMutationError: !selectionStillExists,
+          clearDiscardPreview: !selectionStillExists,
+          clearDiscardError: !selectionStillExists,
+          isDiscardPreparing: selectionStillExists
+              ? _state.isDiscardPreparing
+              : false,
           isDiffLoading: selectionStillExists ? _state.isDiffLoading : false,
           isLoading: false,
           isRefreshing: false,
@@ -178,6 +204,9 @@ class ChangesController extends ChangeNotifier {
         clearDiff: true,
         clearDiffError: true,
         clearMutationError: true,
+        clearDiscardPreview: true,
+        clearDiscardError: true,
+        isDiscardPreparing: false,
         isDiffLoading: false,
       ),
     );
@@ -248,6 +277,117 @@ class ChangesController extends ChangeNotifier {
 
   Future<void> unstageSelected() => _mutateSelected(gateway.unstage);
 
+  bool get canDiscardSelected {
+    final change = _selectedChange;
+    return change != null &&
+        !change.isConflicted &&
+        !change.isUntracked &&
+        change.isUnstaged;
+  }
+
+  /// Creates a short-lived authorization before showing the destructive
+  /// confirmation dialog.
+  Future<DiscardPreview?> prepareDiscard() async {
+    if (_disposed ||
+        _mutationInFlight ||
+        _state.isDiscardPreparing ||
+        !canDiscardSelected) {
+      return null;
+    }
+    final change = _selectedChange!;
+    final request = ++_discardPreviewRequest;
+    _setState(
+      _state.copyWith(
+        clearDiscardPreview: true,
+        clearDiscardError: true,
+        isDiscardPreparing: true,
+      ),
+    );
+    try {
+      final preview = await gateway.createDiscardPreview(
+        repositoryId,
+        change.path,
+      );
+      if (request != _discardPreviewRequest || _disposed) return null;
+      _setState(
+        _state.copyWith(
+          discardPreview: preview,
+          clearDiscardError: true,
+          isDiscardPreparing: false,
+        ),
+      );
+      return preview;
+    } on GitError catch (error) {
+      if (request == _discardPreviewRequest && !_disposed) {
+        _setState(
+          _state.copyWith(discardError: error, isDiscardPreparing: false),
+        );
+      }
+      return null;
+    }
+  }
+
+  void cancelDiscardPreview() {
+    if (_disposed) return;
+    _discardPreviewRequest++;
+    _setState(
+      _state.copyWith(
+        clearDiscardPreview: true,
+        clearDiscardError: true,
+        isDiscardPreparing: false,
+      ),
+    );
+  }
+
+  Future<void> confirmDiscard(DiscardPreview preview) async {
+    if (_disposed || _mutationInFlight || _state.selectedPath != preview.path) {
+      return;
+    }
+    _mutationInFlight = true;
+    _setState(
+      _state.copyWith(
+        clearDiscardPreview: true,
+        clearDiscardError: true,
+        isDiscardPreparing: false,
+        isMutating: true,
+        clearDiff: true,
+        clearDiffError: true,
+      ),
+    );
+    try {
+      final snapshot = await gateway.discard(repositoryId, preview);
+      if (_disposed) return;
+      final selected = snapshot.changes
+          .where((candidate) => candidate.path == preview.path)
+          .firstOrNull;
+      _setState(
+        _state.copyWith(
+          snapshot: snapshot,
+          selectedPath: selected == null ? null : preview.path,
+          clearSelectedPath: selected == null,
+          clearDiscardPreview: true,
+          clearDiscardError: true,
+          clearDiff: true,
+          clearDiffError: true,
+          isMutating: false,
+        ),
+      );
+      if (selected != null) {
+        await loadDiff(
+          selected.path,
+          originalPath: selected.originalPath,
+          scope: _defaultDiffScope(selected),
+        );
+      }
+    } on GitError catch (error) {
+      if (!_disposed) {
+        _setState(_state.copyWith(discardError: error, isMutating: false));
+      }
+    } finally {
+      _mutationInFlight = false;
+    }
+  }
+
   Future<void> _mutateSelected(
     Future<GitStatusSnapshot> Function(RepositoryId, String) operation,
   ) async {
@@ -258,6 +398,8 @@ class ChangesController extends ChangeNotifier {
     _setState(
       _state.copyWith(
         clearMutationError: true,
+        clearDiscardPreview: true,
+        clearDiscardError: true,
         clearDiff: true,
         clearDiffError: true,
         isMutating: true,

@@ -4,6 +4,7 @@ import 'dart:io';
 import 'dart:math';
 
 import 'package:branchline/src/backend/dart_git_backend.dart';
+import 'package:branchline/src/backend/discard.dart';
 import 'package:branchline/src/backend/diff.dart';
 import 'package:branchline/src/backend/domain.dart';
 import 'package:branchline/src/backend/error.dart';
@@ -433,6 +434,131 @@ void main() {
     await Future.wait([first, second]);
     expect(maximumActive, 1);
   });
+
+  test('discards only the working-tree side after a fresh preview', () async {
+    await withTempDirectory((directory) async {
+      await createCommittedRepository(directory.path, 'tracked.txt');
+      final file = File('${directory.path}/tracked.txt');
+      final backend = DartGitBackend();
+      final opened = await backend.openRepository(directory.path);
+
+      await file.writeAsString('staged\n');
+      final staged = await backend.stage(opened.repositoryId, 'tracked.txt');
+      expect(
+        staged.staged.map((change) => change.path),
+        contains('tracked.txt'),
+      );
+      await file.writeAsString('staged plus working-tree\n');
+
+      final preview = await backend.createDiscardPreview(
+        opened.repositoryId,
+        'tracked.txt',
+      );
+      final afterDiscard = await backend.discard(opened.repositoryId, preview);
+
+      expect(
+        afterDiscard.staged.map((change) => change.path),
+        contains('tracked.txt'),
+      );
+      expect(afterDiscard.unstaged, isEmpty);
+      expect(await file.readAsString(), 'staged\n');
+      await expectStaleDiscard(backend, opened.repositoryId, preview);
+    });
+  });
+
+  test(
+    'rejects a changed, expired, or path-mismatched discard preview',
+    () async {
+      await withTempDirectory((directory) async {
+        await createCommittedRepository(directory.path, 'tracked.txt');
+        final file = File('${directory.path}/tracked.txt');
+        var now = DateTime(2026, 9, 2, 12);
+        final backend = DartGitBackend(state: AppState(now: () => now));
+        final opened = await backend.openRepository(directory.path);
+
+        await file.writeAsString('first change\n');
+        final changedPreview = await backend.createDiscardPreview(
+          opened.repositoryId,
+          'tracked.txt',
+        );
+        await file.writeAsString('second change\n');
+        await expectStaleDiscard(backend, opened.repositoryId, changedPreview);
+        expect(await file.readAsString(), 'second change\n');
+
+        final mismatchedSource = await backend.createDiscardPreview(
+          opened.repositoryId,
+          'tracked.txt',
+        );
+        final mismatched = DiscardPreview(
+          repositoryId: opened.repositoryId,
+          token: mismatchedSource.token,
+          path: 'other.txt',
+          expiresAt: mismatchedSource.expiresAt,
+        );
+        await expectStaleDiscard(backend, opened.repositoryId, mismatched);
+
+        final expired = await backend.createDiscardPreview(
+          opened.repositoryId,
+          'tracked.txt',
+        );
+        now = now.add(const Duration(minutes: 3));
+        await expectStaleDiscard(backend, opened.repositoryId, expired);
+
+        final untracked = File('${directory.path}/untracked.txt');
+        await untracked.writeAsString('keep me\n');
+        await expectLater(
+          backend.createDiscardPreview(opened.repositoryId, 'untracked.txt'),
+          throwsA(
+            isA<GitError>().having(
+              (error) => error.category,
+              'category',
+              GitErrorCategory.dirtyWorktree,
+            ),
+          ),
+        );
+        expect(await untracked.readAsString(), 'keep me\n');
+      });
+    },
+  );
+}
+
+Future<void> createCommittedRepository(String path, String fileName) async {
+  await expectGitSuccess(['init', '--quiet'], workingDirectory: path);
+  await expectGitSuccess([
+    'config',
+    'user.name',
+    'Branchline Test',
+  ], workingDirectory: path);
+  await expectGitSuccess([
+    'config',
+    'user.email',
+    'branchline@example.test',
+  ], workingDirectory: path);
+  await File('$path/$fileName').writeAsString('initial\n');
+  await expectGitSuccess(['add', '--', fileName], workingDirectory: path);
+  await expectGitSuccess([
+    'commit',
+    '--quiet',
+    '-m',
+    'initial',
+  ], workingDirectory: path);
+}
+
+Future<void> expectStaleDiscard(
+  DartGitBackend backend,
+  RepositoryId repositoryId,
+  DiscardPreview preview,
+) async {
+  await expectLater(
+    backend.discard(repositoryId, preview),
+    throwsA(
+      isA<GitError>().having(
+        (error) => error.category,
+        'category',
+        GitErrorCategory.staleConfirmation,
+      ),
+    ),
+  );
 }
 
 Future<void> withTempDirectory(Future<void> Function(Directory) action) async {

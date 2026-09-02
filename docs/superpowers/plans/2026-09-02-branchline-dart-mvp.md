@@ -47,6 +47,7 @@ system Git 2.35+.
   opaque handle registry.
 - `lib/src/backend/status.dart` — porcelain v2 parser, change facets, and
   generation-aware snapshots.
+- `lib/src/backend/discard.dart` — path-bound discard preview value object.
 - `lib/src/backend/diff.dart` — bounded unified diff models and parser for
   hunk lines, rename metadata, and binary output.
 - `lib/src/backend/dart_git_backend.dart` — backend service facade.
@@ -71,6 +72,7 @@ system Git 2.35+.
 - [x] Bounded staged/working-tree diff snapshots and lazy selected-file view.
 - [x] Serialized stage/unstage mutations with refreshed status snapshots and
   selection actions.
+- [x] Expiring path-bound discard previews, safe restore, and confirmation UI.
 - [x] Removed the previous native implementation and generated bridge assets.
 
 ## Product direction
@@ -105,8 +107,15 @@ system Git 2.35+.
    mutation.
 4. Passed `flutter analyze` and `flutter test`.
 
-## Next vertical: discard changes
+## Completed vertical: discard changes
 
-1. Add failing tests for preview tokens and tracked working-tree discard.
-2. Implement expiring, path-bound discard operations.
-3. Add a confirmation dialog and refresh the selected change after discard.
+1. Added failing tests for preview tokens and tracked working-tree discard.
+2. Implemented expiring, path-bound discard operations.
+3. Added a confirmation dialog and refreshed the selected change after discard.
+4. Passed `flutter analyze` and `flutter test`.
+
+## Next vertical: commit panel
+
+1. Add failing tests for UTF-8 commit messages and hook failures.
+2. Implement stdin-based commit operations with typed error mapping.
+3. Add a commit editor and staged-state refresh.

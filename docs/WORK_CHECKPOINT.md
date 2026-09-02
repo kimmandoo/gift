@@ -5,8 +5,8 @@ This file is the handoff record for continuing work across query sessions.
 ## Current checkpoint
 
 - Date: 2026-09-02
-- Milestone: Task 7, Staging & Mutation, is complete; Task 8, Discard Changes,
-  is the next active product task.
+- Milestone: Task 8, Discard Changes, is complete; Task 9, Commit Panel, is
+  the next active product task.
 - Source of truth: `TASKS.md` and
   `docs/superpowers/plans/2026-09-02-branchline-dart-mvp.md`.
 - Completed scope: removed the native implementation, FFI bridge, generated
@@ -18,8 +18,8 @@ This file is the handoff record for continuing work across query sessions.
 - Verification: installed the pinned Flutter 3.47.2 SDK with Dart 3.13.2 in
   `/tmp/codex-flutter`, then passed `flutter pub get`,
   `dart format lib test integration_test`, `flutter analyze` (`No issues
-  found!`), the full `flutter test` suite (36 tests),
-  `flutter test test/backend/dart_git_backend_test.dart` (17 tests),
+  found!`), the full `flutter test` suite (39 tests),
+  `flutter test test/backend/dart_git_backend_test.dart` (15 tests),
   `flutter test test/backend/diff_parser_test.dart` (5 tests), and
   `flutter test test/features/repository/changes_screen_test.dart` (5 tests).
   `flutter test integration_test/app_smoke_test.dart` also passed (1 test)
@@ -35,15 +35,17 @@ This file is the handoff record for continuing work across query sessions.
   and removed it from public-facing project docs. Replaced the README logo with
   `assets/images/gitflu_logo.png`, an original transparent RGBA pixel-game Git
   mascot based on the existing shiba identity. The old JPEG logo was removed.
-- Current Task 7 changes: extended `GitGateway`, `DartGitBackend`,
-  `DartGitGateway`, and `RepositoryService` with shell-free stage/unstage
-  mutations and a per-repository `AppState` queue; added mutation state and
-  selected-file actions to the Changes controller/screen; added real Git,
-  queue, and widget coverage; updated all fake gateways; and updated
-  `TASKS.md`, the implementation plan, the behavior ledger, `README.md`,
-  `docs/ARCHITECTURE.md`, `CHANGELOG.md`, and this checkpoint.
-- Next action: start Task 8 by writing the failing discard preview-token and
-  confirmation tests, then implement the path-bound discard operation.
+- Current Task 8 changes: added `DiscardPreview` and expiring token storage;
+  extended `GitGateway`, `DartGitBackend`, `DartGitGateway`, and
+  `RepositoryService` with fingerprint-checked, path-bound discard; added
+  safe working-tree restore that preserves staged content and rejects
+  untracked/conflicted paths; added controller loading/error state and a
+  confirmation dialog; added real Git and widget coverage; updated all fake
+  gateways; and updated `TASKS.md`, the implementation plan, the behavior
+  ledger, `README.md`, `docs/ARCHITECTURE.md`, `CHANGELOG.md`, and this
+  checkpoint.
+- Next action: start Task 9 by writing the failing UTF-8 commit-message and
+  hook-failure tests, then implement the stdin-based commit operation.
 
 ## Resume procedure
 

@@ -1,4 +1,5 @@
 import 'domain.dart';
+import 'discard.dart';
 import 'diff.dart';
 import 'git_installation_service.dart';
 import 'repository_service.dart';
@@ -76,6 +77,28 @@ class DartGitBackend {
       gitPath: installation.executablePath,
       state: _state,
     ).unstage(repositoryId, path);
+  }
+
+  Future<DiscardPreview> createDiscardPreview(
+    RepositoryId repositoryId,
+    String path,
+  ) async {
+    final installation = await getGitInstallation();
+    return RepositoryService(
+      gitPath: installation.executablePath,
+      state: _state,
+    ).createDiscardPreview(repositoryId, path);
+  }
+
+  Future<GitStatusSnapshot> discard(
+    RepositoryId repositoryId,
+    DiscardPreview preview,
+  ) async {
+    final installation = await getGitInstallation();
+    return RepositoryService(
+      gitPath: installation.executablePath,
+      state: _state,
+    ).discard(repositoryId, preview);
   }
 
   Future<RepositoryHandle> lookup(RepositoryId repositoryId) =>

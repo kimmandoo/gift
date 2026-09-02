@@ -5,6 +5,7 @@
 - feat(task5): added porcelain v2 status snapshots and grouped changes screen.
 - feat(task6): added bounded staged and working-tree unified diff viewing.
 - feat(task7): added serialized staging and un-staging actions.
+- feat(task8): added expiring confirmation-based working-tree discard.
 - docs(branding): updated the README logo with an original pixel-game Git mascot.
 - docs(spec): defined the desktop Git behavior target and minimal pixel UI direction.
 - breaking(architecture): migrated the Git backend from a native bridge to pure Dart.

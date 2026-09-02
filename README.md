@@ -116,7 +116,8 @@ work is tracked in [`TASKS.md`](TASKS.md).
 - [x] Repository status and grouped changes view.
 - [x] Unified diff viewer with staged and unstaged scopes.
 - [x] Staging selected paths with serialized backend mutations.
-- [ ] Discard, commit, branch, history, and remote workflows.
+- [x] Safe confirmation-based discard for tracked working-tree changes.
+- [ ] Commit, branch, history, and remote workflows.
 - [ ] Responsive pixel UI, desktop shortcuts, packaging, and CI.
 
 ## Contributing

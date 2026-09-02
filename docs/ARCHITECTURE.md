@@ -116,6 +116,30 @@ ChangesScreen
    실행합니다. 각 명령이 끝나면 status를 다시 읽어 staged/unstaged
    그룹과 generation을 즉시 갱신합니다.
 
+## 선택 파일 discard 흐름
+
+```text
+ChangesScreen
+  └─ prepareDiscard() → createDiscardPreview(path)
+       └─ status hash + working-tree diff hash + 2-minute token
+            └─ confirmation dialog
+                 └─ confirmDiscard(token)
+                      └─ AppState.runMutation(repositoryId)
+                           ├─ re-check token, status, and diff fingerprints
+                           ├─ git restore --worktree -- token.path
+                           └─ getStatus() → refreshed selection
+```
+
+1. discard는 untracked 또는 conflicted 파일에는 제공하지 않습니다. 이
+   단계는 파일 삭제가 아니라 tracked working-tree 내용을 index 기준으로
+   되돌리는 기능이며, staged 변경은 유지합니다.
+2. preview token은 2분 뒤 만료되고 repository ID와 경로에 묶입니다.
+   확인 직전에 status와 diff fingerprint를 다시 비교하므로 다른 작업이나
+   파일 수정이 끼어들면 복원을 실행하지 않고 stale 오류를 보여줍니다.
+3. 확인 취소는 token을 화면 상태에서 제거합니다. 복원 후 선택 파일이
+   사라지면 selection도 함께 비우고, staged facet이 남으면 선택을 유지해
+   새 diff를 읽습니다.
+
 ## 폴더별 역할
 
 | 경로 | 역할 |
@@ -129,6 +153,7 @@ ChangesScreen
 | `lib/src/backend/git_installation_service.dart` | Git 경로 검색과 버전 검사 |
 | `lib/src/backend/repository_service.dart` | 저장소 확인과 세션용 ID 등록 |
 | `lib/src/backend/status.dart` | Porcelain v2 상태 파싱과 변경 facet/snapshot 타입 |
+| `lib/src/backend/discard.dart` | 만료 가능한 discard preview token 값 객체 |
 | `lib/src/backend/diff.dart` | unified diff 라인, hunk, rename/binary 파싱과 scope 타입 |
 | `lib/src/backend/dart_git_backend.dart` | 백엔드 서비스들을 연결하는 facade |
 | `lib/src/backend/dart_git_gateway.dart` | Flutter 계약과 백엔드를 연결하는 얇은 adapter |

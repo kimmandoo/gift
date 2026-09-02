@@ -1,6 +1,7 @@
 import 'package:branchline/src/features/repository/recent_repository_store.dart';
 import 'package:branchline/src/features/repository/welcome_screen.dart';
 import 'package:branchline/src/backend/domain.dart';
+import 'package:branchline/src/backend/discard.dart';
 import 'package:branchline/src/backend/diff.dart';
 import 'package:branchline/src/backend/error.dart';
 import 'package:branchline/src/backend/git_gateway.dart';
@@ -227,6 +228,22 @@ class FakeGitGateway implements GitGateway {
 
   @override
   Future<GitStatusSnapshot> unstage(RepositoryId repositoryId, String path) {
+    throw UnimplementedError();
+  }
+
+  @override
+  Future<DiscardPreview> createDiscardPreview(
+    RepositoryId repositoryId,
+    String path,
+  ) {
+    throw UnimplementedError();
+  }
+
+  @override
+  Future<GitStatusSnapshot> discard(
+    RepositoryId repositoryId,
+    DiscardPreview preview,
+  ) {
     throw UnimplementedError();
   }
 }
