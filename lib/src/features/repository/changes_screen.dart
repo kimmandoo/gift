@@ -15,6 +15,7 @@ import 'package:gitflu/src/features/repository/remote_dialog.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter/services.dart';
+import 'package:gitflu/src/app/pixel_theme.dart';
 
 /// Shows the repository's current changes grouped by their Git facets.
 class ChangesScreen extends StatelessWidget {
@@ -122,11 +123,14 @@ class _ChangesScreenBodyState extends ConsumerState<_ChangesScreenBody> {
             const Text('Changes'),
             Text(
               widget.repository.root,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
               style: Theme.of(context).textTheme.labelSmall,
             ),
           ],
         ),
         actions: [
+          const PixelThemeToggle(),
           IconButton(
             key: const Key('open-remotes'),
             tooltip: 'Open remote operations',
@@ -311,27 +315,23 @@ class _ChangesScreenBodyState extends ConsumerState<_ChangesScreenBody> {
         margin: EdgeInsets.zero,
         child: Padding(
           padding: const EdgeInsets.all(14),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              Expanded(
-                child: TextField(
-                  key: const Key('commit-message'),
-                  controller: _commitMessageController,
-                  enabled: !state.isMutating,
-                  minLines: 1,
-                  maxLines: 3,
-                  textInputAction: TextInputAction.newline,
-                  decoration: const InputDecoration(
-                    labelText: 'Commit staged changes',
-                    border: OutlineInputBorder(),
-                    hintText: 'Describe the staged changes',
-                  ),
-                  onChanged: (_) => setState(() {}),
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              final editor = TextField(
+                key: const Key('commit-message'),
+                controller: _commitMessageController,
+                enabled: !state.isMutating,
+                minLines: 1,
+                maxLines: 3,
+                textInputAction: TextInputAction.newline,
+                decoration: const InputDecoration(
+                  labelText: 'Commit staged changes',
+                  border: OutlineInputBorder(),
+                  hintText: 'Describe the staged changes',
                 ),
-              ),
-              const SizedBox(width: 10),
-              FilledButton.icon(
+                onChanged: (_) => setState(() {}),
+              );
+              final button = FilledButton.icon(
                 key: const Key('commit-staged'),
                 onPressed: canSubmit
                     ? () => unawaited(_submitCommit(controller))
@@ -344,8 +344,21 @@ class _ChangesScreenBodyState extends ConsumerState<_ChangesScreenBody> {
                       )
                     : const Icon(Icons.check, size: 18),
                 label: const Text('Commit'),
-              ),
-            ],
+              );
+              if (constraints.maxWidth < 520) {
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [editor, const SizedBox(height: 10), button],
+                );
+              }
+              return Row(
+                children: [
+                  Expanded(child: editor),
+                  const SizedBox(width: 10),
+                  button,
+                ],
+              );
+            },
           ),
         ),
       ),
@@ -727,10 +740,7 @@ class _ChangesScreenBodyState extends ConsumerState<_ChangesScreenBody> {
   ) {
     return SegmentedButton<GitDiffScope>(
       segments: const [
-        ButtonSegment(
-          value: GitDiffScope.workingTree,
-          label: Text('Working tree'),
-        ),
+        ButtonSegment(value: GitDiffScope.workingTree, label: Text('Worktree')),
         ButtonSegment(value: GitDiffScope.staged, label: Text('Staged')),
       ],
       selected: {state.diffScope},

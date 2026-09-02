@@ -7,6 +7,7 @@ import 'package:gitflu/src/backend/git_gateway.dart';
 import 'package:file_selector/file_selector.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:gitflu/src/app/pixel_theme.dart';
 
 class WelcomeScreen extends StatefulWidget {
   const WelcomeScreen({
@@ -78,6 +79,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
       appBar: AppBar(
         title: const Text('Gitflu'),
         actions: [
+          const PixelThemeToggle(),
           if (_gitSettingsController != null)
             IconButton(
               tooltip: 'Git settings',
@@ -92,8 +94,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
             constraints: const BoxConstraints(maxWidth: 720),
             child: Padding(
               padding: const EdgeInsets.all(32),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
+              child: ListView(
                 children: [
                   const Text(
                     'Open a Git repository',
@@ -130,7 +131,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
                     style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
                   ),
                   const SizedBox(height: 8),
-                  Expanded(child: _recentList(state.recentRepositories)),
+                  _recentList(state.recentRepositories),
                 ],
               ),
             ),
@@ -148,6 +149,8 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
       );
     }
     return ListView.builder(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
       itemCount: repositories.length,
       itemBuilder: (context, index) {
         final repository = repositories[index];

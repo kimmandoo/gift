@@ -51,8 +51,8 @@ ledger is the source of truth when implementation choices are ambiguous.
 The visual language must feel like a small, calm 2D pixel game while keeping
 the information density expected from a desktop Git GUI.
 
-- Use a restrained dark canvas, crisp pixel-like borders, compact panels, and
-  a small number of high-signal accent colors.
+- Use restrained light and dark canvases, crisp pixel-like borders, compact
+  panels, and a small number of high-signal accent colors.
 - Build spacing, borders, icon containers, and hit targets on a 4 px base grid;
   use 8 px for primary gaps and 16 px for panel padding.
 - Prefer flat fills and hard edges. Do not use glassmorphism, soft gradients,
@@ -66,7 +66,7 @@ the information density expected from a desktop Git GUI.
   remain explicit, reversible where possible, and understandable to a new
   user.
 
-### Initial visual tokens
+### Visual tokens and typography
 
 These tokens are a starting contract; later visual tuning must preserve their
 roles and contrast relationships.
@@ -83,9 +83,27 @@ roles and contrast relationships.
 | `pixelCoral` | `#F47C7C` | Error and destructive state |
 | `pixelSky` | `#79BDE8` | Links and informational state |
 
-Text must remain readable without relying on color alone. If a custom pixel
-font is added later, it must be bundled, licensed for redistribution, and
-tested at normal desktop sizes; the default fallback must remain legible.
+The light palette mirrors each semantic role with warm paper-like surfaces and
+dark ink. Theme switching is available from every top-level workflow and is
+persisted locally. Text uses the bundled Silkscreen family under the SIL Open
+Font License; source and diff content may retain a denser monospace treatment
+where exact character alignment matters.
+
+Text must remain readable without relying on color alone. Both palettes and
+the pixel font must be tested at compact desktop sizes and normal text scale.
+
+### Git graph contract
+
+- A commit row renders every active lane crossing that row, not only the
+  selected commit's vertical marker.
+- Forks connect one commit node to every parent lane; merges and lane shifts
+  remain visually connected above and below the node.
+- Lane assignment is recomputed over all loaded rows after pagination so a
+  page boundary cannot reset or jump a branch line.
+- Graph width grows for ordinary branch counts and compresses lane spacing for
+  unusually wide histories instead of clipping the rightmost lane.
+- At least four distinguishable semantic palette colors repeat by lane, while
+  node shape and line geometry keep the graph understandable without color.
 
 ## Desktop shell
 
@@ -110,6 +128,8 @@ The first repository screen should follow this stable hierarchy:
   errors without hiding the main content.
 - On a narrow window, the right pane becomes a push route or bottom sheet; no
   information may become unreachable.
+- At 360 px width and 640 px height, core screens and operation dialogs must
+  remain reachable without RenderFlex overflow.
 
 ## Interaction and state rules
 

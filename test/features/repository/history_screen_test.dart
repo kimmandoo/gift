@@ -76,7 +76,7 @@ void main() {
     tester,
   ) async {
     addTearDown(tester.view.reset);
-    tester.view.physicalSize = const Size(560, 800);
+    tester.view.physicalSize = const Size(360, 640);
     tester.view.devicePixelRatio = 1;
 
     final repository = const RepositoryOpened(
@@ -117,6 +117,60 @@ void main() {
     expect(tester.takeException(), isNull);
     expect(find.text('Narrow history'), findsOneWidget);
     expect(find.byKey(const Key('history-status-strip')), findsOneWidget);
+    controller.dispose();
+  });
+
+  testWidgets('allocates graph width for many active lanes', (tester) async {
+    final repository = const RepositoryOpened(
+      repositoryId: RepositoryId(value: 'wide-graph-repository'),
+      root: '/workspace/project',
+    );
+    final commit = GitCommit(
+      oid: 'd' * 40,
+      parents: const [],
+      authorName: 'Kimmandoo',
+      authorEmail: 'kimmandoo@example.test',
+      authoredAt: DateTime(2026, 9, 2, 12),
+      subject: 'Wide graph',
+      body: '',
+      lane: 5,
+      laneCount: 6,
+      graphHasIncoming: true,
+      graphSegments: const [GitGraphSegment(fromLane: 0, toLane: 0)],
+    );
+    final gateway = FakeHistoryGateway(
+      pages: {
+        0: GitHistoryPage(
+          repositoryId: repository.repositoryId,
+          commits: [commit],
+          offset: 0,
+          limit: 30,
+          hasMore: false,
+        ),
+      },
+    );
+    final controller = HistoryController(
+      gateway: gateway,
+      repositoryId: repository.repositoryId,
+    );
+    await controller.refresh();
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: HistoryScreen(
+          gateway: gateway,
+          repository: repository,
+          controller: controller,
+          autoInitialize: false,
+        ),
+      ),
+    );
+
+    expect(
+      tester.getSize(find.byKey(ValueKey('graph:${commit.oid}'))).width,
+      104,
+    );
+    expect(tester.takeException(), isNull);
     controller.dispose();
   });
 }

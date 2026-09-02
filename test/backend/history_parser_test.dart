@@ -74,6 +74,15 @@ void main() {
 
     expect(page.commits.map((commit) => commit.lane), [0, 0, 1]);
     expect(page.commits.first.laneCount, 2);
+    expect(
+      page.commits.first.graphSegments.map(
+        (segment) => '${segment.fromLane}->${segment.toLane}',
+      ),
+      ['0->0', '0->1'],
+    );
+    expect(page.commits.first.graphHasIncoming, isFalse);
+    expect(page.commits[1].graphHasIncoming, isTrue);
+    expect(page.commits[2].graphHasIncoming, isTrue);
   });
 
   test('recomputes lanes across an appended page boundary', () {
@@ -108,6 +117,44 @@ void main() {
 
     expect(combined.map((commit) => commit.lane), [0, 1]);
   });
+
+  test(
+    'connects to a parent that is already active without duplicating it',
+    () {
+      final tip = 't' * 40;
+      final left = 'l' * 40;
+      final shared = 's' * 40;
+      final page = parseGitHistory(
+        utf8.encode(
+          [
+            historyRecord(
+              oid: tip,
+              parents: '$left $shared',
+              subject: 'Fork lanes',
+            ),
+            historyRecord(
+              oid: left,
+              parents: shared,
+              subject: 'Join active lane',
+            ),
+            historyRecord(oid: shared, parents: '', subject: 'Shared parent'),
+          ].join(),
+        ),
+        repositoryId: repositoryId,
+        offset: 0,
+        limit: 10,
+      );
+
+      expect(page.commits.map((commit) => commit.lane), [0, 0, 1]);
+      expect(
+        page.commits[1].graphSegments.map(
+          (segment) => '${segment.fromLane}->${segment.toLane}',
+        ),
+        ['1->1', '0->1'],
+      );
+      expect(page.commits[1].laneCount, 2);
+    },
+  );
 }
 
 String historyRecord({

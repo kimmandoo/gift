@@ -2,6 +2,9 @@
 
 ## 2026-09-02
 
+- feat(ui): rebuilt the Git graph and added persistent light and dark pixel themes.
+- fix(ui): hardened compact layouts across core screens and operation dialogs.
+- build(icon): generated desktop release icons from the gitflu icon asset.
 - docs(roadmap): planned the ordered post-MVP work through signed public releases.
 - fix(hardening): bounded Git processes, stabilized cancellation, preserved history lanes, and revoked discard previews.
 - fix(settings): ignored stale async results and persisted canonical Git executable paths.

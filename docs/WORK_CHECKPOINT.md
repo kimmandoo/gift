@@ -5,8 +5,8 @@ This file is the handoff record for continuing work across query sessions.
 ## Current checkpoint
 
 - Date: 2026-09-02
-- Milestone: Task 15 Hardening & product identity is implemented; local Linux
-  bundle verification remains active.
+- Milestone: Task 15 hardening, UI stabilization, and product identity are
+  implemented; local Linux bundle verification remains active.
 - Source of truth: `TASKS.md` and
   `docs/superpowers/plans/2026-09-02-gitflu-dart-mvp.md`.
 - Completed scope: removed the native implementation, FFI bridge, generated
@@ -71,6 +71,24 @@ This file is the handoff record for continuing work across query sessions.
 - Task 15 remains active; creating the backlog did not skip its pending Linux
   bundle verification. After Task 15 passes, Task 16 is the first post-MVP
   implementation task.
+- UI stabilization replaced one-line commit markers with graph-row segment
+  models for incoming, continuation, fork, merge, and compressed wide-lane
+  rendering. Pagination recomputes the complete visible graph.
+- Added persisted light/dark theme switching, the bundled OFL Silkscreen font,
+  compact 360x640 layout coverage, and responsive dialog bounds.
+- `assets/images/gitflu_icon.png` is now the release icon source. Generated
+  macOS AppIcon PNGs and the Windows multi-size ICO use that asset; Flutter
+  also bundles it for Linux packaging.
+- UI verification: `dart run tool/verify.dart` passed formatting, analysis,
+  and all 70 tests. Added compact 320x480 welcome, compact 360x640 Changes and
+  History, theme persistence, wide graph, merge/fork, and already-active
+  parent lane coverage. Font and icon asset validation passed.
+- Changed implementation files: `lib/src/app/gitflu_app.dart`,
+  `lib/src/app/pixel_theme.dart`, `lib/src/backend/history.dart`, core
+  repository screens/dialogs, `pubspec.yaml`, desktop icon resources, tests,
+  and UI documentation.
+- Concurrent work note: the unstaged README Windows registry command was not
+  created or staged by this task and remains untouched for its owner.
 - Blockers: no source blocker. The pre-existing untracked `.serena/` directory
   was left untouched and is not part of the commit.
 - Next action: install `libgtk-3-dev` on this Linux host and rerun

@@ -185,9 +185,9 @@ HistoryScreen
    계산합니다. 최대 page size를 제한해 큰 history가 한 번에 메모리를
    점유하지 않도록 합니다.
 2. 각 record는 object ID, parent IDs, author, 날짜, subject, body로
-   파싱됩니다. merge commit의 여러 parent는 lane slot으로 이어지며,
-   끝난 branch의 빈 slot을 유지해 다음 side line이 갑자기 이동하지
-   않습니다.
+   파싱됩니다. 각 행은 commit lane뿐 아니라 위쪽 lane에서 아래쪽 lane으로
+   이어지는 segment 목록을 가집니다. merge/fork는 여러 segment로 표현하고,
+   pagination 뒤에는 현재까지 읽은 전체 commit의 lane을 다시 계산합니다.
 3. History 화면은 처음 page를 표시하고 Load more를 눌렀을 때 다음 offset을
    요청합니다. commit 행을 선택하면 오른쪽 detail pane에서 전체 ID,
    parent, author와 body를 읽을 수 있습니다.
@@ -246,8 +246,10 @@ ChangesScreen
 
 ```text
 GitfluApp
-  └─ buildPixelTheme()
-       ├─ dark canvas + flat panel tokens
+  ├─ persisted ThemeMode
+  └─ buildPixelTheme(light/dark)
+       ├─ bundled Silkscreen pixel font
+       ├─ light/dark canvas + flat panel tokens
        ├─ square borders + visible focus color
        └─ screen CallbackShortcuts
             ├─ Ctrl+R → refresh
@@ -257,9 +259,9 @@ GitfluApp
             └─ Ctrl+Enter → commit
 ```
 
-1. `lib/src/app/pixel_theme.dart`에 색상과 표면 규칙을 모아 두어 화면마다
-   임의의 색을 다시 정하지 않습니다. 선택 상태는 색상뿐 아니라 일반적인
-   ListTile semantics와 텍스트로도 드러납니다.
+1. `lib/src/app/pixel_theme.dart`에 두 palette, Silkscreen typography,
+   표면 규칙과 theme toggle을 모아 두어 화면마다 임의의 색을 다시 정하지
+   않습니다. 선택 상태는 색상뿐 아니라 semantics와 텍스트로도 드러납니다.
 2. Changes와 History는 넓은 창에서 목록/상세 pane을 나란히 보여주고,
    680 px보다 좁아지면 목록을 위에, 상세를 아래에 배치합니다. 따라서
    작은 데스크톱 창에서도 상세 내용을 잃지 않습니다.

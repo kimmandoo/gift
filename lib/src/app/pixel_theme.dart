@@ -1,94 +1,165 @@
 import 'package:flutter/material.dart';
 
-/// Shared visual tokens from the product's original pixel-game direction.
-const pixelCanvas = Color(0xFF11161C);
-const pixelPanel = Color(0xFF1A222C);
-const pixelPanelRaised = Color(0xFF222D39);
-const pixelInk = Color(0xFFF2F4E8);
-const pixelMuted = Color(0xFFAAB5B2);
-const pixelMint = Color(0xFF79E2B8);
-const pixelAmber = Color(0xFFF4C95D);
-const pixelCoral = Color(0xFFF47C7C);
-const pixelSky = Color(0xFF79BDE8);
+const pixelFontFamily = 'Silkscreen';
+const pixelCanvas = Color(0xFF0D1117);
+const pixelPanel = Color(0xFF151B23);
+const pixelPanelRaised = Color(0xFF202938);
+const pixelInk = Color(0xFFF5F7E9);
+const pixelMuted = Color(0xFF9AA8A8);
+const pixelMint = Color(0xFF63E6BE);
+const pixelAmber = Color(0xFFFFCC66);
+const pixelCoral = Color(0xFFFF7B72);
+const pixelSky = Color(0xFF79C0FF);
+const pixelLightCanvas = Color(0xFFF5F1E8);
+const pixelLightPanel = Color(0xFFFFFCF5);
+const pixelLightRaised = Color(0xFFE9E3D7);
+const pixelLightInk = Color(0xFF17212B);
+const pixelLightMuted = Color(0xFF5E6B70);
+const pixelLightMint = Color(0xFF087F5B);
+const pixelLightSky = Color(0xFF1769AA);
+const pixelLightAmber = Color(0xFF9A6700);
+const pixelLightCoral = Color(0xFFB42318);
 
-/// Builds a flat, high-contrast dark theme with crisp square surfaces.
-ThemeData buildPixelTheme() {
-  final scheme = const ColorScheme.dark(
-    surface: pixelPanel,
-    surfaceContainerHighest: pixelPanelRaised,
-    primary: pixelMint,
-    onPrimary: pixelCanvas,
-    secondary: pixelSky,
-    onSecondary: pixelCanvas,
-    tertiary: pixelAmber,
-    onTertiary: pixelCanvas,
-    error: pixelCoral,
-    onError: pixelCanvas,
-    onSurface: pixelInk,
+ThemeData buildPixelTheme({Brightness brightness = Brightness.dark}) {
+  final dark = brightness == Brightness.dark;
+  final canvas = dark ? pixelCanvas : pixelLightCanvas;
+  final panel = dark ? pixelPanel : pixelLightPanel;
+  final raised = dark ? pixelPanelRaised : pixelLightRaised;
+  final ink = dark ? pixelInk : pixelLightInk;
+  final muted = dark ? pixelMuted : pixelLightMuted;
+  final primary = dark ? pixelMint : pixelLightMint;
+  final secondary = dark ? pixelSky : pixelLightSky;
+  final tertiary = dark ? pixelAmber : pixelLightAmber;
+  final error = dark ? pixelCoral : pixelLightCoral;
+  final scheme = ColorScheme.fromSeed(
+    seedColor: primary,
+    brightness: brightness,
+    surface: panel,
+    primary: primary,
+    secondary: secondary,
+    tertiary: tertiary,
+    error: error,
+    onSurface: ink,
+  ).copyWith(surfaceContainerHighest: raised);
+  final border = BorderSide(color: muted.withValues(alpha: 0.55));
+  final square = RoundedRectangleBorder(
+    borderRadius: BorderRadius.zero,
+    side: border,
   );
-  final border = BorderSide(color: pixelMuted.withValues(alpha: 0.35));
-  return ThemeData(
+  final inputBorder = OutlineInputBorder(
+    borderRadius: BorderRadius.zero,
+    borderSide: border,
+  );
+  final base = ThemeData(
     colorScheme: scheme,
-    brightness: Brightness.dark,
+    brightness: brightness,
     useMaterial3: true,
-    scaffoldBackgroundColor: pixelCanvas,
-    canvasColor: pixelCanvas,
+    fontFamily: pixelFontFamily,
+    scaffoldBackgroundColor: canvas,
+    canvasColor: canvas,
+  );
+  return base.copyWith(
+    textTheme: base.textTheme.apply(fontFamily: pixelFontFamily),
+    primaryTextTheme: base.primaryTextTheme.apply(fontFamily: pixelFontFamily),
     dividerTheme: DividerThemeData(color: border.color, thickness: 1),
-    appBarTheme: const AppBarTheme(
-      backgroundColor: pixelPanel,
-      foregroundColor: pixelInk,
+    appBarTheme: AppBarTheme(
+      backgroundColor: panel,
+      foregroundColor: ink,
       elevation: 0,
       centerTitle: false,
+      titleTextStyle: TextStyle(
+        fontFamily: pixelFontFamily,
+        color: ink,
+        fontSize: 18,
+        fontWeight: FontWeight.bold,
+      ),
     ),
     cardTheme: CardThemeData(
-      color: pixelPanel,
+      color: panel,
       elevation: 0,
       margin: EdgeInsets.zero,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.zero,
-        side: border,
-      ),
+      shape: square,
+    ),
+    dialogTheme: DialogThemeData(
+      backgroundColor: panel,
+      elevation: 0,
+      shape: square,
     ),
     inputDecorationTheme: InputDecorationTheme(
       filled: true,
-      fillColor: pixelCanvas,
-      border: OutlineInputBorder(
+      fillColor: canvas,
+      border: inputBorder,
+      enabledBorder: inputBorder,
+      focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.zero,
-        borderSide: border,
+        borderSide: BorderSide(color: primary, width: 2),
       ),
-      enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.zero,
-        borderSide: border,
-      ),
-      focusedBorder: const OutlineInputBorder(
-        borderRadius: BorderRadius.zero,
-        borderSide: BorderSide(color: pixelMint, width: 2),
-      ),
-      labelStyle: const TextStyle(color: pixelMuted),
+      labelStyle: TextStyle(color: muted),
     ),
     filledButtonTheme: FilledButtonThemeData(
       style: FilledButton.styleFrom(
-        backgroundColor: pixelMint,
-        foregroundColor: pixelCanvas,
+        backgroundColor: primary,
+        foregroundColor: dark ? pixelCanvas : pixelLightPanel,
         shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
-        side: const BorderSide(color: pixelMint),
+        side: BorderSide(color: primary, width: 2),
+        minimumSize: const Size(48, 44),
       ),
     ),
     outlinedButtonTheme: OutlinedButtonThemeData(
       style: OutlinedButton.styleFrom(
-        foregroundColor: pixelMint,
+        foregroundColor: primary,
         shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
-        side: const BorderSide(color: pixelMint),
+        side: BorderSide(color: primary),
+        minimumSize: const Size(48, 44),
       ),
     ),
     textButtonTheme: TextButtonThemeData(
-      style: TextButton.styleFrom(foregroundColor: pixelMint),
+      style: TextButton.styleFrom(foregroundColor: primary),
     ),
-    listTileTheme: const ListTileThemeData(
-      selectedTileColor: pixelPanelRaised,
-      selectedColor: pixelInk,
-      iconColor: pixelMuted,
+    listTileTheme: ListTileThemeData(
+      selectedTileColor: raised,
+      selectedColor: ink,
+      iconColor: muted,
     ),
-    focusColor: pixelMint.withValues(alpha: 0.24),
+    focusColor: primary.withValues(alpha: 0.24),
+    visualDensity: VisualDensity.standard,
   );
+}
+
+class PixelThemeScope extends InheritedWidget {
+  const PixelThemeScope({
+    super.key,
+    required this.mode,
+    required this.toggle,
+    required super.child,
+  });
+
+  final ThemeMode mode;
+  final VoidCallback toggle;
+
+  static PixelThemeScope of(BuildContext context) =>
+      context.dependOnInheritedWidgetOfExactType<PixelThemeScope>()!;
+
+  static PixelThemeScope? maybeOf(BuildContext context) =>
+      context.dependOnInheritedWidgetOfExactType<PixelThemeScope>();
+
+  @override
+  bool updateShouldNotify(PixelThemeScope oldWidget) => oldWidget.mode != mode;
+}
+
+class PixelThemeToggle extends StatelessWidget {
+  const PixelThemeToggle({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final scope = PixelThemeScope.maybeOf(context);
+    if (scope == null) return const SizedBox.shrink();
+    final dark = scope.mode == ThemeMode.dark;
+    return IconButton(
+      key: const Key('theme-toggle'),
+      tooltip: dark ? 'Use light theme' : 'Use dark theme',
+      onPressed: scope.toggle,
+      icon: Icon(dark ? Icons.light_mode_outlined : Icons.dark_mode_outlined),
+    );
+  }
 }

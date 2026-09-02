@@ -176,3 +176,15 @@ system Git 2.35+.
 4. Full verification passed. The next action is to install `libgtk-3-dev` and
    rerun the Linux release build; this session could not provide sudo's
    interactive password.
+
+## Completed UI stabilization pass
+
+1. Replaced commit-only graph markers with typed row segments for incoming
+   lines, continuations, forks, merges, lane shifts, and wide-graph spacing.
+2. Added persisted light/dark themes and bundled the OFL Silkscreen pixel font.
+3. Added compact-window handling for core screens, commit controls, and
+   operation dialogs.
+4. Generated macOS and Windows release icon resources from the canonical
+   `assets/images/gitflu_icon.png` source.
+5. Passed full formatting, analysis, and all 70 tests; Linux release
+   compilation still awaits the host GTK development package.

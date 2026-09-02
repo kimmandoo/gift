@@ -14,6 +14,8 @@ class GitCommit {
     required this.body,
     this.lane = 0,
     this.laneCount = 1,
+    this.graphSegments = const [],
+    this.graphHasIncoming = false,
   });
 
   final String oid;
@@ -25,10 +27,17 @@ class GitCommit {
   final String body;
   final int lane;
   final int laneCount;
+  final List<GitGraphSegment> graphSegments;
+  final bool graphHasIncoming;
 
   String get shortOid => oid.length > 8 ? oid.substring(0, 8) : oid;
 
-  GitCommit withGraph({required int lane, required int laneCount}) {
+  GitCommit withGraph({
+    required int lane,
+    required int laneCount,
+    required List<GitGraphSegment> graphSegments,
+    required bool graphHasIncoming,
+  }) {
     return GitCommit(
       oid: oid,
       parents: parents,
@@ -39,8 +48,19 @@ class GitCommit {
       body: body,
       lane: lane,
       laneCount: laneCount,
+      graphSegments: List.unmodifiable(graphSegments),
+      graphHasIncoming: graphHasIncoming,
     );
   }
+}
+
+/// One connection crossing a commit row, expressed as graph-lane indexes at
+/// the row's top and bottom. A fork has several segments sharing [fromLane].
+class GitGraphSegment {
+  const GitGraphSegment({required this.fromLane, required this.toLane});
+
+  final int fromLane;
+  final int toLane;
 }
 
 /// A bounded page of history rows.
@@ -112,13 +132,12 @@ GitHistoryPage parseGitHistory(
 /// Recomputes lanes for a complete visible sequence. Call this again after
 /// appending a page so branches that cross the page boundary stay connected.
 List<GitCommit> assignGraphLanes(List<GitCommit> commits) {
-  // Keep empty lane slots instead of compacting after a branch line ends. This
-  // makes a side parent stay on the same visual lane as later rows.
   final lanes = <String?>[];
   return [
     for (final commit in commits)
       (() {
         var lane = lanes.indexOf(commit.oid);
+        final hasIncoming = lane >= 0;
         if (lane < 0) {
           lane = lanes.indexOf(null);
           if (lane < 0) {
@@ -126,21 +145,56 @@ List<GitCommit> assignGraphLanes(List<GitCommit> commits) {
             lanes.add(null);
           }
         }
+        final before = List<String?>.of(lanes);
         final parents = <String>[];
         for (final parent in commit.parents) {
           if (!parents.contains(parent)) parents.add(parent);
         }
-        if (parents.isEmpty) {
-          lanes[lane] = null;
-        } else {
-          lanes[lane] = parents.first;
-          for (var index = 1; index < parents.length; index++) {
-            lanes.insert(lane + index, parents[index]);
+        final after = List<String?>.of(before);
+        after[lane] = null;
+        for (var index = 0; index < parents.length; index++) {
+          final parent = parents[index];
+          if (after.contains(parent)) continue;
+          if (index == 0) {
+            after[lane] = parent;
+          } else {
+            after.insert(lane + index, parent);
           }
         }
+        while (after.isNotEmpty && after.last == null) {
+          after.removeLast();
+        }
+        final segments = <GitGraphSegment>[];
+        void addSegment(int from, int to) {
+          if (!segments.any(
+            (segment) => segment.fromLane == from && segment.toLane == to,
+          )) {
+            segments.add(GitGraphSegment(fromLane: from, toLane: to));
+          }
+        }
+
+        for (var index = 0; index < before.length; index++) {
+          final oid = before[index];
+          if (index == lane || oid == null) continue;
+          final destination = after.indexOf(oid);
+          if (destination >= 0) addSegment(index, destination);
+        }
+        for (final parent in parents) {
+          final destination = after.indexOf(parent);
+          if (destination >= 0) addSegment(lane, destination);
+        }
+        lanes
+          ..clear()
+          ..addAll(after);
         return commit.withGraph(
           lane: lane,
-          laneCount: lanes.length > lane ? lanes.length : lane + 1,
+          laneCount: [
+            before.length,
+            after.length,
+            lane + 1,
+          ].reduce((left, right) => left > right ? left : right),
+          graphSegments: segments,
+          graphHasIncoming: hasIncoming,
         );
       })(),
   ];

@@ -7,6 +7,7 @@ import 'package:gitflu/src/backend/history.dart';
 import 'package:gitflu/src/features/repository/history_controller.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:gitflu/src/app/pixel_theme.dart';
 
 class HistoryScreen extends StatefulWidget {
   const HistoryScreen({
@@ -70,11 +71,14 @@ class _HistoryScreenState extends State<HistoryScreen> {
             const Text('History'),
             Text(
               widget.repository.root,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
               style: Theme.of(context).textTheme.labelSmall,
             ),
           ],
         ),
         actions: [
+          const PixelThemeToggle(),
           IconButton(
             tooltip: 'Refresh history',
             onPressed: state.isLoading ? null : _controller.refresh,
@@ -164,6 +168,12 @@ class _HistoryScreenState extends State<HistoryScreen> {
     if (page.commits.isEmpty) {
       return const Center(child: Text('No commits yet.'));
     }
+    final maxLaneCount = page.commits.fold<int>(
+      1,
+      (maximum, commit) =>
+          commit.laneCount > maximum ? commit.laneCount : maximum,
+    );
+    final graphWidth = (maxLaneCount * 14.0 + 20).clamp(42.0, 180.0);
     final extraRows = page.hasMore ? 1 : 0;
     return ListView.builder(
       padding: const EdgeInsets.symmetric(vertical: 8),
@@ -185,30 +195,63 @@ class _HistoryScreenState extends State<HistoryScreen> {
           );
         }
         final commit = page.commits[index];
-        return ListTile(
+        final scheme = Theme.of(context).colorScheme;
+        return InkWell(
           key: ValueKey('commit:${commit.oid}'),
-          selected: state.selectedOid == commit.oid,
-          leading: SizedBox(
-            width: 28,
-            height: 44,
-            child: CustomPaint(
-              painter: _CommitGraphPainter(
-                lane: commit.lane,
-                laneCount: commit.laneCount,
-                color: Theme.of(context).colorScheme.primary,
-              ),
+          onTap: () => _controller.selectCommit(commit),
+          child: Container(
+            constraints: const BoxConstraints(minHeight: 64),
+            color: state.selectedOid == commit.oid
+                ? scheme.surfaceContainerHighest
+                : null,
+            padding: const EdgeInsets.only(right: 12),
+            child: Row(
+              children: [
+                SizedBox(
+                  width: graphWidth,
+                  height: 64,
+                  child: CustomPaint(
+                    key: ValueKey('graph:${commit.oid}'),
+                    painter: _CommitGraphPainter(
+                      lane: commit.lane,
+                      laneCount: maxLaneCount,
+                      segments: commit.graphSegments,
+                      hasIncoming: commit.graphHasIncoming,
+                      colors: [
+                        scheme.primary,
+                        scheme.secondary,
+                        scheme.tertiary,
+                        scheme.error,
+                      ],
+                      background: Theme.of(context).scaffoldBackgroundColor,
+                    ),
+                  ),
+                ),
+                Expanded(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        commit.subject.isEmpty
+                            ? '(no subject)'
+                            : commit.subject,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 3),
+                      Text(
+                        '${commit.authorName} · ${_formatDate(commit.authoredAt)} · ${commit.shortOid}',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: Theme.of(context).textTheme.labelSmall,
+                      ),
+                    ],
+                  ),
+                ),
+              ],
             ),
           ),
-          title: Text(
-            commit.subject.isEmpty ? '(no subject)' : commit.subject,
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-          ),
-          subtitle: Text(
-            '${commit.authorName} · ${_formatDate(commit.authoredAt)} · ${commit.shortOid}',
-            overflow: TextOverflow.ellipsis,
-          ),
-          onTap: () => _controller.selectCommit(commit),
         );
       },
     );
@@ -218,8 +261,9 @@ class _HistoryScreenState extends State<HistoryScreen> {
     if (commit == null) {
       return const Center(child: Text('Select a commit to inspect it.'));
     }
+    final narrow = MediaQuery.sizeOf(context).width < 500;
     return SingleChildScrollView(
-      padding: const EdgeInsets.fromLTRB(28, 24, 28, 24),
+      padding: EdgeInsets.fromLTRB(narrow ? 16 : 28, 20, narrow ? 16 : 28, 24),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -275,25 +319,67 @@ class _CommitGraphPainter extends CustomPainter {
   const _CommitGraphPainter({
     required this.lane,
     required this.laneCount,
-    required this.color,
+    required this.segments,
+    required this.hasIncoming,
+    required this.colors,
+    required this.background,
   });
 
   final int lane;
   final int laneCount;
-  final Color color;
+  final List<GitGraphSegment> segments;
+  final bool hasIncoming;
+  final List<Color> colors;
+  final Color background;
+
+  double _laneX(int value, Size size) {
+    if (laneCount <= 1) return size.width / 2;
+    final spacing = ((size.width - 20) / (laneCount - 1)).clamp(3.0, 14.0);
+    return 10 + value * spacing;
+  }
 
   @override
   void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = color
-      ..strokeWidth = 2
-      ..style = PaintingStyle.stroke;
-    final x = 8.0 + lane.clamp(0, laneCount - 1) * 8;
-    canvas.drawLine(Offset(x, 0), Offset(x, size.height), paint);
-    canvas.drawCircle(
-      Offset(x, size.height / 2),
-      5,
-      paint..style = PaintingStyle.fill,
+    final middle = size.height / 2;
+    for (final segment in segments) {
+      final from = _laneX(segment.fromLane, size);
+      final to = _laneX(segment.toLane, size);
+      final paint = Paint()
+        ..color = colors[segment.fromLane % colors.length]
+        ..strokeWidth = 2
+        ..isAntiAlias = false
+        ..style = PaintingStyle.stroke;
+      final startsAtNode = segment.fromLane == lane;
+      final path = Path()
+        ..moveTo(from, startsAtNode ? middle : 0)
+        ..lineTo(from, startsAtNode ? middle : middle - 5)
+        ..lineTo(to, middle + 5)
+        ..lineTo(to, size.height);
+      canvas.drawPath(path, paint);
+    }
+    final nodeColor = colors[lane % colors.length];
+    final center = Offset(_laneX(lane, size), middle);
+    if (hasIncoming) {
+      canvas.drawLine(
+        Offset(center.dx, 0),
+        center,
+        Paint()
+          ..color = nodeColor
+          ..strokeWidth = 2
+          ..isAntiAlias = false,
+      );
+    }
+    canvas.drawRect(
+      Rect.fromCenter(center: center, width: 10, height: 10),
+      Paint()
+        ..color = background
+        ..isAntiAlias = false,
+    );
+    canvas.drawRect(
+      Rect.fromCenter(center: center, width: 8, height: 8),
+      Paint()
+        ..color = nodeColor
+        ..isAntiAlias = false,
     );
   }
 
@@ -301,7 +387,10 @@ class _CommitGraphPainter extends CustomPainter {
   bool shouldRepaint(_CommitGraphPainter oldDelegate) =>
       oldDelegate.lane != lane ||
       oldDelegate.laneCount != laneCount ||
-      oldDelegate.color != color;
+      oldDelegate.segments != segments ||
+      oldDelegate.hasIncoming != hasIncoming ||
+      oldDelegate.colors != colors ||
+      oldDelegate.background != background;
 }
 
 String _formatDate(DateTime date) {

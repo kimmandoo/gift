@@ -8,7 +8,7 @@
 
 - **Total Tasks:** 25
 - **Completed:** 14 / 25
-- **Current Active Task:** `15 — Hardening & product identity verification`
+- **Current Active Task:** `15 — UI stabilization and release verification`
 
 | # | Scope | Dart backend deliverables | Flutter deliverables | Status |
 |---|---|---|---|:---:|
@@ -26,7 +26,7 @@
 | **12** | Remotes & cancellation | Fetch/pull/push and operation cancellation | Progress bar and controls | ✅ |
 | **13** | JetBrains-equivalent UX & pixel theme | Redacted diagnostics and classification | Minimal 2D pixel-game shell, responsive layout, theme, shortcuts | ✅ |
 | **14** | Packaging & CI | Cross-platform verification scripts | Desktop release artifacts | ✅ |
-| **15** | Hardening & identity | Process deadlines, safe cancellation, persistent graph lanes, preview revocation | Async lifecycle safety and unified gitflu metadata | 🚧 |
+| **15** | Hardening, UI & identity | Process safety, connected graph edges, preview revocation | Responsive pixel UI, theme switching, font and release identity | 🚧 |
 | **16** | Workspace | Multi-repository sessions and persisted workspace state | Repository tabs, reopen, and keyboard navigation | ⬜ |
 | **17** | Partial staging | Hunk and line patch operations with stale-content guards | Interactive diff selection and stage controls | ⬜ |
 | **18** | Commit workflow | Amend, templates, sign-off, and identity preflight | Guided commit options and validation | ⬜ |
@@ -168,7 +168,7 @@
 
 Task 15 is implemented and awaits local Linux bundle verification.
 
-### 🚧 Task 15: Hardening & product identity
+### 🚧 Task 15: Hardening, UI & product identity
 
 - [x] Added bounded Git process deadlines and disabled interactive credential
   prompts.
@@ -177,6 +177,14 @@ Task 15 is implemented and awaits local Linux bundle verification.
 - [x] Revoked cancelled discard confirmations and cleaned expired tokens.
 - [x] Unified Dart and desktop product metadata under `gitflu`.
 - [x] Added an MIT license and tag-only release workflow triggers.
+- [x] Replaced isolated history markers with connected multi-lane fork, merge,
+  and continuation segments that survive pagination.
+- [x] Added persistent light/dark theme switching and bundled the OFL-licensed
+  Silkscreen pixel font.
+- [x] Hardened compact-window layouts for the welcome, changes, history, and
+  operation-dialog surfaces.
+- [x] Generated Windows and macOS release icons from
+  `assets/images/gitflu_icon.png`.
 - [ ] Install the Linux GTK development dependency and pass the release build.
 
 ## Post-MVP backlog

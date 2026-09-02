@@ -394,7 +394,7 @@ void main() {
     tester,
   ) async {
     addTearDown(tester.view.reset);
-    tester.view.physicalSize = const Size(560, 800);
+    tester.view.physicalSize = const Size(360, 640);
     tester.view.devicePixelRatio = 1;
 
     final repository = const RepositoryOpened(
