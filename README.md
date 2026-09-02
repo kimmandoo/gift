@@ -119,7 +119,8 @@ work is tracked in [`TASKS.md`](TASKS.md).
 - [x] Staging selected paths with serialized backend mutations.
 - [x] Safe confirmation-based discard for tracked working-tree changes.
 - [x] Commit staged changes with UTF-8 messages and hook feedback.
-- [ ] Branch, history, and remote workflows.
+- [x] Bounded local history with merge-aware graph lanes and pagination.
+- [ ] Branch and remote workflows.
 - [ ] Responsive pixel UI, desktop shortcuts, packaging, and CI.
 
 ## Contributing

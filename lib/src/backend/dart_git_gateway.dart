@@ -4,6 +4,7 @@ import 'domain.dart';
 import 'discard.dart';
 import 'diff.dart';
 import 'git_gateway.dart';
+import 'history.dart';
 import 'status.dart';
 
 /// Adapts the UI-facing [GitGateway] contract to the Dart backend facade.
@@ -29,6 +30,13 @@ class DartGitGateway implements GitGateway {
   @override
   Future<GitStatusSnapshot> getStatus(RepositoryId repositoryId) =>
       backend.getStatus(repositoryId);
+
+  @override
+  Future<GitHistoryPage> getHistory(
+    RepositoryId repositoryId, {
+    int limit = 50,
+    int offset = 0,
+  }) => backend.getHistory(repositoryId, limit: limit, offset: offset);
 
   @override
   Future<GitDiffSnapshot> getDiff(

@@ -3,6 +3,7 @@ import 'commit.dart';
 import 'discard.dart';
 import 'diff.dart';
 import 'git_installation_service.dart';
+import 'history.dart';
 import 'repository_service.dart';
 import 'status.dart';
 
@@ -43,6 +44,18 @@ class DartGitBackend {
       gitPath: installation.executablePath,
       state: _state,
     ).getStatus(repositoryId);
+  }
+
+  Future<GitHistoryPage> getHistory(
+    RepositoryId repositoryId, {
+    int limit = 50,
+    int offset = 0,
+  }) async {
+    final installation = await getGitInstallation();
+    return RepositoryService(
+      gitPath: installation.executablePath,
+      state: _state,
+    ).getHistory(repositoryId, limit: limit, offset: offset);
   }
 
   Future<GitDiffSnapshot> getDiff(

@@ -3,6 +3,7 @@ import 'commit.dart';
 import 'discard.dart';
 import 'diff.dart';
 import 'status.dart';
+import 'history.dart';
 
 /// The small API that Flutter features depend on.
 ///
@@ -16,6 +17,12 @@ abstract interface class GitGateway {
   Future<RepositoryOpened> openRepository(String path);
 
   Future<GitStatusSnapshot> getStatus(RepositoryId repositoryId);
+
+  Future<GitHistoryPage> getHistory(
+    RepositoryId repositoryId, {
+    int limit = 50,
+    int offset = 0,
+  });
 
   Future<GitDiffSnapshot> getDiff(
     RepositoryId repositoryId,

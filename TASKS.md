@@ -7,8 +7,8 @@
 ## Progress
 
 - **Total Tasks:** 14
-- **Completed:** 9 / 14 (64.3%)
-- **Current Active Task:** `Task 10: History & graph`
+- **Completed:** 10 / 14 (71.4%)
+- **Current Active Task:** `Task 11: Branch management`
 
 | # | Scope | Dart backend deliverables | Flutter deliverables | Status |
 |---|---|---|---|:---:|
@@ -21,7 +21,7 @@
 | **7** | Staging & mutation | Serialized `git add`/`restore --staged` | Selection and action buttons | ✅ |
 | **8** | Discard changes | Expiring preview token and safe restore | Confirmation dialog | ✅ |
 | **9** | Commit panel | UTF-8 message stdin and hook mapping | Commit editor and shortcuts | ✅ |
-| **10** | History & graph | Paginated log and deterministic lanes | History screen and details | ⏳ |
+| **10** | History & graph | Paginated log and deterministic lanes | History screen and details | ✅ |
 | **11** | Branch management | Ref parsing, validation, and switch | Branch popup and tracking flow | ⏳ |
 | **12** | Remotes & cancellation | Fetch/pull/push and operation cancellation | Progress bar and controls | ⏳ |
 | **13** | JetBrains-equivalent UX & pixel theme | Redacted diagnostics and classification | Minimal 2D pixel-game shell, responsive layout, theme, shortcuts | ⏳ |
@@ -49,6 +49,7 @@
   confirmation dialog.
 - [x] UTF-8 stdin commits, hook rejection mapping, and staged commit editor
   feedback.
+- [x] Bounded history pages, merge-aware lane slots, and commit details.
 - [x] Removed FFI, generated bindings, native build plugins, and the former
   native implementation.
 
@@ -107,13 +108,19 @@
 - [x] Added a staged-only commit editor with loading, success, error, and clean
   state feedback.
 
+### ✅ Task 10: History & graph
+
+- [x] Added bounded `git log` parsing with metadata and merge parents.
+- [x] Added deterministic graph lane slots and pagination.
+- [x] Added History screen selection, commit details, and Load more feedback.
+
 ## Active task
 
-### ⏳ Task 10: History & graph
+### ⏳ Task 11: Branch management
 
-- [ ] Add bounded log parsing, pagination, and merge-parent tests.
-- [ ] Implement deterministic history pages and graph lanes.
-- [ ] Add a history screen and commit details.
+- [ ] Add local ref parsing, invalid-name, and branch-switch tests.
+- [ ] Implement branch listing, creation, and serialized switching.
+- [ ] Add a current-branch popup with switch feedback.
 
-Tasks 11–14 retain the same product scope above and will build on the Dart
+Tasks 12–14 retain the same product scope above and will build on the Dart
 backend contracts established here.

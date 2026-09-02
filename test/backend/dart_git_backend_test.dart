@@ -514,6 +514,41 @@ void main() {
     });
   });
 
+  test('reads bounded history pages and commit metadata', () async {
+    await withTempDirectory((directory) async {
+      await createCommittedRepository(directory.path, 'tracked.txt');
+      final file = File('${directory.path}/tracked.txt');
+      await file.writeAsString('second\n');
+      await expectGitSuccess([
+        'add',
+        '--',
+        'tracked.txt',
+      ], workingDirectory: directory.path);
+      await expectGitSuccess([
+        'commit',
+        '--quiet',
+        '-m',
+        'second commit',
+      ], workingDirectory: directory.path);
+
+      final backend = DartGitBackend();
+      final opened = await backend.openRepository(directory.path);
+      final firstPage = await backend.getHistory(opened.repositoryId, limit: 1);
+      expect(firstPage.commits, hasLength(1));
+      expect(firstPage.commits.single.subject, 'second commit');
+      expect(firstPage.commits.single.parents, hasLength(1));
+      expect(firstPage.hasMore, isTrue);
+
+      final secondPage = await backend.getHistory(
+        opened.repositoryId,
+        limit: 1,
+        offset: 1,
+      );
+      expect(secondPage.commits.single.subject, 'initial');
+      expect(secondPage.hasMore, isFalse);
+    });
+  });
+
   test('discards only the working-tree side after a fresh preview', () async {
     await withTempDirectory((directory) async {
       await createCommittedRepository(directory.path, 'tracked.txt');

@@ -168,6 +168,30 @@ ChangesScreen
    `GitErrorCategory.hookRejected`로 분류해 화면에 원인을 짧게 보여줍니다.
    원본 stderr는 실행기에서 redaction된 진단으로만 보존됩니다.
 
+## history와 graph 흐름
+
+```text
+HistoryScreen
+  └─ HistoryController.refresh()/loadMore()
+       └─ GitGateway.getHistory(limit, offset)
+            └─ DartGitBackend
+                 └─ RepositoryService.getHistory()
+                      ├─ git log --all --topo-order --max-count/--skip
+                      └─ parseGitHistory() → GitHistoryPage
+                           └─ deterministic parent lanes
+```
+
+1. 백엔드는 화면이 요청한 크기보다 한 commit을 더 읽어 `hasMore`를
+   계산합니다. 최대 page size를 제한해 큰 history가 한 번에 메모리를
+   점유하지 않도록 합니다.
+2. 각 record는 object ID, parent IDs, author, 날짜, subject, body로
+   파싱됩니다. merge commit의 여러 parent는 lane slot으로 이어지며,
+   끝난 branch의 빈 slot을 유지해 다음 side line이 갑자기 이동하지
+   않습니다.
+3. History 화면은 처음 page를 표시하고 Load more를 눌렀을 때 다음 offset을
+   요청합니다. commit 행을 선택하면 오른쪽 detail pane에서 전체 ID,
+   parent, author와 body를 읽을 수 있습니다.
+
 ## 폴더별 역할
 
 | 경로 | 역할 |
@@ -177,6 +201,7 @@ ChangesScreen
 | `lib/src/features/` | 화면별 UI와 컨트롤러 |
 | `lib/src/backend/domain.dart` | 백엔드와 UI가 주고받는 값 객체 |
 | `lib/src/backend/commit.dart` | commit ID와 post-commit status 결과 |
+| `lib/src/backend/history.dart` | bounded log record와 graph lane 계산 |
 | `lib/src/backend/error.dart` | 사용자 메시지와 진단 정보를 가진 오류 |
 | `lib/src/backend/executor.dart` | Git 프로세스 실행, 출력 제한, 비밀값 가리기 |
 | `lib/src/backend/git_installation_service.dart` | Git 경로 검색과 버전 검사 |
@@ -188,6 +213,8 @@ ChangesScreen
 | `lib/src/backend/dart_git_gateway.dart` | Flutter 계약과 백엔드를 연결하는 얇은 adapter |
 | `lib/src/features/repository/changes_controller.dart` | 상태 polling과 선택 상태 관리 |
 | `lib/src/features/repository/changes_screen.dart` | staged/unstaged 등 그룹형 변경 화면 |
+| `lib/src/features/repository/history_controller.dart` | history paging과 commit 선택 상태 |
+| `lib/src/features/repository/history_screen.dart` | commit 목록, graph marker, detail 화면 |
 | `test/backend/diff_parser_test.dart` | hunk 줄 번호, rename, binary, empty diff 테스트 |
 | `test/backend/` | 실제 Git을 사용한 백엔드 테스트 |
 | `test/features/` | fake gateway를 사용한 화면 테스트 |

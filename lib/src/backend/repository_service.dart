@@ -9,6 +9,7 @@ import 'discard.dart';
 import 'diff.dart';
 import 'error.dart';
 import 'executor.dart';
+import 'history.dart';
 import 'status.dart';
 
 /// In-memory registry for repository roots and session-local opaque IDs.
@@ -258,6 +259,59 @@ class RepositoryService {
         GitError(
           category: GitErrorCategory.parseFailure,
           userMessage: 'Git returned an unreadable status.',
+          diagnostic: error.message,
+          retryable: false,
+        ),
+        stackTrace,
+      );
+    }
+  }
+
+  Future<GitHistoryPage> getHistory(
+    RepositoryId repositoryId, {
+    int limit = 50,
+    int offset = 0,
+  }) async {
+    if (limit < 1 || limit > 100 || offset < 0) {
+      throw const GitError(
+        category: GitErrorCategory.parseFailure,
+        userMessage: 'Git history paging values are invalid.',
+        diagnostic: 'history limit must be 1..100 and offset must be >= 0',
+        retryable: false,
+      );
+    }
+    final handle = await state.lookup(repositoryId);
+    final output = await _runner.run(
+      GitInvocation(
+        program: gitPath,
+        args: [
+          'log',
+          '--all',
+          '--no-color',
+          '--no-decorate',
+          '--date=iso-strict',
+          '--topo-order',
+          '--format=%H%x00%P%x00%an%x00%ae%x00%aI%x00%s%x00%b%x00%x1e',
+          '--max-count=${limit + 1}',
+          '--skip=$offset',
+        ],
+        cwd: handle.root,
+        kind: GitOperationKind.read,
+        outputPolicy: const OutputPolicy.capture(maxBytes: 8 * 1024 * 1024),
+      ),
+    );
+    try {
+      return parseGitHistory(
+        output.stdout,
+        repositoryId: repositoryId,
+        offset: offset,
+        limit: limit,
+      );
+    } on FormatException catch (error, stackTrace) {
+      Error.throwWithStackTrace(
+        GitError(
+          category: GitErrorCategory.parseFailure,
+          userMessage: 'Git returned an unreadable history.',
           diagnostic: error.message,
           retryable: false,
         ),

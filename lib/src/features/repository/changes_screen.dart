@@ -7,6 +7,7 @@ import 'package:branchline/src/backend/error.dart';
 import 'package:branchline/src/backend/git_gateway.dart';
 import 'package:branchline/src/backend/status.dart';
 import 'package:branchline/src/features/repository/changes_controller.dart';
+import 'package:branchline/src/features/repository/history_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -121,6 +122,12 @@ class _ChangesScreenBodyState extends ConsumerState<_ChangesScreenBody> {
           ],
         ),
         actions: [
+          IconButton(
+            key: const Key('open-history'),
+            tooltip: 'Open history',
+            onPressed: () => unawaited(_openHistory(context)),
+            icon: const Icon(Icons.history),
+          ),
           IconButton(
             tooltip: 'Refresh changes',
             onPressed: state.isRefreshing ? null : controller.refresh,
@@ -545,6 +552,17 @@ class _ChangesScreenBodyState extends ConsumerState<_ChangesScreenBody> {
     } else {
       controller.cancelDiscardPreview();
     }
+  }
+
+  Future<void> _openHistory(BuildContext context) {
+    return Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => HistoryScreen(
+          gateway: widget.gateway,
+          repository: widget.repository,
+        ),
+      ),
+    );
   }
 
   Widget _scopeSelector(

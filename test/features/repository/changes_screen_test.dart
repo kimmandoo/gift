@@ -3,6 +3,7 @@ import 'package:branchline/src/backend/commit.dart';
 import 'package:branchline/src/backend/discard.dart';
 import 'package:branchline/src/backend/diff.dart';
 import 'package:branchline/src/backend/git_gateway.dart';
+import 'package:branchline/src/backend/history.dart';
 import 'package:branchline/src/backend/status.dart';
 import 'package:branchline/src/features/repository/changes_controller.dart';
 import 'package:branchline/src/features/repository/changes_screen.dart';
@@ -432,6 +433,15 @@ class FakeChangesGateway implements GitGateway {
     final snapshot = snapshots[_index];
     if (_index < snapshots.length - 1) _index++;
     return snapshot;
+  }
+
+  @override
+  Future<GitHistoryPage> getHistory(
+    RepositoryId repositoryId, {
+    int limit = 50,
+    int offset = 0,
+  }) {
+    throw UnimplementedError();
   }
 
   @override

@@ -39,6 +39,7 @@ system Git 2.35+.
 
 - `lib/src/backend/domain.dart` — public value objects and health contract.
 - `lib/src/backend/commit.dart` — commit ID and post-commit status result.
+- `lib/src/backend/history.dart` — bounded commit records and graph lanes.
 - `lib/src/backend/error.dart` — typed Git error categories.
 - `lib/src/backend/executor.dart` — direct process runner, bounded output, and
   redaction.
@@ -124,8 +125,16 @@ system Git 2.35+.
    state feedback.
 4. Passed `flutter analyze` and the backend and Changes screen tests.
 
-## Next vertical: history and graph
+## Completed vertical: history and graph
 
-1. Add failing tests for bounded log parsing, pagination, and merge parents.
-2. Implement typed history pages and deterministic graph lane assignment.
-3. Add a history screen with commit details and refresh behavior.
+1. Added parser and real Git tests for bounded pages, metadata, and merge
+   parents.
+2. Implemented bounded `git log` pages with deterministic graph lane slots.
+3. Added a History screen with commit details, selection, and load-more state.
+4. Passed `flutter analyze`, history tests, and the backend suite.
+
+## Next vertical: branch management
+
+1. Add failing tests for local ref parsing, invalid names, and branch switches.
+2. Implement branch listing, creation, and serialized switching.
+3. Add a current-branch popup with switch feedback.
