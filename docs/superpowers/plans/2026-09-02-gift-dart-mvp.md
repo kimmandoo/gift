@@ -231,3 +231,15 @@ system Git 2.35+.
 4. Added a collapsible guided options panel and responsive widget coverage.
 5. Passed the commit workflow backend tests, full Flutter test suite,
    formatting, and analysis. Task 18 is complete; Task 19 is next.
+
+## Completed vertical: searchable history and commit inspection
+
+1. Added a snapshot-bound history query with validated text, author, date, ref,
+   and path filters; page cursors remained tied to the original ref tips.
+2. Added bounded commit-file and selected-file diff contracts for root, merge,
+   deleted, and binary changes.
+3. Added request-generation guards, ref/parent navigation, copyable OIDs, and
+   keyboard traversal to the History controller and screen.
+4. Passed filter determinism, live-ref movement, UTF-8 metadata, and stale
+   selection response coverage with real-Git and widget tests. Task 19 is
+   complete; Task 20 is next.

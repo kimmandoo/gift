@@ -111,6 +111,7 @@ class FakeRemoteGateway with GitPatchGatewayStub implements GitGateway {
     RepositoryId repositoryId, {
     int limit = 50,
     int offset = 0,
+    GitHistoryQuery? query,
   }) => throw UnimplementedError();
 
   @override

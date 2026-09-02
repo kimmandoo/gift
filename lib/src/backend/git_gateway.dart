@@ -25,6 +25,21 @@ abstract interface class GitGateway {
     RepositoryId repositoryId, {
     int limit = 50,
     int offset = 0,
+    GitHistoryQuery? query,
+  });
+
+  Future<GitCommit> getCommit(RepositoryId repositoryId, String commitOid);
+
+  Future<List<GitCommitFileChange>> getCommitFiles(
+    RepositoryId repositoryId,
+    String commitOid,
+  );
+
+  Future<GitCommitDiff> getCommitDiff(
+    RepositoryId repositoryId,
+    String commitOid,
+    String path, {
+    String? originalPath,
   });
 
   Future<List<GitBranch>> getBranches(RepositoryId repositoryId);

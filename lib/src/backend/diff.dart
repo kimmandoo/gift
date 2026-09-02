@@ -4,7 +4,7 @@ import 'domain.dart';
 import 'error.dart';
 
 /// Selects which side of a changed file should be compared with HEAD.
-enum GitDiffScope { workingTree, staged }
+enum GitDiffScope { workingTree, staged, commit }
 
 /// Gives the UI a small amount of structure without making it understand
 /// Git's complete patch format.
@@ -154,6 +154,22 @@ class GitDiffSnapshot {
       hunks: hunks,
     );
   }
+}
+
+/// A lazily loaded diff belonging to one historical commit.
+class GitCommitDiff {
+  const GitCommitDiff({required this.commitOid, required this.snapshot});
+
+  final String commitOid;
+  final GitDiffSnapshot snapshot;
+
+  String get path => snapshot.path;
+  List<GitDiffLine> get lines => snapshot.lines;
+  List<GitDiffHunk> get hunks => snapshot.hunks;
+  bool get isBinary => snapshot.isBinary;
+  bool get isEmpty => snapshot.isEmpty;
+  int get additions => snapshot.additions;
+  int get deletions => snapshot.deletions;
 }
 
 GitDiffSnapshot parseUnifiedDiff(

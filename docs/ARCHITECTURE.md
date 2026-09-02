@@ -410,3 +410,19 @@ returns the editor to the last loaded template. The backend compares `HEAD`
 around failures and labels a failed operation as either `notCreated` or
 `createdButRefreshFailed`; the UI displays that history outcome next to every
 commit error.
+
+## Searchable history and commit inspection (Task 19)
+
+History pages capture the current ref tips and carry them through a typed
+cursor, so later pages remain stable if a branch advances. Filters are
+validated before becoming Git argv values and are tied to the cursor's query
+key. The backend loads commit metadata, refs, and changed paths separately;
+selected commit diffs are fetched only after a file is selected and remain
+bounded, with binary output represented as an explicit state.
+
+`HistoryController` increments request generations for history, commit files,
+and file diffs. A response is published only when its generation still matches
+the selected commit and path, preventing an older request from replacing a
+newer inspection. The screen exposes copyable OIDs, parent navigation, filter
+controls, and keyboard up/down traversal while reassigning graph lanes across
+appended pages.

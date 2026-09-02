@@ -284,30 +284,75 @@ class RepositoryService {
     RepositoryId repositoryId, {
     int limit = 50,
     int offset = 0,
+    GitHistoryQuery? query,
   }) async {
-    if (limit < 1 || limit > 100 || offset < 0) {
+    final effectiveQuery = query ?? GitHistoryQuery(limit: limit);
+    final effectiveLimit = effectiveQuery.limit;
+    final filters = effectiveQuery.filters;
+    _validateHistoryQuery(effectiveQuery, legacyOffset: offset);
+    final handle = await state.lookup(repositoryId);
+    final requestedCursor = effectiveQuery.cursor;
+    if (requestedCursor != null &&
+        requestedCursor.queryKey != filters.queryKey) {
       throw const GitError(
-        category: GitErrorCategory.parseFailure,
-        userMessage: 'Git history paging values are invalid.',
-        diagnostic: 'history limit must be 1..100 and offset must be >= 0',
-        retryable: false,
+        category: GitErrorCategory.staleOpaqueId,
+        userMessage: 'History filters changed. Reload history to continue.',
+        diagnostic: 'history cursor query key did not match current filters',
+        retryable: true,
       );
     }
-    final handle = await state.lookup(repositoryId);
+    final snapshot = requestedCursor == null
+        ? await _captureHistorySnapshot(handle, filters)
+        : _HistorySnapshot(
+            tips: requestedCursor.snapshotTips,
+            refs: requestedCursor.snapshotRefs,
+          );
+    final position = requestedCursor?.position ?? offset;
+    final pageCursor = GitHistoryCursor(
+      snapshotTips: snapshot.tips,
+      snapshotRefs: snapshot.refs,
+      position: position,
+      queryKey: filters.queryKey,
+    );
+    if (snapshot.tips.isEmpty) {
+      return GitHistoryPage(
+        repositoryId: repositoryId,
+        commits: const [],
+        offset: position,
+        limit: effectiveLimit,
+        hasMore: false,
+      );
+    }
+    final args = <String>[
+      'log',
+      '--no-color',
+      '--no-decorate',
+      '--date=iso-strict',
+      '--topo-order',
+      '--format=%H%x00%P%x00%an%x00%ae%x00%aI%x00%s%x00%b%x00%x1e',
+      '--max-count=${effectiveLimit + 1}',
+      '--skip=$position',
+    ];
+    if (filters.text.isNotEmpty) {
+      args.addAll([
+        '--fixed-strings',
+        '--regexp-ignore-case',
+        '--grep=${filters.text}',
+      ]);
+    }
+    if (filters.author.isNotEmpty) args.add('--author=${filters.author}');
+    if (filters.authoredAfter case final after?) {
+      args.add('--since=${after.toUtc().toIso8601String()}');
+    }
+    if (filters.authoredBefore case final before?) {
+      args.add('--until=${before.toUtc().toIso8601String()}');
+    }
+    args.addAll(snapshot.tips);
+    if (filters.path.isNotEmpty) args.addAll(['--', filters.path]);
     final output = await _runner.run(
       GitInvocation(
         program: gitPath,
-        args: [
-          'log',
-          '--all',
-          '--no-color',
-          '--no-decorate',
-          '--date=iso-strict',
-          '--topo-order',
-          '--format=%H%x00%P%x00%an%x00%ae%x00%aI%x00%s%x00%b%x00%x1e',
-          '--max-count=${limit + 1}',
-          '--skip=$offset',
-        ],
+        args: args,
         cwd: handle.root,
         kind: GitOperationKind.read,
         outputPolicy: const OutputPolicy.capture(maxBytes: 8 * 1024 * 1024),
@@ -317,8 +362,10 @@ class RepositoryService {
       return parseGitHistory(
         output.stdout,
         repositoryId: repositoryId,
-        offset: offset,
-        limit: limit,
+        offset: position,
+        limit: effectiveLimit,
+        cursor: pageCursor,
+        snapshotRefs: snapshot.refs,
       );
     } on FormatException catch (error, stackTrace) {
       Error.throwWithStackTrace(
@@ -331,6 +378,119 @@ class RepositoryService {
         stackTrace,
       );
     }
+  }
+
+  Future<GitCommit> getCommit(
+    RepositoryId repositoryId,
+    String commitOid,
+  ) async {
+    _validateCommitOid(commitOid);
+    final handle = await state.lookup(repositoryId);
+    final output = await _runner.run(
+      GitInvocation(
+        program: gitPath,
+        args: [
+          'show',
+          '--no-patch',
+          '--no-color',
+          '--date=iso-strict',
+          '--format=%H%x00%P%x00%an%x00%ae%x00%aI%x00%s%x00%b%x00%x1e',
+          commitOid,
+        ],
+        cwd: handle.root,
+        kind: GitOperationKind.read,
+        outputPolicy: const OutputPolicy.capture(maxBytes: 512 * 1024),
+      ),
+    );
+    try {
+      final page = parseGitHistory(
+        output.stdout,
+        repositoryId: repositoryId,
+        offset: 0,
+        limit: 1,
+      );
+      if (page.commits.length != 1) throw const FormatException('no commit');
+      return page.commits.single;
+    } on FormatException catch (error, stackTrace) {
+      Error.throwWithStackTrace(
+        GitError(
+          category: GitErrorCategory.invalidRevision,
+          userMessage: 'Git returned an unreadable commit.',
+          diagnostic: error.message,
+          retryable: false,
+        ),
+        stackTrace,
+      );
+    }
+  }
+
+  Future<List<GitCommitFileChange>> getCommitFiles(
+    RepositoryId repositoryId,
+    String commitOid,
+  ) async {
+    _validateCommitOid(commitOid);
+    final handle = await state.lookup(repositoryId);
+    final output = await _runner.run(
+      GitInvocation(
+        program: gitPath,
+        args: [
+          'diff-tree',
+          '--root',
+          '--no-commit-id',
+          '--name-status',
+          '-z',
+          '-r',
+          '-m',
+          '--find-renames',
+          '--find-copies',
+          commitOid,
+        ],
+        cwd: handle.root,
+        kind: GitOperationKind.read,
+        outputPolicy: const OutputPolicy.capture(maxBytes: 2 * 1024 * 1024),
+      ),
+    );
+    return _parseCommitFiles(output.stdout);
+  }
+
+  Future<GitCommitDiff> getCommitDiff(
+    RepositoryId repositoryId,
+    String commitOid,
+    String path, {
+    String? originalPath,
+  }) async {
+    _validateCommitOid(commitOid);
+    _validatePath(path);
+    if (originalPath != null) _validatePath(originalPath);
+    final handle = await state.lookup(repositoryId);
+    final output = await _runner.run(
+      GitInvocation(
+        program: gitPath,
+        args: [
+          'show',
+          '-m',
+          '--no-ext-diff',
+          '--no-color',
+          '--format=',
+          '--find-renames',
+          '--unified=3',
+          commitOid,
+          '--',
+          path,
+        ],
+        cwd: handle.root,
+        kind: GitOperationKind.read,
+        outputPolicy: const OutputPolicy.capture(maxBytes: 8 * 1024 * 1024),
+      ),
+    );
+    return GitCommitDiff(
+      commitOid: commitOid,
+      snapshot: parseUnifiedDiff(
+        output.stdout,
+        path: path,
+        scope: GitDiffScope.commit,
+      ),
+    );
   }
 
   Future<List<GitBranch>> getBranches(RepositoryId repositoryId) async {
@@ -1031,7 +1191,223 @@ class RepositoryService {
       Error.throwWithStackTrace(_asNotRepository(error), stackTrace);
     }
   }
+
+  Future<_HistorySnapshot> _captureHistorySnapshot(
+    RepositoryHandle handle,
+    GitHistoryFilters filters,
+  ) async {
+    final output = await _runner.run(
+      GitInvocation(
+        program: gitPath,
+        args: const [
+          'for-each-ref',
+          '--sort=refname',
+          '--format=%(refname)%00%(objectname)',
+        ],
+        cwd: handle.root,
+        kind: GitOperationKind.read,
+        outputPolicy: const OutputPolicy.capture(maxBytes: 2 * 1024 * 1024),
+      ),
+    );
+    final refs = _parseHistoryRefs(output.stdout);
+    try {
+      final head = await _runner.run(
+        GitInvocation(
+          program: gitPath,
+          args: const ['rev-parse', '--verify', '--quiet', 'HEAD'],
+          cwd: handle.root,
+          kind: GitOperationKind.read,
+          outputPolicy: const OutputPolicy.capture(maxBytes: 4 * 1024),
+        ),
+      );
+      final headOid = utf8.decode(head.stdout, allowMalformed: true).trim();
+      if (_isCommitOid(headOid) &&
+          !refs.any((ref) => ref.name == 'HEAD' && ref.targetOid == headOid)) {
+        refs.add(GitCommitRef(name: 'HEAD', targetOid: headOid));
+      }
+    } on GitError {
+      // An unborn repository has no HEAD; its history is simply empty.
+    }
+
+    var tips = <String>{
+      for (final ref in refs)
+        if (_isCommitOid(ref.targetOid)) ref.targetOid,
+    }.toList()..sort();
+    if (filters.ref.isNotEmpty) {
+      final selected = await _resolveHistoryRef(handle, filters.ref);
+      tips = [selected];
+    }
+    return _HistorySnapshot(tips: tips, refs: refs);
+  }
+
+  Future<String> _resolveHistoryRef(RepositoryHandle handle, String ref) async {
+    late final ProcessOutput output;
+    try {
+      output = await _runner.run(
+        GitInvocation(
+          program: gitPath,
+          args: ['rev-parse', '--verify', '--quiet', '$ref^{commit}'],
+          cwd: handle.root,
+          kind: GitOperationKind.read,
+          outputPolicy: const OutputPolicy.capture(maxBytes: 4 * 1024),
+        ),
+      );
+    } on GitError catch (_, stackTrace) {
+      Error.throwWithStackTrace(
+        _historyFailure(
+          category: GitErrorCategory.invalidRevision,
+          userMessage: 'That history ref does not point to a commit.',
+          diagnostic: 'history ref could not be resolved',
+        ),
+        stackTrace,
+      );
+    }
+    final oid = utf8.decode(output.stdout, allowMalformed: true).trim();
+    if (!_isCommitOid(oid)) {
+      throw _historyFailure(
+        category: GitErrorCategory.invalidRevision,
+        userMessage: 'That history ref does not point to a commit.',
+        diagnostic: 'history ref resolved to an invalid commit ID',
+      );
+    }
+    return oid;
+  }
+
+  List<GitCommitRef> _parseHistoryRefs(List<int> bytes) {
+    final refs = <GitCommitRef>[];
+    final text = utf8.decode(bytes, allowMalformed: true);
+    for (final line in text.split('\n')) {
+      final fields = line.split('\u0000');
+      if (fields.length < 2) continue;
+      final name = fields[0].trim();
+      final oid = fields[1].trim();
+      if (name.isEmpty || !_isCommitOid(oid)) continue;
+      refs.add(GitCommitRef(name: name, targetOid: oid));
+    }
+    return refs;
+  }
+
+  List<GitCommitFileChange> _parseCommitFiles(List<int> bytes) {
+    final fields = utf8.decode(bytes, allowMalformed: true).split('\u0000');
+    final changes = <GitCommitFileChange>[];
+    var index = 0;
+    while (index < fields.length) {
+      final status = fields[index++];
+      if (status.isEmpty) continue;
+      if (index >= fields.length) break;
+      final code = status[0];
+      final fileStatus = switch (code) {
+        'A' => GitCommitFileStatus.added,
+        'C' => GitCommitFileStatus.copied,
+        'D' => GitCommitFileStatus.deleted,
+        'M' => GitCommitFileStatus.modified,
+        'R' => GitCommitFileStatus.renamed,
+        'T' => GitCommitFileStatus.typeChanged,
+        'U' => GitCommitFileStatus.unmerged,
+        _ => GitCommitFileStatus.unknown,
+      };
+      if (code == 'R' || code == 'C') {
+        final oldPath = fields[index++];
+        if (index >= fields.length) break;
+        final path = fields[index++];
+        changes.add(
+          GitCommitFileChange(status: fileStatus, oldPath: oldPath, path: path),
+        );
+      } else {
+        changes.add(
+          GitCommitFileChange(status: fileStatus, path: fields[index++]),
+        );
+      }
+    }
+    return List.unmodifiable(changes);
+  }
+
+  void _validateHistoryQuery(
+    GitHistoryQuery query, {
+    required int legacyOffset,
+  }) {
+    if (query.limit < 1 || query.limit > 100 || legacyOffset < 0) {
+      throw const GitError(
+        category: GitErrorCategory.parseFailure,
+        userMessage: 'Git history paging values are invalid.',
+        diagnostic: 'history limit must be 1..100 and position must be >= 0',
+        retryable: false,
+      );
+    }
+    final filters = query.filters;
+    for (final value in [
+      filters.text,
+      filters.author,
+      filters.path,
+      filters.ref,
+    ]) {
+      if (value.length > 256 ||
+          value.runes.any((rune) => rune < 0x20 || rune == 0x7f)) {
+        throw _historyFailure(
+          category: GitErrorCategory.parseFailure,
+          userMessage: 'That history filter is too long or invalid.',
+          diagnostic: 'history filter exceeded 256 characters or contained NUL',
+        );
+      }
+    }
+    if (filters.ref.startsWith('-') ||
+        filters.ref.contains(RegExp(r'[\r\n\t ]'))) {
+      throw _historyFailure(
+        category: GitErrorCategory.invalidRevision,
+        userMessage: 'Enter a valid branch or ref name.',
+        diagnostic: 'history ref contained whitespace or began with a dash',
+      );
+    }
+    if (filters.authoredAfter != null &&
+        filters.authoredBefore != null &&
+        filters.authoredAfter!.isAfter(filters.authoredBefore!)) {
+      throw _historyFailure(
+        category: GitErrorCategory.parseFailure,
+        userMessage: 'The history date range is invalid.',
+        diagnostic: 'history lower date was after upper date',
+      );
+    }
+    final cursor = query.cursor;
+    if (cursor != null && cursor.position < 0) {
+      throw _historyFailure(
+        category: GitErrorCategory.staleOpaqueId,
+        userMessage: 'That history page cursor is invalid.',
+        diagnostic: 'history cursor position was negative',
+      );
+    }
+  }
+
+  void _validateCommitOid(String oid) {
+    if (!_isCommitOid(oid)) {
+      throw _historyFailure(
+        category: GitErrorCategory.invalidRevision,
+        userMessage: 'That commit ID is invalid.',
+        diagnostic: 'commit inspection received a non-hex commit ID',
+      );
+    }
+  }
+
+  bool _isCommitOid(String value) =>
+      RegExp(r'^[0-9a-fA-F]{40,64}$').hasMatch(value);
 }
+
+class _HistorySnapshot {
+  _HistorySnapshot({required this.tips, required this.refs});
+
+  final List<String> tips;
+  final List<GitCommitRef> refs;
+}
+
+GitError _historyFailure({
+  required GitErrorCategory category,
+  required String userMessage,
+  required String diagnostic,
+}) => GitError(
+  category: category,
+  userMessage: userMessage,
+  diagnostic: diagnostic,
+  retryable: false,
+);
 
 class _RepositoryRecord {
   _RepositoryRecord(this.root);

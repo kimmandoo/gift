@@ -283,6 +283,7 @@ work is tracked in [`TASKS.md`](TASKS.md).
 - [x] Commit staged changes with UTF-8 messages and hook feedback.
 - [x] Use guided commit options for amend, sign-off, cleanup, templates, and author overrides.
 - [x] Bounded local history with merge-aware graph lanes and pagination.
+- [x] Search and filter history, inspect changed files, and load bounded commit diffs lazily.
 - [x] Local branch listing, creation, switching, and popup feedback.
 - [x] Fetch, pull, push, cancellation, and remote progress feedback.
 - [x] Responsive pixel UI and desktop shortcuts.

@@ -5,27 +5,26 @@ This file is the handoff record for continuing work across query sessions.
 ## Current checkpoint
 
 - Date: 2026-09-03
-- Active task: Task 18, the guided commit workflow, is complete on `main`.
-  The repository now supports amend, sign-off, cleanup mode, commit templates,
-  optional author overrides, identity preflight, redacted hook/signing errors,
-  and explicit history-change outcomes.
+- Active task: Task 19, searchable history and commit inspection, is complete
+  on `main`. Task 20 is next and has not been started.
 - Branch: `main`; no new branch or worktree was created.
-- Branding verification: the current tree and artifact paths contain no
-  legacy branding occurrences or filenames; package metadata, desktop
-  metadata, CI artifacts, and generated output paths use `gift`. Historical
-  commits were intentionally not rewritten.
-- Changed files: commit backend models and service, Dart gateway/backend,
-  changes controller and screen, commit workflow tests and gateway fakes, Task
-  18 documentation, roadmap/task ledger, changelog, and architecture notes.
-- Verification: the 7 commit workflow tests passed; the 12 changes-screen tests
-  passed; `flutter analyze` passed; the full suite completed with 97 passing
-  and 2 known Windows-platform expectation failures in
-  `dart_git_backend_test.dart` (UTF-8 process output and CRLF newline
-  normalization); `dart format --output=none --set-exit-if-changed` passed;
-  `git diff --check` passed; and the repository-wide legacy identity scan
-  passed.
-- Next action: wait for the next requested task; Task 19 has not been started.
-- Blockers: only the two unrelated Windows-platform test expectations remain.
+- History cleanup: removed the pull-request merge commit from local and remote
+  `main` with a lease-protected force update; the branding commits and Task 18
+  content remain in a linear history.
+- Changed files: Task 19 history models, service/gateway APIs, controller and
+  screen, fakes, real-Git/widget tests, behavior ledger, task board, roadmap,
+  README, architecture, plan, changelog, and this checkpoint.
+- Verification: the Task 19 backend exploration tests (2) and History screen
+  tests (6) passed; `flutter analyze` passed; formatting passed; the full suite
+  completed with 100 passing and 2 known Windows-platform expectation failures
+  in `dart_git_backend_test.dart` (UTF-8 process output and CRLF newline
+  normalization); `git diff --check` passed; and the post-rewrite `main` graph
+  contains no merge commit.
+- Next action: wait for the next requested task; Task 20 has not been started.
+- First failing test: the initial Task 19 test failed to compile because
+  `GitHistoryQuery`, `GitHistoryFilters`, `getCommitFiles`, and `getCommitDiff`
+  were missing; the implementation subsequently passed it.
+- Blockers: none.
 
 ## Previous checkpoint
 

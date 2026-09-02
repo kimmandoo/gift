@@ -7,8 +7,8 @@
 ## Progress
 
 - **Total Tasks:** 25
-- **Completed:** 18 / 25
-- **Current Active Task:** `19 — Searchable history and commit inspection`
+- **Completed:** 19 / 25
+- **Current Active Task:** `20 — Safe advanced branch operations`
 
 | # | Scope | Dart backend deliverables | Flutter deliverables | Status |
 |---|---|---|---|:---:|
@@ -30,7 +30,7 @@
 | **16** | Workspace | Multi-repository sessions and persisted workspace state | Repository tabs, reopen, and keyboard navigation | ✅ |
 | **17** | Partial staging | Hunk and line patch operations with stale-content guards | Interactive diff selection and stage controls | ⬜ |
 | **18** | Commit workflow | Amend, templates, sign-off, and identity preflight | Guided commit options and validation | ⬜ |
-| **19** | History exploration | Search, filters, commit details, and bounded commit diffs | Searchable graph and changed-file inspector | ⬜ |
+| **19** | History exploration | Search, filters, commit details, and bounded commit diffs | Searchable graph and changed-file inspector | ✅ |
 | **20** | Advanced branches | Rename, delete, merge, rebase, and cherry-pick safety | Preview-driven branch actions | ⬜ |
 | **21** | Conflict resolution | Conflict-state parser and safe resolution mutations | Three-pane merge workflow | ⬜ |
 | **22** | Git objects | Stash, tags, remotes, and upstream management | Focused object-management dialogs | ⬜ |
@@ -225,7 +225,19 @@ Task 17 is complete.
 - [x] Distinguished unchanged history from a created commit with failed refresh.
 - [x] Added guided responsive commit options and real-Git failure coverage.
 
-Task 18 is complete. Task 19 is the next implementation task.
+Task 18 is complete.
+
+### Task 19: Searchable history and commit inspection
+
+- [x] Replaced offset-only paging with a stable snapshot cursor.
+- [x] Added bounded text, author, date, ref, and path filters.
+- [x] Loaded commit files and selected commit diffs lazily with binary states.
+- [x] Preserved request ordering while exposing refs, parents, OIDs, and
+  keyboard traversal.
+- [x] Covered live-ref movement, merge/root commits, deleted paths, and
+  unusual UTF-8 metadata.
+
+Task 19 is complete. Task 20 is next.
 
 ## Post-MVP backlog
 

@@ -60,12 +60,52 @@ class DartGitBackend {
     RepositoryId repositoryId, {
     int limit = 50,
     int offset = 0,
+    GitHistoryQuery? query,
   }) async {
     final installation = await getGitInstallation();
     return RepositoryService(
       gitPath: installation.executablePath,
       state: _state,
-    ).getHistory(repositoryId, limit: limit, offset: offset);
+      runner: _runner,
+    ).getHistory(repositoryId, limit: limit, offset: offset, query: query);
+  }
+
+  Future<GitCommit> getCommit(
+    RepositoryId repositoryId,
+    String commitOid,
+  ) async {
+    final installation = await getGitInstallation();
+    return RepositoryService(
+      gitPath: installation.executablePath,
+      state: _state,
+      runner: _runner,
+    ).getCommit(repositoryId, commitOid);
+  }
+
+  Future<List<GitCommitFileChange>> getCommitFiles(
+    RepositoryId repositoryId,
+    String commitOid,
+  ) async {
+    final installation = await getGitInstallation();
+    return RepositoryService(
+      gitPath: installation.executablePath,
+      state: _state,
+      runner: _runner,
+    ).getCommitFiles(repositoryId, commitOid);
+  }
+
+  Future<GitCommitDiff> getCommitDiff(
+    RepositoryId repositoryId,
+    String commitOid,
+    String path, {
+    String? originalPath,
+  }) async {
+    final installation = await getGitInstallation();
+    return RepositoryService(
+      gitPath: installation.executablePath,
+      state: _state,
+      runner: _runner,
+    ).getCommitDiff(repositoryId, commitOid, path, originalPath: originalPath);
   }
 
   Future<List<GitBranch>> getBranches(RepositoryId repositoryId) async {

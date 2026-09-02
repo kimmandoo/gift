@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:gift/src/backend/commit.dart';
 import 'package:gift/src/backend/branch.dart';
 import 'package:gift/src/backend/discard.dart';
@@ -34,6 +36,11 @@ void main() {
           offset: 0,
           limit: 1,
           hasMore: true,
+          nextCursor: GitHistoryCursor(
+            snapshotTips: const [],
+            position: 1,
+            queryKey: const GitHistoryFilters().queryKey,
+          ),
         ),
         1: GitHistoryPage(
           repositoryId: repository.repositoryId,
@@ -126,6 +133,184 @@ void main() {
     controller.dispose();
   });
 
+  testWidgets('filters history and lazily displays a selected commit diff', (
+    tester,
+  ) async {
+    final repository = const RepositoryOpened(
+      repositoryId: RepositoryId(value: 'inspect-history-repository'),
+      root: '/workspace/project',
+    );
+    final oid = 'g' * 40;
+    final commit = GitCommit(
+      oid: oid,
+      parents: ['p' * 40],
+      authorName: 'Kimmandoo',
+      authorEmail: 'kimmandoo@example.test',
+      authoredAt: DateTime(2026, 9, 2, 12),
+      subject: 'Inspect this change',
+      body: 'Details',
+      refs: [GitCommitRef(name: 'refs/heads/main', targetOid: oid)],
+    );
+    final file = const GitCommitFileChange(
+      status: GitCommitFileStatus.modified,
+      path: 'notes.txt',
+    );
+    final diff = GitCommitDiff(
+      commitOid: oid,
+      snapshot: GitDiffSnapshot(
+        path: 'notes.txt',
+        scope: GitDiffScope.commit,
+        lines: const [
+          GitDiffLine(kind: GitDiffLineKind.addition, text: '+new'),
+        ],
+        contentHash: 'commit-diff',
+      ),
+    );
+    final gateway = FakeHistoryGateway(
+      pages: {
+        0: GitHistoryPage(
+          repositoryId: repository.repositoryId,
+          commits: [commit],
+          offset: 0,
+          limit: 30,
+          hasMore: false,
+        ),
+      },
+      filesByCommit: {
+        oid: [file],
+      },
+      diffsByPath: {'$oid:notes.txt': diff},
+    );
+    final controller = HistoryController(
+      gateway: gateway,
+      repositoryId: repository.repositoryId,
+      pageSize: 30,
+    );
+    await controller.refresh();
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: HistoryScreen(
+          gateway: gateway,
+          repository: repository,
+          controller: controller,
+          autoInitialize: false,
+        ),
+      ),
+    );
+    await tester.tap(find.byKey(ValueKey('commit:$oid')));
+    await tester.pump();
+    expect(find.byKey(ValueKey('commit-file:notes.txt')), findsOneWidget);
+    expect(find.text('branch: main'), findsOneWidget);
+
+    await tester.ensureVisible(find.byKey(const Key('commit-file:notes.txt')));
+    await tester.tap(find.byKey(const Key('commit-file:notes.txt')));
+    await tester.pump();
+    expect(find.byKey(const Key('commit-diff')), findsOneWidget);
+    expect(find.text('+new'), findsOneWidget);
+
+    await tester.tap(find.byIcon(Icons.expand_more));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('history-author-filter')), findsOneWidget);
+    await tester.enterText(find.byKey(const Key('history-search')), 'Inspect');
+    await tester.tap(find.byKey(const Key('history-apply-filters')));
+    await tester.pumpAndSettle();
+    expect(controller.state.filters.text, 'Inspect');
+    controller.dispose();
+  });
+
+  test('drops an older history response when filters change', () async {
+    final oldResponse = Completer<GitHistoryPage>();
+    final newResponse = Completer<GitHistoryPage>();
+    var requestCount = 0;
+    final oldCommit = makeCommit('e' * 40, 'old result');
+    final newCommit = makeCommit('f' * 40, 'new result');
+    final gateway = FakeHistoryGateway(
+      response: (_) {
+        requestCount++;
+        return requestCount == 1 ? oldResponse.future : newResponse.future;
+      },
+    );
+    final controller = HistoryController(
+      gateway: gateway,
+      repositoryId: const RepositoryId(value: 'race-repository'),
+      pageSize: 1,
+    );
+
+    final initial = controller.refresh();
+    final filtered = controller.applyFilters(
+      const GitHistoryFilters(text: 'new'),
+    );
+    oldResponse.complete(
+      GitHistoryPage(
+        repositoryId: const RepositoryId(value: 'race-repository'),
+        commits: [oldCommit],
+        offset: 0,
+        limit: 1,
+        hasMore: false,
+      ),
+    );
+    newResponse.complete(
+      GitHistoryPage(
+        repositoryId: const RepositoryId(value: 'race-repository'),
+        commits: [newCommit],
+        offset: 0,
+        limit: 1,
+        hasMore: false,
+      ),
+    );
+    await Future.wait([initial, filtered]);
+
+    expect(controller.state.page?.commits.single.subject, 'new result');
+    expect(controller.state.filters.text, 'new');
+    controller.dispose();
+  });
+
+  test('does not publish commit files from an older selection', () async {
+    final oldFiles = Completer<List<GitCommitFileChange>>();
+    final newFiles = Completer<List<GitCommitFileChange>>();
+    final first = makeCommit('h' * 40, 'first selection');
+    final second = makeCommit('i' * 40, 'second selection');
+    final gateway = FakeHistoryGateway(
+      pages: {
+        0: GitHistoryPage(
+          repositoryId: const RepositoryId(value: 'detail-race-repository'),
+          commits: [first, second],
+          offset: 0,
+          limit: 30,
+          hasMore: false,
+        ),
+      },
+      filesResponse: (oid) =>
+          oid == first.oid ? oldFiles.future : newFiles.future,
+    );
+    final controller = HistoryController(
+      gateway: gateway,
+      repositoryId: const RepositoryId(value: 'detail-race-repository'),
+    );
+    await controller.refresh();
+    controller.selectCommit(first);
+    controller.selectCommit(second);
+
+    oldFiles.complete([
+      const GitCommitFileChange(
+        status: GitCommitFileStatus.modified,
+        path: 'old.txt',
+      ),
+    ]);
+    newFiles.complete([
+      const GitCommitFileChange(
+        status: GitCommitFileStatus.modified,
+        path: 'new.txt',
+      ),
+    ]);
+    await Future<void>.delayed(Duration.zero);
+
+    expect(controller.state.selectedOid, second.oid);
+    expect(controller.state.commitFiles?.single.path, 'new.txt');
+    controller.dispose();
+  });
+
   testWidgets('allocates graph width for many active lanes', (tester) async {
     final repository = const RepositoryOpened(
       repositoryId: RepositoryId(value: 'wide-graph-repository'),
@@ -194,9 +379,20 @@ GitCommit makeCommit(String oid, String subject) {
 }
 
 class FakeHistoryGateway with GitPatchGatewayStub implements GitGateway {
-  FakeHistoryGateway({required this.pages});
+  FakeHistoryGateway({
+    this.pages = const {},
+    this.response,
+    this.filesByCommit = const {},
+    this.diffsByPath = const {},
+    this.filesResponse,
+  });
 
   final Map<int, GitHistoryPage> pages;
+  final Future<GitHistoryPage> Function(GitHistoryQuery query)? response;
+  final Map<String, List<GitCommitFileChange>> filesByCommit;
+  final Map<String, GitCommitDiff> diffsByPath;
+  final Future<List<GitCommitFileChange>> Function(String commitOid)?
+  filesResponse;
   final historyCalls = <int>[];
 
   @override
@@ -204,9 +400,15 @@ class FakeHistoryGateway with GitPatchGatewayStub implements GitGateway {
     RepositoryId repositoryId, {
     int limit = 50,
     int offset = 0,
+    GitHistoryQuery? query,
   }) async {
-    historyCalls.add(offset);
-    return pages[offset]!;
+    final position = query?.cursor?.position ?? offset;
+    historyCalls.add(position);
+    final response = this.response;
+    if (response != null) {
+      return response(query ?? GitHistoryQuery(limit: limit));
+    }
+    return pages[position]!;
   }
 
   @override
@@ -215,6 +417,28 @@ class FakeHistoryGateway with GitPatchGatewayStub implements GitGateway {
 
   @override
   Future<GitInstallation> getGitInstallation() => throw UnimplementedError();
+
+  @override
+  Future<GitCommit> getCommit(RepositoryId repositoryId, String commitOid) =>
+      throw UnimplementedError();
+
+  @override
+  Future<List<GitCommitFileChange>> getCommitFiles(
+    RepositoryId repositoryId,
+    String commitOid,
+  ) async {
+    final response = filesResponse;
+    if (response != null) return response(commitOid);
+    return filesByCommit[commitOid] ?? const [];
+  }
+
+  @override
+  Future<GitCommitDiff> getCommitDiff(
+    RepositoryId repositoryId,
+    String commitOid,
+    String path, {
+    String? originalPath,
+  }) => Future.value(diffsByPath['$commitOid:$path']!);
 
   @override
   Future<RepositoryOpened> openRepository(String path) =>

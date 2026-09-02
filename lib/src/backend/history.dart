@@ -2,6 +2,141 @@ import 'dart:convert';
 
 import 'domain.dart';
 
+/// Bounded filters applied to a history snapshot.
+class GitHistoryFilters {
+  const GitHistoryFilters({
+    this.text = '',
+    this.author = '',
+    this.path = '',
+    this.ref = '',
+    this.authoredAfter,
+    this.authoredBefore,
+  });
+
+  final String text;
+  final String author;
+  final String path;
+  final String ref;
+  final DateTime? authoredAfter;
+  final DateTime? authoredBefore;
+
+  bool get isEmpty =>
+      text.isEmpty &&
+      author.isEmpty &&
+      path.isEmpty &&
+      ref.isEmpty &&
+      authoredAfter == null &&
+      authoredBefore == null;
+
+  /// The cursor binds a page sequence to exactly these filter values.
+  String get queryKey => [
+    text,
+    author,
+    path,
+    ref,
+    authoredAfter?.toUtc().toIso8601String() ?? '',
+    authoredBefore?.toUtc().toIso8601String() ?? '',
+  ].join('\u001f');
+}
+
+/// A stable history position over a captured set of ref tips.
+class GitHistoryCursor {
+  GitHistoryCursor({
+    required Iterable<String> snapshotTips,
+    required this.position,
+    required this.queryKey,
+    Iterable<GitCommitRef> snapshotRefs = const <GitCommitRef>[],
+  }) : snapshotTips = List.unmodifiable(snapshotTips),
+       snapshotRefs = List.unmodifiable(snapshotRefs);
+
+  final List<String> snapshotTips;
+  final List<GitCommitRef> snapshotRefs;
+  final int position;
+  final String queryKey;
+}
+
+/// A query for one bounded history page.
+class GitHistoryQuery {
+  const GitHistoryQuery({
+    this.limit = 50,
+    this.filters = const GitHistoryFilters(),
+    this.cursor,
+  });
+
+  final int limit;
+  final GitHistoryFilters filters;
+  final GitHistoryCursor? cursor;
+}
+
+/// A ref attached to a commit in the captured history snapshot.
+class GitCommitRef {
+  const GitCommitRef({required this.name, required this.targetOid});
+
+  final String name;
+  final String targetOid;
+
+  String get shortName {
+    for (final prefix in const ['refs/heads/', 'refs/remotes/', 'refs/tags/']) {
+      if (name.startsWith(prefix)) return name.substring(prefix.length);
+    }
+    return name;
+  }
+
+  String get kind {
+    if (name.startsWith('refs/heads/')) return 'branch';
+    if (name.startsWith('refs/remotes/')) return 'remote';
+    if (name.startsWith('refs/tags/')) return 'tag';
+    return 'ref';
+  }
+}
+
+enum GitCommitFileStatus {
+  added,
+  copied,
+  deleted,
+  modified,
+  renamed,
+  typeChanged,
+  unmerged,
+  unknown,
+}
+
+/// One path changed by a commit. A rename keeps its previous path separately.
+class GitCommitFileChange {
+  const GitCommitFileChange({
+    required this.status,
+    required this.path,
+    this.oldPath,
+  });
+
+  final GitCommitFileStatus status;
+  final String path;
+  final String? oldPath;
+
+  bool get isDeleted => status == GitCommitFileStatus.deleted;
+
+  String get statusLabel {
+    switch (status) {
+      case GitCommitFileStatus.added:
+        return 'A';
+      case GitCommitFileStatus.copied:
+        return 'C';
+      case GitCommitFileStatus.deleted:
+        return 'D';
+      case GitCommitFileStatus.modified:
+        return 'M';
+      case GitCommitFileStatus.renamed:
+        return 'R';
+      case GitCommitFileStatus.typeChanged:
+        return 'T';
+      case GitCommitFileStatus.unmerged:
+        return 'U';
+      case GitCommitFileStatus.unknown:
+        return '?';
+    }
+  }
+}
+
 /// One commit row returned by the local history query.
 class GitCommit {
   const GitCommit({
@@ -12,6 +147,7 @@ class GitCommit {
     required this.authoredAt,
     required this.subject,
     required this.body,
+    this.refs = const [],
     this.lane = 0,
     this.laneCount = 1,
     this.graphSegments = const [],
@@ -25,6 +161,7 @@ class GitCommit {
   final DateTime authoredAt;
   final String subject;
   final String body;
+  final List<GitCommitRef> refs;
   final int lane;
   final int laneCount;
   final List<GitGraphSegment> graphSegments;
@@ -46,6 +183,7 @@ class GitCommit {
       authoredAt: authoredAt,
       subject: subject,
       body: body,
+      refs: refs,
       lane: lane,
       laneCount: laneCount,
       graphSegments: List.unmodifiable(graphSegments),
@@ -71,6 +209,7 @@ class GitHistoryPage {
     required this.offset,
     required this.limit,
     required this.hasMore,
+    this.nextCursor,
   });
 
   final RepositoryId repositoryId;
@@ -78,6 +217,7 @@ class GitHistoryPage {
   final int offset;
   final int limit;
   final bool hasMore;
+  final GitHistoryCursor? nextCursor;
 }
 
 /// Parses the NUL-separated fields and record separators emitted by
@@ -88,6 +228,9 @@ GitHistoryPage parseGitHistory(
   required RepositoryId repositoryId,
   required int offset,
   required int limit,
+  GitHistoryCursor? cursor,
+  Iterable<GitCommitRef> snapshotRefs = const <GitCommitRef>[],
+  String queryKey = '',
 }) {
   final text = utf8.decode(output, allowMalformed: true);
   final parsed = <GitCommit>[];
@@ -97,7 +240,7 @@ GitHistoryPage parseGitHistory(
     final fields = record.split('\u0000');
     // The format ends with a NUL before the record separator, so the split
     // contains one final empty field after the commit body.
-    if (fields.length != 7 && fields.length != 8) {
+    if (fields.length != 7 && fields.length != 8 && fields.length != 9) {
       throw FormatException('Invalid Git history record: $record');
     }
     final oid = fields[0];
@@ -105,6 +248,9 @@ GitHistoryPage parseGitHistory(
     if (oid.isEmpty || authorDate == null) {
       throw FormatException('Invalid Git history metadata: $record');
     }
+    final refs = snapshotRefs
+        .where((ref) => ref.targetOid == oid)
+        .toList(growable: false);
     parsed.add(
       GitCommit(
         oid: oid,
@@ -114,18 +260,29 @@ GitHistoryPage parseGitHistory(
         authoredAt: authorDate,
         subject: fields[5],
         body: fields[6].trim(),
+        refs: refs,
       ),
     );
   }
 
   final hasMore = parsed.length > limit;
   final pageCommits = hasMore ? parsed.take(limit).toList() : parsed;
+  final position = cursor?.position ?? offset;
+  final nextCursor = hasMore
+      ? GitHistoryCursor(
+          snapshotTips: cursor?.snapshotTips ?? const <String>[],
+          snapshotRefs: cursor?.snapshotRefs ?? snapshotRefs,
+          position: position + pageCommits.length,
+          queryKey: cursor?.queryKey ?? queryKey,
+        )
+      : null;
   return GitHistoryPage(
     repositoryId: repositoryId,
     commits: assignGraphLanes(pageCommits),
     offset: offset,
     limit: limit,
     hasMore: hasMore,
+    nextCursor: nextCursor,
   );
 }
 

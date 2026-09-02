@@ -39,7 +39,36 @@ class DartGitGateway implements GitGateway, DiscardPreviewCancellationGateway {
     RepositoryId repositoryId, {
     int limit = 50,
     int offset = 0,
-  }) => backend.getHistory(repositoryId, limit: limit, offset: offset);
+    GitHistoryQuery? query,
+  }) => backend.getHistory(
+    repositoryId,
+    limit: limit,
+    offset: offset,
+    query: query,
+  );
+
+  @override
+  Future<GitCommit> getCommit(RepositoryId repositoryId, String commitOid) =>
+      backend.getCommit(repositoryId, commitOid);
+
+  @override
+  Future<List<GitCommitFileChange>> getCommitFiles(
+    RepositoryId repositoryId,
+    String commitOid,
+  ) => backend.getCommitFiles(repositoryId, commitOid);
+
+  @override
+  Future<GitCommitDiff> getCommitDiff(
+    RepositoryId repositoryId,
+    String commitOid,
+    String path, {
+    String? originalPath,
+  }) => backend.getCommitDiff(
+    repositoryId,
+    commitOid,
+    path,
+    originalPath: originalPath,
+  );
 
   @override
   Future<List<GitBranch>> getBranches(RepositoryId repositoryId) =>

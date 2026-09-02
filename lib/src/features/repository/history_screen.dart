@@ -30,6 +30,13 @@ class HistoryScreen extends StatefulWidget {
 class _HistoryScreenState extends State<HistoryScreen> {
   late final HistoryController _controller;
   late final bool _ownsController;
+  late final TextEditingController _searchController;
+  late final TextEditingController _authorController;
+  late final TextEditingController _pathController;
+  late final TextEditingController _refController;
+  late final TextEditingController _afterController;
+  late final TextEditingController _beforeController;
+  late final FocusNode _searchFocusNode;
 
   @override
   void initState() {
@@ -42,6 +49,13 @@ class _HistoryScreenState extends State<HistoryScreen> {
           repositoryId: widget.repository.repositoryId,
         );
     _controller.addListener(_onChanged);
+    _searchController = TextEditingController();
+    _authorController = TextEditingController();
+    _pathController = TextEditingController();
+    _refController = TextEditingController();
+    _afterController = TextEditingController();
+    _beforeController = TextEditingController();
+    _searchFocusNode = FocusNode();
     if (widget.autoInitialize) {
       Future<void>.microtask(_controller.start);
     }
@@ -51,6 +65,13 @@ class _HistoryScreenState extends State<HistoryScreen> {
   void dispose() {
     _controller.removeListener(_onChanged);
     if (_ownsController) _controller.dispose();
+    _searchController.dispose();
+    _authorController.dispose();
+    _pathController.dispose();
+    _refController.dispose();
+    _afterController.dispose();
+    _beforeController.dispose();
+    _searchFocusNode.dispose();
     super.dispose();
   }
 
@@ -90,6 +111,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
+            _filtersPanel(context),
             if (state.isLoading) const LinearProgressIndicator(),
             if (state.error case final error?) _errorBanner(context, error),
             Expanded(
@@ -120,11 +142,144 @@ class _HistoryScreenState extends State<HistoryScreen> {
       bindings: {
         const SingleActivator(LogicalKeyboardKey.keyR, control: true):
             _controller.refresh,
+        const SingleActivator(LogicalKeyboardKey.arrowDown):
+            _controller.selectNext,
+        const SingleActivator(LogicalKeyboardKey.arrowUp):
+            _controller.selectPrevious,
+        const SingleActivator(LogicalKeyboardKey.keyF, control: true): () =>
+            _searchFocusNode.requestFocus(),
         const SingleActivator(LogicalKeyboardKey.escape): () =>
             Navigator.of(context).maybePop(),
       },
       child: Focus(autofocus: true, child: scaffold),
     );
+  }
+
+  Widget _filtersPanel(BuildContext context) {
+    return ExpansionTile(
+      key: const Key('history-filters-toggle'),
+      initiallyExpanded: false,
+      title: Row(
+        children: [
+          Expanded(
+            child: TextField(
+              key: const Key('history-search'),
+              controller: _searchController,
+              focusNode: _searchFocusNode,
+              textInputAction: TextInputAction.search,
+              onSubmitted: (_) => _applyFilters(),
+              decoration: const InputDecoration(
+                labelText: 'Search commits',
+                hintText: 'Subject or body',
+                isDense: true,
+              ),
+            ),
+          ),
+          const SizedBox(width: 8),
+          OutlinedButton(
+            key: const Key('history-apply-filters'),
+            onPressed: _applyFilters,
+            child: const Text('Apply'),
+          ),
+        ],
+      ),
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              final fieldWidth = constraints.maxWidth < 520
+                  ? constraints.maxWidth
+                  : (constraints.maxWidth - 12) / 2;
+              return Wrap(
+                spacing: 12,
+                runSpacing: 8,
+                children: [
+                  _filterField(
+                    _authorController,
+                    'Author',
+                    'history-author-filter',
+                    fieldWidth,
+                  ),
+                  _filterField(
+                    _refController,
+                    'Branch or ref',
+                    'history-ref-filter',
+                    fieldWidth,
+                  ),
+                  _filterField(
+                    _pathController,
+                    'Changed path',
+                    'history-path-filter',
+                    fieldWidth,
+                  ),
+                  _filterField(
+                    _afterController,
+                    'Authored after (ISO date)',
+                    'history-after-filter',
+                    fieldWidth,
+                  ),
+                  _filterField(
+                    _beforeController,
+                    'Authored before (ISO date)',
+                    'history-before-filter',
+                    fieldWidth,
+                  ),
+                  TextButton(
+                    key: const Key('history-clear-filters'),
+                    onPressed: _clearFilters,
+                    child: const Text('Clear filters'),
+                  ),
+                ],
+              );
+            },
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _filterField(
+    TextEditingController controller,
+    String label,
+    String key,
+    double width,
+  ) {
+    return SizedBox(
+      width: width,
+      child: TextField(
+        key: Key(key),
+        controller: controller,
+        decoration: InputDecoration(labelText: label, isDense: true),
+      ),
+    );
+  }
+
+  void _applyFilters() {
+    _controller.applyFilters(
+      GitHistoryFilters(
+        text: _searchController.text.trim(),
+        author: _authorController.text.trim(),
+        path: _pathController.text.trim(),
+        ref: _refController.text.trim(),
+        authoredAfter: DateTime.tryParse(_afterController.text.trim()),
+        authoredBefore: DateTime.tryParse(_beforeController.text.trim()),
+      ),
+    );
+  }
+
+  void _clearFilters() {
+    for (final controller in [
+      _searchController,
+      _authorController,
+      _pathController,
+      _refController,
+      _afterController,
+      _beforeController,
+    ]) {
+      controller.clear();
+    }
+    _applyFilters();
   }
 
   Widget _historyLayout(
@@ -143,7 +298,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
                 child: _commitList(context, page, state),
               ),
               const Divider(height: 1),
-              Expanded(child: _commitDetails(context, state.selectedCommit)),
+              Expanded(child: _commitDetails(context, state)),
             ],
           );
         }
@@ -156,7 +311,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
               child: _commitList(context, page, state),
             ),
             const VerticalDivider(width: 1),
-            Expanded(child: _commitDetails(context, state.selectedCommit)),
+            Expanded(child: _commitDetails(context, state)),
           ],
         );
       },
@@ -251,6 +406,16 @@ class _HistoryScreenState extends State<HistoryScreen> {
                         overflow: TextOverflow.ellipsis,
                         style: Theme.of(context).textTheme.labelSmall,
                       ),
+                      if (commit.refs.isNotEmpty)
+                        Text(
+                          commit.refs.map((ref) => ref.shortName).join(', '),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: Theme.of(context).textTheme.labelSmall
+                              ?.copyWith(
+                                color: Theme.of(context).colorScheme.primary,
+                              ),
+                        ),
                     ],
                   ),
                 ),
@@ -262,7 +427,8 @@ class _HistoryScreenState extends State<HistoryScreen> {
     );
   }
 
-  Widget _commitDetails(BuildContext context, GitCommit? commit) {
+  Widget _commitDetails(BuildContext context, HistoryState state) {
+    final commit = state.selectedCommit;
     if (commit == null) {
       return const Center(child: Text('Select a commit to inspect it.'));
     }
@@ -273,14 +439,28 @@ class _HistoryScreenState extends State<HistoryScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            commit.subject,
+            commit.subject.isEmpty ? '(no subject)' : commit.subject,
             style: Theme.of(context).textTheme.headlineSmall,
           ),
-          const SizedBox(height: 12),
-          SelectableText(
-            commit.oid,
-            style: Theme.of(context).textTheme.bodySmall
-                ?.copyWith(fontFamily: 'monospace'),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              Expanded(
+                child: SelectableText(
+                  commit.oid,
+                  key: Key('oid:${commit.oid}'),
+                  style: Theme.of(context).textTheme.bodySmall
+                      ?.copyWith(fontFamily: 'monospace'),
+                ),
+              ),
+              IconButton(
+                key: Key('copy-oid:${commit.oid}'),
+                tooltip: 'Copy commit ID',
+                onPressed: () =>
+                    Clipboard.setData(ClipboardData(text: commit.oid)),
+                icon: const Icon(Icons.copy, size: 18),
+              ),
+            ],
           ),
           const SizedBox(height: 8),
           Text(
@@ -291,16 +471,96 @@ class _HistoryScreenState extends State<HistoryScreen> {
             _formatDate(commit.authoredAt),
             style: Theme.of(context).textTheme.bodySmall,
           ),
+          if (commit.refs.isNotEmpty) ...[
+            const SizedBox(height: 16),
+            const Text('Refs'),
+            Wrap(
+              spacing: 6,
+              runSpacing: 4,
+              children: [
+                for (final ref in commit.refs)
+                  Chip(label: Text('${ref.kind}: ${ref.shortName}')),
+              ],
+            ),
+          ],
           if (commit.parents.isNotEmpty) ...[
             const SizedBox(height: 16),
             Text('Parents: ${commit.parents.length}'),
-            SelectableText(commit.parents.join('\n')),
+            Wrap(
+              spacing: 6,
+              runSpacing: 4,
+              children: [
+                for (final parent in commit.parents)
+                  OutlinedButton(
+                    key: Key('parent:$parent'),
+                    onPressed: () => _controller.selectParent(parent),
+                    child: Text(parent.substring(0, 8)),
+                  ),
+              ],
+            ),
           ],
           if (commit.body.isNotEmpty) ...[
             const SizedBox(height: 20),
             const Divider(),
             const SizedBox(height: 12),
             SelectableText(commit.body),
+          ],
+          const SizedBox(height: 20),
+          Text('Changed files', style: Theme.of(context).textTheme.titleMedium),
+          if (state.isLoadingCommitFiles)
+            const Padding(
+              padding: EdgeInsets.symmetric(vertical: 16),
+              child: LinearProgressIndicator(),
+            )
+          else if (state.commitFilesError case final error?)
+            Text(error.userMessage, key: const Key('commit-files-error'))
+          else if (state.commitFiles == null)
+            const Text('Commit files have not been loaded.')
+          else if (state.commitFiles!.isEmpty)
+            const Text('No changed files.')
+          else
+            for (final file in state.commitFiles!)
+              ListTile(
+                key: Key('commit-file:${file.path}'),
+                dense: true,
+                contentPadding: EdgeInsets.zero,
+                leading: Text(file.statusLabel),
+                title: Text(file.path),
+                subtitle: file.oldPath == null
+                    ? null
+                    : Text('from ${file.oldPath}'),
+                onTap: () => _controller.selectFile(file),
+              ),
+          if (state.selectedPath != null) ...[
+            const SizedBox(height: 12),
+            Text(
+              'Diff: ${state.selectedPath}',
+              style: Theme.of(context).textTheme.titleMedium,
+            ),
+            if (state.isLoadingCommitDiff)
+              const Padding(
+                padding: EdgeInsets.symmetric(vertical: 16),
+                child: LinearProgressIndicator(),
+              )
+            else if (state.commitDiffError case final error?)
+              Text(error.userMessage, key: const Key('commit-diff-error'))
+            else if (state.commitDiff?.isBinary == true)
+              const Text('Binary file changed; no text diff is available.')
+            else if (state.commitDiff == null)
+              const Text('Select a file to load its diff.')
+            else if (state.commitDiff!.isEmpty)
+              const Text('No textual diff is available.')
+            else
+              Container(
+                key: const Key('commit-diff'),
+                width: double.infinity,
+                color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                padding: const EdgeInsets.all(10),
+                child: SelectableText(
+                  state.commitDiff!.lines.map((line) => line.text).join('\n'),
+                  style: const TextStyle(fontFamily: 'monospace'),
+                ),
+              ),
           ],
         ],
       ),

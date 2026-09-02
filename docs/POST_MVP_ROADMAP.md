@@ -3,8 +3,8 @@
 This roadmap turns the MVP into a dependable daily Git client while preserving
 gift's clean-room workflow research and minimal 2D pixel-game interface.
 Task 15 was marked safe done under WSL because the remaining native bundle
-check is CI-only in this environment. Tasks 16, 17, and 18 are complete; Task
-19 is next.
+check is CI-only in this environment. Tasks 16, 17, 18, and 19 are complete;
+Task 20 is next.
 Do not start a later post-MVP task until its dependencies are complete and its
 visible behavior has been recorded in the behavior ledger without copying
 proprietary implementation details or assets.
@@ -91,6 +91,8 @@ whether repository history changed.
 ## Task 19 — Searchable history and commit inspection
 
 **Depends on:** Task 16. May run in parallel with Tasks 17–18.
+
+**Status:** Complete.
 
 **Goal:** Make the graph useful for investigating changes rather than only
 listing commits.

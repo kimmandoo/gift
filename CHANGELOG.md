@@ -1,5 +1,9 @@
 # Changelog
 
+## 2026-09-03
+
+- feat(task19): added snapshot-bound history search and lazy commit inspection.
+
 ## 2026-09-02
 
 - feat(task18): added guided commit options, identity preflight, templates, and history-change outcomes.
