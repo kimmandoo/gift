@@ -25,6 +25,11 @@ This file is the handoff record for continuing work across query sessions.
   dependencies because the system package manager required an unavailable
   sudo password. `git diff --check` passed, and repository-wide searches found
   no references to the removed native implementation or build system.
+- Commit identity cleanup: rewrote all 26 reachable commits to
+  `kimmandoo <mingyu5675@gmail.com>`, removed the temporary rewrite refs, and
+  force-pushed `main` to GitHub. Local and remote `main` both point to
+  `9f4c87b`; `git log --all` reports only that identity. The pre-rewrite
+  history remains recoverable from `/tmp/gitflu-before-author-rewrite.bundle`.
 - Next action: in the next product session, continue with the first failing
   Task 5 status-parser test.
 
