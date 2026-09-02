@@ -3,6 +3,7 @@
 ## 2026-09-02
 
 - docs(build): documented manual Linux, macOS, and Windows build steps.
+- docs(setup): documented Flutter SDK, PATH, and desktop toolchain setup.
 - feat(task5): added porcelain v2 status snapshots and grouped changes screen.
 - feat(task6): added bounded staged and working-tree unified diff viewing.
 - feat(task7): added serialized staging and un-staging actions.

@@ -81,6 +81,90 @@ The visual and interaction contract lives in
 The repository's pinned tool versions are documented in
 [`tool/versions.json`](tool/versions.json).
 
+## Flutter setup
+
+Install the Flutter SDK, not just the standalone Dart SDK. This repository was
+verified with Flutter `3.47.2` and Dart `3.13.2`; use the stable Flutter
+channel and check the pinned versions before choosing another SDK.
+
+1. Download and extract Flutter for your operating system from the
+   [official installation guide](https://docs.flutter.dev/get-started/install).
+2. Add the extracted Flutter `bin` directory to `PATH`.
+3. Open a new terminal and verify the installation:
+
+```bash
+flutter --version
+dart --version
+flutter doctor -v
+git --version
+```
+
+`flutter doctor -v` should finish without an error for the desktop target you
+plan to use. If the command is not found, the Flutter `bin` directory was not
+added to `PATH` or the terminal was not reopened.
+
+### Linux Flutter setup
+
+On Ubuntu/Debian, install the SDK prerequisites and Linux desktop toolchain:
+
+```bash
+sudo apt-get update
+sudo apt-get install git curl unzip xz-utils zip libglu1-mesa \
+  clang cmake ninja-build pkg-config libgtk-3-dev
+flutter config --enable-linux-desktop
+flutter devices
+```
+
+For a temporary PATH setup when Flutter is extracted to
+`$HOME/development/flutter`, run:
+
+```bash
+export PATH="$PATH:$HOME/development/flutter/bin"
+```
+
+To keep it for future Bash terminals, add that line to `~/.bashrc` and run
+`source ~/.bashrc`. For Zsh, add it to `~/.zshrc` instead.
+
+### macOS Flutter setup
+
+Install Xcode from the App Store, then install its command-line tools:
+
+```bash
+xcode-select --install
+flutter config --enable-macos-desktop
+flutter devices
+```
+
+If Flutter is extracted to `$HOME/development/flutter`, make it available in
+the current terminal with:
+
+```bash
+export PATH="$PATH:$HOME/development/flutter/bin"
+```
+
+Add the same line to `~/.zshrc` to keep it after restarting Terminal.
+
+### Windows Flutter setup
+
+Install the following before running the project:
+
+- Git for Windows.
+- Visual Studio 2022 with **Desktop development with C++** selected.
+- The Windows 10 or Windows 11 SDK and the C++ CMake tools included by that
+  Visual Studio workload.
+
+After extracting Flutter, add its `bin` directory (for example,
+`C:\src\flutter\bin`) to the Windows user `Path` environment variable. Open
+a new PowerShell window, then run:
+
+```powershell
+flutter config --enable-windows-desktop
+flutter devices
+flutter doctor -v
+```
+
+The `flutter` command must be available in that new window before continuing.
+
 ## Getting started
 
 ```bash

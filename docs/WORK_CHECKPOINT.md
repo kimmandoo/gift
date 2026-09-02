@@ -34,6 +34,9 @@ This file is the handoff record for continuing work across query sessions.
   checkpoint were updated for the completed 14-task MVP.
 - Follow-up documentation changes added platform-specific manual Linux, macOS,
   and Windows build steps to `README.md` and linked each release output path.
+- Follow-up setup documentation added common Flutter SDK verification plus
+  Linux, macOS, and Windows PATH and desktop toolchain instructions to
+  `README.md`.
 - Blockers: none. The pre-existing untracked `.serena/` directory was left
   untouched and is not part of the commit.
 - Next action: none for the planned MVP. Add a new task to `TASKS.md` before
