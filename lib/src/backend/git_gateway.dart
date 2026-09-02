@@ -1,4 +1,5 @@
 import 'domain.dart';
+import 'branch.dart';
 import 'commit.dart';
 import 'discard.dart';
 import 'diff.dart';
@@ -23,6 +24,18 @@ abstract interface class GitGateway {
     int limit = 50,
     int offset = 0,
   });
+
+  Future<List<GitBranch>> getBranches(RepositoryId repositoryId);
+
+  Future<GitBranchActionResult> createBranch(
+    RepositoryId repositoryId,
+    String name,
+  );
+
+  Future<GitBranchActionResult> switchBranch(
+    RepositoryId repositoryId,
+    String name,
+  );
 
   Future<GitDiffSnapshot> getDiff(
     RepositoryId repositoryId,

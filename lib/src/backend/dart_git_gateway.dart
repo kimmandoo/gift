@@ -1,4 +1,5 @@
 import 'dart_git_backend.dart';
+import 'branch.dart';
 import 'commit.dart';
 import 'domain.dart';
 import 'discard.dart';
@@ -37,6 +38,22 @@ class DartGitGateway implements GitGateway {
     int limit = 50,
     int offset = 0,
   }) => backend.getHistory(repositoryId, limit: limit, offset: offset);
+
+  @override
+  Future<List<GitBranch>> getBranches(RepositoryId repositoryId) =>
+      backend.getBranches(repositoryId);
+
+  @override
+  Future<GitBranchActionResult> createBranch(
+    RepositoryId repositoryId,
+    String name,
+  ) => backend.createBranch(repositoryId, name);
+
+  @override
+  Future<GitBranchActionResult> switchBranch(
+    RepositoryId repositoryId,
+    String name,
+  ) => backend.switchBranch(repositoryId, name);
 
   @override
   Future<GitDiffSnapshot> getDiff(

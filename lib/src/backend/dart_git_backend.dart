@@ -1,4 +1,5 @@
 import 'domain.dart';
+import 'branch.dart';
 import 'commit.dart';
 import 'discard.dart';
 import 'diff.dart';
@@ -56,6 +57,36 @@ class DartGitBackend {
       gitPath: installation.executablePath,
       state: _state,
     ).getHistory(repositoryId, limit: limit, offset: offset);
+  }
+
+  Future<List<GitBranch>> getBranches(RepositoryId repositoryId) async {
+    final installation = await getGitInstallation();
+    return RepositoryService(
+      gitPath: installation.executablePath,
+      state: _state,
+    ).getBranches(repositoryId);
+  }
+
+  Future<GitBranchActionResult> createBranch(
+    RepositoryId repositoryId,
+    String name,
+  ) async {
+    final installation = await getGitInstallation();
+    return RepositoryService(
+      gitPath: installation.executablePath,
+      state: _state,
+    ).createBranch(repositoryId, name);
+  }
+
+  Future<GitBranchActionResult> switchBranch(
+    RepositoryId repositoryId,
+    String name,
+  ) async {
+    final installation = await getGitInstallation();
+    return RepositoryService(
+      gitPath: installation.executablePath,
+      state: _state,
+    ).switchBranch(repositoryId, name);
   }
 
   Future<GitDiffSnapshot> getDiff(

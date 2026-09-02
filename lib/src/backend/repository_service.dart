@@ -4,6 +4,7 @@ import 'dart:io';
 import 'dart:math';
 
 import 'domain.dart';
+import 'branch.dart';
 import 'commit.dart';
 import 'discard.dart';
 import 'diff.dart';
@@ -320,6 +321,77 @@ class RepositoryService {
     }
   }
 
+  Future<List<GitBranch>> getBranches(RepositoryId repositoryId) async {
+    final handle = await state.lookup(repositoryId);
+    final output = await _runner.run(
+      GitInvocation(
+        program: gitPath,
+        args: const [
+          'for-each-ref',
+          '--sort=refname',
+          '--format=%(refname:short)%00%(objectname)%00%(upstream:short)%00%(HEAD)',
+          'refs/heads/',
+        ],
+        cwd: handle.root,
+        kind: GitOperationKind.read,
+        outputPolicy: const OutputPolicy.capture(maxBytes: 512 * 1024),
+      ),
+    );
+    try {
+      return parseGitBranches(output.stdout);
+    } on FormatException catch (error, stackTrace) {
+      Error.throwWithStackTrace(
+        GitError(
+          category: GitErrorCategory.parseFailure,
+          userMessage: 'Git returned an unreadable branch list.',
+          diagnostic: error.message,
+          retryable: false,
+        ),
+        stackTrace,
+      );
+    }
+  }
+
+  Future<GitBranchActionResult> createBranch(
+    RepositoryId repositoryId,
+    String name,
+  ) => _runBranchAction(repositoryId, name, const ['switch', '--create']);
+
+  Future<GitBranchActionResult> switchBranch(
+    RepositoryId repositoryId,
+    String name,
+  ) => _runBranchAction(repositoryId, name, const ['switch']);
+
+  Future<GitBranchActionResult> _runBranchAction(
+    RepositoryId repositoryId,
+    String name,
+    List<String> command,
+  ) async {
+    _validateBranchName(name);
+    return state.runMutation(repositoryId, () async {
+      final handle = await state.lookup(repositoryId);
+      try {
+        await _runner.run(
+          GitInvocation(
+            program: gitPath,
+            args: [...command, name],
+            cwd: handle.root,
+            kind: GitOperationKind.mutation,
+            outputPolicy: const OutputPolicy.capture(maxBytes: 128 * 1024),
+          ),
+        );
+      } on GitError catch (error, stackTrace) {
+        Error.throwWithStackTrace(_mapBranchError(error), stackTrace);
+      }
+      final status = await getStatus(repositoryId);
+      return GitBranchActionResult(
+        repositoryId: repositoryId,
+        branchName: name,
+        status: status,
+      );
+    });
+  }
+
   Future<GitDiffSnapshot> getDiff(
     RepositoryId repositoryId,
     String path, {
@@ -599,6 +671,51 @@ GitError _mapCommitError(GitError error) {
     userMessage: 'The commit hook rejected this commit.',
     retryable: false,
   );
+}
+
+GitError _mapBranchError(GitError error) {
+  if (error.category != GitErrorCategory.processFailed) return error;
+  final diagnostic = error.diagnostic;
+  if (RegExp(
+    r'(local changes|would be overwritten|uncommitted changes)',
+    caseSensitive: false,
+  ).hasMatch(diagnostic)) {
+    return error.copyWith(
+      category: GitErrorCategory.dirtyWorktree,
+      userMessage: 'Commit or stash local changes before switching branches.',
+      retryable: false,
+    );
+  }
+  if (RegExp(r'already exists', caseSensitive: false).hasMatch(diagnostic)) {
+    return error.copyWith(
+      userMessage: 'That branch already exists.',
+      retryable: false,
+    );
+  }
+  return error;
+}
+
+void _validateBranchName(String name) {
+  final invalid =
+      name.isEmpty ||
+      name != name.trim() ||
+      name.startsWith('-') ||
+      name.endsWith('.') ||
+      name.endsWith('/') ||
+      name.startsWith('.') ||
+      name.startsWith('/') ||
+      name.contains('..') ||
+      name.contains('@{') ||
+      RegExp(r'[\u0000-\u0020~^:?*\\\[\]]').hasMatch(name) ||
+      name.contains('//');
+  if (invalid) {
+    throw const GitError(
+      category: GitErrorCategory.parseFailure,
+      userMessage: 'Enter a valid branch name.',
+      diagnostic: 'branch name failed Git ref validation',
+      retryable: false,
+    );
+  }
 }
 
 Future<String> _canonicalizeDirectory(String path, {bool moved = false}) async {

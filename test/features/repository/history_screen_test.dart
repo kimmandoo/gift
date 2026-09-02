@@ -1,4 +1,5 @@
 import 'package:branchline/src/backend/commit.dart';
+import 'package:branchline/src/backend/branch.dart';
 import 'package:branchline/src/backend/discard.dart';
 import 'package:branchline/src/backend/diff.dart';
 import 'package:branchline/src/backend/domain.dart';
@@ -132,6 +133,22 @@ class FakeHistoryGateway implements GitGateway {
   @override
   Future<GitCommitResult> commit(RepositoryId repositoryId, String message) =>
       throw UnimplementedError();
+
+  @override
+  Future<List<GitBranch>> getBranches(RepositoryId repositoryId) =>
+      throw UnimplementedError();
+
+  @override
+  Future<GitBranchActionResult> createBranch(
+    RepositoryId repositoryId,
+    String name,
+  ) => throw UnimplementedError();
+
+  @override
+  Future<GitBranchActionResult> switchBranch(
+    RepositoryId repositoryId,
+    String name,
+  ) => throw UnimplementedError();
 
   @override
   Future<DiscardPreview> createDiscardPreview(

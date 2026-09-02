@@ -192,6 +192,31 @@ HistoryScreen
    요청합니다. commit 행을 선택하면 오른쪽 detail pane에서 전체 ID,
    parent, author와 body를 읽을 수 있습니다.
 
+## branch popup 흐름
+
+```text
+ChangesScreen
+  └─ BranchDialog
+       ├─ GitGateway.getBranches()
+       │    └─ git for-each-ref refs/heads/
+       └─ create/switch action
+            └─ RepositoryService._runBranchAction()
+                 ├─ validate Git ref name
+                 ├─ AppState.runMutation(repositoryId)
+                 ├─ git switch [--create] name
+                 └─ getStatus() → GitBranchActionResult
+```
+
+1. popup은 `for-each-ref`를 사용해 로컬 branch와 현재 `HEAD` 표식을
+   읽습니다. upstream 값이 있으면 함께 보여주고, 화면은 raw ref 명령을
+   직접 조립하지 않습니다.
+2. branch 이름은 NUL·공백·금지 문자를 먼저 거르고, 생성과 전환은 같은
+   repository mutation queue에서 실행합니다. 작업 트리에 commit되지 않은
+   변경이 있어 전환할 수 없으면 dirty-worktree 메시지로 안내합니다.
+3. 성공한 결과는 새 status와 함께 dialog 밖으로 돌아옵니다. Changes
+   controller가 즉시 status를 다시 읽어 branch identity와 file list를
+   갱신합니다.
+
 ## 폴더별 역할
 
 | 경로 | 역할 |

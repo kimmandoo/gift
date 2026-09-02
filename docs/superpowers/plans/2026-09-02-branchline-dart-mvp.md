@@ -133,8 +133,16 @@ system Git 2.35+.
 3. Added a History screen with commit details, selection, and load-more state.
 4. Passed `flutter analyze`, history tests, and the backend suite.
 
-## Next vertical: branch management
+## Completed vertical: branch management
 
-1. Add failing tests for local ref parsing, invalid names, and branch switches.
-2. Implement branch listing, creation, and serialized switching.
-3. Add a current-branch popup with switch feedback.
+1. Added parser and real Git tests for local refs, invalid names, and branch
+   switches.
+2. Implemented validated branch listing, creation, and serialized switching.
+3. Added a current-branch popup with create, switch, loading, and error states.
+4. Passed `flutter analyze`, branch tests, and the backend suite.
+
+## Next vertical: remotes and cancellation
+
+1. Add remote parsing, progress, cancellation, and failure tests.
+2. Implement fetch, pull, and push with cancellable Git processes.
+3. Add remote controls and progress feedback.

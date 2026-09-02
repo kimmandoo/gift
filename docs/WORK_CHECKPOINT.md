@@ -5,8 +5,8 @@ This file is the handoff record for continuing work across query sessions.
 ## Current checkpoint
 
 - Date: 2026-09-02
-- Milestone: Task 10, History & graph, is complete; Task 11, Branch
-  management, is the next active product task.
+- Milestone: Task 11, Branch management, is complete; Task 12, Remotes &
+  cancellation, is the next active product task.
 - Source of truth: `TASKS.md` and
   `docs/superpowers/plans/2026-09-02-branchline-dart-mvp.md`.
 - Completed scope: removed the native implementation, FFI bridge, generated
@@ -16,29 +16,27 @@ This file is the handoff record for continuing work across query sessions.
   session-local opaque handles; rewired Flutter screens and tests; added
   `docs/ARCHITECTURE.md` and beginner-oriented source comments.
 - Verification: installed the pinned Flutter 3.47.2 SDK with Dart 3.13.2 in
-  `/tmp/codex-flutter`; passed the history parser (3 tests), history screen
-  (1 test), backend suite (19 tests), and `flutter analyze` (`No issues
-  found!`). The prior full suite was 42 tests; the full suite and integration
-  smoke test remain the final gate for this task batch.
+  `/tmp/codex-flutter`; passed branch parser (2 tests), branch popup (1 test),
+  backend suite (21 tests), history tests, and `flutter analyze` (`No issues
+  found!`). The full suite and integration smoke test remain the final gate
+  for this task batch.
 - Commit identity cleanup: rewrote all reachable commits to
   `kimmandoo <mingyu5675@gmail.com>`, removed the temporary rewrite refs, and
   force-pushed `main` to GitHub. `git log --all` reports only that identity.
   The pre-rewrite history remains recoverable from
   `/tmp/gitflu-before-author-rewrite.bundle`.
-- Current Task 10 changes: added bounded `git log --all --topo-order` pages,
-  UTF-8 commit metadata parsing, deterministic merge parent lanes, a history
-  controller, History screen, Changes-to-History navigation, tests, and
+- Current Task 11 changes: added typed local branch records and parser,
+  validated serialized create/switch operations, branch error mapping, a
+  current-branch popup, Changes integration, backend/parser/widget tests, and
   beginner-oriented architecture/ledger updates.
-- Changed files in this task include `lib/src/backend/history.dart`,
-  `lib/src/features/repository/history_controller.dart`,
-  `lib/src/features/repository/history_screen.dart`, the backend/gateway
-  history contracts, Changes navigation, history/backend/widget tests, and
-  the task, README, changelog, plan, architecture, ledger, and checkpoint
-  documentation.
+- Changed files in this task include `lib/src/backend/branch.dart`, the
+  backend/gateway branch contracts, `lib/src/features/repository/branch_dialog.dart`,
+  Changes integration, branch/backend/widget tests, and the task, README,
+  changelog, plan, architecture, ledger, and checkpoint documentation.
 - Blockers: none. The pre-existing untracked `.serena/` directory was left
   untouched and is not part of the commit.
-- Next action: begin Task 11 by adding failing local-ref, invalid-name, and
-  branch-switch tests, then implement the branch popup flow.
+- Next action: begin Task 12 by adding remote parsing and cancellable-process
+  tests, then implement fetch, pull, push, and progress feedback.
 
 ## Resume procedure
 

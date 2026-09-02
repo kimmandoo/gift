@@ -549,6 +549,59 @@ void main() {
     });
   });
 
+  test('creates and switches local branches with refreshed status', () async {
+    await withTempDirectory((directory) async {
+      await createCommittedRepository(directory.path, 'tracked.txt');
+      final backend = DartGitBackend();
+      final opened = await backend.openRepository(directory.path);
+      final originalBranch = (await backend.getStatus(opened.repositoryId))
+          .branch
+          .head!;
+
+      final created = await backend.createBranch(
+        opened.repositoryId,
+        'feature/history',
+      );
+      expect(created.branchName, 'feature/history');
+      expect(created.status.branch.head, 'feature/history');
+
+      final branches = await backend.getBranches(opened.repositoryId);
+      expect(
+        branches.map((branch) => branch.name),
+        contains('feature/history'),
+      );
+      expect(
+        branches.singleWhere((branch) => branch.isCurrent).name,
+        'feature/history',
+      );
+
+      final switched = await backend.switchBranch(
+        opened.repositoryId,
+        originalBranch,
+      );
+      expect(switched.status.branch.head, originalBranch);
+    });
+  });
+
+  test('rejects invalid local branch names before running Git', () async {
+    await withTempDirectory((directory) async {
+      await createCommittedRepository(directory.path, 'tracked.txt');
+      final backend = DartGitBackend();
+      final opened = await backend.openRepository(directory.path);
+
+      await expectLater(
+        backend.createBranch(opened.repositoryId, 'bad..name'),
+        throwsA(
+          isA<GitError>().having(
+            (error) => error.category,
+            'category',
+            GitErrorCategory.parseFailure,
+          ),
+        ),
+      );
+    });
+  });
+
   test('discards only the working-tree side after a fresh preview', () async {
     await withTempDirectory((directory) async {
       await createCommittedRepository(directory.path, 'tracked.txt');

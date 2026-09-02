@@ -1,12 +1,14 @@
 import 'dart:async';
 
 import 'package:branchline/src/backend/commit.dart';
+import 'package:branchline/src/backend/branch.dart';
 import 'package:branchline/src/backend/domain.dart';
 import 'package:branchline/src/backend/diff.dart';
 import 'package:branchline/src/backend/error.dart';
 import 'package:branchline/src/backend/git_gateway.dart';
 import 'package:branchline/src/backend/status.dart';
 import 'package:branchline/src/features/repository/changes_controller.dart';
+import 'package:branchline/src/features/repository/branch_dialog.dart';
 import 'package:branchline/src/features/repository/history_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -122,6 +124,12 @@ class _ChangesScreenBodyState extends ConsumerState<_ChangesScreenBody> {
           ],
         ),
         actions: [
+          IconButton(
+            key: const Key('open-branches'),
+            tooltip: 'Open branches',
+            onPressed: () => unawaited(_openBranches(context)),
+            icon: const Icon(Icons.call_split),
+          ),
           IconButton(
             key: const Key('open-history'),
             tooltip: 'Open history',
@@ -562,6 +570,20 @@ class _ChangesScreenBodyState extends ConsumerState<_ChangesScreenBody> {
           repository: widget.repository,
         ),
       ),
+    );
+  }
+
+  Future<void> _openBranches(BuildContext context) async {
+    final result = await showDialog<GitBranchActionResult>(
+      context: context,
+      builder: (_) =>
+          BranchDialog(gateway: widget.gateway, repository: widget.repository),
+    );
+    if (!context.mounted || result == null) return;
+    await _activeController.refresh();
+    if (!context.mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Switched to ${result.branchName}.')),
     );
   }
 

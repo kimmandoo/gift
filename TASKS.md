@@ -7,8 +7,8 @@
 ## Progress
 
 - **Total Tasks:** 14
-- **Completed:** 10 / 14 (71.4%)
-- **Current Active Task:** `Task 11: Branch management`
+- **Completed:** 11 / 14 (78.6%)
+- **Current Active Task:** `Task 12: Remotes & cancellation`
 
 | # | Scope | Dart backend deliverables | Flutter deliverables | Status |
 |---|---|---|---|:---:|
@@ -22,7 +22,7 @@
 | **8** | Discard changes | Expiring preview token and safe restore | Confirmation dialog | ✅ |
 | **9** | Commit panel | UTF-8 message stdin and hook mapping | Commit editor and shortcuts | ✅ |
 | **10** | History & graph | Paginated log and deterministic lanes | History screen and details | ✅ |
-| **11** | Branch management | Ref parsing, validation, and switch | Branch popup and tracking flow | ⏳ |
+| **11** | Branch management | Ref parsing, validation, and switch | Branch popup and tracking flow | ✅ |
 | **12** | Remotes & cancellation | Fetch/pull/push and operation cancellation | Progress bar and controls | ⏳ |
 | **13** | JetBrains-equivalent UX & pixel theme | Redacted diagnostics and classification | Minimal 2D pixel-game shell, responsive layout, theme, shortcuts | ⏳ |
 | **14** | Packaging & CI | Cross-platform verification scripts | Desktop release artifacts | ⏳ |
@@ -50,6 +50,8 @@
 - [x] UTF-8 stdin commits, hook rejection mapping, and staged commit editor
   feedback.
 - [x] Bounded history pages, merge-aware lane slots, and commit details.
+- [x] Local branch ref parsing, name validation, serialized switching, and
+  branch popup feedback.
 - [x] Removed FFI, generated bindings, native build plugins, and the former
   native implementation.
 
@@ -114,13 +116,20 @@
 - [x] Added deterministic graph lane slots and pagination.
 - [x] Added History screen selection, commit details, and Load more feedback.
 
+### ✅ Task 11: Branch management
+
+- [x] Added local `for-each-ref` parsing with current and upstream metadata.
+- [x] Added validated branch creation and serialized switching with dirty
+  worktree feedback.
+- [x] Added a branch popup with create, switch, loading, and error states.
+
 ## Active task
 
-### ⏳ Task 11: Branch management
+### ⏳ Task 12: Remotes & cancellation
 
-- [ ] Add local ref parsing, invalid-name, and branch-switch tests.
-- [ ] Implement branch listing, creation, and serialized switching.
-- [ ] Add a current-branch popup with switch feedback.
+- [ ] Add remote parsing, progress, cancellation, and failure tests.
+- [ ] Implement fetch, pull, and push with cancellable Git processes.
+- [ ] Add remote controls and progress feedback.
 
-Tasks 12–14 retain the same product scope above and will build on the Dart
+Tasks 13–14 retain the same product scope above and will build on the Dart
 backend contracts established here.
