@@ -15,10 +15,10 @@ This file is the handoff record for continuing work across query sessions.
   Git discovery/version validation, repository root validation, and
   session-local opaque handles; rewired Flutter screens and tests; added
   `docs/ARCHITECTURE.md` and beginner-oriented source comments.
-- Verification: installed the pinned Flutter 3.47.2 SDK with Dart 3.13.2 in
-  `/tmp/codex-flutter`; passed `dart run tool/verify.dart`, `flutter analyze`,
-  the full Flutter test suite, Changes and History responsive widget tests,
-  the Linux release build, and the Linux integration smoke test.
+- Verification: restored the pinned Flutter 3.47.2 SDK with Dart 3.13.2 in
+  `/home/mgkim/.local/flutter`; passed `flutter analyze`, the full Flutter test
+  suite, and `PATH=/home/mgkim/.local/flutter/bin:$PATH dart run
+  tool/verify.dart` (formatting, analysis, and all 70 tests).
 - Commit identity cleanup: rewrote all reachable commits to
   `kimmandoo <mingyu5675@gmail.com>`, removed the temporary rewrite refs, and
   force-pushed `main` to GitHub. `git log --all` reports only that identity.
@@ -75,7 +75,8 @@ This file is the handoff record for continuing work across query sessions.
   models for incoming, continuation, fork, merge, and compressed wide-lane
   rendering. Pagination recomputes the complete visible graph.
 - Replaced the first-pass Silkscreen font with the more legible OFL Pixelify
-  Sans font and applied a readable 13/15/16/18/22 px type scale.
+  Sans font and applied a compact 12/13/15/16/18/22/24 px type scale with
+  explicit line spacing, button sizing, and centralized heading tokens.
 - Added persisted light/dark theme switching, compact 360x640 layout coverage,
   and responsive dialog bounds.
 - `assets/images/gitflu_icon.png` is now the release icon source. Generated
@@ -88,6 +89,14 @@ This file is the handoff record for continuing work across query sessions.
 - Palette pass replaced generated/direct color mixing with explicit semantic
   light and dark roles, matching `on*` text colors for status containers, and
   a 4.5:1 contrast regression suite. Direct red error text was removed.
+- Current UI refinement lowered the overall type scale, strengthened Pixelify
+  Sans body weight and line spacing, moved screen headings to shared theme
+  tokens, and added common button text/padding rules.
+- Current layout hardening made narrow summary/status rows wrap safely, added
+  branch-input stacking below 300 px, and enabled dialog action overflow
+  spacing so text and buttons do not collide.
+- Current session verification passed `flutter analyze`, `flutter test`, and
+  `PATH=/home/mgkim/.local/flutter/bin:$PATH dart run tool/verify.dart`.
 - Changed implementation files: `lib/src/app/gitflu_app.dart`,
   `lib/src/app/pixel_theme.dart`, `lib/src/backend/history.dart`, core
   repository screens/dialogs, `pubspec.yaml`, desktop icon resources, tests,

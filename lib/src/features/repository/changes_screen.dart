@@ -221,12 +221,18 @@ class _ChangesScreenBodyState extends ConsumerState<_ChangesScreenBody> {
         builder: (context, constraints) {
           final items = [
             const Icon(Icons.account_tree_outlined, size: 18),
-            Text(branch, style: const TextStyle(fontWeight: FontWeight.w600)),
+            Text(
+              branch,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: Theme.of(context).textTheme.bodyMedium
+                  ?.copyWith(fontWeight: FontWeight.w600),
+            ),
             Text(sync),
             Text('${snapshot.changes.length} changes'),
             Text('generation ${snapshot.generation}'),
           ];
-          if (constraints.maxWidth < 640) {
+          if (constraints.maxWidth < 760) {
             return Wrap(
               spacing: 12,
               runSpacing: 8,
@@ -238,7 +244,7 @@ class _ChangesScreenBodyState extends ConsumerState<_ChangesScreenBody> {
             children: [
               items[0],
               const SizedBox(width: 8),
-              items[1],
+              Flexible(child: items[1]),
               const SizedBox(width: 12),
               items[2],
               const Spacer(),
@@ -274,7 +280,7 @@ class _ChangesScreenBodyState extends ConsumerState<_ChangesScreenBody> {
             state.isMutating ? Icons.sync : Icons.check_circle_outline,
             size: 16,
           );
-          if (constraints.maxWidth < 640) {
+          if (constraints.maxWidth < 760) {
             return Row(
               children: [
                 icon,
@@ -291,6 +297,8 @@ class _ChangesScreenBodyState extends ConsumerState<_ChangesScreenBody> {
               const SizedBox(width: 12),
               Text(
                 'Ctrl+R refresh · Ctrl+H history',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
                 style: Theme.of(context).textTheme.labelSmall,
               ),
             ],
@@ -821,7 +829,8 @@ class _ChangesScreenBodyState extends ConsumerState<_ChangesScreenBody> {
               style: TextStyle(
                 color: foreground,
                 fontFamily: 'monospace',
-                fontSize: 13,
+                fontSize: pixelBodySmallSize,
+                height: 1.35,
               ),
             ),
           ),
@@ -836,7 +845,11 @@ class _ChangesScreenBodyState extends ConsumerState<_ChangesScreenBody> {
       child: Text(
         number?.toString() ?? '',
         textAlign: TextAlign.right,
-        style: const TextStyle(fontFamily: 'monospace', fontSize: 11),
+        style: const TextStyle(
+          fontFamily: 'monospace',
+          fontSize: pixelLabelSmallSize,
+          height: 1.25,
+        ),
       ),
     );
   }

@@ -40,6 +40,7 @@ class _RemoteDialogState extends State<RemoteDialog> {
     final width = (size.width - 80).clamp(0.0, 440.0);
     return AlertDialog(
       title: const Text('Remote operations'),
+      actionsOverflowButtonSpacing: 4,
       content: SizedBox(
         width: width,
         height: (size.height - 180).clamp(220.0, 360.0),
@@ -111,6 +112,7 @@ class _RemoteDialogState extends State<RemoteDialog> {
                   ),
                 Wrap(
                   spacing: 8,
+                  runSpacing: 4,
                   children: [
                     OutlinedButton(
                       key: ValueKey('fetch:${remote.name}'),

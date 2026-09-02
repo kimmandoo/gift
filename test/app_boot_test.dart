@@ -21,6 +21,22 @@ void main() {
     expect(theme.colorScheme.error, pixelCoral);
     expect(theme.cardTheme.elevation, 0);
     expect(theme.textTheme.bodyMedium?.fontFamily, pixelFontFamily);
+    expect(theme.textTheme.bodyLarge?.fontSize, pixelBodyLargeSize);
+    expect(theme.textTheme.bodyMedium?.fontSize, pixelBodyMediumSize);
+    expect(theme.textTheme.bodySmall?.fontSize, pixelBodySmallSize);
+    expect(theme.textTheme.labelSmall?.fontSize, pixelLabelSmallSize);
+    expect(theme.textTheme.titleLarge?.fontSize, pixelTitleLargeSize);
+    expect(theme.textTheme.headlineSmall?.fontSize, pixelHeadlineSmallSize);
+    expect(theme.textTheme.headlineMedium?.fontSize, pixelHeadlineMediumSize);
+    expect(theme.appBarTheme.titleTextStyle?.fontSize, pixelTitleLargeSize);
+    expect(
+      theme.filledButtonTheme.style?.minimumSize?.resolve({}),
+      const Size(48, 44),
+    );
+    expect(
+      theme.outlinedButtonTheme.style?.minimumSize?.resolve({}),
+      const Size(48, 44),
+    );
     expect(light.brightness, Brightness.light);
     expect(light.scaffoldBackgroundColor, pixelLightCanvas);
     for (final scheme in [theme.colorScheme, light.colorScheme]) {

@@ -68,6 +68,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
   @override
   Widget build(BuildContext context) {
     final state = _repositoryController.state;
+    final textTheme = Theme.of(context).textTheme;
     if (state.openedRepository case final opened?) {
       return ChangesScreen(
         gateway: widget.gateway,
@@ -96,9 +97,9 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
               padding: const EdgeInsets.all(32),
               child: ListView(
                 children: [
-                  const Text(
+                  Text(
                     'Open a Git repository',
-                    style: TextStyle(fontSize: 28, fontWeight: FontWeight.w600),
+                    style: textTheme.headlineMedium,
                   ),
                   const SizedBox(height: 8),
                   const Text(
@@ -126,10 +127,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
                     ),
                   ],
                   const SizedBox(height: 32),
-                  const Text(
-                    'Recent repositories',
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
-                  ),
+                  Text('Recent repositories', style: textTheme.titleLarge),
                   const SizedBox(height: 8),
                   _recentList(state.recentRepositories),
                 ],

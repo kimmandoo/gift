@@ -36,6 +36,7 @@ class _GitSettingsDialogState extends State<GitSettingsDialog> {
     final width = (MediaQuery.sizeOf(context).width - 80).clamp(0.0, 420.0);
     return AlertDialog(
       title: const Text('Git executable'),
+      actionsOverflowButtonSpacing: 4,
       content: SizedBox(
         width: width,
         child: Column(

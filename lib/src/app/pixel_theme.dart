@@ -36,6 +36,19 @@ const pixelLightOnTertiaryContainer = Color(0xFF2B2100);
 const pixelLightErrorContainer = Color(0xFFFFDAD6);
 const pixelLightOnErrorContainer = Color(0xFF410002);
 
+// Keep the desktop type scale in one place so every screen stays readable as
+// the pixel UI grows. Pixelify Sans needs a little more room than a typical
+// proportional UI font, especially for metadata and compact labels.
+const pixelBodyLargeSize = 16.0;
+const pixelBodyMediumSize = 15.0;
+const pixelBodySmallSize = 13.0;
+const pixelLabelLargeSize = 13.0;
+const pixelLabelSmallSize = 12.0;
+const pixelTitleMediumSize = 16.0;
+const pixelTitleLargeSize = 18.0;
+const pixelHeadlineSmallSize = 22.0;
+const pixelHeadlineMediumSize = 24.0;
+
 ThemeData buildPixelTheme({Brightness brightness = Brightness.dark}) {
   final dark = brightness == Brightness.dark;
   final canvas = dark ? pixelCanvas : pixelLightCanvas;
@@ -100,6 +113,13 @@ ThemeData buildPixelTheme({Brightness brightness = Brightness.dark}) {
     borderRadius: BorderRadius.zero,
     borderSide: border,
   );
+  const buttonTextStyle = TextStyle(
+    fontFamily: pixelFontFamily,
+    fontSize: pixelLabelLargeSize,
+    height: 1.25,
+    fontWeight: FontWeight.w600,
+    letterSpacing: 0.15,
+  );
   final base = ThemeData(
     colorScheme: scheme,
     brightness: brightness,
@@ -109,14 +129,57 @@ ThemeData buildPixelTheme({Brightness brightness = Brightness.dark}) {
     canvasColor: canvas,
   );
   final textTheme = base.textTheme.copyWith(
-    bodyLarge: const TextStyle(fontSize: 16, height: 1.35),
-    bodyMedium: const TextStyle(fontSize: 15, height: 1.35),
-    bodySmall: const TextStyle(fontSize: 13, height: 1.3),
-    labelLarge: const TextStyle(fontSize: 13, height: 1.2),
-    labelSmall: const TextStyle(fontSize: 12, height: 1.2),
-    titleMedium: const TextStyle(fontSize: 16, height: 1.25),
-    titleLarge: const TextStyle(fontSize: 18, height: 1.25),
-    headlineSmall: const TextStyle(fontSize: 22, height: 1.2),
+    bodyLarge: const TextStyle(
+      fontSize: pixelBodyLargeSize,
+      height: 1.4,
+      letterSpacing: 0.1,
+      fontWeight: FontWeight.w500,
+    ),
+    bodyMedium: const TextStyle(
+      fontSize: pixelBodyMediumSize,
+      height: 1.4,
+      letterSpacing: 0.1,
+      fontWeight: FontWeight.w500,
+    ),
+    bodySmall: const TextStyle(
+      fontSize: pixelBodySmallSize,
+      height: 1.35,
+      letterSpacing: 0.1,
+      fontWeight: FontWeight.w500,
+    ),
+    labelLarge: const TextStyle(
+      fontSize: pixelLabelLargeSize,
+      height: 1.25,
+      fontWeight: FontWeight.w600,
+      letterSpacing: 0.15,
+    ),
+    labelSmall: const TextStyle(
+      fontSize: pixelLabelSmallSize,
+      height: 1.25,
+      letterSpacing: 0.1,
+    ),
+    titleMedium: const TextStyle(
+      fontSize: pixelTitleMediumSize,
+      height: 1.3,
+      fontWeight: FontWeight.w600,
+      letterSpacing: 0.1,
+    ),
+    titleLarge: const TextStyle(
+      fontSize: pixelTitleLargeSize,
+      height: 1.3,
+      fontWeight: FontWeight.w600,
+      letterSpacing: 0.1,
+    ),
+    headlineSmall: const TextStyle(
+      fontSize: pixelHeadlineSmallSize,
+      height: 1.25,
+      fontWeight: FontWeight.w600,
+    ),
+    headlineMedium: const TextStyle(
+      fontSize: pixelHeadlineMediumSize,
+      height: 1.25,
+      fontWeight: FontWeight.w600,
+    ),
   );
   return base.copyWith(
     textTheme: textTheme.apply(fontFamily: pixelFontFamily),
@@ -131,7 +194,8 @@ ThemeData buildPixelTheme({Brightness brightness = Brightness.dark}) {
       titleTextStyle: TextStyle(
         fontFamily: pixelFontFamily,
         color: ink,
-        fontSize: 18,
+        fontSize: pixelTitleLargeSize,
+        height: 1.3,
         fontWeight: FontWeight.bold,
       ),
     ),
@@ -167,6 +231,8 @@ ThemeData buildPixelTheme({Brightness brightness = Brightness.dark}) {
       style: FilledButton.styleFrom(
         backgroundColor: primary,
         foregroundColor: dark ? pixelCanvas : pixelLightPanel,
+        textStyle: buttonTextStyle,
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
         shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
         side: BorderSide(color: primary, width: 2),
         minimumSize: const Size(48, 44),
@@ -175,13 +241,20 @@ ThemeData buildPixelTheme({Brightness brightness = Brightness.dark}) {
     outlinedButtonTheme: OutlinedButtonThemeData(
       style: OutlinedButton.styleFrom(
         foregroundColor: primary,
+        textStyle: buttonTextStyle,
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
         shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
         side: BorderSide(color: primary),
         minimumSize: const Size(48, 44),
       ),
     ),
     textButtonTheme: TextButtonThemeData(
-      style: TextButton.styleFrom(foregroundColor: primary),
+      style: TextButton.styleFrom(
+        foregroundColor: primary,
+        textStyle: buttonTextStyle,
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        minimumSize: const Size(48, 44),
+      ),
     ),
     listTileTheme: ListTileThemeData(
       selectedTileColor: raised,

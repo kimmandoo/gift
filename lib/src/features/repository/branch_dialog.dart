@@ -44,37 +44,54 @@ class _BranchDialogState extends State<BranchDialog> {
     final width = (size.width - 80).clamp(0.0, 380.0);
     return AlertDialog(
       title: const Text('Branches'),
+      actionsOverflowButtonSpacing: 4,
       content: SizedBox(
         width: width,
         height: (size.height - 180).clamp(220.0, 420.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Row(
-              children: [
-                Expanded(
-                  child: TextField(
-                    key: const Key('new-branch-name'),
-                    controller: _nameController,
-                    enabled: !_isMutating,
-                    decoration: const InputDecoration(
-                      labelText: 'New branch name',
-                      border: OutlineInputBorder(),
-                    ),
-                    onChanged: (_) => setState(() {}),
-                    onSubmitted: (_) => _createBranch(),
+            LayoutBuilder(
+              builder: (context, constraints) {
+                final nameField = TextField(
+                  key: const Key('new-branch-name'),
+                  controller: _nameController,
+                  enabled: !_isMutating,
+                  decoration: const InputDecoration(
+                    labelText: 'New branch name',
+                    border: OutlineInputBorder(),
                   ),
-                ),
-                const SizedBox(width: 8),
-                IconButton(
+                  onChanged: (_) => setState(() {}),
+                  onSubmitted: (_) => _createBranch(),
+                );
+                final createButton = IconButton(
                   key: const Key('create-branch'),
                   tooltip: 'Create branch',
                   onPressed: _isMutating || _nameController.text.trim().isEmpty
                       ? null
                       : _createBranch,
                   icon: const Icon(Icons.add),
-                ),
-              ],
+                );
+                if (constraints.maxWidth < 300) {
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      nameField,
+                      Align(
+                        alignment: Alignment.centerRight,
+                        child: createButton,
+                      ),
+                    ],
+                  );
+                }
+                return Row(
+                  children: [
+                    Expanded(child: nameField),
+                    const SizedBox(width: 8),
+                    createButton,
+                  ],
+                );
+              },
             ),
             const SizedBox(height: 12),
             if (_isLoading) const LinearProgressIndicator(),
