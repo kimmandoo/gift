@@ -2,8 +2,9 @@
 
 ## 2026-09-02
 
+- breaking(branding): renamed the product identity and desktop metadata to gift and replaced the mascot with a 2D pixel-game logo.
 - feat(task17): added safe hunk and line staging with stale selection guards.
-- breaking(branding): renamed the product identity, package, assets, and desktop metadata to gitshiba.
+- breaking(branding): renamed the product identity, package, assets, and desktop metadata to gift.
 - feat(task16): added persisted multi-repository workspace tabs and isolated repository sessions.
 - feat(ui): rebuilt the Git graph and added persistent light and dark pixel themes.
 - fix(ui): replaced the low-legibility pixel font with Pixelify Sans and raised the type scale.
@@ -14,15 +15,15 @@
 - fix(ui): improved dual-font readability, theme contrast, and compact component alignment.
 - fix(ui): enabled continuous multi-line selection across rendered diff rows.
 - fix(build): changed desktop executable copyright metadata to kimmandoo.
-- change(identity): changed desktop bundle identifiers to app.kimmandoo.gitshiba.
+- change(identity): changed desktop bundle identifiers to app.kimmandoo.gift.
 - fix(ui): hardened compact layouts across core screens and operation dialogs.
-- build(icon): generated desktop release icons from the gitshiba icon asset.
+- build(icon): generated desktop release icons from the gift icon asset.
 - docs(roadmap): planned the ordered post-MVP work through signed public releases.
 - fix(hardening): bounded Git processes, stabilized cancellation, preserved history lanes, and revoked discard previews.
 - fix(settings): ignored stale async results and persisted canonical Git executable paths.
-- breaking(branding): unified Dart packages and desktop product metadata under gitshiba.
+- breaking(branding): unified Dart packages and desktop product metadata under gift.
 - fix(ci): limited automatic workflows to release tags and pinned third-party actions.
-- docs(license): licensed gitshiba under the MIT License.
+- docs(license): licensed gift under the MIT License.
 - fix(ci): gated desktop checks to release commits and hardened platform setup.
 - build(script): added one-command platform build wrappers and Windows launchers.
 - fix(build): preserved launcher line endings across operating systems.
@@ -59,5 +60,5 @@
 - fix(scaffold): excluded generated bridge bindings from native formatting.
 - fix(scaffold): preserved canonical generated bridge output after formatting.
 - build(scaffold): integrated desktop native bridge packaging.
-- test(scaffold): asserted the exact Gitshiba core version and documented the Windows build limitation.
-- build(scaffold): scaffolded the Gitshiba desktop bridge.
+- test(scaffold): asserted the exact Gift core version and documented the Windows build limitation.
+- build(scaffold): scaffolded the Gift desktop bridge.

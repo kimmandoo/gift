@@ -2,8 +2,8 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:gitshiba/src/features/repository/changes_screen.dart';
-import 'package:gitshiba/src/features/repository/workspace_controller.dart';
+import 'package:gift/src/features/repository/changes_screen.dart';
+import 'package:gift/src/features/repository/workspace_controller.dart';
 
 /// The tab shell that keeps one Changes screen alive for every open repository.
 ///

@@ -1,7 +1,7 @@
-import 'package:gitshiba/src/backend/branch.dart';
-import 'package:gitshiba/src/backend/domain.dart';
-import 'package:gitshiba/src/backend/error.dart';
-import 'package:gitshiba/src/backend/git_gateway.dart';
+import 'package:gift/src/backend/branch.dart';
+import 'package:gift/src/backend/domain.dart';
+import 'package:gift/src/backend/error.dart';
+import 'package:gift/src/backend/git_gateway.dart';
 import 'package:flutter/material.dart';
 
 /// A small branch popup that keeps branch work separate from the Changes list.

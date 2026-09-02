@@ -52,15 +52,15 @@ jobs:
         include:
           - os: ubuntu-latest
             target: linux
-            artifact: gitshiba-linux-x64
+            artifact: gift-linux-x64
             path: build/linux/x64/release/bundle/
           - os: macos-latest
             target: macos
-            artifact: gitshiba-macos
-            path: build/macos/Build/Products/Release/gitshiba.app
+            artifact: gift-macos
+            path: build/macos/Build/Products/Release/gift.app
           - os: windows-latest
             target: windows
-            artifact: gitshiba-windows-x64
+            artifact: gift-windows-x64
             path: build/windows/x64/runner/Release/
     steps:
       - name: Check out source

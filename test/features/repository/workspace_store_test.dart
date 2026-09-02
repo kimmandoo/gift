@@ -1,4 +1,4 @@
-import 'package:gitshiba/src/features/repository/workspace_store.dart';
+import 'package:gift/src/features/repository/workspace_store.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {

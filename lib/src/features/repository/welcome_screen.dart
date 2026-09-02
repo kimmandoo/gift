@@ -1,15 +1,15 @@
-import 'package:gitshiba/src/features/repository/recent_repository_store.dart';
-import 'package:gitshiba/src/features/repository/changes_screen.dart';
-import 'package:gitshiba/src/features/repository/repository_controller.dart';
-import 'package:gitshiba/src/features/settings/git_settings_controller.dart';
-import 'package:gitshiba/src/features/settings/git_settings_dialog.dart';
-import 'package:gitshiba/src/features/repository/workspace_controller.dart';
-import 'package:gitshiba/src/features/repository/workspace_screen.dart';
-import 'package:gitshiba/src/backend/git_gateway.dart';
+import 'package:gift/src/features/repository/recent_repository_store.dart';
+import 'package:gift/src/features/repository/changes_screen.dart';
+import 'package:gift/src/features/repository/repository_controller.dart';
+import 'package:gift/src/features/settings/git_settings_controller.dart';
+import 'package:gift/src/features/settings/git_settings_dialog.dart';
+import 'package:gift/src/features/repository/workspace_controller.dart';
+import 'package:gift/src/features/repository/workspace_screen.dart';
+import 'package:gift/src/backend/git_gateway.dart';
 import 'package:file_selector/file_selector.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:gitshiba/src/app/pixel_theme.dart';
+import 'package:gift/src/app/pixel_theme.dart';
 
 class WelcomeScreen extends StatefulWidget {
   const WelcomeScreen({
@@ -96,7 +96,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
     }
     return Scaffold(
       appBar: AppBar(
-        title: const Text('gitshiba'),
+        title: const Text('GIFT'),
         actions: [
           const PixelThemeToggle(),
           if (_gitSettingsController != null)
@@ -124,13 +124,11 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
                     alignment: Alignment.centerLeft,
                     child: Image(
                       key: const Key('welcome-logo'),
-                      image: const AssetImage(
-                        'assets/images/gitshiba_icon.png',
-                      ),
+                      image: const AssetImage('assets/images/gift_icon.png'),
                       width: compact ? 80 : 96,
                       height: compact ? 80 : 96,
                       filterQuality: FilterQuality.none,
-                      semanticLabel: 'gitshiba mascot',
+                      semanticLabel: 'GIFT pixel mascot',
                     ),
                   ),
                   const SizedBox(height: 16),

@@ -1,6 +1,6 @@
 import 'dart:convert';
 
-import 'package:gitshiba/src/backend/status.dart';
+import 'package:gift/src/backend/status.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {

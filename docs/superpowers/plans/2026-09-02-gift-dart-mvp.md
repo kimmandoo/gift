@@ -1,4 +1,4 @@
-# Gitshiba Dart MVP Implementation Plan
+# Gift Dart MVP Implementation Plan
 
 **Goal:** Reverse-engineer the user-visible behavior and information
 architecture of the JetBrains IDE Git GUI through black-box observation, then
@@ -172,7 +172,7 @@ system Git 2.35+.
    page lane continuity, canonical Git settings, and controller disposal.
 2. Added non-interactive bounded process execution and deterministic
    completion-versus-cancellation reporting.
-3. Unified package and native desktop metadata under the `gitshiba` identity.
+3. Unified package and native desktop metadata under the `gift` identity.
 4. Full verification passed. The Linux native bundle check was marked safe
    done under WSL and delegated to CI because this host cannot provide
    `libgtk-3-dev` without an available sudo password.
@@ -186,7 +186,7 @@ system Git 2.35+.
 3. Added compact-window handling for core screens, commit controls, and
    operation dialogs.
 4. Generated macOS and Windows release icon resources from the canonical
-   `assets/images/gitshiba_icon.png` source.
+   `assets/images/gift_icon.png` source.
 5. Passed full formatting, analysis, and all 70 tests; Linux release
    compilation still awaits the host GTK development package.
 

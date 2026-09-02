@@ -4,23 +4,23 @@ import 'package:flutter_test/flutter_test.dart';
 
 import '../../helpers/git_patch_gateway_stub.dart';
 
-import 'package:gitshiba/src/app/pixel_theme.dart';
-import 'package:gitshiba/src/app/gitshiba_app.dart';
-import 'package:gitshiba/src/backend/branch.dart';
-import 'package:gitshiba/src/backend/commit.dart';
-import 'package:gitshiba/src/backend/discard.dart';
-import 'package:gitshiba/src/backend/diff.dart';
-import 'package:gitshiba/src/backend/domain.dart';
-import 'package:gitshiba/src/backend/error.dart';
-import 'package:gitshiba/src/backend/executor.dart';
-import 'package:gitshiba/src/backend/git_gateway.dart';
-import 'package:gitshiba/src/backend/history.dart';
-import 'package:gitshiba/src/backend/remote.dart';
-import 'package:gitshiba/src/backend/status.dart';
-import 'package:gitshiba/src/features/repository/workspace_controller.dart';
-import 'package:gitshiba/src/features/repository/workspace_screen.dart';
-import 'package:gitshiba/src/features/repository/workspace_store.dart';
-import 'package:gitshiba/src/features/repository/recent_repository_store.dart';
+import 'package:gift/src/app/pixel_theme.dart';
+import 'package:gift/src/app/gift_app.dart';
+import 'package:gift/src/backend/branch.dart';
+import 'package:gift/src/backend/commit.dart';
+import 'package:gift/src/backend/discard.dart';
+import 'package:gift/src/backend/diff.dart';
+import 'package:gift/src/backend/domain.dart';
+import 'package:gift/src/backend/error.dart';
+import 'package:gift/src/backend/executor.dart';
+import 'package:gift/src/backend/git_gateway.dart';
+import 'package:gift/src/backend/history.dart';
+import 'package:gift/src/backend/remote.dart';
+import 'package:gift/src/backend/status.dart';
+import 'package:gift/src/features/repository/workspace_controller.dart';
+import 'package:gift/src/features/repository/workspace_screen.dart';
+import 'package:gift/src/features/repository/workspace_store.dart';
+import 'package:gift/src/features/repository/recent_repository_store.dart';
 
 void main() {
   test(
@@ -278,7 +278,7 @@ void main() {
     );
 
     await tester.pumpWidget(
-      GitshibaApp(
+      GiftApp(
         gateway: gateway,
         recentStore: RecentRepositoryStore.inMemory(),
         workspaceController: controller,
