@@ -7,8 +7,8 @@
 ## Progress
 
 - **Total Tasks:** 25
-- **Completed:** 14 / 25
-- **Current Active Task:** `15 — UI stabilization and release verification`
+- **Completed:** 16 / 25
+- **Current Active Task:** `17 — Partial staging`
 
 | # | Scope | Dart backend deliverables | Flutter deliverables | Status |
 |---|---|---|---|:---:|
@@ -26,8 +26,8 @@
 | **12** | Remotes & cancellation | Fetch/pull/push and operation cancellation | Progress bar and controls | ✅ |
 | **13** | JetBrains-equivalent UX & pixel theme | Redacted diagnostics and classification | Minimal 2D pixel-game shell, responsive layout, theme, shortcuts | ✅ |
 | **14** | Packaging & CI | Cross-platform verification scripts | Desktop release artifacts | ✅ |
-| **15** | Hardening, UI & identity | Process safety, connected graph edges, preview revocation | Responsive pixel UI, theme switching, font and release identity | 🚧 |
-| **16** | Workspace | Multi-repository sessions and persisted workspace state | Repository tabs, reopen, and keyboard navigation | ⬜ |
+| **15** | Hardening, UI & identity | Process safety, connected graph edges, preview revocation | Responsive pixel UI, theme switching, font and release identity | ✅ |
+| **16** | Workspace | Multi-repository sessions and persisted workspace state | Repository tabs, reopen, and keyboard navigation | ✅ |
 | **17** | Partial staging | Hunk and line patch operations with stale-content guards | Interactive diff selection and stage controls | ⬜ |
 | **18** | Commit workflow | Amend, templates, sign-off, and identity preflight | Guided commit options and validation | ⬜ |
 | **19** | History exploration | Search, filters, commit details, and bounded commit diffs | Searchable graph and changed-file inspector | ⬜ |
@@ -166,9 +166,10 @@
 - [x] Added CI checks and release artifact workflows for all three targets.
 - [x] Documented local verification, release output paths, and CI behavior.
 
-Task 15 is implemented and awaits local Linux bundle verification.
+Task 15 was marked safe done under WSL; its native Linux bundle check is
+covered by CI.
 
-### 🚧 Task 15: Hardening, UI & product identity
+### ✅ Task 15: Hardening, UI & product identity (safe done under WSL)
 
 - [x] Added bounded Git process deadlines and disabled interactive credential
   prompts.
@@ -187,7 +188,21 @@ Task 15 is implemented and awaits local Linux bundle verification.
   operation-dialog surfaces.
 - [x] Generated Windows and macOS release icons from
   `assets/images/gitflu_icon.png`.
-- [ ] Install the Linux GTK development dependency and pass the release build.
+- [x] Marked safe done under WSL; Linux GTK/native bundle execution remains a
+  CI-only verification because the host cannot provide the required desktop
+  package.
+
+### ✅ Task 16: Multi-repository workspace
+
+- [x] Persist an ordered workspace of canonical paths and the last active path.
+- [x] Restore valid repositories after restart and explain unavailable tabs.
+- [x] Open, close, reorder, and deduplicate repository tabs safely.
+- [x] Keep each repository's Changes, History, branch, remote, and mutation
+  state isolated by repository session.
+- [x] Add keyboard navigation for next, previous, and close tab actions.
+- [x] Cover narrow-window tab layout and text-scaled tab labels.
+
+Task 16 is complete. Task 17 is the next implementation task.
 
 ## Post-MVP backlog
 

@@ -2,6 +2,7 @@
 
 ## 2026-09-02
 
+- feat(task16): added persisted multi-repository workspace tabs and isolated repository sessions.
 - feat(ui): rebuilt the Git graph and added persistent light and dark pixel themes.
 - fix(ui): replaced the low-legibility pixel font with Pixelify Sans and raised the type scale.
 - fix(ui): replaced Pixelify Sans with the heavier Jersey 15 pixel font for clearer UI text.

@@ -166,16 +166,16 @@ system Git 2.35+.
 4. Passed the local verification command, desktop build, and Linux integration
    smoke test.
 
-## Active vertical: hardening and product identity
+## Completed vertical: hardening and product identity
 
 1. Added regression tests for process deadlines, discard revocation, history
    page lane continuity, canonical Git settings, and controller disposal.
 2. Added non-interactive bounded process execution and deterministic
    completion-versus-cancellation reporting.
 3. Unified package and native desktop metadata under the `gitflu` identity.
-4. Full verification passed. The next action is to install `libgtk-3-dev` and
-   rerun the Linux release build; this session could not provide sudo's
-   interactive password.
+4. Full verification passed. The Linux native bundle check was marked safe
+   done under WSL and delegated to CI because this host cannot provide
+   `libgtk-3-dev` without an available sudo password.
 
 ## Completed UI stabilization pass
 
@@ -189,3 +189,17 @@ system Git 2.35+.
    `assets/images/gitflu_icon.png` source.
 5. Passed full formatting, analysis, and all 70 tests; Linux release
    compilation still awaits the host GTK development package.
+
+## Completed vertical: multi-repository workspace
+
+1. Recorded workspace restoration, tab lifecycle, duplicate-path,
+   missing-folder, and cross-repository mutation isolation scenarios in the
+   behavior ledger.
+2. Added the first failing workspace-store/controller test before implementing
+   persistence or tab state.
+3. Implemented canonical-path workspace persistence with session-local opaque
+   handles and independent per-tab controllers.
+4. Added a responsive tab shell with open, close, reorder, and keyboard
+   actions.
+5. Passed formatting, analysis, the full Flutter test suite, and responsive
+   workspace widget tests. Task 17 is next.

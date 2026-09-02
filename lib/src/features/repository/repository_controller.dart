@@ -140,6 +140,10 @@ class RepositoryController extends ChangeNotifier {
     _setState(_state.copyWith(recentRepositories: await recentStore.load()));
   }
 
+  Future<void> reloadRecent() async {
+    _setState(_state.copyWith(recentRepositories: await recentStore.load()));
+  }
+
   void closeRepository() {
     _setState(_state.copyWith(clearOpenedRepository: true));
   }

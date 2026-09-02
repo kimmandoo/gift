@@ -248,7 +248,7 @@ ChangesScreen
 GitfluApp
   ├─ persisted ThemeMode
   └─ buildPixelTheme(light/dark)
-       ├─ bundled Jersey 15 pixel font
+       ├─ bundled Atkinson Hyperlegible Next body font + Jersey 15 display font
        ├─ light/dark canvas + flat panel tokens
        ├─ square borders + visible focus color
        └─ screen CallbackShortcuts
@@ -259,7 +259,7 @@ GitfluApp
             └─ Ctrl+Enter → commit
 ```
 
-1. `lib/src/app/pixel_theme.dart`에 두 palette, Jersey 15 typography,
+1. `lib/src/app/pixel_theme.dart`에 두 palette, 이중 typography,
    표면 규칙과 theme toggle을 모아 두어 화면마다 임의의 색을 다시 정하지
    않습니다. 선택 상태는 색상뿐 아니라 semantics와 텍스트로도 드러납니다.
 2. Changes와 History는 넓은 창에서 목록/상세 pane을 나란히 보여주고,
@@ -269,6 +269,34 @@ GitfluApp
    상태와 자주 쓰는 단축키를 함께 보여줍니다. Git 진단은 기존 typed
    `GitError.userMessage`를 사용하므로 원시 명령어나 인증 정보가 화면에
    나타나지 않습니다.
+
+## multi-repository workspace 흐름
+
+```text
+GitfluApp
+  └─ WorkspaceController
+       ├─ WorkspaceStore → canonical paths + active path (durable)
+       ├─ WorkspaceTab → fresh RepositoryOpened (session-local opaque ID)
+       │    └─ ChangesController (one per repository)
+       └─ WorkspaceScreen
+            ├─ tab selection / close / reorder
+            ├─ Ctrl+Tab / Ctrl+Shift+Tab / Ctrl+W
+            └─ IndexedStack → one live ChangesScreen per tab
+```
+
+1. workspace persistence stores only canonical repository roots and the last
+   active path. An app restart validates each path again and creates fresh
+   opaque repository IDs, so stale session handles cannot be reused.
+2. `WorkspaceController` owns one `ChangesController` per available tab. The
+   `IndexedStack` keeps inactive screens mounted, which preserves selection,
+   diff scope, loading feedback, and mutation state while another tab is
+   selected.
+3. Missing or moved folders remain as visible unavailable tabs. The tab can be
+   replaced with a newly selected folder without changing the order of the
+   remaining workspace entries.
+4. Opening a path uses the backend's returned canonical root before adding a
+   tab. Aliases that resolve to an already open root select that tab instead of
+   creating a duplicate session.
 
 ## 폴더별 역할
 
@@ -292,6 +320,9 @@ GitfluApp
 | `lib/src/backend/dart_git_gateway.dart` | Flutter 계약과 백엔드를 연결하는 얇은 adapter |
 | `lib/src/features/repository/changes_controller.dart` | 상태 polling과 선택 상태 관리 |
 | `lib/src/features/repository/changes_screen.dart` | staged/unstaged 등 그룹형 변경 화면 |
+| `lib/src/features/repository/workspace_store.dart` | 저장 가능한 workspace 경로와 active path |
+| `lib/src/features/repository/workspace_controller.dart` | repository tab/session 수명과 독립 컨트롤러 |
+| `lib/src/features/repository/workspace_screen.dart` | responsive workspace tab shell과 keyboard navigation |
 | `lib/src/features/repository/history_controller.dart` | history paging과 commit 선택 상태 |
 | `lib/src/features/repository/history_screen.dart` | commit 목록, graph marker, detail 화면 |
 | `lib/src/features/repository/remote_dialog.dart` | remote 작업, progress, cancellation 화면 |

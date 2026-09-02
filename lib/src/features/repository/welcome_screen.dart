@@ -3,6 +3,8 @@ import 'package:gitflu/src/features/repository/changes_screen.dart';
 import 'package:gitflu/src/features/repository/repository_controller.dart';
 import 'package:gitflu/src/features/settings/git_settings_controller.dart';
 import 'package:gitflu/src/features/settings/git_settings_dialog.dart';
+import 'package:gitflu/src/features/repository/workspace_controller.dart';
+import 'package:gitflu/src/features/repository/workspace_screen.dart';
 import 'package:gitflu/src/backend/git_gateway.dart';
 import 'package:file_selector/file_selector.dart';
 import 'package:flutter/material.dart';
@@ -17,6 +19,7 @@ class WelcomeScreen extends StatefulWidget {
     this.preferences,
     this.selectDirectory,
     this.selectExecutable,
+    this.workspaceController,
     this.autoInitialize = true,
   });
 
@@ -25,6 +28,7 @@ class WelcomeScreen extends StatefulWidget {
   final SharedPreferences? preferences;
   final Future<String?> Function()? selectDirectory;
   final Future<String?> Function()? selectExecutable;
+  final WorkspaceController? workspaceController;
   final bool autoInitialize;
 
   @override
@@ -34,6 +38,7 @@ class WelcomeScreen extends StatefulWidget {
 class _WelcomeScreenState extends State<WelcomeScreen> {
   late final RepositoryController _repositoryController;
   GitSettingsController? _gitSettingsController;
+  WorkspaceController? _workspaceController;
 
   @override
   void initState() {
@@ -51,8 +56,10 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
       recentStore: widget.recentStore,
       gitSettingsController: _gitSettingsController,
     )..addListener(_onChanged);
+    _workspaceController = widget.workspaceController;
+    _workspaceController?.addListener(_onChanged);
     if (widget.autoInitialize) {
-      Future<void>.microtask(_repositoryController.initialize);
+      Future<void>.microtask(_initialize);
     }
   }
 
@@ -61,6 +68,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
     _repositoryController
       ..removeListener(_onChanged)
       ..dispose();
+    _workspaceController?.removeListener(_onChanged);
     _gitSettingsController?.dispose();
     super.dispose();
   }
@@ -70,6 +78,15 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
     final state = _repositoryController.state;
     final textTheme = Theme.of(context).textTheme;
     final compact = MediaQuery.sizeOf(context).width < 480;
+    final workspace = _workspaceController;
+    if (workspace != null &&
+        (workspace.state.isRestoring || workspace.state.tabs.isNotEmpty)) {
+      return WorkspaceScreen(
+        controller: workspace,
+        onOpenRepository: _selectAndOpen,
+        onWorkspaceEmpty: _repositoryController.closeRepository,
+      );
+    }
     if (state.openedRepository case final opened?) {
       return ChangesScreen(
         gateway: widget.gateway,
@@ -174,9 +191,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
           contentPadding: EdgeInsets.zero,
           title: Text(repository.path),
           subtitle: Text(repository.exists ? 'Available' : 'Missing'),
-          onTap: repository.exists
-              ? () => _repositoryController.openPath(repository.path)
-              : null,
+          onTap: repository.exists ? () => _openPath(repository.path) : null,
           trailing: IconButton(
             tooltip: 'Remove',
             onPressed: () => _repositoryController.removeRecent(repository),
@@ -187,12 +202,34 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
     );
   }
 
-  Future<void> _selectAndOpen() async {
+  Future<void> _selectAndOpen([int? replaceIndex]) async {
     final path = widget.selectDirectory == null
         ? await getDirectoryPath(confirmButtonText: 'Open')
         : await widget.selectDirectory!();
     if (path == null || path.isEmpty) return;
-    await _repositoryController.openPath(path);
+    await _openPath(path, replaceIndex: replaceIndex);
+  }
+
+  Future<void> _openPath(String path, {int? replaceIndex}) async {
+    final workspace = _workspaceController;
+    if (workspace == null) {
+      await _repositoryController.openPath(path);
+      return;
+    }
+    final opened = await workspace.openPath(path, replaceIndex: replaceIndex);
+    if (opened?.repository != null) {
+      await _repositoryController.reloadRecent();
+    }
+  }
+
+  Future<void> _initialize() async {
+    await _repositoryController.initialize();
+    if (!mounted) return;
+    final workspace = _workspaceController;
+    if (workspace != null &&
+        _repositoryController.state.gitInstallation != null) {
+      await workspace.restore();
+    }
   }
 
   Future<void> _showGitSettings() async {

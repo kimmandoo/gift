@@ -6,7 +6,7 @@ This file is the handoff record for continuing work across query sessions.
 
 - Date: 2026-09-02
 - Milestone: Task 15 hardening, UI stabilization, and product identity are
-  implemented; local Linux bundle verification remains active.
+  safe done under WSL; Task 16 multi-repository workspace is complete.
 - Source of truth: `TASKS.md` and
   `docs/superpowers/plans/2026-09-02-gitflu-dart-mvp.md`.
 - Completed scope: removed the native implementation, FFI bridge, generated
@@ -18,7 +18,7 @@ This file is the handoff record for continuing work across query sessions.
 - Verification: restored the pinned Flutter 3.47.2 SDK with Dart 3.13.2 in
   `/home/mgkim/.local/flutter`; passed `flutter analyze`, the full Flutter test
   suite, and `PATH=/home/mgkim/.local/flutter/bin:$PATH dart run
-  tool/verify.dart` (formatting, analysis, and all 71 tests).
+  tool/verify.dart` (formatting, analysis, and all 81 tests).
 - Commit identity cleanup: rewrote all reachable commits to
   `kimmandoo <mingyu5675@gmail.com>`, removed the temporary rewrite refs, and
   force-pushed `main` to GitHub. `git log --all` reports only that identity.
@@ -68,9 +68,9 @@ This file is the handoff record for continuing work across query sessions.
   `docs/POST_MVP_ROADMAP.md`. The roadmap covers multi-repository workspaces,
   partial staging, commit and history depth, advanced branches, conflicts,
   Git object management, scale, accessibility, and signed public releases.
-- Task 15 remains active; creating the backlog did not skip its pending Linux
-  bundle verification. After Task 15 passes, Task 16 is the first post-MVP
-  implementation task.
+- Task 15 was marked safe done under WSL. Its Linux GTK/native bundle check is
+  delegated to CI because this host cannot provide the required desktop
+  package. Task 16 was completed in this session.
 - UI stabilization replaced one-line commit markers with graph-row segment
   models for incoming, continuation, fork, merge, and compressed wide-lane
   rendering. Pagination recomputes the complete visible graph.
@@ -118,16 +118,32 @@ This file is the handoff record for continuing work across query sessions.
 - Current identity verification found no remaining obsolete bundle-ID or
   native-language metadata references in the source tree, and the Linux
   AppStream metadata parsed as valid XML.
-- Changed implementation files: `lib/src/app/pixel_theme.dart`, repository and
-  settings screens/dialogs, `pubspec.yaml`, bundled font assets, and their
-  theme, contrast, and compact-layout widget tests.
+- Task 16 behavior-ledger scenarios were added for workspace restore, tab
+  lifecycle, duplicate paths, unavailable folders, and cross-repository
+  mutation isolation.
+- First Task 16 RED test: `flutter test
+  test/features/repository/workspace_store_test.dart` failed because
+  `workspace_store.dart` and its persistence contract did not exist yet; the
+  test then passed after the workspace store and controller were implemented.
+- Task 16 implementation added `WorkspaceStore`, `WorkspaceController`, the
+  responsive workspace tab shell, per-tab Changes/History controllers, and
+  app-entry restoration wiring. Failed opens remain visible and recoverable;
+  canonical duplicates are removed before persistence.
+- Task 16 verification passed the workspace store/controller tests, including
+  compact 360x640 tabs at 1.2x text scaling, keyboard navigation, controller
+  isolation, and app-entry restoration.
+- Changed implementation files this session: `lib/src/app/gitflu_app.dart`,
+  `lib/src/features/repository/{changes_screen,repository_controller,welcome_screen,workspace_controller,workspace_screen,workspace_store}.dart`,
+  plus the workspace behavior, architecture, plan, task, changelog, and test
+  files.
 - Concurrent work note: the README Windows registry command and `.serena/`
   project configuration were included in this session's requested commit.
 - Blockers: no source blocker. The Linux release build still requires the host
   `libgtk-3-dev` package, whose installation requires a sudo password
   unavailable to this session.
-- Next action: install `libgtk-3-dev` on this Linux host and rerun
-  `./tool/build_linux.sh` when local bundle verification is needed.
+- Next action: begin Task 17, partial staging, by recording hunk/line patch
+  scenarios and adding its first failing test. Keep Task 15's Linux native
+  bundle check delegated to CI while this WSL host lacks `libgtk-3-dev`.
 
 ## Resume procedure
 

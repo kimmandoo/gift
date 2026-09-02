@@ -11,6 +11,7 @@ import 'package:gitflu/src/backend/status.dart';
 import 'package:gitflu/src/features/repository/changes_controller.dart';
 import 'package:gitflu/src/features/repository/branch_dialog.dart';
 import 'package:gitflu/src/features/repository/history_screen.dart';
+import 'package:gitflu/src/features/repository/history_controller.dart';
 import 'package:gitflu/src/features/repository/remote_dialog.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -24,6 +25,7 @@ class ChangesScreen extends StatelessWidget {
     required this.gateway,
     required this.repository,
     this.controller,
+    this.historyController,
     this.onBack,
     this.autoInitialize = true,
   });
@@ -31,6 +33,7 @@ class ChangesScreen extends StatelessWidget {
   final GitGateway gateway;
   final RepositoryOpened repository;
   final ChangesController? controller;
+  final HistoryController? historyController;
   final VoidCallback? onBack;
   final bool autoInitialize;
 
@@ -43,6 +46,7 @@ class ChangesScreen extends StatelessWidget {
         gateway: gateway,
         repository: repository,
         controller: controller,
+        historyController: historyController,
         onBack: onBack,
         autoInitialize: autoInitialize,
       ),
@@ -55,6 +59,7 @@ class _ChangesScreenBody extends ConsumerStatefulWidget {
     required this.gateway,
     required this.repository,
     this.controller,
+    this.historyController,
     this.onBack,
     required this.autoInitialize,
   });
@@ -62,6 +67,7 @@ class _ChangesScreenBody extends ConsumerStatefulWidget {
   final GitGateway gateway;
   final RepositoryOpened repository;
   final ChangesController? controller;
+  final HistoryController? historyController;
   final VoidCallback? onBack;
   final bool autoInitialize;
 
@@ -779,6 +785,7 @@ class _ChangesScreenBodyState extends ConsumerState<_ChangesScreenBody> {
         builder: (_) => HistoryScreen(
           gateway: widget.gateway,
           repository: widget.repository,
+          controller: widget.historyController,
         ),
       ),
     );
