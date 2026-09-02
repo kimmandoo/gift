@@ -98,10 +98,17 @@ opened from the same screen when Git is not found automatically.
 Run the formatter, analyzer, and test suite before opening a pull request:
 
 ```bash
-dart format lib test integration_test
-flutter analyze
-flutter test
+dart run tool/verify.dart
 ```
+
+Build a desktop release bundle with the target platform as the only argument:
+
+```bash
+dart run tool/build_desktop.dart linux   # or macos / windows
+```
+
+See [`docs/RELEASING.md`](docs/RELEASING.md) for the output paths and the
+GitHub Actions workflow used for cross-platform checks.
 
 For a quick map of the call flow, read
 [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md). For behavior scenarios and
@@ -123,7 +130,7 @@ work is tracked in [`TASKS.md`](TASKS.md).
 - [x] Local branch listing, creation, switching, and popup feedback.
 - [x] Fetch, pull, push, cancellation, and remote progress feedback.
 - [x] Responsive pixel UI and desktop shortcuts.
-- [ ] Packaging, CI, and release artifacts.
+- [x] Cross-platform verification, desktop release builds, and CI artifacts.
 
 ## Contributing
 

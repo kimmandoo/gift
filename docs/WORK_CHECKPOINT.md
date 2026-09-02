@@ -5,8 +5,8 @@ This file is the handoff record for continuing work across query sessions.
 ## Current checkpoint
 
 - Date: 2026-09-02
-- Milestone: Task 13, JetBrains-equivalent UX & pixel theme, is complete;
-  Task 14, Packaging & CI, is the next active product task.
+- Milestone: all 14 planned tasks are complete, including Task 14 Packaging &
+  CI.
 - Source of truth: `TASKS.md` and
   `docs/superpowers/plans/2026-09-02-branchline-dart-mvp.md`.
 - Completed scope: removed the native implementation, FFI bridge, generated
@@ -16,27 +16,26 @@ This file is the handoff record for continuing work across query sessions.
   session-local opaque handles; rewired Flutter screens and tests; added
   `docs/ARCHITECTURE.md` and beginner-oriented source comments.
 - Verification: installed the pinned Flutter 3.47.2 SDK with Dart 3.13.2 in
-  `/tmp/codex-flutter`; passed `flutter analyze`, the full Flutter test suite,
-  Changes and History responsive widget tests, remote parser/backend/widget
-  tests, and keyboard shortcut coverage.
+  `/tmp/codex-flutter`; passed `dart run tool/verify.dart`, `flutter analyze`,
+  the full Flutter test suite, Changes and History responsive widget tests,
+  the Linux release build, and the Linux integration smoke test.
 - Commit identity cleanup: rewrote all reachable commits to
   `kimmandoo <mingyu5675@gmail.com>`, removed the temporary rewrite refs, and
   force-pushed `main` to GitHub. `git log --all` reports only that identity.
   The pre-rewrite history remains recoverable from
   `/tmp/gitflu-before-author-rewrite.bundle`.
-- Current Task 13 changes: added the shared dark pixel theme, square focusable
+- Final Task 13 changes added the shared dark pixel theme, square focusable
   surfaces, responsive Changes/History layouts and operation dialog sizing,
   keyboard shortcuts, bottom status feedback, responsive widget tests, and
   beginner-oriented architecture documentation.
-- Changed files in this task include `lib/src/app/pixel_theme.dart`,
-  `lib/src/app/branchline_app.dart`, responsive Changes and History screens,
-  operation dialog sizing, theme/shortcut/responsive widget tests, and the
-  task, README, changelog, plan, architecture, and checkpoint documentation.
+- Final Task 14 changes added `tool/verify.dart`,
+  `tool/build_desktop.dart`, `.github/workflows/ci.yml`, and
+  `docs/RELEASING.md`; the task board, README, changelog, plan, and this
+  checkpoint were updated for the completed 14-task MVP.
 - Blockers: none. The pre-existing untracked `.serena/` directory was left
   untouched and is not part of the commit.
-- Next action: implement Task 14's `dart run tool/verify.dart` command,
-  desktop build helper, CI workflow, and release documentation; then run the
-  full verification and Linux integration smoke test.
+- Next action: none for the planned MVP. Add a new task to `TASKS.md` before
+  starting additional product work.
 
 ## Resume procedure
 

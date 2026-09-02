@@ -151,15 +151,17 @@ system Git 2.35+.
 
 ## Completed vertical: UX and pixel theme
 
-1. Add theme, focus, shortcut, and responsive layout tests.
+1. Added theme, focus, shortcut, and responsive layout tests.
 2. Applied the dark pixel palette and shared shell components.
 3. Added keyboard-first navigation, responsive layouts, and diagnostic
    feedback polish.
 4. Passed `flutter analyze`, the full Flutter test suite, and responsive widget
    tests.
 
-## Next vertical: packaging and CI
+## Completed vertical: packaging and CI
 
-1. Add a cross-platform Dart verification entry point.
-2. Add desktop build helpers and CI coverage for Linux, macOS, and Windows.
-3. Document local verification and release artifact creation.
+1. Added a cross-platform Dart verification entry point.
+2. Added desktop build helpers and CI coverage for Linux, macOS, and Windows.
+3. Documented local verification and release artifact creation.
+4. Passed the local verification command, desktop build, and Linux integration
+   smoke test.

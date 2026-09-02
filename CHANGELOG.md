@@ -12,6 +12,7 @@
 - feat(task12): added cancellable fetch, pull, push, and remote feedback.
 - feat(task13): applied the responsive dark pixel workspace and keyboard
   shortcuts.
+- build(task14): added cross-platform verification and desktop CI artifacts.
 - docs(branding): updated the README logo with an original pixel-game Git mascot.
 - docs(spec): defined the desktop Git behavior target and minimal pixel UI direction.
 - breaking(architecture): migrated the Git backend from a native bridge to pure Dart.

@@ -7,8 +7,8 @@
 ## Progress
 
 - **Total Tasks:** 14
-- **Completed:** 13 / 14 (92.9%)
-- **Current Active Task:** `Task 14: Packaging & CI`
+- **Completed:** 14 / 14 (100%)
+- **Current Active Task:** `Complete`
 
 | # | Scope | Dart backend deliverables | Flutter deliverables | Status |
 |---|---|---|---|:---:|
@@ -25,7 +25,7 @@
 | **11** | Branch management | Ref parsing, validation, and switch | Branch popup and tracking flow | ✅ |
 | **12** | Remotes & cancellation | Fetch/pull/push and operation cancellation | Progress bar and controls | ✅ |
 | **13** | JetBrains-equivalent UX & pixel theme | Redacted diagnostics and classification | Minimal 2D pixel-game shell, responsive layout, theme, shortcuts | ✅ |
-| **14** | Packaging & CI | Cross-platform verification scripts | Desktop release artifacts | ⏳ |
+| **14** | Packaging & CI | Cross-platform verification scripts | Desktop release artifacts | ✅ |
 
 ## Completed foundations
 
@@ -146,12 +146,14 @@
 - [x] Added narrow-window stacked layouts for Changes and History, plus
   responsive operation dialogs and visible operation status.
 
-## Active task
+## Completed task
 
-### ⏳ Task 14: Packaging & CI
+### ✅ Task 14: Packaging & CI
 
-- [ ] Add cross-platform verification and desktop build scripts.
-- [ ] Add CI checks and release artifact workflows.
+- [x] Added a shell-free, cross-platform Dart verification entry point.
+- [x] Added Linux, macOS, and Windows desktop release build helpers.
+- [x] Added CI checks and release artifact workflows for all three targets.
+- [x] Documented local verification, release output paths, and CI behavior.
 
-Task 14 retains the same product scope above and will build on the Dart
-backend contracts and pixel shell established here.
+All planned tasks are complete. Future work should add a new task to this
+board before changing product scope.

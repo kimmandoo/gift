@@ -1,0 +1,57 @@
+# Local verification and desktop releases
+
+This guide describes the commands used by the GitHub Actions workflow. They
+are intentionally small so a first-time contributor can run the same checks
+before opening a pull request.
+
+## Verify a change
+
+From the repository root, run:
+
+```bash
+dart run tool/verify.dart
+```
+
+The script installs Dart/Flutter packages, checks formatting for `lib/`,
+`test/`, `integration_test/`, and `tool/`, runs the analyzer, and runs every
+Flutter test. It invokes programs with argument lists, so it works from Bash,
+PowerShell, and the supported desktop platforms.
+
+If you only want an individual check, the equivalent commands are:
+
+```bash
+dart format --output=none --set-exit-if-changed lib test integration_test tool
+flutter analyze
+flutter test
+```
+
+## Build one desktop bundle
+
+Build the target for the operating system you are currently using:
+
+```bash
+dart run tool/build_desktop.dart linux
+dart run tool/build_desktop.dart macos
+dart run tool/build_desktop.dart windows
+```
+
+Use only the target that matches the host's Flutter desktop toolchain. Flutter
+does not promise that a Linux host can produce a macOS or Windows desktop
+bundle.
+
+The helper prints the output location after a successful build:
+
+- Linux: `build/linux/x64/release/bundle/`
+- macOS: `build/macos/Build/Products/Release/branchline.app`
+- Windows: `build/windows/x64/runner/Release/`
+
+## Continuous integration
+
+`.github/workflows/ci.yml` runs verification on Ubuntu, macOS, and Windows.
+After all three checks pass, it builds one release bundle per platform and
+uploads the bundles as workflow artifacts. A tagged public release can attach
+those artifacts after a maintainer has reviewed and signed them.
+
+The Flutter version is pinned in the workflow and in
+[`tool/versions.json`](../tool/versions.json), which keeps local and CI
+failures easier to reproduce.
