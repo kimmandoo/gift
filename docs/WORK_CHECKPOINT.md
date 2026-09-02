@@ -14,12 +14,13 @@ This file is the handoff record for continuing work across query sessions.
 - Verification: `flutter pub get`, `flutter analyze`, `flutter test` (81
   tests), `PATH=/home/mgkim/.local/flutter/bin:$PATH dart run tool/verify.dart`,
   `git diff --check`, and repository-wide legacy name/file scans all passed.
+  Commit `4eaca3e` was pushed to `origin/main`; the local origin now points to
+  `git@github.com:kimmandoo/gitshiba.git`.
 - WIP preservation: Task 17 changes are stored in `stash@{0}` as
   `wip(task17): partial staging before gitshiba rename` and must be applied
   rather than discarded when that task resumes.
-- Next action: finish the gitshiba rename commit and push it, then apply the
-  preserved Task 17 stash and resolve its known real-Git patch application
-  failure before continuing the roadmap.
+- Next action: apply the preserved Task 17 stash and resolve its known real-Git
+  patch application failure before continuing the roadmap.
 - Blockers: the Linux release build still requires host package `libgtk-3-dev`;
   installation requires a sudo password unavailable to this WSL session.
 
