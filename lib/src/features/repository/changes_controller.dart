@@ -51,6 +51,8 @@ class ChangesState {
     this.isCommitting = false,
     this.isDiscardPreparing = false,
     this.diffScope = GitDiffScope.workingTree,
+    this.selectedDiffHunks = const <int>{},
+    this.selectedDiffLines = const <int>{},
   });
 
   final GitStatusSnapshot? snapshot;
@@ -70,6 +72,8 @@ class ChangesState {
   final bool isCommitting;
   final bool isDiscardPreparing;
   final GitDiffScope diffScope;
+  final Set<int> selectedDiffHunks;
+  final Set<int> selectedDiffLines;
 
   ChangesState copyWith({
     GitStatusSnapshot? snapshot,
@@ -99,6 +103,9 @@ class ChangesState {
     bool? isCommitting,
     bool? isDiscardPreparing,
     GitDiffScope? diffScope,
+    Set<int>? selectedDiffHunks,
+    Set<int>? selectedDiffLines,
+    bool clearDiffSelection = false,
   }) {
     return ChangesState(
       snapshot: clearSnapshot ? null : snapshot ?? this.snapshot,
@@ -128,6 +135,12 @@ class ChangesState {
       isCommitting: isCommitting ?? this.isCommitting,
       isDiscardPreparing: isDiscardPreparing ?? this.isDiscardPreparing,
       diffScope: diffScope ?? this.diffScope,
+      selectedDiffHunks: clearDiffSelection
+          ? const <int>{}
+          : selectedDiffHunks ?? this.selectedDiffHunks,
+      selectedDiffLines: clearDiffSelection
+          ? const <int>{}
+          : selectedDiffLines ?? this.selectedDiffLines,
     );
   }
 }
@@ -150,6 +163,7 @@ class ChangesController extends ChangeNotifier {
   var _mutationInFlight = false;
   var _diffRequest = 0;
   var _discardPreviewRequest = 0;
+  int? _lastDiffLineIndex;
   var _started = false;
   var _disposed = false;
 
@@ -179,6 +193,10 @@ class ChangesController extends ChangeNotifier {
     try {
       final snapshot = await gateway.getStatus(repositoryId);
       final selectedPath = _state.selectedPath;
+      final statusChanged =
+          _state.snapshot != null &&
+          _state.snapshot!.contentHash != snapshot.contentHash;
+      if (statusChanged || selectedPath == null) _lastDiffLineIndex = null;
       final selectionStillExists =
           selectedPath != null &&
           snapshot.changes.any((change) => change.path == selectedPath);
@@ -192,6 +210,7 @@ class ChangesController extends ChangeNotifier {
           clearSelectedPath: !selectionStillExists,
           clearDiff: !selectionStillExists,
           clearDiffError: !selectionStillExists,
+          clearDiffSelection: !selectionStillExists || statusChanged,
           clearMutationError: !selectionStillExists,
           clearDiscardPreview: !selectionStillExists,
           clearDiscardError: !selectionStillExists,
@@ -226,8 +245,10 @@ class ChangesController extends ChangeNotifier {
         clearDiscardError: true,
         isDiscardPreparing: false,
         isDiffLoading: false,
+        clearDiffSelection: true,
       ),
     );
+    _lastDiffLineIndex = null;
   }
 
   /// Selects a status row and lazily loads only that file's diff.
@@ -256,9 +277,11 @@ class ChangesController extends ChangeNotifier {
         diffScope: scope,
         clearDiff: true,
         clearDiffError: true,
+        clearDiffSelection: true,
         isDiffLoading: true,
       ),
     );
+    _lastDiffLineIndex = null;
     try {
       final diff = await gateway.getDiff(
         repositoryId,
@@ -295,6 +318,210 @@ class ChangesController extends ChangeNotifier {
 
   Future<void> unstageSelected() => _mutateSelected(gateway.unstage);
 
+  bool get canStagePatch => _canApplyPatch(GitDiffScope.workingTree);
+
+  bool get canUnstagePatch => _canApplyPatch(GitDiffScope.staged);
+
+  /// Counts changed lines selected directly or through their hunk checkbox.
+  /// Keeping this calculation here prevents the view from duplicating the
+  /// selection rules when it describes the pending partial operation.
+  int get selectedDiffChangeCount {
+    final diff = _state.diff;
+    if (diff == null) return 0;
+    final indexes = <int>{
+      ..._state.selectedDiffLines.where(
+        (index) =>
+            index >= 0 &&
+            index < diff.lines.length &&
+            _isChangedDiffLine(diff.lines[index]),
+      ),
+    };
+    for (final hunkIndex in _state.selectedDiffHunks) {
+      if (hunkIndex < 0 || hunkIndex >= diff.hunks.length) continue;
+      for (final line in diff.hunks[hunkIndex].lines) {
+        final index = diff.lines.indexOf(line);
+        if (index >= 0 && _isChangedDiffLine(line)) indexes.add(index);
+      }
+    }
+    return indexes.length;
+  }
+
+  bool _canApplyPatch(GitDiffScope scope) {
+    final change = _selectedChange;
+    return _state.diff?.scope == scope &&
+        _state.diff != null &&
+        _hasSelectedDiffChange &&
+        change != null &&
+        !change.isConflicted &&
+        (scope == GitDiffScope.workingTree
+            ? change.isUnstaged
+            : change.isStaged);
+  }
+
+  bool get _hasSelectedDiffChange {
+    final diff = _state.diff;
+    if (diff == null) return false;
+    if (_state.selectedDiffHunks.any(
+      (index) => index >= 0 && index < diff.hunks.length,
+    )) {
+      return true;
+    }
+    return _state.selectedDiffLines.any(
+      (index) =>
+          index >= 0 &&
+          index < diff.lines.length &&
+          (diff.lines[index].kind == GitDiffLineKind.addition ||
+              diff.lines[index].kind == GitDiffLineKind.deletion),
+    );
+  }
+
+  bool isDiffHunkSelected(int hunkIndex) {
+    final diff = _state.diff;
+    if (diff == null || hunkIndex < 0 || hunkIndex >= diff.hunks.length) {
+      return false;
+    }
+    if (_state.selectedDiffHunks.contains(hunkIndex)) return true;
+    final changedLines = diff.hunks[hunkIndex].lines
+        .map(diff.lines.indexOf)
+        .where((index) => index >= 0)
+        .where((index) => _isChangedDiffLine(diff.lines[index]))
+        .toList();
+    return changedLines.isNotEmpty &&
+        changedLines.every(_state.selectedDiffLines.contains);
+  }
+
+  bool isDiffLineSelected(int lineIndex) {
+    final diff = _state.diff;
+    if (diff == null || lineIndex < 0 || lineIndex >= diff.lines.length) {
+      return false;
+    }
+    final line = diff.lines[lineIndex];
+    return line.hunkIndex != null &&
+        (_state.selectedDiffHunks.contains(line.hunkIndex) ||
+            _state.selectedDiffLines.contains(lineIndex));
+  }
+
+  void toggleDiffHunk(int hunkIndex, bool selected) {
+    final diff = _state.diff;
+    if (diff == null || hunkIndex < 0 || hunkIndex >= diff.hunks.length) {
+      return;
+    }
+    final hunks = Set<int>.from(_state.selectedDiffHunks);
+    final lines = Set<int>.from(_state.selectedDiffLines);
+    if (selected) {
+      hunks.add(hunkIndex);
+    } else {
+      hunks.remove(hunkIndex);
+      for (final line in diff.hunks[hunkIndex].lines) {
+        final lineIndex = diff.lines.indexOf(line);
+        if (lineIndex >= 0) lines.remove(lineIndex);
+      }
+    }
+    _setState(
+      _state.copyWith(
+        selectedDiffHunks: Set.unmodifiable(hunks),
+        selectedDiffLines: Set.unmodifiable(lines),
+      ),
+    );
+  }
+
+  void toggleDiffLine(int lineIndex, bool selected, {bool extend = false}) {
+    final diff = _state.diff;
+    if (diff == null ||
+        lineIndex < 0 ||
+        lineIndex >= diff.lines.length ||
+        !_isChangedDiffLine(diff.lines[lineIndex])) {
+      return;
+    }
+    final lines = Set<int>.from(_state.selectedDiffLines);
+    final hunks = Set<int>.from(_state.selectedDiffHunks);
+    final hunkIndex = diff.lines[lineIndex].hunkIndex;
+    if (!selected && hunkIndex != null && hunks.remove(hunkIndex)) {
+      for (final line in diff.hunks[hunkIndex].lines) {
+        final index = diff.lines.indexOf(line);
+        if (index >= 0 && index != lineIndex && _isChangedDiffLine(line)) {
+          lines.add(index);
+        }
+      }
+    }
+    final start = extend && _lastDiffLineIndex != null
+        ? _lastDiffLineIndex!
+        : lineIndex;
+    final lower = start < lineIndex ? start : lineIndex;
+    final upper = start < lineIndex ? lineIndex : start;
+    for (var index = lower; index <= upper; index++) {
+      if (!_isChangedDiffLine(diff.lines[index])) continue;
+      if (selected) {
+        lines.add(index);
+      } else {
+        lines.remove(index);
+      }
+    }
+    _lastDiffLineIndex = lineIndex;
+    _setState(
+      _state.copyWith(
+        selectedDiffHunks: Set.unmodifiable(hunks),
+        selectedDiffLines: Set.unmodifiable(lines),
+      ),
+    );
+  }
+
+  Future<void> stageSelectedPatch() =>
+      _applySelectedPatch(gateway.stagePatch, GitDiffScope.workingTree);
+
+  Future<void> unstageSelectedPatch() =>
+      _applySelectedPatch(gateway.unstagePatch, GitDiffScope.staged);
+
+  Future<void> _applySelectedPatch(
+    Future<GitStatusSnapshot> Function(RepositoryId, GitPatchSelection)
+    operation,
+    GitDiffScope scope,
+  ) async {
+    if (_disposed || _mutationInFlight || !_canApplyPatch(scope)) return;
+    final diff = _state.diff!;
+    final selection = GitPatchSelection(
+      repositoryId: repositoryId,
+      path: diff.path,
+      scope: diff.scope,
+      contentHash: diff.contentHash,
+      hunkIndexes: _state.selectedDiffHunks,
+      lineIndexes: _state.selectedDiffLines,
+    );
+    _mutationInFlight = true;
+    _setState(_state.copyWith(clearMutationError: true, isMutating: true));
+    try {
+      final snapshot = await operation(repositoryId, selection);
+      if (_disposed) return;
+      final selected = snapshot.changes
+          .where((candidate) => candidate.path == diff.path)
+          .firstOrNull;
+      _setState(
+        _state.copyWith(
+          snapshot: snapshot,
+          selectedPath: selected?.path,
+          clearSelectedPath: selected == null,
+          clearDiff: true,
+          clearDiffError: true,
+          clearDiffSelection: true,
+          isMutating: false,
+        ),
+      );
+      if (selected != null) {
+        await loadDiff(
+          selected.path,
+          originalPath: selected.originalPath,
+          scope: _defaultDiffScope(selected),
+        );
+      }
+    } on GitError catch (error) {
+      if (!_disposed) {
+        _setState(_state.copyWith(mutationError: error, isMutating: false));
+      }
+    } finally {
+      _mutationInFlight = false;
+    }
+  }
+
   bool get canCommit => _state.snapshot?.staged.isNotEmpty == true;
 
   /// Commits every staged path and applies Git's post-commit status snapshot.
@@ -310,6 +537,7 @@ class ChangesController extends ChangeNotifier {
         clearDiscardError: true,
         clearDiff: true,
         clearDiffError: true,
+        clearDiffSelection: true,
         isMutating: true,
         isCommitting: true,
       ),
@@ -544,6 +772,10 @@ class ChangesController extends ChangeNotifier {
         ? GitDiffScope.staged
         : GitDiffScope.workingTree;
   }
+
+  bool _isChangedDiffLine(GitDiffLine line) =>
+      line.kind == GitDiffLineKind.addition ||
+      line.kind == GitDiffLineKind.deletion;
 
   @override
   void dispose() {

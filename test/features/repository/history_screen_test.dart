@@ -14,6 +14,8 @@ import 'package:gitshiba/src/app/pixel_theme.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import '../../helpers/git_patch_gateway_stub.dart';
+
 void main() {
   testWidgets('shows commit details and loads the next history page', (
     tester,
@@ -191,7 +193,7 @@ GitCommit makeCommit(String oid, String subject) {
   );
 }
 
-class FakeHistoryGateway implements GitGateway {
+class FakeHistoryGateway with GitPatchGatewayStub implements GitGateway {
   FakeHistoryGateway({required this.pages});
 
   final Map<int, GitHistoryPage> pages;

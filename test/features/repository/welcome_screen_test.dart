@@ -13,6 +13,9 @@ import 'package:gitshiba/src/backend/remote.dart';
 import 'package:gitshiba/src/backend/status.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+
+import '../../helpers/git_patch_gateway_stub.dart';
+
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
@@ -172,7 +175,7 @@ void main() {
   });
 }
 
-class FakeGitGateway implements GitGateway {
+class FakeGitGateway with GitPatchGatewayStub implements GitGateway {
   FakeGitGateway({
     this.installation,
     this.installationError,

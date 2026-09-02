@@ -170,6 +170,28 @@ class DartGitBackend {
     ).unstage(repositoryId, path);
   }
 
+  Future<GitStatusSnapshot> stagePatch(
+    RepositoryId repositoryId,
+    GitPatchSelection selection,
+  ) async {
+    final installation = await getGitInstallation();
+    return RepositoryService(
+      gitPath: installation.executablePath,
+      state: _state,
+    ).stagePatch(repositoryId, selection);
+  }
+
+  Future<GitStatusSnapshot> unstagePatch(
+    RepositoryId repositoryId,
+    GitPatchSelection selection,
+  ) async {
+    final installation = await getGitInstallation();
+    return RepositoryService(
+      gitPath: installation.executablePath,
+      state: _state,
+    ).unstagePatch(repositoryId, selection);
+  }
+
   Future<GitCommitResult> commit(
     RepositoryId repositoryId,
     String message,

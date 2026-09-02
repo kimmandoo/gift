@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
+
+import '../../helpers/git_patch_gateway_stub.dart';
+
 import 'package:gitshiba/src/app/pixel_theme.dart';
 import 'package:gitshiba/src/app/gitshiba_app.dart';
 import 'package:gitshiba/src/backend/branch.dart';
@@ -291,7 +294,7 @@ void main() {
   });
 }
 
-class WorkspaceGateway implements GitGateway {
+class WorkspaceGateway with GitPatchGatewayStub implements GitGateway {
   RepositoryId? stagedRepositoryId;
 
   final Map<String, RepositoryOpened> _repositories = {

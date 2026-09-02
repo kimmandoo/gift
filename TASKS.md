@@ -202,7 +202,20 @@ covered by CI.
 - [x] Add keyboard navigation for next, previous, and close tab actions.
 - [x] Cover narrow-window tab layout and text-scaled tab labels.
 
-Task 16 is complete. Task 17 is the next implementation task.
+### ✅ Task 17: Hunk and line staging
+
+- [x] Built machine-owned patches from parsed hunk and changed-line indexes.
+- [x] Added serialized `git apply --cached` and reverse unstage operations
+  with bounded stdin/output and typed patch errors.
+- [x] Bound selections to repository, path, scope, and diff content hash;
+  stale selections cannot mutate a refreshed file.
+- [x] Added hunk and line checkboxes, Shift+Space range selection, and clear
+  working-tree versus staged labels.
+- [x] Covered real Git partial stage/unstage, replacement lines, no-newline
+  markers, rename-only and binary states, patch rejection, compact UI, and
+  recoverable controller errors.
+
+Task 17 is complete. Task 18 is the next implementation task.
 
 ## Post-MVP backlog
 

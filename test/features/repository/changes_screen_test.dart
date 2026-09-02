@@ -3,6 +3,7 @@ import 'package:gitshiba/src/backend/branch.dart';
 import 'package:gitshiba/src/backend/commit.dart';
 import 'package:gitshiba/src/backend/discard.dart';
 import 'package:gitshiba/src/backend/diff.dart';
+import 'package:gitshiba/src/backend/error.dart';
 import 'package:gitshiba/src/backend/git_gateway.dart';
 import 'package:gitshiba/src/backend/history.dart';
 import 'package:gitshiba/src/backend/executor.dart';
@@ -14,6 +15,8 @@ import 'package:gitshiba/src/app/pixel_theme.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
+
+import '../../helpers/git_patch_gateway_stub.dart';
 
 void main() {
   test('refreshes status and clears a selection that disappeared', () async {
@@ -40,6 +43,52 @@ void main() {
     await controller.refresh();
     expect(controller.state.snapshot?.isClean, isTrue);
     expect(controller.state.selectedPath, isNull);
+    controller.dispose();
+  });
+
+  test('keeps a partial selection recoverable after patch rejection', () async {
+    final repository = const RepositoryOpened(
+      repositoryId: RepositoryId(value: 'rejected-patch-repository'),
+      root: '/workspace/project',
+    );
+    final gateway = FakeChangesGateway(
+      snapshots: [
+        snapshot(repository, changes: [change('notes.txt')]),
+      ],
+      diffs: {
+        'notes.txt:workingTree': selectableDiff(
+          repository,
+          path: 'notes.txt',
+          scope: GitDiffScope.workingTree,
+        ),
+      },
+      stagePatchError: const GitError(
+        category: GitErrorCategory.patchRejected,
+        userMessage: 'Git could not apply the selected changes.',
+        diagnostic: 'fixture rejected the generated patch',
+        retryable: false,
+      ),
+    );
+    final controller = ChangesController(
+      gateway: gateway,
+      repositoryId: repository.repositoryId,
+      pollInterval: const Duration(hours: 1),
+    );
+
+    await controller.refresh();
+    controller.selectPath('notes.txt');
+    await controller.loadDiff('notes.txt');
+    controller.toggleDiffHunk(0, true);
+    await controller.stageSelectedPatch();
+
+    expect(
+      controller.state.mutationError?.category,
+      GitErrorCategory.patchRejected,
+    );
+    expect(controller.state.diff, isNotNull);
+    expect(controller.state.selectedDiffHunks, contains(0));
+    expect(controller.state.isMutating, isFalse);
+    expect(gateway.stagePatchCalls, 1);
     controller.dispose();
   });
 
@@ -450,6 +499,131 @@ void main() {
     expect(find.byKey(const Key('repository-actions-menu')), findsOneWidget);
     controller.dispose();
   });
+
+  test('selects a line range and sends a bound patch selection', () async {
+    final repository = const RepositoryOpened(
+      repositoryId: RepositoryId(value: 'partial-repository'),
+      root: '/workspace/project',
+    );
+    final gateway = FakeChangesGateway(
+      snapshots: [
+        snapshot(repository, changes: [change('notes.txt')]),
+      ],
+      diffs: {
+        'notes.txt:workingTree': selectableDiff(
+          repository,
+          path: 'notes.txt',
+          scope: GitDiffScope.workingTree,
+        ),
+      },
+      stagePatchSnapshot: snapshot(
+        repository,
+        changes: [
+          GitChange(
+            type: GitChangeType.tracked,
+            path: 'notes.txt',
+            indexStatus: 'M',
+            worktreeStatus: 'M',
+            submoduleStatus: 'N...',
+          ),
+        ],
+      ),
+    );
+    final controller = ChangesController(
+      gateway: gateway,
+      repositoryId: repository.repositoryId,
+      pollInterval: const Duration(hours: 1),
+    );
+
+    await controller.refresh();
+    controller.selectPath('notes.txt');
+    await controller.loadDiff('notes.txt');
+    controller.toggleDiffLine(1, true);
+    controller.toggleDiffLine(2, true, extend: true);
+
+    expect(controller.canStagePatch, isTrue);
+    expect(controller.state.selectedDiffLines, containsAll([1, 2]));
+    await controller.stageSelectedPatch();
+
+    expect(gateway.stagePatchCalls, 1);
+    expect(
+      gateway.lastStagePatchSelection?.repositoryId,
+      repository.repositoryId,
+    );
+    expect(gateway.lastStagePatchSelection?.path, 'notes.txt');
+    expect(gateway.lastStagePatchSelection?.scope, GitDiffScope.workingTree);
+    expect(
+      gateway.lastStagePatchSelection?.contentHash,
+      'partial-diff-workingTree',
+    );
+    expect(gateway.lastStagePatchSelection?.lineIndexes, containsAll([1, 2]));
+    expect(controller.state.mutationError, isNull);
+    expect(controller.state.isMutating, isFalse);
+    controller.dispose();
+  });
+
+  testWidgets('keeps partial staging controls usable in a compact window', (
+    tester,
+  ) async {
+    addTearDown(tester.view.reset);
+    tester.view.physicalSize = const Size(360, 640);
+    tester.view.devicePixelRatio = 1;
+    tester.platformDispatcher.textScaleFactorTestValue = 1.2;
+    addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+
+    final repository = const RepositoryOpened(
+      repositoryId: RepositoryId(value: 'compact-partial-repository'),
+      root: '/workspace/project',
+    );
+    final gateway = FakeChangesGateway(
+      snapshots: [
+        snapshot(repository, changes: [change('notes.txt')]),
+      ],
+      diffs: {
+        'notes.txt:workingTree': selectableDiff(
+          repository,
+          path: 'notes.txt',
+          scope: GitDiffScope.workingTree,
+        ),
+      },
+      stagePatchSnapshot: snapshot(repository, changes: [change('notes.txt')]),
+    );
+    final controller = ChangesController(
+      gateway: gateway,
+      repositoryId: repository.repositoryId,
+      pollInterval: const Duration(hours: 1),
+    );
+    await controller.refresh();
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: ChangesScreen(
+          gateway: gateway,
+          repository: repository,
+          controller: controller,
+          autoInitialize: false,
+        ),
+      ),
+    );
+    await tester.tap(find.byKey(const ValueKey('unstaged:notes.txt')));
+    await tester.pumpAndSettle();
+    await tester.drag(
+      find.byKey(const Key('compact-details-scroll')),
+      const Offset(0, -320),
+    );
+    await tester.pump();
+    await tester.tap(find.byKey(const ValueKey('diff-hunk-select-0')));
+    await tester.pump();
+
+    expect(find.byKey(const Key('stage-selected-patch')), findsOneWidget);
+    await tester.ensureVisible(find.byKey(const Key('stage-selected-patch')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('stage-selected-patch')));
+    await tester.pumpAndSettle();
+    expect(gateway.stagePatchCalls, 1);
+    expect(tester.takeException(), isNull);
+    controller.dispose();
+  });
 }
 
 GitChange change(String path) {
@@ -491,12 +665,67 @@ GitDiffSnapshot diff(
   );
 }
 
-class FakeChangesGateway implements GitGateway {
+GitDiffSnapshot selectableDiff(
+  RepositoryOpened repository, {
+  required String path,
+  required GitDiffScope scope,
+}) {
+  final lines = <GitDiffLine>[
+    const GitDiffLine(
+      kind: GitDiffLineKind.hunkHeader,
+      text: '@@ -1,2 +1,3 @@',
+      hunkIndex: 0,
+    ),
+    const GitDiffLine(
+      kind: GitDiffLineKind.addition,
+      text: '+first selected',
+      newLineNumber: 1,
+      hunkIndex: 0,
+    ),
+    const GitDiffLine(
+      kind: GitDiffLineKind.deletion,
+      text: '-second selected',
+      oldLineNumber: 2,
+      hunkIndex: 0,
+    ),
+    const GitDiffLine(
+      kind: GitDiffLineKind.context,
+      text: 'context',
+      oldLineNumber: 3,
+      newLineNumber: 2,
+      hunkIndex: 0,
+    ),
+  ];
+  return GitDiffSnapshot(
+    repositoryId: repository.repositoryId,
+    path: path,
+    scope: scope,
+    lines: lines,
+    contentHash: 'partial-diff-${scope.name}',
+    hunks: [
+      GitDiffHunk(
+        index: 0,
+        oldStart: 1,
+        oldCount: 2,
+        newStart: 1,
+        newCount: 2,
+        section: '',
+        lines: lines.skip(1).toList(),
+      ),
+    ],
+  );
+}
+
+class FakeChangesGateway with GitPatchGatewayStub implements GitGateway {
   FakeChangesGateway({
     required this.snapshots,
     this.diffs = const {},
     this.stageSnapshot,
     this.unstageSnapshot,
+    this.stagePatchSnapshot,
+    this.unstagePatchSnapshot,
+    this.stagePatchError,
+    this.unstagePatchError,
     this.commitResult,
     this.discardPreview,
     this.discardSnapshot,
@@ -506,6 +735,10 @@ class FakeChangesGateway implements GitGateway {
   final Map<String, GitDiffSnapshot> diffs;
   final GitStatusSnapshot? stageSnapshot;
   final GitStatusSnapshot? unstageSnapshot;
+  final GitStatusSnapshot? stagePatchSnapshot;
+  final GitStatusSnapshot? unstagePatchSnapshot;
+  final GitError? stagePatchError;
+  final GitError? unstagePatchError;
   final GitCommitResult? commitResult;
   final DiscardPreview? discardPreview;
   final GitStatusSnapshot? discardSnapshot;
@@ -513,6 +746,10 @@ class FakeChangesGateway implements GitGateway {
   var statusCalls = 0;
   var stageCalls = 0;
   var unstageCalls = 0;
+  var stagePatchCalls = 0;
+  var unstagePatchCalls = 0;
+  GitPatchSelection? lastStagePatchSelection;
+  GitPatchSelection? lastUnstagePatchSelection;
   var commitCalls = 0;
   String? lastCommitMessage;
   var discardCalls = 0;
@@ -625,6 +862,28 @@ class FakeChangesGateway implements GitGateway {
   ) async {
     unstageCalls++;
     return unstageSnapshot ?? snapshots.last;
+  }
+
+  @override
+  Future<GitStatusSnapshot> stagePatch(
+    RepositoryId repositoryId,
+    GitPatchSelection selection,
+  ) async {
+    stagePatchCalls++;
+    lastStagePatchSelection = selection;
+    if (stagePatchError case final error?) throw error;
+    return stagePatchSnapshot ?? snapshots.last;
+  }
+
+  @override
+  Future<GitStatusSnapshot> unstagePatch(
+    RepositoryId repositoryId,
+    GitPatchSelection selection,
+  ) async {
+    unstagePatchCalls++;
+    lastUnstagePatchSelection = selection;
+    if (unstagePatchError case final error?) throw error;
+    return unstagePatchSnapshot ?? snapshots.last;
   }
 
   @override

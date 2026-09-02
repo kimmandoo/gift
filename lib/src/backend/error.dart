@@ -18,6 +18,8 @@ enum GitErrorCategory {
   cancelled,
   timeout,
   staleConfirmation,
+  stalePatch,
+  patchRejected,
   invalidOpaqueId,
   staleOpaqueId,
   parseFailure,

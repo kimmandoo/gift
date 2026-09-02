@@ -5,22 +5,27 @@ This file is the handoff record for continuing work across query sessions.
 ## Current checkpoint
 
 - Date: 2026-09-02
-- Active task: completed the product identity rename to `gitshiba` across source,
-  package metadata, desktop bundle identifiers, documentation, and branded
-  assets. Task 17 partial staging remains paused as recoverable WIP.
-- Changed files: all tracked text references were migrated to `gitshiba`; the
-  app source, plan, Linux AppStream metadata, and four branded image assets
-  were renamed to match.
-- Verification: `flutter pub get`, `flutter analyze`, `flutter test` (81
-  tests), `PATH=/home/mgkim/.local/flutter/bin:$PATH dart run tool/verify.dart`,
-  `git diff --check`, and repository-wide legacy name/file scans all passed.
-  Commit `4eaca3e` was pushed to `origin/main`; the local origin now points to
-  `git@github.com:kimmandoo/gitshiba.git`.
-- WIP preservation: Task 17 changes are stored in `stash@{0}` as
-  `wip(task17): partial staging before gitshiba rename` and must be applied
-  rather than discarded when that task resumes.
-- Next action: apply the preserved Task 17 stash and resolve its known real-Git
-  patch application failure before continuing the roadmap.
+- Active task: completed Task 17, hunk and line staging. Task 18, commit
+  creation and history depth, is next.
+- Changed files: added direction-aware Git patch parsing and selection in
+  `lib/src/backend/diff.dart`, typed patch errors and gateway/service support,
+  controller selection state, hunk and line controls in the Changes screen,
+  real-Git and responsive UI tests, and the beginner-oriented architecture,
+  task board, roadmap, plan, changelog, and checkpoint updates.
+- Verification: `dart format --output=none --set-exit-if-changed lib test
+  integration_test tool`, `flutter analyze`, full `flutter test` (90 tests),
+  `PATH=/home/mgkim/.local/flutter/bin:$PATH dart run tool/verify.dart`,
+  `git diff --check`, and repository-wide legacy product text/path scans all
+  passed. Partial staging coverage passed six backend tests and 15 Changes
+  screen tests.
+- Patch safety: stale selections, unsupported rename/binary patches, missing
+  newline markers, and Git rejection outcomes are covered. Failed patch
+  application preserves the current diff and selection for recovery.
+- WIP preservation: the pre-completion snapshot remains recoverable as
+  `stash@{0}` (`wip(task17): partial staging before gitshiba rename`). It is
+  intentionally retained and is not needed to continue from the current tree.
+- Next action: commit this completed Task 17 vertical with the checkpoint,
+  then push `main` to `origin` and begin Task 18 in a later session.
 - Blockers: the Linux release build still requires host package `libgtk-3-dev`;
   installation requires a sudo password unavailable to this WSL session.
 
