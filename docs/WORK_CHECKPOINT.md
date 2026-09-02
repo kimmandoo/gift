@@ -98,6 +98,8 @@ This file is the handoff record for continuing work across query sessions.
 - Current diff fix wrapped rendered lines in one `SelectionArea`, changed line
   bodies to selectable `Text`, and excluded line numbers from copied content so
   dragging across multiple rows stays continuous.
+- Current packaging fix changed Windows and macOS executable copyright fields to
+  `kimmandoo` and added matching Linux AppStream developer metadata.
 - Current layout hardening made narrow summary/status rows wrap safely, added
   branch-input stacking below 300 px, and enabled dialog action overflow
   spacing so text and buttons do not collide.

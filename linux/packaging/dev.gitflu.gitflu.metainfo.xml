@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component type="desktop-application">
+  <id>dev.gitflu.gitflu</id>
+  <name>gitflu</name>
+  <summary>A keyboard-first desktop Git client</summary>
+  <metadata_license>MIT</metadata_license>
+  <project_license>MIT</project_license>
+  <developer id="kimmandoo">
+    <name>kimmandoo</name>
+  </developer>
+  <description>
+    <p>Review changes, inspect diffs, manage branches, and synchronize Git repositories.</p>
+  </description>
+</component>

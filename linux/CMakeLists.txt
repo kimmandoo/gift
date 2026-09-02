@@ -9,6 +9,9 @@ set(BINARY_NAME "gitflu")
 # https://wiki.gnome.org/HowDoI/ChooseApplicationID
 set(APPLICATION_ID "dev.gitflu.gitflu")
 
+# Linux bundles do not have a PE-style file-properties table. The installed
+# AppStream metadata carries the same owner as the Windows and macOS artifacts.
+
 # Explicitly opt in to modern CMake behaviors to avoid warnings with recent
 # versions of CMake.
 cmake_policy(SET CMP0063 NEW)
@@ -120,6 +123,11 @@ install(CODE "
   " COMPONENT Runtime)
 install(DIRECTORY "${PROJECT_BUILD_DIR}/${FLUTTER_ASSET_DIR_NAME}"
   DESTINATION "${INSTALL_BUNDLE_DATA_DIR}" COMPONENT Runtime)
+
+install(FILES
+  "${CMAKE_CURRENT_SOURCE_DIR}/packaging/dev.gitflu.gitflu.metainfo.xml"
+  DESTINATION "${CMAKE_INSTALL_PREFIX}/share/metainfo"
+  COMPONENT Runtime)
 
 # Install the AOT library on non-Debug builds only.
 if(NOT CMAKE_BUILD_TYPE MATCHES "Debug")
