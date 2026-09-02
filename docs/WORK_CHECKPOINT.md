@@ -64,6 +64,13 @@ This file is the handoff record for continuing work across query sessions.
 - Local build note: `./tool/build_linux.sh` reached native compilation but the
   host lacks `libgtk-3-dev`; installing it requires a sudo password unavailable
   to this session. CI already installs this dependency before Linux builds.
+- Added Tasks 16–25 as an ordered post-MVP backlog in
+  `docs/POST_MVP_ROADMAP.md`. The roadmap covers multi-repository workspaces,
+  partial staging, commit and history depth, advanced branches, conflicts,
+  Git object management, scale, accessibility, and signed public releases.
+- Task 15 remains active; creating the backlog did not skip its pending Linux
+  bundle verification. After Task 15 passes, Task 16 is the first post-MVP
+  implementation task.
 - Blockers: no source blocker. The pre-existing untracked `.serena/` directory
   was left untouched and is not part of the commit.
 - Next action: install `libgtk-3-dev` on this Linux host and rerun

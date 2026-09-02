@@ -2,6 +2,7 @@
 
 ## 2026-09-02
 
+- docs(roadmap): planned the ordered post-MVP work through signed public releases.
 - fix(hardening): bounded Git processes, stabilized cancellation, preserved history lanes, and revoked discard previews.
 - fix(settings): ignored stale async results and persisted canonical Git executable paths.
 - breaking(branding): unified Dart packages and desktop product metadata under gitflu.

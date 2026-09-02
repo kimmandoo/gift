@@ -6,8 +6,8 @@
 
 ## Progress
 
-- **Total Tasks:** 15
-- **Completed:** 14 / 15
+- **Total Tasks:** 25
+- **Completed:** 14 / 25
 - **Current Active Task:** `15 — Hardening & product identity verification`
 
 | # | Scope | Dart backend deliverables | Flutter deliverables | Status |
@@ -27,6 +27,16 @@
 | **13** | JetBrains-equivalent UX & pixel theme | Redacted diagnostics and classification | Minimal 2D pixel-game shell, responsive layout, theme, shortcuts | ✅ |
 | **14** | Packaging & CI | Cross-platform verification scripts | Desktop release artifacts | ✅ |
 | **15** | Hardening & identity | Process deadlines, safe cancellation, persistent graph lanes, preview revocation | Async lifecycle safety and unified gitflu metadata | 🚧 |
+| **16** | Workspace | Multi-repository sessions and persisted workspace state | Repository tabs, reopen, and keyboard navigation | ⬜ |
+| **17** | Partial staging | Hunk and line patch operations with stale-content guards | Interactive diff selection and stage controls | ⬜ |
+| **18** | Commit workflow | Amend, templates, sign-off, and identity preflight | Guided commit options and validation | ⬜ |
+| **19** | History exploration | Search, filters, commit details, and bounded commit diffs | Searchable graph and changed-file inspector | ⬜ |
+| **20** | Advanced branches | Rename, delete, merge, rebase, and cherry-pick safety | Preview-driven branch actions | ⬜ |
+| **21** | Conflict resolution | Conflict-state parser and safe resolution mutations | Three-pane merge workflow | ⬜ |
+| **22** | Git objects | Stash, tags, remotes, and upstream management | Focused object-management dialogs | ⬜ |
+| **23** | Scale & resilience | File watching, cache invalidation, process supervision | Large-repository responsiveness | ⬜ |
+| **24** | Accessibility & preferences | Versioned settings and locale-ready text contracts | Scaling, remapping, themes, and accessibility | ⬜ |
+| **25** | Public release | Signed packages, provenance, update metadata, and release checks | Installers and first-run diagnostics | ⬜ |
 
 ## Completed foundations
 
@@ -168,3 +178,11 @@ Task 15 is implemented and awaits local Linux bundle verification.
 - [x] Unified Dart and desktop product metadata under `gitflu`.
 - [x] Added an MIT license and tag-only release workflow triggers.
 - [ ] Install the Linux GTK development dependency and pass the release build.
+
+## Post-MVP backlog
+
+Tasks 16–25 are specified in
+[`docs/POST_MVP_ROADMAP.md`](docs/POST_MVP_ROADMAP.md). Start them in numeric
+order unless a task explicitly lists no dependency. Before implementation,
+move exactly one task to active, add its behavior-ledger scenarios, and record
+the first failing test in the checkpoint.
