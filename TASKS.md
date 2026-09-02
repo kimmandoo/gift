@@ -7,8 +7,8 @@
 ## Progress
 
 - **Total Tasks:** 25
-- **Completed:** 19 / 25
-- **Current Active Task:** `20 — Safe advanced branch operations`
+- **Completed:** 20 / 25
+- **Current Active Task:** `21 — Conflict resolution workspace (next; not started)`
 
 | # | Scope | Dart backend deliverables | Flutter deliverables | Status |
 |---|---|---|---|:---:|
@@ -238,6 +238,22 @@ Task 18 is complete.
   unusual UTF-8 metadata.
 
 Task 19 is complete. Task 20 is next.
+
+### Task 20: Safe advanced branch operations
+
+- [x] Recorded branch rename/delete, merge, rebase, and cherry-pick preview
+  scenarios, including fast-forward, divergence, conflict, cancellation,
+  abort, and stale-preview recovery.
+- [x] Delegated branch-name validation to Git and exposed typed preflight errors
+  for dirty, detached, and in-progress repository states.
+- [x] Implemented expiring, repository-bound operation previews and explicit
+  start/continue/skip/abort state transitions.
+- [x] Added backend and widget coverage for safe history-changing
+  operations and reachable-commit preservation.
+
+Task 20 is complete. Task 21 is next. The first failing test was the initial
+compile failure in `test/backend/advanced_branch_test.dart` before the preview
+contract existed.
 
 ## Post-MVP backlog
 

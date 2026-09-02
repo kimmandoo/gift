@@ -62,14 +62,107 @@ void main() {
     await tester.pumpAndSettle();
     expect(gateway.switchedTo, 'feature/demo');
   });
+
+  testWidgets('previews and confirms an advanced branch operation', (
+    tester,
+  ) async {
+    addTearDown(tester.view.reset);
+    tester.view.physicalSize = const Size(420, 640);
+    tester.view.devicePixelRatio = 1;
+    final repository = const RepositoryOpened(
+      repositoryId: RepositoryId(value: 'advanced-branch-repository'),
+      root: '/workspace/project',
+    );
+    final status = GitStatusSnapshot(
+      repositoryId: repository.repositoryId,
+      root: repository.root,
+      branch: GitBranchStatus(head: 'main', oid: 'a' * 40),
+      changes: const [],
+      contentHash: 'clean',
+      generation: 1,
+    );
+    final gateway = FakeBranchGateway(
+      branches: const [GitBranch(name: 'main', isCurrent: true)],
+      action: GitBranchActionResult(
+        repositoryId: repository.repositoryId,
+        branchName: 'main',
+        status: status,
+      ),
+      preview: GitBranchOperationPreview(
+        repositoryId: repository.repositoryId,
+        request: const GitBranchOperationRequest(
+          operation: GitBranchOperation.merge,
+          source: 'feature',
+          target: 'main',
+        ),
+        currentBranch: 'main',
+        ahead: 1,
+        behind: 0,
+        expectedCommits: 1,
+        mergeBase: 'a' * 40,
+        dirtyWorktree: false,
+        detachedHead: false,
+        operationInProgress: null,
+        requiresConfirmation: true,
+        token: 'preview-token',
+        expiresAt: DateTime(2030),
+      ),
+      operationResult: GitBranchOperationResult(
+        repositoryId: repository.repositoryId,
+        request: const GitBranchOperationRequest(
+          operation: GitBranchOperation.merge,
+          source: 'feature',
+          target: 'main',
+        ),
+        state: GitBranchOperationState.completed,
+        status: status,
+        summary: 'The branch operation completed.',
+        recoveryActions: const [],
+      ),
+    );
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: BranchDialog(gateway: gateway, repository: repository),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('advanced-branch-operations')));
+    await tester.pumpAndSettle();
+    await tester.enterText(
+      find.byKey(const Key('advanced-branch-source')),
+      'feature',
+    );
+    await tester.enterText(
+      find.byKey(const Key('advanced-branch-target')),
+      'main',
+    );
+    await tester.tap(find.byKey(const Key('preview-branch-operation')));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('branch-operation-preview')), findsOneWidget);
+    await tester.tap(find.byKey(const Key('execute-branch-operation')));
+    await tester.pumpAndSettle();
+    expect(gateway.executed, isTrue);
+    expect(find.byKey(const Key('branch-operation-result')), findsOneWidget);
+  });
 }
 
 class FakeBranchGateway with GitPatchGatewayStub implements GitGateway {
-  FakeBranchGateway({required this.branches, required this.action});
+  FakeBranchGateway({
+    required this.branches,
+    required this.action,
+    this.preview,
+    this.operationResult,
+  });
 
   final List<GitBranch> branches;
   final GitBranchActionResult action;
+  final GitBranchOperationPreview? preview;
+  final GitBranchOperationResult? operationResult;
   String? switchedTo;
+  var executed = false;
 
   @override
   Future<List<GitBranch>> getBranches(RepositoryId repositoryId) async =>
@@ -82,6 +175,22 @@ class FakeBranchGateway with GitPatchGatewayStub implements GitGateway {
   ) async {
     switchedTo = name;
     return action;
+  }
+
+  @override
+  Future<GitBranchOperationPreview> previewBranchOperation(
+    RepositoryId repositoryId,
+    GitBranchOperationRequest request,
+  ) async => preview!;
+
+  @override
+  Future<GitBranchOperationResult> executeBranchOperation(
+    RepositoryId repositoryId,
+    GitBranchOperationRequest request, {
+    GitCancellationToken? cancellationToken,
+  }) async {
+    executed = true;
+    return operationResult!;
   }
 
   @override

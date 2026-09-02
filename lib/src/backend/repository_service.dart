@@ -24,9 +24,11 @@ class AppState {
   final Map<RepositoryId, _RepositoryRecord> _repositories = {};
   final Map<RepositoryId, _MutationQueue> _mutationQueues = {};
   final Map<String, _DiscardPreviewRecord> _discardPreviews = {};
+  final Map<String, _BranchPreviewRecord> _branchPreviews = {};
   final DateTime Function() _now;
 
   static const discardPreviewLifetime = Duration(minutes: 2);
+  static const branchPreviewLifetime = Duration(minutes: 2);
 
   RepositoryOpened register(String root) {
     final repositoryId = RepositoryId(value: _newRepositoryId());
@@ -141,6 +143,59 @@ class AppState {
       _discardPreviews.remove(preview.token);
     }
   }
+
+  GitBranchPreviewToken issueBranchPreview({
+    required RepositoryId repositoryId,
+    required GitBranchOperationRequest request,
+    required String fingerprint,
+  }) {
+    _branchPreviews.removeWhere(
+      (_, record) => !record.expiresAt.isAfter(_now()),
+    );
+    final token = _newOpaqueToken();
+    final expiresAt = _now().add(branchPreviewLifetime);
+    _branchPreviews[token] = _BranchPreviewRecord(
+      repositoryId: repositoryId,
+      operation: request.operation,
+      source: request.source,
+      target: request.target,
+      force: request.force,
+      fingerprint: fingerprint,
+      expiresAt: expiresAt,
+    );
+    return GitBranchPreviewToken(value: token, expiresAt: expiresAt);
+  }
+
+  void validateBranchPreview({
+    required RepositoryId repositoryId,
+    required GitBranchOperationRequest request,
+    required String fingerprint,
+  }) {
+    final token = request.confirmationToken;
+    final record = token == null ? null : _branchPreviews[token];
+    final matches =
+        record != null &&
+        record.repositoryId == repositoryId &&
+        record.operation == request.operation &&
+        record.source == request.source &&
+        record.target == request.target &&
+        record.force == request.force &&
+        record.fingerprint == fingerprint &&
+        record.expiresAt.isAfter(_now());
+    if (!matches) {
+      if (token != null) _branchPreviews.remove(token);
+      throw const GitError(
+        category: GitErrorCategory.staleBranchPreview,
+        userMessage: 'This branch preview is stale or expired. Review the operation again.',
+        diagnostic: 'branch operation token was missing, changed, expired, or bound to a different repository state',
+        retryable: true,
+      );
+    }
+  }
+
+  void consumeBranchPreview(String token) {
+    _branchPreviews.remove(token);
+  }
 }
 
 class _DiscardPreviewRecord {
@@ -156,6 +211,26 @@ class _DiscardPreviewRecord {
   final String path;
   final String statusHash;
   final String diffHash;
+  final DateTime expiresAt;
+}
+
+class _BranchPreviewRecord {
+  const _BranchPreviewRecord({
+    required this.repositoryId,
+    required this.operation,
+    required this.source,
+    required this.target,
+    required this.force,
+    required this.fingerprint,
+    required this.expiresAt,
+  });
+
+  final RepositoryId repositoryId;
+  final GitBranchOperation operation;
+  final String? source;
+  final String? target;
+  final bool force;
+  final String fingerprint;
   final DateTime expiresAt;
 }
 
@@ -539,9 +614,12 @@ class RepositoryService {
     String name,
     List<String> command,
   ) async {
+    // Keep the original create/switch contract while advanced operations use
+    // the Git-backed validator below for their richer typed failures.
     _validateBranchName(name);
     return state.runMutation(repositoryId, () async {
       final handle = await state.lookup(repositoryId);
+      await _validateBranchNameWithGit(handle, name);
       try {
         await _runner.run(
           GitInvocation(
@@ -563,6 +641,798 @@ class RepositoryService {
       );
     });
   }
+
+  /// Builds a bounded, repository-state-bound description before a branch
+  /// operation can mutate anything. The preview is also the source of the
+  /// token used by the corresponding start request.
+  Future<GitBranchOperationPreview> previewBranchOperation(
+    RepositoryId repositoryId,
+    GitBranchOperationRequest request,
+  ) async {
+    if (request.phase != GitBranchOperationPhase.start) {
+      throw const GitError(
+        category: GitErrorCategory.branchOperationNotAllowed,
+        userMessage: 'Recovery actions do not need a new start preview.',
+        diagnostic: 'a non-start phase was passed to previewBranchOperation',
+        retryable: false,
+      );
+    }
+    final handle = await state.lookup(repositoryId);
+    final inspection = await _inspectBranchOperation(
+      repositoryId,
+      handle,
+      request,
+    );
+    final canCreateToken = inspection.blockingMessage == null;
+    GitBranchPreviewToken? token;
+    if (canCreateToken) {
+      token = state.issueBranchPreview(
+        repositoryId: repositoryId,
+        request: request,
+        fingerprint: inspection.fingerprint,
+      );
+    }
+    return GitBranchOperationPreview(
+      repositoryId: repositoryId,
+      request: request,
+      currentBranch: inspection.currentBranch,
+      ahead: inspection.ahead,
+      behind: inspection.behind,
+      expectedCommits: inspection.expectedCommits,
+      mergeBase: inspection.mergeBase,
+      dirtyWorktree: inspection.dirtyWorktree,
+      detachedHead: inspection.detachedHead,
+      operationInProgress: inspection.operationInProgress,
+      requiresConfirmation: true,
+      token: token?.value,
+      expiresAt: token?.expiresAt,
+      blockingMessage: inspection.blockingMessage,
+    );
+  }
+
+  /// Executes only the reviewed start request or one explicit recovery phase.
+  /// A conflict is a normal result with its exact available recovery actions;
+  /// callers never need to infer a command from a generic process failure.
+  Future<GitBranchOperationResult> executeBranchOperation(
+    RepositoryId repositoryId,
+    GitBranchOperationRequest request, {
+    GitCancellationToken? cancellationToken,
+  }) async {
+    return state.runMutation(repositoryId, () async {
+      final handle = await state.lookup(repositoryId);
+      final inspection = await _inspectBranchOperation(
+        repositoryId,
+        handle,
+        request,
+      );
+      if (request.phase == GitBranchOperationPhase.start) {
+        _throwIfBranchOperationBlocked(inspection);
+        state.validateBranchPreview(
+          repositoryId: repositoryId,
+          request: request,
+          fingerprint: inspection.fingerprint,
+        );
+        if (request.confirmationToken case final token?) {
+          state.consumeBranchPreview(token);
+        }
+      } else {
+        _validateRecoveryRequest(request, inspection);
+      }
+
+      final args = _branchOperationArgs(request, inspection);
+      try {
+        await _runner.run(
+          GitInvocation(
+            program: gitPath,
+            args: args,
+            cwd: handle.root,
+            kind: GitOperationKind.mutation,
+            outputPolicy: const OutputPolicy.capture(maxBytes: 512 * 1024),
+            cancellationToken: cancellationToken,
+          ),
+        );
+      } on GitError catch (error) {
+        final afterFailure = await _inspectBranchOperation(
+          repositoryId,
+          handle,
+          request,
+        );
+        final operationStillActive =
+            afterFailure.operationInProgress == request.operation;
+        if (error.category == GitErrorCategory.cancelled) {
+          return _branchOperationResult(
+            repositoryId,
+            request,
+            GitBranchOperationState.cancelled,
+            await getStatus(repositoryId),
+            'The operation was cancelled. Review the repository state before choosing a recovery action.',
+            afterFailure.operationInProgress,
+          );
+        }
+        if (operationStillActive) {
+          return _branchOperationResult(
+            repositoryId,
+            request,
+            GitBranchOperationState.conflicted,
+            await getStatus(repositoryId),
+            'Git stopped with conflicts. Resolve them, then choose an explicit recovery action.',
+            afterFailure.operationInProgress,
+          );
+        }
+        Error.throwWithStackTrace(
+          _mapBranchOperationError(error),
+          StackTrace.current,
+        );
+      }
+
+      return _branchOperationResult(
+        repositoryId,
+        request,
+        request.phase == GitBranchOperationPhase.abort
+            ? GitBranchOperationState.aborted
+            : GitBranchOperationState.completed,
+        await getStatus(repositoryId),
+        request.phase == GitBranchOperationPhase.abort
+            ? 'The operation was aborted.'
+            : 'The branch operation completed.',
+        null,
+      );
+    });
+  }
+
+  Future<_BranchOperationInspection> _inspectBranchOperation(
+    RepositoryId repositoryId,
+    RepositoryHandle handle,
+    GitBranchOperationRequest request,
+  ) async {
+    final status = await getStatus(repositoryId);
+    final currentBranch = status.branch.head;
+    final operationInProgress = await _detectBranchOperation(handle);
+    if (request.phase != GitBranchOperationPhase.start) {
+      return _inspectRecoveryOperation(
+        handle,
+        request,
+        status,
+        currentBranch,
+        operationInProgress,
+      );
+    }
+    var sourceValue = request.source?.trim();
+    var target = request.target?.trim();
+    if (sourceValue == null || sourceValue.isEmpty) {
+      if (request.operation == GitBranchOperation.rebase &&
+          currentBranch != null) {
+        sourceValue = currentBranch;
+      } else {
+        throw const GitError(
+          category: GitErrorCategory.parseFailure,
+          userMessage: 'Choose a source branch or commit.',
+          diagnostic: 'advanced branch operation source was missing',
+          retryable: false,
+        );
+      }
+    }
+    final source = sourceValue;
+
+    final needsAttachedHead =
+        request.operation == GitBranchOperation.merge ||
+        request.operation == GitBranchOperation.rebase ||
+        request.operation == GitBranchOperation.cherryPick;
+    if (needsAttachedHead && status.branch.isDetached) {
+      return _blockedBranchOperationInspection(
+        handle,
+        request,
+        status,
+        source,
+        target,
+        currentBranch,
+        operationInProgress,
+      );
+    }
+    if (needsAttachedHead) {
+      target ??= currentBranch;
+    }
+
+    String? sourceOid;
+    String? targetOid;
+    switch (request.operation) {
+      case GitBranchOperation.rename:
+        await _validateBranchNameWithGit(handle, source);
+        final renameTarget = _requiredBranchName(target, 'new branch name');
+        await _validateBranchNameWithGit(handle, renameTarget);
+        sourceOid = await _requiredBranchOid(handle, source);
+        targetOid = await _tryBranchOid(handle, renameTarget);
+        target = renameTarget;
+      case GitBranchOperation.delete:
+        await _validateBranchNameWithGit(handle, source);
+        sourceOid = await _requiredBranchOid(handle, source);
+        if (target != null && target.isNotEmpty) {
+          throw const GitError(
+            category: GitErrorCategory.branchOperationNotAllowed,
+            userMessage: 'Delete accepts only the branch to remove.',
+            diagnostic: 'delete request unexpectedly contained a target',
+            retryable: false,
+          );
+        }
+        if (request.force == false && request.target != null) {
+          throw const GitError(
+            category: GitErrorCategory.branchOperationNotAllowed,
+            userMessage: 'Delete accepts only the branch to remove.',
+            diagnostic: 'delete request contained an empty target field',
+            retryable: false,
+          );
+        }
+      case GitBranchOperation.merge:
+        await _validateBranchNameWithGit(handle, source);
+        target = _requiredBranchName(target, 'target branch');
+        await _validateBranchNameWithGit(handle, target);
+        sourceOid = await _requiredBranchOid(handle, source);
+        targetOid = await _requiredBranchOid(handle, target);
+        if (!status.branch.isDetached) {
+          _requireCurrentTarget(currentBranch, target);
+        }
+      case GitBranchOperation.rebase:
+        target = _requiredBranchName(target, 'new base branch');
+        await _validateBranchNameWithGit(handle, target);
+        sourceOid = await _requiredBranchOid(handle, source);
+        targetOid = await _requiredBranchOid(handle, target);
+        if (!status.branch.isDetached) {
+          _requireCurrentTarget(currentBranch, source);
+        }
+      case GitBranchOperation.cherryPick:
+        _validateRevisionInput(source);
+        target = _requiredBranchName(target, 'target branch');
+        await _validateBranchNameWithGit(handle, target);
+        sourceOid = await _resolveCommit(handle, source);
+        targetOid = await _requiredBranchOid(handle, target);
+        if (!status.branch.isDetached) {
+          _requireCurrentTarget(currentBranch, target);
+        }
+    }
+
+    if (request.operation != GitBranchOperation.delete && request.force) {
+      throw const GitError(
+        category: GitErrorCategory.branchOperationNotAllowed,
+        userMessage: 'Force mode is available only for branch deletion.',
+        diagnostic: 'force was set for a non-delete branch operation',
+        retryable: false,
+      );
+    }
+
+    final aheadBehind = await _readAheadBehind(handle, targetOid, sourceOid);
+    final mergeBase = await _readMergeBase(handle, targetOid, sourceOid);
+    final expectedCommits = await _readCommitCount(
+      handle,
+      targetOid,
+      sourceOid,
+    );
+    final refFingerprint = await _readBranchFingerprint(handle);
+    final fingerprint = [
+      status.contentHash,
+      status.branch.oid ?? '',
+      currentBranch ?? '',
+      refFingerprint,
+      request.operation.name,
+      source,
+      target ?? '',
+      sourceOid,
+      targetOid ?? '',
+    ].join('|');
+
+    String? blockingMessage;
+    if (operationInProgress != null) {
+      blockingMessage =
+          'A ${_operationLabel(operationInProgress)} operation is already in progress.';
+    } else if (needsAttachedHead && status.branch.isDetached) {
+      blockingMessage = 'Switch to a branch before this operation.';
+    } else if (needsAttachedHead && !status.isClean) {
+      blockingMessage = 'Commit or stash local changes before this operation.';
+    } else if (request.operation == GitBranchOperation.delete &&
+        source == currentBranch) {
+      blockingMessage = 'The current branch cannot be deleted.';
+    } else if (request.operation == GitBranchOperation.rename &&
+        targetOid != null) {
+      blockingMessage = 'That destination branch already exists.';
+    }
+
+    return _BranchOperationInspection(
+      request: request,
+      source: source,
+      target: target,
+      currentBranch: currentBranch,
+      sourceOid: sourceOid,
+      targetOid: targetOid,
+      ahead: aheadBehind.$1,
+      behind: aheadBehind.$2,
+      expectedCommits: expectedCommits,
+      mergeBase: mergeBase,
+      dirtyWorktree: !status.isClean,
+      detachedHead: status.branch.isDetached,
+      operationInProgress: operationInProgress,
+      fingerprint: fingerprint,
+      blockingMessage: blockingMessage,
+    );
+  }
+
+  Future<_BranchOperationInspection> _inspectRecoveryOperation(
+    RepositoryHandle handle,
+    GitBranchOperationRequest request,
+    GitStatusSnapshot status,
+    String? currentBranch,
+    GitBranchOperation? operationInProgress,
+  ) async {
+    final source = request.source?.trim() ?? currentBranch ?? '';
+    final target = request.target?.trim() ?? currentBranch;
+    final fingerprint = [
+      status.contentHash,
+      currentBranch ?? '',
+      await _readBranchFingerprint(handle),
+      request.operation.name,
+      source,
+      target ?? '',
+    ].join('|');
+    return _BranchOperationInspection(
+      request: request,
+      source: source,
+      target: target,
+      currentBranch: currentBranch,
+      sourceOid: status.branch.oid,
+      targetOid: status.branch.oid,
+      ahead: 0,
+      behind: 0,
+      expectedCommits: 0,
+      mergeBase: null,
+      dirtyWorktree: !status.isClean,
+      detachedHead: status.branch.isDetached,
+      operationInProgress: operationInProgress,
+      fingerprint: fingerprint,
+      blockingMessage: null,
+    );
+  }
+
+  Future<_BranchOperationInspection> _blockedBranchOperationInspection(
+    RepositoryHandle handle,
+    GitBranchOperationRequest request,
+    GitStatusSnapshot status,
+    String source,
+    String? target,
+    String? currentBranch,
+    GitBranchOperation? operationInProgress,
+  ) async {
+    final fingerprint = [
+      status.contentHash,
+      currentBranch ?? '',
+      await _readBranchFingerprint(handle),
+      request.operation.name,
+      source,
+      target ?? '',
+    ].join('|');
+    return _BranchOperationInspection(
+      request: request,
+      source: source,
+      target: target,
+      currentBranch: currentBranch,
+      sourceOid: null,
+      targetOid: null,
+      ahead: 0,
+      behind: 0,
+      expectedCommits: 0,
+      mergeBase: null,
+      dirtyWorktree: !status.isClean,
+      detachedHead: true,
+      operationInProgress: operationInProgress,
+      fingerprint: fingerprint,
+      blockingMessage: operationInProgress == null
+          ? 'Switch to a branch before this operation.'
+          : 'A ${_operationLabel(operationInProgress)} operation is already in progress.',
+    );
+  }
+
+  Future<GitBranchOperation?> _detectBranchOperation(
+    RepositoryHandle handle,
+  ) async {
+    if (await _gitPathExists(handle.root, 'MERGE_HEAD')) {
+      return GitBranchOperation.merge;
+    }
+    if (await _gitPathExists(handle.root, 'CHERRY_PICK_HEAD')) {
+      return GitBranchOperation.cherryPick;
+    }
+    if (await _gitPathExists(handle.root, 'rebase-merge') ||
+        await _gitPathExists(handle.root, 'rebase-apply')) {
+      return GitBranchOperation.rebase;
+    }
+    return null;
+  }
+
+  Future<bool> _gitPathExists(String root, String path) async {
+    try {
+      final output = await _runner.run(
+        GitInvocation(
+          program: gitPath,
+          args: ['rev-parse', '--git-path', path],
+          cwd: root,
+          kind: GitOperationKind.read,
+          outputPolicy: const OutputPolicy.capture(maxBytes: 4 * 1024),
+        ),
+      );
+      final rawPath = utf8.decode(output.stdout, allowMalformed: true).trim();
+      if (rawPath.isEmpty) return false;
+      final pathUri = Uri.file(rawPath);
+      final absolutePath = pathUri.isAbsolute
+          ? rawPath
+          : '$root${Platform.pathSeparator}${rawPath.replaceAll('/', Platform.pathSeparator)}';
+      return File(absolutePath).existsSync() ||
+          Directory(absolutePath).existsSync();
+    } on GitError {
+      return false;
+    }
+  }
+
+  Future<void> _validateBranchNameWithGit(
+    RepositoryHandle handle,
+    String name,
+  ) async {
+    if (name.isEmpty || name.contains('\u0000')) {
+      throw const GitError(
+        category: GitErrorCategory.invalidBranchName,
+        userMessage: 'Enter a valid branch name accepted by Git.',
+        diagnostic: 'branch name was empty or contained a NUL byte',
+        retryable: false,
+      );
+    }
+    try {
+      await _runner.run(
+        GitInvocation(
+          program: gitPath,
+          args: ['check-ref-format', '--branch', name],
+          cwd: handle.root,
+          kind: GitOperationKind.read,
+          outputPolicy: const OutputPolicy.capture(maxBytes: 16 * 1024),
+        ),
+      );
+    } on GitError catch (error, stackTrace) {
+      if (error.category == GitErrorCategory.processFailed) {
+        Error.throwWithStackTrace(
+          error.copyWith(
+            category: GitErrorCategory.invalidBranchName,
+            userMessage: 'Enter a valid branch name accepted by Git.',
+            diagnostic: 'git check-ref-format rejected the branch name',
+            retryable: false,
+          ),
+          stackTrace,
+        );
+      }
+      rethrow;
+    }
+  }
+
+  Future<String?> _tryBranchOid(RepositoryHandle handle, String name) async {
+    return _tryResolve(handle, 'refs/heads/$name');
+  }
+
+  Future<String> _requiredBranchOid(
+    RepositoryHandle handle,
+    String name,
+  ) async {
+    final oid = await _tryBranchOid(handle, name);
+    if (oid == null) {
+      throw GitError(
+        category: GitErrorCategory.invalidRevision,
+        userMessage: 'That branch does not exist.',
+        diagnostic: 'local branch could not be resolved: $name',
+        retryable: false,
+      );
+    }
+    return oid;
+  }
+
+  Future<String> _resolveCommit(RepositoryHandle handle, String value) async {
+    try {
+      final oid = await _tryResolve(handle, '$value^{commit}');
+      if (oid == null) throw const FormatException();
+      return oid;
+    } on GitError {
+      rethrow;
+    } on FormatException {
+      throw const GitError(
+        category: GitErrorCategory.invalidRevision,
+        userMessage: 'That source does not point to a commit.',
+        diagnostic: 'cherry-pick source could not be resolved to a commit',
+        retryable: false,
+      );
+    }
+  }
+
+  Future<String?> _tryResolve(RepositoryHandle handle, String revision) async {
+    try {
+      final output = await _runner.run(
+        GitInvocation(
+          program: gitPath,
+          args: ['rev-parse', '--verify', '--quiet', revision],
+          cwd: handle.root,
+          kind: GitOperationKind.read,
+          outputPolicy: const OutputPolicy.capture(maxBytes: 4 * 1024),
+        ),
+      );
+      final value = utf8.decode(output.stdout, allowMalformed: true).trim();
+      return value.isEmpty ? null : value;
+    } on GitError catch (error) {
+      if (error.category == GitErrorCategory.processFailed &&
+          error.exitCode == 1) {
+        return null;
+      }
+      rethrow;
+    }
+  }
+
+  Future<(int, int)> _readAheadBehind(
+    RepositoryHandle handle,
+    String? targetOid,
+    String? sourceOid,
+  ) async {
+    if (targetOid == null || sourceOid == null) return (0, 0);
+    final output = await _runner.run(
+      GitInvocation(
+        program: gitPath,
+        args: [
+          'rev-list',
+          '--left-right',
+          '--count',
+          '$targetOid...$sourceOid',
+        ],
+        cwd: handle.root,
+        kind: GitOperationKind.read,
+        outputPolicy: const OutputPolicy.capture(maxBytes: 4 * 1024),
+      ),
+    );
+    final values = utf8
+        .decode(output.stdout, allowMalformed: true)
+        .trim()
+        .split(RegExp(r'\s+'));
+    if (values.length != 2) return (0, 0);
+    final behind = int.tryParse(values[0]) ?? 0;
+    final ahead = int.tryParse(values[1]) ?? 0;
+    return (ahead, behind);
+  }
+
+  Future<String?> _readMergeBase(
+    RepositoryHandle handle,
+    String? targetOid,
+    String? sourceOid,
+  ) async {
+    if (targetOid == null || sourceOid == null) return null;
+    try {
+      final output = await _runner.run(
+        GitInvocation(
+          program: gitPath,
+          args: ['merge-base', targetOid, sourceOid],
+          cwd: handle.root,
+          kind: GitOperationKind.read,
+          outputPolicy: const OutputPolicy.capture(maxBytes: 4 * 1024),
+        ),
+      );
+      final value = utf8.decode(output.stdout, allowMalformed: true).trim();
+      return value.isEmpty ? null : value;
+    } on GitError catch (error) {
+      if (error.category == GitErrorCategory.processFailed &&
+          error.exitCode == 1) {
+        return null;
+      }
+      rethrow;
+    }
+  }
+
+  Future<int> _readCommitCount(
+    RepositoryHandle handle,
+    String? targetOid,
+    String? sourceOid,
+  ) async {
+    if (targetOid == null || sourceOid == null) return 0;
+    final output = await _runner.run(
+      GitInvocation(
+        program: gitPath,
+        args: ['rev-list', '--count', '$targetOid..$sourceOid'],
+        cwd: handle.root,
+        kind: GitOperationKind.read,
+        outputPolicy: const OutputPolicy.capture(maxBytes: 4 * 1024),
+      ),
+    );
+    return int.tryParse(
+          utf8.decode(output.stdout, allowMalformed: true).trim(),
+        ) ??
+        0;
+  }
+
+  Future<String> _readBranchFingerprint(RepositoryHandle handle) async {
+    final output = await _runner.run(
+      GitInvocation(
+        program: gitPath,
+        args: const [
+          'for-each-ref',
+          '--sort=refname',
+          '--format=%(refname:short)%00%(objectname)',
+          'refs/heads/',
+        ],
+        cwd: handle.root,
+        kind: GitOperationKind.read,
+        outputPolicy: const OutputPolicy.capture(maxBytes: 512 * 1024),
+      ),
+    );
+    return utf8.decode(output.stdout, allowMalformed: true).trim();
+  }
+
+  List<String> _branchOperationArgs(
+    GitBranchOperationRequest request,
+    _BranchOperationInspection inspection,
+  ) {
+    if (request.phase == GitBranchOperationPhase.continueOperation) {
+      return switch (request.operation) {
+        GitBranchOperation.merge => const ['merge', '--continue'],
+        GitBranchOperation.rebase => const ['rebase', '--continue'],
+        GitBranchOperation.cherryPick => const ['cherry-pick', '--continue'],
+        _ => throw _recoveryNotAllowed(request.operation, request.phase),
+      };
+    }
+    if (request.phase == GitBranchOperationPhase.skip) {
+      return switch (request.operation) {
+        GitBranchOperation.rebase => const ['rebase', '--skip'],
+        GitBranchOperation.cherryPick => const ['cherry-pick', '--skip'],
+        _ => throw _recoveryNotAllowed(request.operation, request.phase),
+      };
+    }
+    if (request.phase == GitBranchOperationPhase.abort) {
+      return switch (request.operation) {
+        GitBranchOperation.merge => const ['merge', '--abort'],
+        GitBranchOperation.rebase => const ['rebase', '--abort'],
+        GitBranchOperation.cherryPick => const ['cherry-pick', '--abort'],
+        _ => throw _recoveryNotAllowed(request.operation, request.phase),
+      };
+    }
+    return switch (request.operation) {
+      GitBranchOperation.rename => [
+        'branch',
+        '--move',
+        inspection.source,
+        inspection.target!,
+      ],
+      GitBranchOperation.delete => [
+        'branch',
+        '--delete',
+        if (request.force) '--force',
+        inspection.source,
+      ],
+      GitBranchOperation.merge => ['merge', '--no-edit', inspection.source],
+      GitBranchOperation.rebase => ['rebase', inspection.target!],
+      GitBranchOperation.cherryPick => ['cherry-pick', inspection.source],
+    };
+  }
+
+  void _throwIfBranchOperationBlocked(_BranchOperationInspection inspection) {
+    final message = inspection.blockingMessage;
+    if (message == null) return;
+    final category = inspection.operationInProgress != null
+        ? GitErrorCategory.operationInProgress
+        : inspection.detachedHead
+        ? GitErrorCategory.detachedHead
+        : inspection.dirtyWorktree
+        ? GitErrorCategory.dirtyWorktree
+        : GitErrorCategory.branchOperationNotAllowed;
+    throw GitError(
+      category: category,
+      userMessage: message,
+      diagnostic: 'advanced branch operation preflight rejected the request',
+      retryable: false,
+    );
+  }
+
+  void _validateRecoveryRequest(
+    GitBranchOperationRequest request,
+    _BranchOperationInspection inspection,
+  ) {
+    if (inspection.operationInProgress != request.operation) {
+      throw const GitError(
+        category: GitErrorCategory.operationInProgress,
+        userMessage: 'That recovery action is not available for the current repository state.',
+        diagnostic: 'recovery operation did not match Git operation metadata',
+        retryable: false,
+      );
+    }
+    _recoveryActions(request.operation).contains(request.phase)
+        ? null
+        : throw _recoveryNotAllowed(request.operation, request.phase);
+  }
+
+  GitBranchOperationResult _branchOperationResult(
+    RepositoryId repositoryId,
+    GitBranchOperationRequest request,
+    GitBranchOperationState state,
+    GitStatusSnapshot status,
+    String summary,
+    GitBranchOperation? detectedOperation,
+  ) {
+    return GitBranchOperationResult(
+      repositoryId: repositoryId,
+      request: request,
+      state: state,
+      status: status,
+      summary: summary,
+      recoveryActions:
+          state == GitBranchOperationState.conflicted ||
+              state == GitBranchOperationState.cancelled
+          ? _recoveryActions(detectedOperation ?? request.operation)
+          : const [],
+    );
+  }
+
+  List<GitBranchOperationPhase> _recoveryActions(
+    GitBranchOperation operation,
+  ) => operation == GitBranchOperation.merge
+      ? const [
+          GitBranchOperationPhase.continueOperation,
+          GitBranchOperationPhase.abort,
+        ]
+      : operation == GitBranchOperation.rebase ||
+            operation == GitBranchOperation.cherryPick
+      ? const [
+          GitBranchOperationPhase.continueOperation,
+          GitBranchOperationPhase.skip,
+          GitBranchOperationPhase.abort,
+        ]
+      : const [];
+
+  String _operationLabel(GitBranchOperation operation) => switch (operation) {
+    GitBranchOperation.rename => 'rename',
+    GitBranchOperation.delete => 'delete',
+    GitBranchOperation.merge => 'merge',
+    GitBranchOperation.rebase => 'rebase',
+    GitBranchOperation.cherryPick => 'cherry-pick',
+  };
+
+  String _requiredBranchName(String? value, String label) {
+    if (value == null || value.isEmpty) {
+      throw GitError(
+        category: GitErrorCategory.parseFailure,
+        userMessage: 'Choose a $label.',
+        diagnostic: 'advanced branch operation $label was missing',
+        retryable: false,
+      );
+    }
+    return value;
+  }
+
+  void _requireCurrentTarget(String? current, String requested) {
+    if (current == null || current == '(detached)' || current != requested) {
+      throw const GitError(
+        category: GitErrorCategory.branchOperationNotAllowed,
+        userMessage: 'The target must be the current branch.',
+        diagnostic: 'advanced operation refused to switch branches implicitly',
+        retryable: false,
+      );
+    }
+  }
+
+  void _validateRevisionInput(String value) {
+    if (value.isEmpty || value.startsWith('-') || value.contains('\u0000')) {
+      throw const GitError(
+        category: GitErrorCategory.invalidRevision,
+        userMessage: 'That source commit or ref is invalid.',
+        diagnostic:
+            'cherry-pick source was empty, option-like, or contained NUL',
+        retryable: false,
+      );
+    }
+  }
+
+  GitError _recoveryNotAllowed(
+    GitBranchOperation operation,
+    GitBranchOperationPhase phase,
+  ) => GitError(
+    category: GitErrorCategory.branchOperationNotAllowed,
+    userMessage:
+        'The selected recovery action is not available for this ${_operationLabel(operation)} operation.',
+    diagnostic: 'unsupported recovery phase: ${operation.name}/${phase.name}',
+    retryable: false,
+  );
 
   Future<List<GitRemote>> getRemotes(RepositoryId repositoryId) async {
     final handle = await state.lookup(repositoryId);
@@ -1398,6 +2268,42 @@ class _HistorySnapshot {
   final List<GitCommitRef> refs;
 }
 
+class _BranchOperationInspection {
+  const _BranchOperationInspection({
+    required this.request,
+    required this.source,
+    required this.target,
+    required this.currentBranch,
+    required this.sourceOid,
+    required this.targetOid,
+    required this.ahead,
+    required this.behind,
+    required this.expectedCommits,
+    required this.mergeBase,
+    required this.dirtyWorktree,
+    required this.detachedHead,
+    required this.operationInProgress,
+    required this.fingerprint,
+    required this.blockingMessage,
+  });
+
+  final GitBranchOperationRequest request;
+  final String source;
+  final String? target;
+  final String? currentBranch;
+  final String? sourceOid;
+  final String? targetOid;
+  final int ahead;
+  final int behind;
+  final int expectedCommits;
+  final String? mergeBase;
+  final bool dirtyWorktree;
+  final bool detachedHead;
+  final GitBranchOperation? operationInProgress;
+  final String fingerprint;
+  final String? blockingMessage;
+}
+
 GitError _historyFailure({
   required GitErrorCategory category,
   required String userMessage,
@@ -1524,6 +2430,43 @@ GitError _mapBranchError(GitError error) {
   if (RegExp(r'already exists', caseSensitive: false).hasMatch(diagnostic)) {
     return error.copyWith(
       userMessage: 'That branch already exists.',
+      retryable: false,
+    );
+  }
+  return error;
+}
+
+GitError _mapBranchOperationError(GitError error) {
+  if (error.category != GitErrorCategory.processFailed) return error;
+  final diagnostic = error.diagnostic;
+  if (RegExp(
+    r'(local changes|would be overwritten|uncommitted changes)',
+    caseSensitive: false,
+  ).hasMatch(diagnostic)) {
+    return error.copyWith(
+      category: GitErrorCategory.dirtyWorktree,
+      userMessage: 'Commit or stash local changes before this operation.',
+      retryable: false,
+    );
+  }
+  if (RegExp(
+    r'(not a valid branch name|invalid ref)',
+    caseSensitive: false,
+  ).hasMatch(diagnostic)) {
+    return error.copyWith(
+      category: GitErrorCategory.invalidBranchName,
+      userMessage: 'Enter a valid branch name accepted by Git.',
+      retryable: false,
+    );
+  }
+  if (RegExp(
+    r'(non-fast-forward|would be overwritten)',
+    caseSensitive: false,
+  ).hasMatch(diagnostic)) {
+    return error.copyWith(
+      category: GitErrorCategory.nonFastForward,
+      userMessage:
+          'Git could not apply the operation without rewriting history.',
       retryable: false,
     );
   }

@@ -5,25 +5,30 @@ This file is the handoff record for continuing work across query sessions.
 ## Current checkpoint
 
 - Date: 2026-09-03
-- Active task: Task 19, searchable history and commit inspection, is complete
-  on `main`. Task 20 is next and has not been started.
+- Active task: Task 20, safe advanced branch operations, is complete on `main`.
 - Branch: `main`; no new branch or worktree was created.
 - History cleanup: removed the pull-request merge commit from local and remote
   `main` with a lease-protected force update; the branding commits and Task 18
-  content remain in a linear history.
-- Changed files: Task 19 history models, service/gateway APIs, controller and
-  screen, fakes, real-Git/widget tests, behavior ledger, task board, roadmap,
-  README, architecture, plan, changelog, and this checkpoint.
-- Verification: the Task 19 backend exploration tests (2) and History screen
-  tests (6) passed; `flutter analyze` passed; formatting passed; the full suite
-  completed with 100 passing and 2 known Windows-platform expectation failures
-  in `dart_git_backend_test.dart` (UTF-8 process output and CRLF newline
-  normalization); `git diff --check` passed; and the post-rewrite `main` graph
-  contains no merge commit.
-- Next action: wait for the next requested task; Task 20 has not been started.
-- First failing test: the initial Task 19 test failed to compile because
-  `GitHistoryQuery`, `GitHistoryFilters`, `getCommitFiles`, and `getCommitDiff`
-  were missing; the implementation subsequently passed it.
+  content remain in a linear history. The two remaining obsolete branding
+  labels in reachable commit messages were also replaced, and the rewrite
+  backup ref was removed.
+- Changed files: Task 20 branch models, typed errors, AppState preview tokens,
+  repository service/backend/gateway APIs, branch dialog and fakes/tests, plus
+  behavior ledger, task board, roadmap, architecture, plan, changelog, and
+  this checkpoint.
+- Verification: Task 20 backend tests (8) and Branch dialog tests (2) passed;
+  `flutter analyze` passed; formatting passed; the full suite completed with
+  109 passing and the same 2 known Windows-platform expectation failures in
+  `dart_git_backend_test.dart` (UTF-8 process output and CRLF newline
+  normalization); `git diff --check` passed; the current-file scan found no
+  obsolete product-name references; and the post-rewrite `main` graph contains
+  no merge commit. Reachable commit subjects and bodies were also scanned and
+  contain no obsolete product-name references.
+- Next action: activate Task21 by recording its behavior scenarios and first
+  RED test in a later requested session.
+- First failing test: the initial Task20 test failed to compile because the
+  operation models, preview APIs, and stale-preview error category were
+  missing; the implementation subsequently passed it.
 - Blockers: none.
 
 ## Previous checkpoint

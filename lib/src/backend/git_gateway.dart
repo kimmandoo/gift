@@ -54,6 +54,17 @@ abstract interface class GitGateway {
     String name,
   );
 
+  Future<GitBranchOperationPreview> previewBranchOperation(
+    RepositoryId repositoryId,
+    GitBranchOperationRequest request,
+  );
+
+  Future<GitBranchOperationResult> executeBranchOperation(
+    RepositoryId repositoryId,
+    GitBranchOperationRequest request, {
+    GitCancellationToken? cancellationToken,
+  });
+
   Future<List<GitRemote>> getRemotes(RepositoryId repositoryId);
 
   Future<GitRemoteOperationResult> fetch(

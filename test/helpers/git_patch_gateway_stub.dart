@@ -1,7 +1,9 @@
 import 'package:gift/src/backend/commit.dart';
+import 'package:gift/src/backend/branch.dart';
 import 'package:gift/src/backend/diff.dart';
 import 'package:gift/src/backend/domain.dart';
 import 'package:gift/src/backend/history.dart';
+import 'package:gift/src/backend/executor.dart';
 import 'package:gift/src/backend/status.dart';
 
 /// Existing feature fakes do not need partial-patch behavior unless a test is
@@ -40,4 +42,15 @@ mixin GitPatchGatewayStub {
     RepositoryId repositoryId,
     GitPatchSelection selection,
   ) => throw UnimplementedError();
+
+  Future<GitBranchOperationPreview> previewBranchOperation(
+    RepositoryId repositoryId,
+    GitBranchOperationRequest request,
+  ) => throw UnimplementedError();
+
+  Future<GitBranchOperationResult> executeBranchOperation(
+    RepositoryId repositoryId,
+    GitBranchOperationRequest request, {
+    GitCancellationToken? cancellationToken,
+  }) => throw UnimplementedError();
 }

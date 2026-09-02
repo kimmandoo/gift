@@ -37,6 +37,110 @@ class GitBranchActionResult {
   final GitStatusSnapshot status;
 }
 
+/// History-changing operations exposed by the branch workflow.
+enum GitBranchOperation { rename, delete, merge, rebase, cherryPick }
+
+/// Git's recovery commands are intentionally represented as separate phases.
+/// A caller must choose the exact recovery action instead of asking the
+/// backend to guess whether a failed operation should continue or abort.
+enum GitBranchOperationPhase { start, continueOperation, skip, abort }
+
+enum GitBranchOperationState { completed, conflicted, aborted, cancelled }
+
+/// A request for a branch operation. `source` and `target` have operation-
+/// specific meanings documented by [GitBranchOperationPreview].
+class GitBranchOperationRequest {
+  const GitBranchOperationRequest({
+    required this.operation,
+    this.source,
+    this.target,
+    this.phase = GitBranchOperationPhase.start,
+    this.force = false,
+    this.confirmationToken,
+  });
+
+  final GitBranchOperation operation;
+  final String? source;
+  final String? target;
+  final GitBranchOperationPhase phase;
+  final bool force;
+  final String? confirmationToken;
+}
+
+/// The bounded facts shown to a user before a history-changing operation.
+///
+/// For rename/delete, source and target are branch names. For merge, source is
+/// the branch being merged into the current target. For rebase, source is the
+/// current branch and target is its new base. For cherry-pick, source is a
+/// commit/ref and target is the current branch.
+class GitBranchOperationPreview {
+  const GitBranchOperationPreview({
+    required this.repositoryId,
+    required this.request,
+    required this.currentBranch,
+    required this.ahead,
+    required this.behind,
+    required this.expectedCommits,
+    required this.mergeBase,
+    required this.dirtyWorktree,
+    required this.detachedHead,
+    required this.operationInProgress,
+    required this.requiresConfirmation,
+    required this.token,
+    required this.expiresAt,
+    this.blockingMessage,
+  });
+
+  final RepositoryId repositoryId;
+  final GitBranchOperationRequest request;
+  final String? currentBranch;
+  final int ahead;
+  final int behind;
+  final int expectedCommits;
+  final String? mergeBase;
+  final bool dirtyWorktree;
+  final bool detachedHead;
+  final GitBranchOperation? operationInProgress;
+  final bool requiresConfirmation;
+  final String? token;
+  final DateTime? expiresAt;
+  final String? blockingMessage;
+
+  bool get canExecute =>
+      token != null &&
+      expiresAt != null &&
+      expiresAt!.isAfter(DateTime.now()) &&
+      blockingMessage == null;
+}
+
+class GitBranchOperationResult {
+  const GitBranchOperationResult({
+    required this.repositoryId,
+    required this.request,
+    required this.state,
+    required this.status,
+    required this.summary,
+    required this.recoveryActions,
+  });
+
+  final RepositoryId repositoryId;
+  final GitBranchOperationRequest request;
+  final GitBranchOperationState state;
+  final GitStatusSnapshot status;
+  final String summary;
+  final List<GitBranchOperationPhase> recoveryActions;
+
+  bool get historyChanged => state == GitBranchOperationState.completed;
+}
+
+/// The token returned by AppState for a short-lived operation preview.
+class GitBranchPreviewToken {
+  const GitBranchPreviewToken({required this.value, required this.expiresAt});
+
+  final String value;
+  final DateTime expiresAt;
+}
+
 /// Parses `git for-each-ref` rows without depending on localized output.
 List<GitBranch> parseGitBranches(List<int> output) {
   final branches = <GitBranch>[];

@@ -87,6 +87,23 @@ class DartGitGateway implements GitGateway, DiscardPreviewCancellationGateway {
   ) => backend.switchBranch(repositoryId, name);
 
   @override
+  Future<GitBranchOperationPreview> previewBranchOperation(
+    RepositoryId repositoryId,
+    GitBranchOperationRequest request,
+  ) => backend.previewBranchOperation(repositoryId, request);
+
+  @override
+  Future<GitBranchOperationResult> executeBranchOperation(
+    RepositoryId repositoryId,
+    GitBranchOperationRequest request, {
+    GitCancellationToken? cancellationToken,
+  }) => backend.executeBranchOperation(
+    repositoryId,
+    request,
+    cancellationToken: cancellationToken,
+  );
+
+  @override
   Future<List<GitRemote>> getRemotes(RepositoryId repositoryId) =>
       backend.getRemotes(repositoryId);
 

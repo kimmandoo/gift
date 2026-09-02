@@ -38,6 +38,10 @@ enum GitErrorCategory {
   signingFailed,
   commitRefreshFailed,
   invalidGitConfig,
+  invalidBranchName,
+  operationInProgress,
+  staleBranchPreview,
+  branchOperationNotAllowed,
 }
 
 /// A backend error has a short user-facing message and a separately redacted

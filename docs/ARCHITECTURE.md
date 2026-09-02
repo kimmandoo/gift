@@ -426,3 +426,20 @@ the selected commit and path, preventing an older request from replacing a
 newer inspection. The screen exposes copyable OIDs, parent navigation, filter
 controls, and keyboard up/down traversal while reassigning graph lanes across
 appended pages.
+
+## Safe advanced branch operations (Task 20)
+
+`GitBranchOperationRequest` makes rename, delete, merge, rebase, and
+cherry-pick explicit. A start request must carry a short-lived preview token;
+the token is bound in `AppState` to the repository ID, request fields, and a
+fingerprint of the current status and local branch refs. Git-backed
+`check-ref-format --branch` validation produces a typed invalid-branch-name
+failure before a mutation starts.
+
+The preview reports source, target, ahead/behind counts, merge-base, expected
+commit count, dirty-worktree state, detached HEAD state, and any in-progress
+operation. Merge, rebase, and cherry-pick conflicts return an explicit
+conflicted result with only the valid `continue`, `skip`, and/or `abort`
+phases. Cancellation is reported separately, and the backend never converts a
+generic failure into an inferred recovery command. Rename/delete and all
+history-changing starts run through the same per-repository mutation queue.

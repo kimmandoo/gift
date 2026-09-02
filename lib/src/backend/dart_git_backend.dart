@@ -113,6 +113,7 @@ class DartGitBackend {
     return RepositoryService(
       gitPath: installation.executablePath,
       state: _state,
+      runner: _runner,
     ).getBranches(repositoryId);
   }
 
@@ -124,6 +125,7 @@ class DartGitBackend {
     return RepositoryService(
       gitPath: installation.executablePath,
       state: _state,
+      runner: _runner,
     ).createBranch(repositoryId, name);
   }
 
@@ -135,7 +137,37 @@ class DartGitBackend {
     return RepositoryService(
       gitPath: installation.executablePath,
       state: _state,
+      runner: _runner,
     ).switchBranch(repositoryId, name);
+  }
+
+  Future<GitBranchOperationPreview> previewBranchOperation(
+    RepositoryId repositoryId,
+    GitBranchOperationRequest request,
+  ) async {
+    final installation = await getGitInstallation();
+    return RepositoryService(
+      gitPath: installation.executablePath,
+      state: _state,
+      runner: _runner,
+    ).previewBranchOperation(repositoryId, request);
+  }
+
+  Future<GitBranchOperationResult> executeBranchOperation(
+    RepositoryId repositoryId,
+    GitBranchOperationRequest request, {
+    GitCancellationToken? cancellationToken,
+  }) async {
+    final installation = await getGitInstallation();
+    return RepositoryService(
+      gitPath: installation.executablePath,
+      state: _state,
+      runner: _runner,
+    ).executeBranchOperation(
+      repositoryId,
+      request,
+      cancellationToken: cancellationToken,
+    );
   }
 
   Future<List<GitRemote>> getRemotes(RepositoryId repositoryId) async {

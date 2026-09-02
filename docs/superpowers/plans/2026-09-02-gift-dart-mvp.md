@@ -243,3 +243,16 @@ system Git 2.35+.
 4. Passed filter determinism, live-ref movement, UTF-8 metadata, and stale
    selection response coverage with real-Git and widget tests. Task 19 is
    complete; Task 20 is next.
+
+## Completed vertical: safe advanced branch operations
+
+1. Recorded branch rename/delete, merge, rebase, and cherry-pick behavior with
+   explicit preflight and recovery scenarios.
+2. Added the first failing real-Git test for expiring preview tokens, Git-backed
+   branch-name validation, and a fast-forward operation.
+3. Implemented preview-bound branch mutations and explicit
+   start/continue/skip/abort states with typed dirty, detached, conflict,
+   cancellation, and stale-preview outcomes.
+4. Added responsive branch-operation controls and widget coverage.
+5. Focused backend/UI tests passed; the full suite completed with 109 passing
+   and the two documented Windows-platform expectation failures.

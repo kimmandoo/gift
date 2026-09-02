@@ -3,8 +3,8 @@
 This roadmap turns the MVP into a dependable daily Git client while preserving
 gift's clean-room workflow research and minimal 2D pixel-game interface.
 Task 15 was marked safe done under WSL because the remaining native bundle
-check is CI-only in this environment. Tasks 16, 17, 18, and 19 are complete;
-Task 20 is next.
+check is CI-only in this environment. Tasks 16 through 20 are complete;
+Task 21 is next.
 Do not start a later post-MVP task until its dependencies are complete and its
 visible behavior has been recorded in the behavior ledger without copying
 proprietary implementation details or assets.
@@ -113,6 +113,8 @@ cannot display details from an older request.
 ## Task 20 — Safe advanced branch operations
 
 **Depends on:** Tasks 18 and 19.
+
+**Status: Complete.**
 
 **Goal:** Add branch rename/delete, merge, rebase, and cherry-pick with previews
 that make history-changing effects explicit.
