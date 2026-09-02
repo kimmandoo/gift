@@ -1,9 +1,9 @@
 import 'dart:async';
 
-import 'package:gitflu/src/backend/domain.dart';
-import 'package:gitflu/src/backend/error.dart';
-import 'package:gitflu/src/backend/git_gateway.dart';
-import 'package:gitflu/src/backend/history.dart';
+import 'package:gitshiba/src/backend/domain.dart';
+import 'package:gitshiba/src/backend/error.dart';
+import 'package:gitshiba/src/backend/git_gateway.dart';
+import 'package:gitshiba/src/backend/history.dart';
 import 'package:flutter/foundation.dart';
 
 class HistoryState {

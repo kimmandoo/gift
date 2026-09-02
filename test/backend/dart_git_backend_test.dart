@@ -3,16 +3,16 @@ import 'dart:convert';
 import 'dart:io';
 import 'dart:math';
 
-import 'package:gitflu/src/backend/dart_git_backend.dart';
-import 'package:gitflu/src/backend/commit.dart';
-import 'package:gitflu/src/backend/discard.dart';
-import 'package:gitflu/src/backend/diff.dart';
-import 'package:gitflu/src/backend/domain.dart';
-import 'package:gitflu/src/backend/error.dart';
-import 'package:gitflu/src/backend/executor.dart';
-import 'package:gitflu/src/backend/git_installation_service.dart';
-import 'package:gitflu/src/backend/repository_service.dart';
-import 'package:gitflu/src/backend/remote.dart';
+import 'package:gitshiba/src/backend/dart_git_backend.dart';
+import 'package:gitshiba/src/backend/commit.dart';
+import 'package:gitshiba/src/backend/discard.dart';
+import 'package:gitshiba/src/backend/diff.dart';
+import 'package:gitshiba/src/backend/domain.dart';
+import 'package:gitshiba/src/backend/error.dart';
+import 'package:gitshiba/src/backend/executor.dart';
+import 'package:gitshiba/src/backend/git_installation_service.dart';
+import 'package:gitshiba/src/backend/repository_service.dart';
+import 'package:gitshiba/src/backend/remote.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
@@ -52,7 +52,7 @@ void main() {
   test('starts the Dart backend and reports health', () {
     final health = DartGitBackend().health();
 
-    expect(health, const Health(product: 'gitflu', coreVersion: '1.0.0'));
+    expect(health, const Health(product: 'gitshiba', coreVersion: '1.0.0'));
   });
 
   test(
@@ -126,7 +126,7 @@ void main() {
     () async {
       final service = GitInstallationService();
       final discovered = await service.getOrDiscover();
-      final missingPath = '${Directory.systemTemp.path}/missing-gitflu-git';
+      final missingPath = '${Directory.systemTemp.path}/missing-gitshiba-git';
 
       await expectLater(
         service.configureGitPath(missingPath),
@@ -216,12 +216,12 @@ void main() {
         await expectGitSuccess([
           'config',
           'user.name',
-          'Gitflu Test',
+          'Gitshiba Test',
         ], workingDirectory: directory.path);
         await expectGitSuccess([
           'config',
           'user.email',
-          'gitflu@example.test',
+          'gitshiba@example.test',
         ], workingDirectory: directory.path);
 
         final tracked = File('${directory.path}/tracked.txt');
@@ -284,12 +284,12 @@ void main() {
         await expectGitSuccess([
           'config',
           'user.name',
-          'Gitflu Test',
+          'Gitshiba Test',
         ], workingDirectory: directory.path);
         await expectGitSuccess([
           'config',
           'user.email',
-          'gitflu@example.test',
+          'gitshiba@example.test',
         ], workingDirectory: directory.path);
 
         final tracked = File('${directory.path}/tracked.txt');
@@ -364,12 +364,12 @@ void main() {
         await expectGitSuccess([
           'config',
           'user.name',
-          'Gitflu Test',
+          'Gitshiba Test',
         ], workingDirectory: directory.path);
         await expectGitSuccess([
           'config',
           'user.email',
-          'gitflu@example.test',
+          'gitshiba@example.test',
         ], workingDirectory: directory.path);
 
         final path = 'notes & plan.txt';
@@ -816,12 +816,12 @@ Future<void> createCommittedRepository(String path, String fileName) async {
   await expectGitSuccess([
     'config',
     'user.name',
-    'Gitflu Test',
+    'Gitshiba Test',
   ], workingDirectory: path);
   await expectGitSuccess([
     'config',
     'user.email',
-    'gitflu@example.test',
+    'gitshiba@example.test',
   ], workingDirectory: path);
   await File('$path/$fileName').writeAsString('initial\n');
   await expectGitSuccess(['add', '--', fileName], workingDirectory: path);
@@ -851,7 +851,7 @@ Future<void> expectStaleDiscard(
 }
 
 Future<void> withTempDirectory(Future<void> Function(Directory) action) async {
-  final directory = await Directory.systemTemp.createTemp('gitflu-test-');
+  final directory = await Directory.systemTemp.createTemp('gitshiba-test-');
   try {
     await action(directory);
   } finally {

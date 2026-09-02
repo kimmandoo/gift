@@ -2,7 +2,7 @@
 
 ## Goal
 
-gitflu is a clean-room, black-box behavioral reverse engineering project for
+gitshiba is a clean-room, black-box behavioral reverse engineering project for
 the user-visible Git GUI system found in JetBrains IDEs. The target is the
 workflow model and information hierarchy: how a user sees repository state,
 chooses a change, opens a diff, stages or discards work, commits, navigates
@@ -20,7 +20,7 @@ the original implementation.
   and expected Git state in `docs/research/jetbrains-git-mvp-behavior.md`.
 - Do not copy JetBrains source code, binaries, private protocols, proprietary
   assets, icons, screenshots, or exact implementation details.
-- Use neutral gitflu names and original code/assets even when the behavior is
+- Use neutral gitshiba names and original code/assets even when the behavior is
   intentionally equivalent.
 - Label an unverified behavior as a hypothesis until a scenario test or a
   documented black-box observation confirms it.
@@ -28,9 +28,9 @@ the original implementation.
 ## Behavioral target
 
 The following JetBrains Git GUI concepts define the MVP target. The names in
-the right column are gitflu's implementation concepts, not copied UI labels.
+the right column are gitshiba's implementation concepts, not copied UI labels.
 
-| JetBrains-observed concept | gitflu behavior target | Evidence required |
+| JetBrains-observed concept | gitshiba behavior target | Evidence required |
 | --- | --- | --- |
 | Project/repository navigation | A repository navigator with the active root and recent repositories | Open, switch, and missing-root scenarios |
 | Local Changes / changelists | Separate staged, unstaged, untracked, and conflicted facets with stable grouping | Porcelain v2 fixtures and visible state snapshots |

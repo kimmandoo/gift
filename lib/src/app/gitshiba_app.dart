@@ -1,15 +1,15 @@
 import 'package:flutter/material.dart';
-import 'package:gitflu/src/app/pixel_theme.dart';
-import 'package:gitflu/src/backend/dart_git_gateway.dart';
-import 'package:gitflu/src/backend/git_gateway.dart';
-import 'package:gitflu/src/features/repository/recent_repository_store.dart';
-import 'package:gitflu/src/features/repository/welcome_screen.dart';
-import 'package:gitflu/src/features/repository/workspace_controller.dart';
-import 'package:gitflu/src/features/repository/workspace_store.dart';
+import 'package:gitshiba/src/app/pixel_theme.dart';
+import 'package:gitshiba/src/backend/dart_git_gateway.dart';
+import 'package:gitshiba/src/backend/git_gateway.dart';
+import 'package:gitshiba/src/features/repository/recent_repository_store.dart';
+import 'package:gitshiba/src/features/repository/welcome_screen.dart';
+import 'package:gitshiba/src/features/repository/workspace_controller.dart';
+import 'package:gitshiba/src/features/repository/workspace_store.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-class GitfluApp extends StatefulWidget {
-  const GitfluApp({
+class GitshibaApp extends StatefulWidget {
+  const GitshibaApp({
     super.key,
     this.gateway,
     this.recentStore,
@@ -27,10 +27,10 @@ class GitfluApp extends StatefulWidget {
   final bool autoInitialize;
 
   @override
-  State<GitfluApp> createState() => _GitfluAppState();
+  State<GitshibaApp> createState() => _GitshibaAppState();
 }
 
-class _GitfluAppState extends State<GitfluApp> {
+class _GitshibaAppState extends State<GitshibaApp> {
   late ThemeMode _themeMode;
   late final GitGateway _gateway;
   late final RecentRepositoryStore _recentStore;
@@ -41,7 +41,7 @@ class _GitfluAppState extends State<GitfluApp> {
   void initState() {
     super.initState();
     _themeMode =
-        widget.preferences?.getString(GitfluApp.themeModeKey) == 'light'
+        widget.preferences?.getString(GitshibaApp.themeModeKey) == 'light'
         ? ThemeMode.light
         : ThemeMode.dark;
     _gateway = widget.gateway ?? DartGitGateway();
@@ -74,7 +74,7 @@ class _GitfluAppState extends State<GitfluApp> {
         : ThemeMode.dark;
     setState(() => _themeMode = next);
     await widget.preferences?.setString(
-      GitfluApp.themeModeKey,
+      GitshibaApp.themeModeKey,
       next == ThemeMode.light ? 'light' : 'dark',
     );
   }
@@ -82,7 +82,7 @@ class _GitfluAppState extends State<GitfluApp> {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'gitflu',
+      title: 'gitshiba',
       debugShowCheckedModeBanner: false,
       theme: buildPixelTheme(brightness: Brightness.light),
       darkTheme: buildPixelTheme(),

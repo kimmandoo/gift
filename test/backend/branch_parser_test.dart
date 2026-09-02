@@ -1,6 +1,6 @@
 import 'dart:convert';
 
-import 'package:gitflu/src/backend/branch.dart';
+import 'package:gitshiba/src/backend/branch.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {

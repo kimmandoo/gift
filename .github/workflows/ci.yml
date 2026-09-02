@@ -52,15 +52,15 @@ jobs:
         include:
           - os: ubuntu-latest
             target: linux
-            artifact: gitflu-linux-x64
+            artifact: gitshiba-linux-x64
             path: build/linux/x64/release/bundle/
           - os: macos-latest
             target: macos
-            artifact: gitflu-macos
-            path: build/macos/Build/Products/Release/gitflu.app
+            artifact: gitshiba-macos
+            path: build/macos/Build/Products/Release/gitshiba.app
           - os: windows-latest
             target: windows
-            artifact: gitflu-windows-x64
+            artifact: gitshiba-windows-x64
             path: build/windows/x64/runner/Release/
     steps:
       - name: Check out source

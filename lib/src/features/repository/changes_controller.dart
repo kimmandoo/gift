@@ -1,12 +1,12 @@
 import 'dart:async';
 
-import 'package:gitflu/src/backend/commit.dart';
-import 'package:gitflu/src/backend/domain.dart';
-import 'package:gitflu/src/backend/discard.dart';
-import 'package:gitflu/src/backend/diff.dart';
-import 'package:gitflu/src/backend/error.dart';
-import 'package:gitflu/src/backend/git_gateway.dart';
-import 'package:gitflu/src/backend/status.dart';
+import 'package:gitshiba/src/backend/commit.dart';
+import 'package:gitshiba/src/backend/domain.dart';
+import 'package:gitshiba/src/backend/discard.dart';
+import 'package:gitshiba/src/backend/diff.dart';
+import 'package:gitshiba/src/backend/error.dart';
+import 'package:gitshiba/src/backend/git_gateway.dart';
+import 'package:gitshiba/src/backend/status.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 

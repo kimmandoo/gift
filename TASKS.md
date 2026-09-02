@@ -1,4 +1,4 @@
-# 📋 gitflu Task Management
+# 📋 gitshiba Task Management
 
 > **Project Goal:** Build a clean-room, cross-platform desktop Git client with
 > familiar IDE-style workflows, a minimal 2D pixel-game UI, a Flutter Desktop
@@ -12,7 +12,7 @@
 
 | # | Scope | Dart backend deliverables | Flutter deliverables | Status |
 |---|---|---|---|:---:|
-| **1** | Scaffold & contract | `DartGitBackend.health()` and backend contracts | `GitfluApp` shell | ✅ |
+| **1** | Scaffold & contract | `DartGitBackend.health()` and backend contracts | `GitshibaApp` shell | ✅ |
 | **2** | Behavior ledger & harness | Isolated Git fixtures and direct process helpers | Clean-room scenario ledger | ✅ |
 | **3** | Git executor & discovery | `ProcessGitRunner`, typed errors, redaction, PATH scan | Git settings bridge contract | ✅ |
 | **4** | Repository registry & open | `AppState`, opaque IDs, root validation | Welcome screen and recent paths | ✅ |
@@ -176,7 +176,7 @@ covered by CI.
 - [x] Preserved history graph lanes when another page is appended.
 - [x] Prevented stale Git settings requests from updating disposed UI state.
 - [x] Revoked cancelled discard confirmations and cleaned expired tokens.
-- [x] Unified Dart and desktop product metadata under `gitflu`.
+- [x] Unified Dart and desktop product metadata under `gitshiba`.
 - [x] Added an MIT license and tag-only release workflow triggers.
 - [x] Replaced isolated history markers with connected multi-lane fork, merge,
   and continuation segments that survive pagination.
@@ -187,7 +187,7 @@ covered by CI.
 - [x] Hardened compact-window layouts for the welcome, changes, history, and
   operation-dialog surfaces.
 - [x] Generated Windows and macOS release icons from
-  `assets/images/gitflu_icon.png`.
+  `assets/images/gitshiba_icon.png`.
 - [x] Marked safe done under WSL; Linux GTK/native bundle execution remains a
   CI-only verification because the host cannot provide the required desktop
   package.

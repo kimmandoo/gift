@@ -2,7 +2,7 @@
 
 ## Jersey 15 font
 
-gitflu bundles the Jersey 15 font from the Google Fonts repository.
+gitshiba bundles the Jersey 15 font from the Google Fonts repository.
 
 Copyright 2023 The Soft Type Project Authors
 (https://github.com/scfried/soft-type-jersey)
