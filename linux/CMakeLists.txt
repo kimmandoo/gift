@@ -7,7 +7,7 @@ project(runner LANGUAGES CXX)
 set(BINARY_NAME "gitflu")
 # The unique GTK application identifier for this application. See:
 # https://wiki.gnome.org/HowDoI/ChooseApplicationID
-set(APPLICATION_ID "dev.gitflu.gitflu")
+set(APPLICATION_ID "app.kimmandoo.gitflu")
 
 # Linux bundles do not have a PE-style file-properties table. The installed
 # AppStream metadata carries the same owner as the Windows and macOS artifacts.
@@ -125,7 +125,7 @@ install(DIRECTORY "${PROJECT_BUILD_DIR}/${FLUTTER_ASSET_DIR_NAME}"
   DESTINATION "${INSTALL_BUNDLE_DATA_DIR}" COMPONENT Runtime)
 
 install(FILES
-  "${CMAKE_CURRENT_SOURCE_DIR}/packaging/dev.gitflu.gitflu.metainfo.xml"
+  "${CMAKE_CURRENT_SOURCE_DIR}/packaging/app.kimmandoo.gitflu.metainfo.xml"
   DESTINATION "${CMAKE_INSTALL_PREFIX}/share/metainfo"
   COMPONENT Runtime)
 

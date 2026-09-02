@@ -99,21 +99,26 @@ This file is the handoff record for continuing work across query sessions.
   bodies to selectable `Text`, and excluded line numbers from copied content so
   dragging across multiple rows stays continuous.
 - Current packaging fix changed Windows and macOS executable copyright fields to
-  `kimmandoo` and added matching Linux AppStream developer metadata.
+  `kimmandoo`, added matching Linux AppStream developer metadata, and unified
+  desktop bundle identifiers under `app.kimmandoo.gitflu`.
 - Current layout hardening made narrow summary/status rows wrap safely, added
   branch-input stacking below 300 px, and enabled dialog action overflow
   spacing so text and buttons do not collide.
 - Current session verification passed `flutter analyze`, `flutter test`, and
   `PATH=/home/mgkim/.local/flutter/bin:$PATH dart run tool/verify.dart` with
   all 71 tests passing.
+- Current identity verification found no remaining obsolete bundle-ID or
+  native-language metadata references in the source tree, and the Linux
+  AppStream metadata parsed as valid XML.
 - Changed implementation files: `lib/src/app/gitflu_app.dart`,
   `lib/src/app/pixel_theme.dart`, `lib/src/backend/history.dart`, core
   repository screens/dialogs, `pubspec.yaml`, desktop icon resources, tests,
   and UI documentation.
-- Concurrent work note: the unstaged README Windows registry command was not
-  created or staged by this task and remains untouched for its owner.
-- Blockers: no source blocker. The pre-existing untracked `.serena/` directory
-  was left untouched and is not part of the commit.
+- Concurrent work note: the README Windows registry command and `.serena/`
+  project configuration were included in this session's requested commit.
+- Blockers: no source blocker. The Linux release build still requires the host
+  `libgtk-3-dev` package, whose installation requires a sudo password
+  unavailable to this session.
 - Next action: install `libgtk-3-dev` on this Linux host and rerun
   `./tool/build_linux.sh` when local bundle verification is needed.
 

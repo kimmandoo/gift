@@ -10,6 +10,7 @@
 - fix(ui): corrected light-theme contrast, tightened button proportions, and aligned screen gutters.
 - fix(ui): enabled continuous multi-line selection across rendered diff rows.
 - fix(build): changed desktop executable copyright metadata to kimmandoo.
+- change(identity): changed desktop bundle identifiers to app.kimmandoo.gitflu.
 - fix(ui): hardened compact layouts across core screens and operation dialogs.
 - build(icon): generated desktop release icons from the gitflu icon asset.
 - docs(roadmap): planned the ordered post-MVP work through signed public releases.

@@ -8,7 +8,7 @@
 PRODUCT_NAME = gitflu
 
 // The application's bundle identifier
-PRODUCT_BUNDLE_IDENTIFIER = dev.gitflu.gitflu
+PRODUCT_BUNDLE_IDENTIFIER = app.kimmandoo.gitflu
 
 // The copyright displayed in application information
 PRODUCT_COPYRIGHT = Copyright © 2026 kimmandoo. All rights reserved.

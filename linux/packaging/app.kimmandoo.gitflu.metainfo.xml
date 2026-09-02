@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <component type="desktop-application">
-  <id>dev.gitflu.gitflu</id>
+  <id>app.kimmandoo.gitflu</id>
   <name>gitflu</name>
   <summary>A keyboard-first desktop Git client</summary>
   <metadata_license>MIT</metadata_license>

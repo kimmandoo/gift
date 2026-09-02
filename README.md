@@ -226,6 +226,7 @@ the Windows SDK, then run from PowerShell:
 
 ```powershell
 flutter config --enable-windows-desktop
+reg add "HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\AppModelUnlock" /t REG_DWORD /f /v "AllowDevelopmentWithoutDevLicense" /d "1"
 flutter pub get
 flutter build windows --release
 ```
