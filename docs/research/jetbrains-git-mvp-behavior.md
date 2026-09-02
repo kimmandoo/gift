@@ -1,9 +1,19 @@
 # JetBrains Git MVP behavior ledger
 
-This clean-room ledger records approved, neutral Git behavior scenarios for
-the MVP. It contains no proprietary captures, source, or implementation
-details. Later authorized observations append versioned notes to the relevant
-scenario without storing proprietary captures.
+This is the product's primary behavior ledger for black-box reverse engineering
+of the user-visible Git GUI system in JetBrains IDEs. It records the workflow
+and information hierarchy that gitflu intends to reproduce, using neutral
+implementation names and independently verifiable Git state.
+
+This clean-room ledger contains no proprietary captures, source, binaries,
+assets, or implementation details. An observation describes only the starting
+state, user action, visible result, and corresponding system-Git result. Later
+authorized observations append versioned notes to the relevant scenario; an
+uncertain observation stays marked as a hypothesis until verified.
+
+The matching visual target is defined in
+`docs/superpowers/specs/2026-09-02-jetbrains-git-gui-pixel-ui-design.md`: a
+minimal 2D pixel-game interface with desktop Git GUI information density.
 
 | Scenario | Source type | Input state | User intent | Expected visible state | Expected Git state |
 | --- | --- | --- | --- | --- | --- |
@@ -15,3 +25,24 @@ scenario without storing proprietary captures.
 | LOG-01 | approved design | The repository has one or more commits. | Browse recent history. | The UI lists commits in a stable, readable order with summary metadata. | `git log` supplies the represented commit ordering and metadata. |
 | BRANCH-01 | approved design | The repository has a current branch and may have additional local branches. | View, create, or switch a local branch. | The UI identifies the current branch and reflects branch creation or selection. | `HEAD` points to the selected branch; refs under `refs/heads/` reflect local branch creation. |
 | REMOTE-01 | approved design | The repository has a configured remote and a local branch that can synchronize. | Fetch, pull, or push through the selected remote. | The UI reports synchronization progress and the resulting local/remote relationship. | The chosen Git network operation updates remote-tracking refs and/or remote refs according to the operation result. |
+
+## Observation protocol
+
+For every new JetBrains behavior, record the following in order:
+
+1. Define the repository state and the selected user intent.
+2. Observe the visible controls, grouping, selection, feedback, and recovery
+   path without inspecting proprietary implementation artifacts.
+3. Reproduce the starting state in an isolated Git fixture.
+4. Express the result as a Dart backend contract, controller state, and Flutter
+   acceptance test.
+5. Add a versioned note when the behavior is confirmed, changed, or still
+   uncertain.
+
+## MVP equivalence boundary
+
+“Equivalent” means that a user can complete the same Git workflow, understand
+the same important state transitions, and recover from the same failure class.
+It does not mean copying source code, private protocols, exact assets, or
+unnecessary visual details. gitflu's UI must keep its own minimal 2D pixel-game
+visual language while preserving the observed workflow semantics.

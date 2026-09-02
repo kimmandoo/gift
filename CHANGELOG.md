@@ -2,6 +2,8 @@
 
 ## 2026-09-02
 
+- docs(branding): updated the README logo with an original pixel-game Git mascot.
+- docs(spec): defined the JetBrains Git GUI reverse-engineering target and minimal pixel UI direction.
 - breaking(architecture): migrated the Git backend from a native bridge to pure Dart.
 - build(scaffold): removed native build plugins, generated bindings, and native toolchain files.
 - test(backend): added Dart coverage for Git execution, discovery, redaction, and repository handles.

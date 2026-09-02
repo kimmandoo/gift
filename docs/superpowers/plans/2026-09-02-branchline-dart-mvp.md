@@ -1,13 +1,19 @@
 # Branchline Dart MVP Implementation Plan
 
-**Goal:** Build a clean-room, cross-platform Git GUI with a Flutter Desktop
-frontend and a pure Dart backend.
+**Goal:** Reverse-engineer the user-visible behavior and information
+architecture of the JetBrains IDE Git GUI through black-box observation, then
+build a clean-room, cross-platform equivalent with a minimal 2D pixel-game UI,
+a Flutter Desktop frontend, and a pure Dart backend.
 
 **Architecture:** Flutter owns presentation, navigation, keyboard handling,
 and UI state. Dart backend services own repository identity, direct system-Git
 execution, machine-readable parsing, mutations, cancellation, and typed
 errors. The UI consumes the backend through `GitGateway`, which is a normal
 Dart interface rather than a native bridge.
+
+The JetBrains behavior ledger is the product source of truth for workflow
+equivalence. The pixel UI specification is the source of truth for spacing,
+palette, focus treatment, responsive layout, and original visual assets.
 
 **Tooling:** Flutter stable, Dart 3.13+, Material 3, Riverpod, `dart:io`, and
 system Git 2.35+.
@@ -20,6 +26,10 @@ system Git 2.35+.
 - Bound captured output and continuously drain both process pipes.
 - Redact credential URLs and sensitive values before putting Git output in a
   diagnostic.
+- Treat JetBrains behavior as a black-box behavioral target; do not copy
+  proprietary source, binaries, assets, screenshots, or private protocols.
+- Implement every workflow with explicit loading, empty, success, warning, and
+  error states in the minimal 2D pixel-game visual system.
 - Keep one mutation per repository at a time and validate opaque IDs against
   the in-memory registry that created them.
 - Follow `AGENTS.md`: update `CHANGELOG.md`, maintain the checkpoint, and use a
@@ -47,6 +57,15 @@ system Git 2.35+.
 - [x] Canonical repository opening and session-local opaque IDs.
 - [x] Recent repository persistence and configurable Git path UI.
 - [x] Removed the previous native implementation and generated bridge assets.
+
+## Product direction
+
+- [ ] Capture each target workflow as a neutral JetBrains behavior-ledger
+  scenario before implementation.
+- [ ] Apply the 4 px/8 px grid, restrained dark palette, crisp borders, and
+  original pixel motifs from the UI specification.
+- [ ] Preserve keyboard-first navigation, visible focus, semantic labels, and
+  text-backed status indicators throughout the pixel treatment.
 
 ## Next vertical: status and changes
 

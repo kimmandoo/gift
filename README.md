@@ -1,12 +1,12 @@
 <div align="center">
 
-<img src="assets/images/gitflu_logo.jpg" alt="gitflu logo" width="260" style="border-radius: 16px; box-shadow: 0 4px 20px rgba(0,0,0,0.3);" />
+<img src="assets/images/gitflu_logo.png" alt="gitflu pixel shiba Git mascot" width="260" style="image-rendering: pixelated; border: 4px solid #1A222C;" />
 
 # gitflu
 
 **`gitflow` + `flutter` + `git gui`**
 
-*A keyboard-first, clean-room Git GUI built entirely with Dart and Flutter.*
+*A keyboard-first, clean-room behavioral reverse engineering of a JetBrains-style Git GUI, presented as a minimal 2D pixel-game interface.*
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Flutter](https://img.shields.io/badge/Flutter-3.x-02569B?logo=flutter&logoColor=white)](https://flutter.dev)
@@ -17,9 +17,18 @@
 
 ## About gitflu
 
-gitflu is a lightweight, cross-platform Git GUI for a smooth, keyboard-centric
-workflow. Flutter owns the desktop UI, while a pure Dart backend runs the
-system Git executable directly and exposes typed domain services to the UI.
+gitflu is a lightweight, cross-platform Git GUI whose product target is the
+user-visible workflow and information hierarchy of the Git GUI system in
+JetBrains IDEs. The project uses black-box behavioral reverse engineering: it
+reproduces observable states and feedback with original code and assets,
+without copying proprietary implementation details.
+
+The UI is intentionally minimal and game-like: a restrained dark palette,
+crisp pixel borders, compact panels, and small original 2D pixel motifs. It
+keeps desktop Git density and keyboard-first behavior while making the next
+safe action obvious to a new user. Flutter owns presentation; a pure Dart
+backend runs the system Git executable directly and exposes typed domain
+services to the UI.
 
 The backend uses `Process.start` with an argument list and
 `runInShell: false`. Git commands never cross a shell, credentials are
@@ -33,7 +42,7 @@ redacted from diagnostics, and captured output is bounded.
 ```mermaid
 flowchart TD
     subgraph Flutter["Flutter Desktop UI"]
-        UI[App Shell & Features\nChanges · Log · Branches · Diff]
+        UI[Pixel App Shell & Features\nChanges · Log · Branches · Diff]
         State[Riverpod / Controller State]
         Gateway[GitGateway Contract]
     end
@@ -59,6 +68,8 @@ flowchart TD
 ## Features
 
 - Flutter Desktop frontend with Material 3.
+- JetBrains Git GUI behavior ledger with a clean-room, black-box reverse-engineering target.
+- Minimal 2D pixel-game visual system with keyboard-first desktop interactions.
 - Dart-only backend with no FFI, native bridge, or generated bindings.
 - System Git discovery and validation for Git 2.35+.
 - Opaque, session-local repository handles.
@@ -89,6 +100,7 @@ Run the desktop app with `flutter run -d windows`, `flutter run -d macos`, or
 ## Roadmap
 
 - [x] Dart backend scaffold, safe Git executor, Git discovery, and repository opening.
+- [ ] JetBrains-equivalent behavior slices with the original pixel UI system.
 - [ ] Repository status and grouped changes view.
 - [ ] Bounded unified diff viewer.
 - [ ] Staging, discard, and commit workflows.

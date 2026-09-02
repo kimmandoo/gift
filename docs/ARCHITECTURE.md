@@ -3,6 +3,13 @@
 이 문서는 처음 코드를 읽는 사람을 위한 gitflu의 지도입니다. 앱은
 Flutter 화면과 Dart 백엔드가 같은 프로세스 안에서 동작합니다.
 
+제품의 동작 목표는 JetBrains IDE Git GUI를 블랙박스로 관찰해 사용자에게
+보이는 Git 작업 흐름과 상태 전환을 재현하는 것입니다. 시각적으로는
+`docs/superpowers/specs/2026-09-02-jetbrains-git-gui-pixel-ui-design.md`의
+미니멀한 2D 도트 게임그래픽 규칙을 따릅니다. 따라서 기능을 추가할 때는
+먼저 동작 원장에 시나리오를 적고, 그 다음 Flutter 화면과 Dart 백엔드를
+연결합니다. 원본 코드나 독점 에셋을 복사하는 방식은 사용하지 않습니다.
+
 ## 한 번의 저장소 열기 흐름
 
 ```text
@@ -62,6 +69,8 @@ main.dart
 5. `GitGateway`에 같은 의도의 메서드를 선언하고
    `DartGitGateway`에서 위임합니다.
 6. 백엔드 테스트를 먼저 추가한 뒤 컨트롤러와 Flutter 화면을 연결합니다.
+7. 동작 원장의 visible state와 도트 UI 스펙의 색상·간격·포커스 규칙을
+   확인한 뒤 loading, empty, success, warning, error 상태를 모두 그립니다.
 
 ## 테스트를 읽는 순서
 

@@ -1,7 +1,9 @@
 # 📋 gitflu Task Management
 
-> **Project Goal:** Build a clean-room, cross-platform Git GUI with a Flutter
-> Desktop frontend and a pure Dart backend for Windows, macOS, and Linux.
+> **Project Goal:** Black-box reverse-engineer the user-visible Git GUI system
+> in JetBrains IDEs, then build a clean-room, cross-platform equivalent with a
+> minimal 2D pixel-game UI, a Flutter Desktop frontend, and a pure Dart backend
+> for Windows, macOS, and Linux.
 
 ## Progress
 
@@ -23,7 +25,7 @@
 | **10** | History & graph | Paginated log and deterministic lanes | History screen and details | ⏳ |
 | **11** | Branch management | Ref parsing, validation, and switch | Branch popup and tracking flow | ⏳ |
 | **12** | Remotes & cancellation | Fetch/pull/push and operation cancellation | Progress bar and controls | ⏳ |
-| **13** | Desktop UX & theme | Redacted diagnostics and classification | Responsive shell, theme, shortcuts | ⏳ |
+| **13** | JetBrains-equivalent UX & pixel theme | Redacted diagnostics and classification | Minimal 2D pixel-game shell, responsive layout, theme, shortcuts | ⏳ |
 | **14** | Packaging & CI | Cross-platform verification scripts | Desktop release artifacts | ⏳ |
 
 ## Completed foundations
@@ -39,6 +41,17 @@
 - [x] Recent repository persistence and Git settings retry flow.
 - [x] Removed FFI, generated bindings, native build plugins, and the former
   native implementation.
+
+## Product contracts
+
+- `docs/research/jetbrains-git-mvp-behavior.md` is the clean-room behavior
+  ledger for the JetBrains Git GUI reverse-engineering target.
+- `docs/superpowers/specs/2026-09-02-jetbrains-git-gui-pixel-ui-design.md`
+  defines the original minimal 2D pixel-game visual system, desktop shell,
+  interaction states, accessibility, and acceptance criteria.
+- A task is complete only when its behavior is independently testable and its
+  visible states fit both contracts. Proprietary source, assets, captures, and
+  implementation details are never copied.
 
 ## Active task
 
