@@ -5,8 +5,8 @@ This file is the handoff record for continuing work across query sessions.
 ## Current checkpoint
 
 - Date: 2026-09-02
-- Milestone: Dart-only backend migration is implemented; Task 5 remains the
-  next active product task.
+- Milestone: Task 5, Porcelain v2 Status & Changes View, is complete; Task 6,
+  Unified Diff, is the next active product task.
 - Source of truth: `TASKS.md` and
   `docs/superpowers/plans/2026-09-02-branchline-dart-mvp.md`.
 - Completed scope: removed the native implementation, FFI bridge, generated
@@ -17,31 +17,39 @@ This file is the handoff record for continuing work across query sessions.
   `docs/ARCHITECTURE.md` and beginner-oriented source comments.
 - Verification: installed the pinned Flutter 3.47.2 SDK with Dart 3.13.2 in
   `/tmp/codex-flutter`, then passed `flutter pub get`,
-  `dart format --output=none --set-exit-if-changed lib test integration_test`,
-  `flutter analyze` (`No issues found!`), the full `flutter test` suite (19
-  tests), `flutter test test/backend/dart_git_backend_test.dart` (9 tests),
-  and `flutter test integration_test/app_smoke_test.dart` (1 test). A local
-  GTK staging directory under `/tmp/codex-gtk` supplied Linux desktop build
+  `dart format lib test integration_test`, `flutter analyze` (`No issues
+  found!`), the full `flutter test` suite (27 tests),
+  `flutter test test/backend/dart_git_backend_test.dart` (11 tests),
+  `flutter test test/backend/status_parser_test.dart` (4 tests), and
+  `flutter test integration_test/app_smoke_test.dart` (1 test). A local GTK
+  staging directory under `/tmp/codex-gtk` supplied Linux desktop build
   dependencies because the system package manager required an unavailable
-  sudo password. `git diff --check` passed, and repository-wide searches found
-  no references to the removed native implementation or build system.
-- Commit identity cleanup: rewrote all 26 reachable commits to
+  sudo password. `git diff --check` passed.
+- Commit identity cleanup: rewrote all reachable commits to
   `kimmandoo <mingyu5675@gmail.com>`, removed the temporary rewrite refs, and
-  force-pushed `main` to GitHub. Local and remote `main` both point to
-  `9f4c87b`; `git log --all` reports only that identity. The pre-rewrite
-  history remains recoverable from `/tmp/gitflu-before-author-rewrite.bundle`.
+  force-pushed `main` to GitHub. `git log --all` reports only that identity.
+  The pre-rewrite history remains recoverable from
+  `/tmp/gitflu-before-author-rewrite.bundle`.
 - Current session: rewrote the README in English as an open-source desktop Git
   client introduction, kept the methodology wording in design documentation,
   and removed it from public-facing project docs. Replaced the README logo with
   `assets/images/gitflu_logo.png`, an original transparent RGBA pixel-game Git
   mascot based on the existing shiba identity. The old JPEG logo was removed.
-- Verification: the replacement logo is a `1312x1199` RGBA PNG, README points
-  only to the PNG, and no methodology wording remains in README, TASKS,
-  architecture, or changelog files. `git diff --check` and the existing Flutter
-  test/analyzer verification remain green; this session changes docs and an
-  image asset only.
+- Current Task 5 changes: changed `lib/src/backend/dart_git_backend.dart`,
+  `dart_git_gateway.dart`, `git_gateway.dart`, and `repository_service.dart`;
+  added `lib/src/backend/status.dart`,
+  `lib/src/features/repository/changes_controller.dart`, and
+  `changes_screen.dart`; rewired `repository_controller.dart` and
+  `welcome_screen.dart`; and changed
+  `test/backend/dart_git_backend_test.dart`,
+  `test/backend/status_parser_test.dart`,
+  `test/features/repository/changes_screen_test.dart`,
+  `welcome_screen_test.dart`, and
+  `test/features/settings/git_settings_dialog_test.dart`. Updated `TASKS.md`,
+  the implementation plan, the behavior ledger, `README.md`,
+  `docs/ARCHITECTURE.md`, `CHANGELOG.md`, and this checkpoint.
 - Next action: in the next product session, continue with the first failing
-  Task 5 status-parser test.
+  Task 6 unified-diff test.
 
 ## Resume procedure
 

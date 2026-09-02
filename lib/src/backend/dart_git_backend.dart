@@ -1,6 +1,7 @@
 import 'domain.dart';
 import 'git_installation_service.dart';
 import 'repository_service.dart';
+import 'status.dart';
 
 /// Application-facing entry point for backend operations.
 ///
@@ -31,6 +32,14 @@ class DartGitBackend {
       gitPath: installation.executablePath,
       state: _state,
     ).openRepository(path);
+  }
+
+  Future<GitStatusSnapshot> getStatus(RepositoryId repositoryId) async {
+    final installation = await getGitInstallation();
+    return RepositoryService(
+      gitPath: installation.executablePath,
+      state: _state,
+    ).getStatus(repositoryId);
   }
 
   Future<RepositoryHandle> lookup(RepositoryId repositoryId) =>

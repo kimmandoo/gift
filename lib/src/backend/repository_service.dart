@@ -5,6 +5,7 @@ import 'dart:math';
 import 'domain.dart';
 import 'error.dart';
 import 'executor.dart';
+import 'status.dart';
 
 /// In-memory registry for repository roots and session-local opaque IDs.
 ///
@@ -38,6 +39,23 @@ class AppState {
       );
     }
     return RepositoryHandle(root: record.root, generation: record.generation);
+  }
+
+  int updateStatusGeneration(RepositoryId repositoryId, String contentHash) {
+    final record = _repositories[repositoryId];
+    if (record == null) {
+      throw const GitError(
+        category: GitErrorCategory.invalidOpaqueId,
+        userMessage: 'The repository handle is not valid for this session.',
+        diagnostic: 'status generation requested for an unknown repository ID',
+        retryable: false,
+      );
+    }
+    if (record.statusHash != contentHash) {
+      record.statusHash = contentHash;
+      record.statusGeneration++;
+    }
+    return record.statusGeneration;
   }
 }
 
@@ -113,6 +131,42 @@ class RepositoryService {
     return state.register(canonicalRoot);
   }
 
+  Future<GitStatusSnapshot> getStatus(RepositoryId repositoryId) async {
+    // The UI gives us only an opaque ID. Resolve it before using a path.
+    final handle = await state.lookup(repositoryId);
+    try {
+      final output = await _runGit(handle.root, const [
+        'status',
+        '--porcelain=v2',
+        '-z',
+        '--branch',
+      ]);
+      final parsed = parseGitStatus(output.stdout);
+      final generation = state.updateStatusGeneration(
+        repositoryId,
+        parsed.contentHash,
+      );
+      return GitStatusSnapshot(
+        repositoryId: repositoryId,
+        root: handle.root,
+        branch: parsed.branch,
+        changes: parsed.changes,
+        contentHash: parsed.contentHash,
+        generation: generation,
+      );
+    } on GitStatusParseException catch (error, stackTrace) {
+      Error.throwWithStackTrace(
+        GitError(
+          category: GitErrorCategory.parseFailure,
+          userMessage: 'Git returned an unreadable status.',
+          diagnostic: error.message,
+          retryable: false,
+        ),
+        stackTrace,
+      );
+    }
+  }
+
   Future<ProcessOutput> _runGit(String cwd, List<String> args) => _runner.run(
     GitInvocation(
       program: gitPath,
@@ -139,6 +193,8 @@ class _RepositoryRecord {
 
   final String root;
   int generation = 0;
+  String? statusHash;
+  int statusGeneration = 0;
 }
 
 Future<String> _canonicalizeDirectory(String path, {bool moved = false}) async {

@@ -1,4 +1,5 @@
 import 'package:branchline/src/features/repository/recent_repository_store.dart';
+import 'package:branchline/src/features/repository/changes_screen.dart';
 import 'package:branchline/src/features/repository/repository_controller.dart';
 import 'package:branchline/src/features/settings/git_settings_controller.dart';
 import 'package:branchline/src/features/settings/git_settings_dialog.dart';
@@ -66,6 +67,13 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
   @override
   Widget build(BuildContext context) {
     final state = _repositoryController.state;
+    if (state.openedRepository case final opened?) {
+      return ChangesScreen(
+        gateway: widget.gateway,
+        repository: opened,
+        onBack: _repositoryController.closeRepository,
+      );
+    }
     return Scaffold(
       appBar: AppBar(
         title: const Text('Branchline'),

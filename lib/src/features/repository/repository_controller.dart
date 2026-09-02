@@ -140,6 +140,10 @@ class RepositoryController extends ChangeNotifier {
     _setState(_state.copyWith(recentRepositories: await recentStore.load()));
   }
 
+  void closeRepository() {
+    _setState(_state.copyWith(clearOpenedRepository: true));
+  }
+
   void applyGitSettings(GitSettingsState settings) {
     if (settings.installation != null) {
       _setState(

@@ -197,6 +197,74 @@ void main() {
       );
     });
   });
+
+  test(
+    'reads status facets and increments generation only on changes',
+    () async {
+      await withTempDirectory((directory) async {
+        await expectGitSuccess([
+          'init',
+          '--quiet',
+        ], workingDirectory: directory.path);
+        await expectGitSuccess([
+          'config',
+          'user.name',
+          'Branchline Test',
+        ], workingDirectory: directory.path);
+        await expectGitSuccess([
+          'config',
+          'user.email',
+          'branchline@example.test',
+        ], workingDirectory: directory.path);
+
+        final tracked = File('${directory.path}/tracked.txt');
+        await tracked.writeAsString('initial\n');
+        await expectGitSuccess([
+          'add',
+          'tracked.txt',
+        ], workingDirectory: directory.path);
+        await expectGitSuccess([
+          'commit',
+          '--quiet',
+          '-m',
+          'initial',
+        ], workingDirectory: directory.path);
+
+        final backend = DartGitBackend();
+        final opened = await backend.openRepository(directory.path);
+        final clean = await backend.getStatus(opened.repositoryId);
+        expect(clean.isClean, isTrue);
+        expect(clean.generation, 1);
+
+        await tracked.writeAsString('staged\n');
+        await expectGitSuccess([
+          'add',
+          'tracked.txt',
+        ], workingDirectory: directory.path);
+        await tracked.writeAsString('staged and unstaged\n');
+        await File('${directory.path}/notes.txt').writeAsString('todo\n');
+
+        final changed = await backend.getStatus(opened.repositoryId);
+        expect(changed.generation, 2);
+        expect(
+          changed.staged.map((change) => change.path),
+          contains('tracked.txt'),
+        );
+        expect(
+          changed.unstaged.map((change) => change.path),
+          contains('tracked.txt'),
+        );
+        expect(
+          changed.untracked.map((change) => change.path),
+          contains('notes.txt'),
+        );
+
+        final unchanged = await backend.getStatus(opened.repositoryId);
+        expect(unchanged.generation, 2);
+        expect(unchanged.contentHash, changed.contentHash);
+      });
+    },
+  );
 }
 
 Future<void> withTempDirectory(Future<void> Function(Directory) action) async {

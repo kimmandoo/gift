@@ -1,4 +1,5 @@
 import 'domain.dart';
+import 'status.dart';
 
 /// The small API that Flutter features depend on.
 ///
@@ -10,4 +11,6 @@ abstract interface class GitGateway {
   Future<GitInstallation> configureGitPath(String path);
 
   Future<RepositoryOpened> openRepository(String path);
+
+  Future<GitStatusSnapshot> getStatus(RepositoryId repositoryId);
 }

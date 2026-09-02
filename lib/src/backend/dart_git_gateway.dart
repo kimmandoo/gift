@@ -1,6 +1,7 @@
 import 'dart_git_backend.dart';
 import 'domain.dart';
 import 'git_gateway.dart';
+import 'status.dart';
 
 /// Adapts the UI-facing [GitGateway] contract to the Dart backend facade.
 ///
@@ -21,4 +22,8 @@ class DartGitGateway implements GitGateway {
   @override
   Future<RepositoryOpened> openRepository(String path) =>
       backend.openRepository(path);
+
+  @override
+  Future<GitStatusSnapshot> getStatus(RepositoryId repositoryId) =>
+      backend.getStatus(repositoryId);
 }

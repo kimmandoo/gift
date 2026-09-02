@@ -113,7 +113,7 @@ work is tracked in [`TASKS.md`](TASKS.md).
 - [x] Flutter desktop shell and Dart Git backend foundation.
 - [x] Git discovery, safe process execution, repository validation, and recent
   repositories.
-- [ ] Repository status and grouped changes view.
+- [x] Repository status and grouped changes view.
 - [ ] Unified diff viewer with staged and unstaged scopes.
 - [ ] Staging, discard, commit, branch, history, and remote workflows.
 - [ ] Responsive pixel UI, desktop shortcuts, packaging, and CI.

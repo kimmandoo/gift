@@ -3,6 +3,7 @@ import 'package:branchline/src/features/settings/git_settings_dialog.dart';
 import 'package:branchline/src/backend/domain.dart';
 import 'package:branchline/src/backend/error.dart';
 import 'package:branchline/src/backend/git_gateway.dart';
+import 'package:branchline/src/backend/status.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -154,6 +155,11 @@ class FakeSettingsGateway implements GitGateway {
 
   @override
   Future<RepositoryOpened> openRepository(String path) {
+    throw UnimplementedError();
+  }
+
+  @override
+  Future<GitStatusSnapshot> getStatus(RepositoryId repositoryId) {
     throw UnimplementedError();
   }
 }

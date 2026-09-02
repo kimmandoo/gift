@@ -3,6 +3,7 @@ import 'package:branchline/src/features/repository/welcome_screen.dart';
 import 'package:branchline/src/backend/domain.dart';
 import 'package:branchline/src/backend/error.dart';
 import 'package:branchline/src/backend/git_gateway.dart';
+import 'package:branchline/src/backend/status.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -194,5 +195,17 @@ class FakeGitGateway implements GitGateway {
     openedPaths.add(path);
     if (openError != null) throw openError!;
     return opened!;
+  }
+
+  @override
+  Future<GitStatusSnapshot> getStatus(RepositoryId repositoryId) async {
+    return GitStatusSnapshot(
+      repositoryId: repositoryId,
+      root: opened?.root ?? '',
+      branch: const GitBranchStatus(head: 'main'),
+      changes: const <GitChange>[],
+      contentHash: 'test-status',
+      generation: 1,
+    );
   }
 }

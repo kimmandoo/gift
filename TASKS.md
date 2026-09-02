@@ -7,8 +7,8 @@
 ## Progress
 
 - **Total Tasks:** 14
-- **Completed:** 4 / 14 (28.6%)
-- **Current Active Task:** `Task 5: Porcelain v2 Status & Changes View`
+- **Completed:** 5 / 14 (35.7%)
+- **Current Active Task:** `Task 6: Unified Diff`
 
 | # | Scope | Dart backend deliverables | Flutter deliverables | Status |
 |---|---|---|---|:---:|
@@ -16,7 +16,7 @@
 | **2** | Behavior ledger & harness | Isolated Git fixtures and direct process helpers | Clean-room scenario ledger | ✅ |
 | **3** | Git executor & discovery | `ProcessGitRunner`, typed errors, redaction, PATH scan | Git settings bridge contract | ✅ |
 | **4** | Repository registry & open | `AppState`, opaque IDs, root validation | Welcome screen and recent paths | ✅ |
-| **5** | Status parser & changes | Porcelain v2 `-z` parser and snapshots | Grouped changes list | ⏳ |
+| **5** | Status parser & changes | Porcelain v2 `-z` parser and snapshots | Grouped changes list | ✅ |
 | **6** | Unified diff | Bounded diff parser and rename detection | Lazy unified diff view | ⏳ |
 | **7** | Staging & mutation | Serialized `git add`/`restore --staged` | Selection and action buttons | ⏳ |
 | **8** | Discard changes | Expiring preview token and safe restore | Confirmation dialog | ⏳ |
@@ -38,6 +38,9 @@
 - [x] Git executable discovery, explicit path validation, and Git 2.35+ checks.
 - [x] Session-local opaque repository IDs and canonical root validation.
 - [x] Recent repository persistence and Git settings retry flow.
+- [x] Porcelain v2 status parsing, independent change facets, content hashes,
+  and generation-aware snapshots.
+- [x] Polling `ChangesController` and grouped changes screen.
 - [x] Removed FFI, generated bindings, native build plugins, and the former
   native implementation.
 
@@ -52,15 +55,25 @@
   visible states fit both contracts. Proprietary source, assets, captures, and
   implementation details are never copied.
 
+## Completed task
+
+### ✅ Task 5: Porcelain v2 Status & Changes View
+
+- [x] Lossy NUL-delimited `git status --porcelain=v2 -z --branch` parser.
+- [x] Independent staged, unstaged, untracked, and conflicted facets.
+- [x] Snapshot content hashing and generation increments.
+- [x] Riverpod `ChangesController` with timer-based polling and selection
+  retention.
+- [x] Grouped `ChangesScreen` for conflicts, staged, unstaged, untracked, and
+  conflicted files.
+
 ## Active task
 
-### ⏳ Task 5: Porcelain v2 Status & Changes View
+### ⏳ Task 6: Unified Diff
 
-- [ ] Zero-copy/lossy NUL-delimited `git status --porcelain=v2 -z --branch` parser.
-- [ ] Independent staged, unstaged, untracked, and conflicted facets.
-- [ ] Snapshot content hashing and generation increments.
-- [ ] Riverpod `ChangesController` with timer/mutation-based polling.
-- [ ] Grouped `ChangesScreen` for conflicts, staged, unstaged, and untracked files.
+- [ ] Add failing tests for staged and unstaged unified diff output.
+- [ ] Implement bounded diff parsing and rename-aware file details.
+- [ ] Render a readable lazy diff view without blocking the changes list.
 
 Tasks 6–14 retain the same product scope above and will build on the Dart
 backend contracts established here.

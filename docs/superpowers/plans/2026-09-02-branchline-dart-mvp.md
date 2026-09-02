@@ -45,8 +45,13 @@ system Git 2.35+.
   parsing, and explicit path validation.
 - `lib/src/backend/repository_service.dart` — repository root validation and
   opaque handle registry.
+- `lib/src/backend/status.dart` — porcelain v2 parser, change facets, and
+  generation-aware snapshots.
 - `lib/src/backend/dart_git_backend.dart` — backend service facade.
 - `lib/src/backend/dart_git_gateway.dart` — Flutter-facing adapter.
+- `lib/src/features/repository/changes_controller.dart` — Riverpod-backed
+  polling controller and selection state.
+- `lib/src/features/repository/changes_screen.dart` — grouped changes UI.
 
 ## Foundation status
 
@@ -56,6 +61,9 @@ system Git 2.35+.
 - [x] Git discovery, version validation, and redacted diagnostics.
 - [x] Canonical repository opening and session-local opaque IDs.
 - [x] Recent repository persistence and configurable Git path UI.
+- [x] Porcelain v2 status parsing, independent change facets, and
+  generation-aware snapshots.
+- [x] Grouped Changes screen with timer refresh and selection retention.
 - [x] Removed the previous native implementation and generated bridge assets.
 
 ## Product direction
@@ -67,11 +75,18 @@ system Git 2.35+.
 - [ ] Preserve keyboard-first navigation, visible focus, semantic labels, and
   text-backed status indicators throughout the pixel treatment.
 
-## Next vertical: status and changes
+## Completed vertical: status and changes
 
-1. Add failing tests for porcelain v2 `-z` records and each status facet.
-2. Implement a bounded status invocation and parser in the backend.
-3. Add generation-aware snapshots and a `ChangesController`.
-4. Render grouped changes in Flutter.
-5. Run `flutter analyze` and `flutter test`, then update the checkpoint and
+1. Added failing tests for porcelain v2 `-z` records and each status facet.
+2. Implemented a bounded status invocation and parser in the backend.
+3. Added generation-aware snapshots and a polling `ChangesController`.
+4. Rendered grouped changes in Flutter.
+5. Passed `flutter analyze` and `flutter test`.
+
+## Next vertical: unified diff
+
+1. Add failing tests for staged and unstaged unified diff output.
+2. Implement bounded diff parsing and rename-aware file details.
+3. Render a lazy diff view while preserving the selected change.
+4. Run `flutter analyze` and `flutter test`, then update the checkpoint and
    commit.

@@ -41,6 +41,32 @@ main.dart
    전달합니다. 따라서 경로에 공백이나 `&`가 있어도 셸 문자열로 다시
    해석되지 않습니다.
 
+## 변경 목록을 읽는 흐름
+
+```text
+ChangesScreen
+  └─ changesControllerProvider (Riverpod)
+       └─ ChangesController.refresh()
+            └─ GitGateway.getStatus()
+                 └─ DartGitBackend.getStatus()
+                      └─ RepositoryService.getStatus()
+                           ├─ ProcessGitRunner
+                           └─ parseGitStatus()
+                                └─ GitStatusSnapshot
+```
+
+1. `ChangesScreen`은 Riverpod family provider에서 현재 저장소용
+   `ChangesController`를 받습니다. 테스트에서는 같은 화면에 fake
+   controller를 직접 주입할 수 있습니다.
+2. 컨트롤러는 처음 한 번 즉시 status를 읽고, 화면이 살아 있는 동안 5초
+   간격으로 다시 읽습니다. 이미 요청 중이면 다음 요청은 건너뜁니다.
+3. 백엔드는 opaque repository ID를 실제 root로 해석한 뒤 Git에
+   `status --porcelain=v2 -z --branch`를 요청합니다.
+4. `parseGitStatus`는 NUL로 분리된 원본 경로를 보존하면서 staged,
+   unstaged, untracked, conflicted facet을 만듭니다.
+5. 원본 출력 hash가 바뀔 때만 generation을 올립니다. 화면은 snapshot을
+   받아 네 그룹으로 그리며, 선택한 파일이 여전히 있으면 선택을 유지합니다.
+
 ## 폴더별 역할
 
 | 경로 | 역할 |
@@ -53,8 +79,11 @@ main.dart
 | `lib/src/backend/executor.dart` | Git 프로세스 실행, 출력 제한, 비밀값 가리기 |
 | `lib/src/backend/git_installation_service.dart` | Git 경로 검색과 버전 검사 |
 | `lib/src/backend/repository_service.dart` | 저장소 확인과 세션용 ID 등록 |
+| `lib/src/backend/status.dart` | Porcelain v2 상태 파싱과 변경 facet/snapshot 타입 |
 | `lib/src/backend/dart_git_backend.dart` | 백엔드 서비스들을 연결하는 facade |
 | `lib/src/backend/dart_git_gateway.dart` | Flutter 계약과 백엔드를 연결하는 얇은 adapter |
+| `lib/src/features/repository/changes_controller.dart` | 상태 polling과 선택 상태 관리 |
+| `lib/src/features/repository/changes_screen.dart` | staged/unstaged 등 그룹형 변경 화면 |
 | `test/backend/` | 실제 Git을 사용한 백엔드 테스트 |
 | `test/features/` | fake gateway를 사용한 화면 테스트 |
 
@@ -78,6 +107,10 @@ main.dart
 - 실행기부터 이해하려면 `test/backend/dart_git_backend_test.dart`를
   읽습니다. 버전 파싱, redaction, 실제 Git 실행, 저장소 열기를 순서대로
   보여줍니다.
+- status 흐름을 이해하려면 `test/backend/status_parser_test.dart`에서
+  Porcelain v2 레코드와 facet을 먼저 읽고,
+  `test/features/repository/changes_screen_test.dart`에서 컨트롤러와 화면의
+  연결을 확인합니다.
 - 화면 흐름은 `test/features/repository/welcome_screen_test.dart`에서
   fake gateway가 호출 경계를 어떻게 대신하는지 확인합니다.
 - `test/features/settings/git_settings_dialog_test.dart`는 저장된 Git
