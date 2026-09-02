@@ -6,10 +6,12 @@ import 'package:branchline/src/backend/domain.dart';
 import 'package:branchline/src/backend/diff.dart';
 import 'package:branchline/src/backend/error.dart';
 import 'package:branchline/src/backend/git_gateway.dart';
+import 'package:branchline/src/backend/remote.dart';
 import 'package:branchline/src/backend/status.dart';
 import 'package:branchline/src/features/repository/changes_controller.dart';
 import 'package:branchline/src/features/repository/branch_dialog.dart';
 import 'package:branchline/src/features/repository/history_screen.dart';
+import 'package:branchline/src/features/repository/remote_dialog.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -124,6 +126,12 @@ class _ChangesScreenBodyState extends ConsumerState<_ChangesScreenBody> {
           ],
         ),
         actions: [
+          IconButton(
+            key: const Key('open-remotes'),
+            tooltip: 'Open remote operations',
+            onPressed: () => unawaited(_openRemotes(context)),
+            icon: const Icon(Icons.cloud_outlined),
+          ),
           IconButton(
             key: const Key('open-branches'),
             tooltip: 'Open branches',
@@ -587,6 +595,24 @@ class _ChangesScreenBodyState extends ConsumerState<_ChangesScreenBody> {
     );
   }
 
+  Future<void> _openRemotes(BuildContext context) async {
+    final result = await showDialog<GitRemoteOperationResult>(
+      context: context,
+      builder: (_) =>
+          RemoteDialog(gateway: widget.gateway, repository: widget.repository),
+    );
+    if (!context.mounted || result == null) return;
+    await _activeController.refresh();
+    if (!context.mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          '${_remoteOperationLabel(result.operation)} ${result.remote} complete.',
+        ),
+      ),
+    );
+  }
+
   Widget _scopeSelector(
     BuildContext context,
     GitChange selected,
@@ -737,3 +763,10 @@ class _ChangesScreenBodyState extends ConsumerState<_ChangesScreenBody> {
   ChangesController get _activeController =>
       _manualController ?? ref.read(changesControllerProvider(_providerArgs));
 }
+
+String _remoteOperationLabel(GitRemoteOperation operation) =>
+    switch (operation) {
+      GitRemoteOperation.fetch => 'Fetch',
+      GitRemoteOperation.pull => 'Pull',
+      GitRemoteOperation.push => 'Push',
+    };

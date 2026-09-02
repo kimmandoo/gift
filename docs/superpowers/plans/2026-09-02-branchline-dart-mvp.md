@@ -141,8 +141,16 @@ system Git 2.35+.
 3. Added a current-branch popup with create, switch, loading, and error states.
 4. Passed `flutter analyze`, branch tests, and the backend suite.
 
-## Next vertical: remotes and cancellation
+## Completed vertical: remotes and cancellation
 
-1. Add remote parsing, progress, cancellation, and failure tests.
-2. Implement fetch, pull, and push with cancellable Git processes.
-3. Add remote controls and progress feedback.
+1. Added parser, local-remote, cancellation, and remote popup tests.
+2. Implemented cancellable fetch, pull, and push with serialized remote
+   mutations and typed failure mapping.
+3. Added remote URL redaction, progress, cancellation, and refresh feedback.
+4. Passed `flutter analyze`, remote tests, and the backend suite.
+
+## Next vertical: UX and pixel theme
+
+1. Add theme, focus, shortcut, and responsive layout tests.
+2. Apply the dark pixel palette and shared shell components.
+3. Add keyboard-first navigation and diagnostic feedback polish.

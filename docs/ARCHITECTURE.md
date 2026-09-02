@@ -217,6 +217,31 @@ ChangesScreen
    controller가 즉시 status를 다시 읽어 branch identity와 file list를
    갱신합니다.
 
+## remote와 cancellation 흐름
+
+```text
+ChangesScreen
+  └─ RemoteDialog
+       ├─ GitGateway.getRemotes() → git remote --verbose
+       └─ fetch/pull/push
+            └─ GitCancellationToken
+                 └─ RepositoryService._runRemote()
+                      ├─ AppState.runMutation(repositoryId)
+                      ├─ ProcessGitRunner (bounded output + progress state)
+                      ├─ cancel → process.kill() → cancelled error
+                      └─ getStatus() → GitRemoteOperationResult
+```
+
+1. remote 목록은 fetch/push URL을 합쳐 보여주고, URL은 화면에 표시하기
+   전에 credential redaction을 거칩니다. 설정된 remote가 없으면 별도의
+   빈 상태를 보여줍니다.
+2. fetch, pull, push는 한 repository에서 동시에 실행하지 않습니다. 실행
+   중에는 indeterminate progress와 Cancel operation 버튼을 보여주며,
+   취소해도 stderr 원문 대신 `cancelled` 분류만 노출합니다.
+3. 성공하면 status를 다시 읽고 operation/remote/summary와 함께 반환합니다.
+   실패 진단은 authentication, network, non-fast-forward, merge conflict로
+   분류해 사용자가 다음 조치를 알 수 있게 합니다.
+
 ## 폴더별 역할
 
 | 경로 | 역할 |
@@ -227,8 +252,9 @@ ChangesScreen
 | `lib/src/backend/domain.dart` | 백엔드와 UI가 주고받는 값 객체 |
 | `lib/src/backend/commit.dart` | commit ID와 post-commit status 결과 |
 | `lib/src/backend/history.dart` | bounded log record와 graph lane 계산 |
+| `lib/src/backend/remote.dart` | remote model, operation result, remote parser |
+| `lib/src/backend/executor.dart` | Git 프로세스 실행, 출력 제한, 취소와 비밀값 가리기 |
 | `lib/src/backend/error.dart` | 사용자 메시지와 진단 정보를 가진 오류 |
-| `lib/src/backend/executor.dart` | Git 프로세스 실행, 출력 제한, 비밀값 가리기 |
 | `lib/src/backend/git_installation_service.dart` | Git 경로 검색과 버전 검사 |
 | `lib/src/backend/repository_service.dart` | 저장소 확인과 세션용 ID 등록 |
 | `lib/src/backend/status.dart` | Porcelain v2 상태 파싱과 변경 facet/snapshot 타입 |
@@ -240,6 +266,7 @@ ChangesScreen
 | `lib/src/features/repository/changes_screen.dart` | staged/unstaged 등 그룹형 변경 화면 |
 | `lib/src/features/repository/history_controller.dart` | history paging과 commit 선택 상태 |
 | `lib/src/features/repository/history_screen.dart` | commit 목록, graph marker, detail 화면 |
+| `lib/src/features/repository/remote_dialog.dart` | remote 작업, progress, cancellation 화면 |
 | `test/backend/diff_parser_test.dart` | hunk 줄 번호, rename, binary, empty diff 테스트 |
 | `test/backend/` | 실제 Git을 사용한 백엔드 테스트 |
 | `test/features/` | fake gateway를 사용한 화면 테스트 |

@@ -12,6 +12,7 @@ import 'package:branchline/src/backend/error.dart';
 import 'package:branchline/src/backend/executor.dart';
 import 'package:branchline/src/backend/git_installation_service.dart';
 import 'package:branchline/src/backend/repository_service.dart';
+import 'package:branchline/src/backend/remote.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
@@ -601,6 +602,72 @@ void main() {
       );
     });
   });
+
+  test('pushes to and fetches from a local remote', () async {
+    await withTempDirectory((directory) async {
+      final repository = Directory('${directory.path}/working');
+      final remote = Directory('${directory.path}/remote.git');
+      await repository.create();
+      await remote.create();
+      await createCommittedRepository(repository.path, 'tracked.txt');
+      await expectGitSuccess([
+        'init',
+        '--bare',
+        '--quiet',
+      ], workingDirectory: remote.path);
+      await expectGitSuccess([
+        'remote',
+        'add',
+        'origin',
+        remote.path,
+      ], workingDirectory: repository.path);
+
+      final backend = DartGitBackend();
+      final opened = await backend.openRepository(repository.path);
+      final remotes = await backend.getRemotes(opened.repositoryId);
+      expect(remotes.single.name, 'origin');
+      expect(remotes.single.fetchUrl, remote.path);
+      expect(remotes.single.pushUrl, remote.path);
+
+      final pushed = await backend.push(opened.repositoryId, 'origin');
+      expect(pushed.operation, GitRemoteOperation.push);
+      expect(pushed.status.isClean, isTrue);
+      final fetched = await backend.fetch(opened.repositoryId, 'origin');
+      expect(fetched.operation, GitRemoteOperation.fetch);
+      final pulled = await backend.pull(opened.repositoryId, 'origin');
+      expect(pulled.operation, GitRemoteOperation.pull);
+    });
+  });
+
+  test(
+    'cancels a running process and returns a typed cancellation error',
+    () async {
+      final token = GitCancellationToken();
+      final future = const ProcessGitRunner().run(
+        GitInvocation(
+          program: 'sleep',
+          args: const ['5'],
+          cwd: Directory.systemTemp.path,
+          kind: GitOperationKind.remote,
+          outputPolicy: const OutputPolicy.capture(maxBytes: 1024),
+          cancellationToken: token,
+        ),
+      );
+      await Future<void>.delayed(const Duration(milliseconds: 100));
+      token.cancel();
+
+      await expectLater(
+        future,
+        throwsA(
+          isA<GitError>().having(
+            (error) => error.category,
+            'category',
+            GitErrorCategory.cancelled,
+          ),
+        ),
+      );
+    },
+  );
 
   test('discards only the working-tree side after a fresh preview', () async {
     await withTempDirectory((directory) async {

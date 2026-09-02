@@ -6,6 +6,8 @@ import 'discard.dart';
 import 'diff.dart';
 import 'git_gateway.dart';
 import 'history.dart';
+import 'executor.dart';
+import 'remote.dart';
 import 'status.dart';
 
 /// Adapts the UI-facing [GitGateway] contract to the Dart backend facade.
@@ -54,6 +56,34 @@ class DartGitGateway implements GitGateway {
     RepositoryId repositoryId,
     String name,
   ) => backend.switchBranch(repositoryId, name);
+
+  @override
+  Future<List<GitRemote>> getRemotes(RepositoryId repositoryId) =>
+      backend.getRemotes(repositoryId);
+
+  @override
+  Future<GitRemoteOperationResult> fetch(
+    RepositoryId repositoryId,
+    String remote, {
+    GitCancellationToken? cancellationToken,
+  }) =>
+      backend.fetch(repositoryId, remote, cancellationToken: cancellationToken);
+
+  @override
+  Future<GitRemoteOperationResult> pull(
+    RepositoryId repositoryId,
+    String remote, {
+    GitCancellationToken? cancellationToken,
+  }) =>
+      backend.pull(repositoryId, remote, cancellationToken: cancellationToken);
+
+  @override
+  Future<GitRemoteOperationResult> push(
+    RepositoryId repositoryId,
+    String remote, {
+    GitCancellationToken? cancellationToken,
+  }) =>
+      backend.push(repositoryId, remote, cancellationToken: cancellationToken);
 
   @override
   Future<GitDiffSnapshot> getDiff(

@@ -121,7 +121,7 @@ work is tracked in [`TASKS.md`](TASKS.md).
 - [x] Commit staged changes with UTF-8 messages and hook feedback.
 - [x] Bounded local history with merge-aware graph lanes and pagination.
 - [x] Local branch listing, creation, switching, and popup feedback.
-- [ ] Remote workflows.
+- [x] Fetch, pull, push, cancellation, and remote progress feedback.
 - [ ] Responsive pixel UI, desktop shortcuts, packaging, and CI.
 
 ## Contributing

@@ -5,6 +5,8 @@ import 'discard.dart';
 import 'diff.dart';
 import 'status.dart';
 import 'history.dart';
+import 'executor.dart';
+import 'remote.dart';
 
 /// The small API that Flutter features depend on.
 ///
@@ -36,6 +38,26 @@ abstract interface class GitGateway {
     RepositoryId repositoryId,
     String name,
   );
+
+  Future<List<GitRemote>> getRemotes(RepositoryId repositoryId);
+
+  Future<GitRemoteOperationResult> fetch(
+    RepositoryId repositoryId,
+    String remote, {
+    GitCancellationToken? cancellationToken,
+  });
+
+  Future<GitRemoteOperationResult> pull(
+    RepositoryId repositoryId,
+    String remote, {
+    GitCancellationToken? cancellationToken,
+  });
+
+  Future<GitRemoteOperationResult> push(
+    RepositoryId repositoryId,
+    String remote, {
+    GitCancellationToken? cancellationToken,
+  });
 
   Future<GitDiffSnapshot> getDiff(
     RepositoryId repositoryId,

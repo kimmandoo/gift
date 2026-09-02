@@ -7,8 +7,8 @@
 ## Progress
 
 - **Total Tasks:** 14
-- **Completed:** 11 / 14 (78.6%)
-- **Current Active Task:** `Task 12: Remotes & cancellation`
+- **Completed:** 12 / 14 (85.7%)
+- **Current Active Task:** `Task 13: JetBrains-equivalent UX & pixel theme`
 
 | # | Scope | Dart backend deliverables | Flutter deliverables | Status |
 |---|---|---|---|:---:|
@@ -23,7 +23,7 @@
 | **9** | Commit panel | UTF-8 message stdin and hook mapping | Commit editor and shortcuts | ✅ |
 | **10** | History & graph | Paginated log and deterministic lanes | History screen and details | ✅ |
 | **11** | Branch management | Ref parsing, validation, and switch | Branch popup and tracking flow | ✅ |
-| **12** | Remotes & cancellation | Fetch/pull/push and operation cancellation | Progress bar and controls | ⏳ |
+| **12** | Remotes & cancellation | Fetch/pull/push and operation cancellation | Progress bar and controls | ✅ |
 | **13** | JetBrains-equivalent UX & pixel theme | Redacted diagnostics and classification | Minimal 2D pixel-game shell, responsive layout, theme, shortcuts | ⏳ |
 | **14** | Packaging & CI | Cross-platform verification scripts | Desktop release artifacts | ⏳ |
 
@@ -52,6 +52,8 @@
 - [x] Bounded history pages, merge-aware lane slots, and commit details.
 - [x] Local branch ref parsing, name validation, serialized switching, and
   branch popup feedback.
+- [x] Remote parsing, cancellable fetch/pull/push, typed failures, and
+  progress feedback.
 - [x] Removed FFI, generated bindings, native build plugins, and the former
   native implementation.
 
@@ -123,13 +125,21 @@
   worktree feedback.
 - [x] Added a branch popup with create, switch, loading, and error states.
 
+### ✅ Task 12: Remotes & cancellation
+
+- [x] Added remote URL parsing and credential-safe display.
+- [x] Added cancellable fetch, pull, and push operations with serialized
+  remote mutations and typed authentication/network/conflict failures.
+- [x] Added indeterminate progress, cancellation control, and completion
+  refresh feedback.
+
 ## Active task
 
-### ⏳ Task 12: Remotes & cancellation
+### ⏳ Task 13: JetBrains-equivalent UX & pixel theme
 
-- [ ] Add remote parsing, progress, cancellation, and failure tests.
-- [ ] Implement fetch, pull, and push with cancellable Git processes.
-- [ ] Add remote controls and progress feedback.
+- [ ] Apply the dark pixel palette, crisp surfaces, and focus treatment.
+- [ ] Add keyboard shortcuts and responsive navigation states.
+- [ ] Polish visible diagnostic and operation feedback.
 
-Tasks 13–14 retain the same product scope above and will build on the Dart
+Task 14 retains the same product scope above and will build on the Dart
 backend contracts established here.

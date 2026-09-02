@@ -11,6 +11,7 @@ import 'diff.dart';
 import 'error.dart';
 import 'executor.dart';
 import 'history.dart';
+import 'remote.dart';
 import 'status.dart';
 
 /// In-memory registry for repository roots and session-local opaque IDs.
@@ -392,6 +393,119 @@ class RepositoryService {
     });
   }
 
+  Future<List<GitRemote>> getRemotes(RepositoryId repositoryId) async {
+    final handle = await state.lookup(repositoryId);
+    final output = await _runner.run(
+      GitInvocation(
+        program: gitPath,
+        args: const ['remote', '--verbose'],
+        cwd: handle.root,
+        kind: GitOperationKind.read,
+        outputPolicy: const OutputPolicy.capture(maxBytes: 512 * 1024),
+      ),
+    );
+    try {
+      return parseGitRemotes(output.stdout);
+    } on FormatException catch (error, stackTrace) {
+      Error.throwWithStackTrace(
+        GitError(
+          category: GitErrorCategory.parseFailure,
+          userMessage: 'Git returned an unreadable remote list.',
+          diagnostic: error.message,
+          retryable: false,
+        ),
+        stackTrace,
+      );
+    }
+  }
+
+  Future<GitRemoteOperationResult> fetch(
+    RepositoryId repositoryId,
+    String remote, {
+    GitCancellationToken? cancellationToken,
+  }) => _runRemote(
+    repositoryId,
+    remote,
+    GitRemoteOperation.fetch,
+    cancellationToken: cancellationToken,
+  );
+
+  Future<GitRemoteOperationResult> pull(
+    RepositoryId repositoryId,
+    String remote, {
+    GitCancellationToken? cancellationToken,
+  }) => _runRemote(
+    repositoryId,
+    remote,
+    GitRemoteOperation.pull,
+    cancellationToken: cancellationToken,
+  );
+
+  Future<GitRemoteOperationResult> push(
+    RepositoryId repositoryId,
+    String remote, {
+    GitCancellationToken? cancellationToken,
+  }) => _runRemote(
+    repositoryId,
+    remote,
+    GitRemoteOperation.push,
+    cancellationToken: cancellationToken,
+  );
+
+  Future<GitRemoteOperationResult> _runRemote(
+    RepositoryId repositoryId,
+    String remote,
+    GitRemoteOperation operation, {
+    GitCancellationToken? cancellationToken,
+  }) async {
+    _validateRemoteName(remote);
+    return state.runMutation(repositoryId, () async {
+      final handle = await state.lookup(repositoryId);
+      final status = await getStatus(repositoryId);
+      final branch = status.branch.head;
+      if ((operation == GitRemoteOperation.pull ||
+              operation == GitRemoteOperation.push) &&
+          (branch == null || branch.isEmpty || branch == '(detached)')) {
+        throw const GitError(
+          category: GitErrorCategory.detachedHead,
+          userMessage: 'Switch to a branch before synchronizing.',
+          diagnostic: 'remote operation requested while HEAD was detached',
+          retryable: false,
+        );
+      }
+      final args = switch (operation) {
+        GitRemoteOperation.fetch => ['fetch', '--prune', remote],
+        GitRemoteOperation.pull => ['pull', '--ff-only', remote, branch!],
+        GitRemoteOperation.push => ['push', remote, branch!],
+      };
+      late final ProcessOutput output;
+      try {
+        output = await _runner.run(
+          GitInvocation(
+            program: gitPath,
+            args: args,
+            cwd: handle.root,
+            kind: GitOperationKind.remote,
+            outputPolicy: const OutputPolicy.capture(maxBytes: 2 * 1024 * 1024),
+            cancellationToken: cancellationToken,
+          ),
+        );
+      } on GitError catch (error, stackTrace) {
+        Error.throwWithStackTrace(_mapRemoteError(error), stackTrace);
+      }
+      final refreshed = await getStatus(repositoryId);
+      final outputText = redactBytes([...output.stdout, ...output.stderr])
+          .trim();
+      return GitRemoteOperationResult(
+        repositoryId: repositoryId,
+        remote: remote,
+        operation: operation,
+        status: refreshed,
+        summary: outputText.isEmpty ? 'Operation complete.' : outputText,
+      );
+    });
+  }
+
   Future<GitDiffSnapshot> getDiff(
     RepositoryId repositoryId,
     String path, {
@@ -716,6 +830,67 @@ void _validateBranchName(String name) {
       retryable: false,
     );
   }
+}
+
+void _validateRemoteName(String name) {
+  if (name.isEmpty ||
+      name != name.trim() ||
+      name.contains('\u0000') ||
+      RegExp(r'[\s/]').hasMatch(name)) {
+    throw const GitError(
+      category: GitErrorCategory.parseFailure,
+      userMessage: 'Enter a valid remote name.',
+      diagnostic: 'remote name was empty or contained whitespace/path syntax',
+      retryable: false,
+    );
+  }
+}
+
+GitError _mapRemoteError(GitError error) {
+  if (error.category != GitErrorCategory.processFailed) return error;
+  final diagnostic = error.diagnostic;
+  if (RegExp(
+    r'(authentication failed|could not read username|permission denied|access denied)',
+    caseSensitive: false,
+  ).hasMatch(diagnostic)) {
+    return error.copyWith(
+      category: GitErrorCategory.authenticationRequired,
+      userMessage: 'Git needs authentication for this remote.',
+      retryable: true,
+    );
+  }
+  if (RegExp(
+    r'(could not resolve host|connection timed out|network is unreachable|failed to connect)',
+    caseSensitive: false,
+  ).hasMatch(diagnostic)) {
+    return error.copyWith(
+      category: GitErrorCategory.networkUnavailable,
+      userMessage: 'The remote could not be reached.',
+      retryable: true,
+    );
+  }
+  if (RegExp(
+    r'(non-fast-forward|rejected.*fetch first|updates were rejected)',
+    caseSensitive: false,
+  ).hasMatch(diagnostic)) {
+    return error.copyWith(
+      category: GitErrorCategory.nonFastForward,
+      userMessage:
+          'The remote rejected this push because it is not fast-forward.',
+      retryable: false,
+    );
+  }
+  if (RegExp(
+    r'(merge conflict|automatic merge failed|conflict)',
+    caseSensitive: false,
+  ).hasMatch(diagnostic)) {
+    return error.copyWith(
+      category: GitErrorCategory.mergeConflict,
+      userMessage: 'Git could not complete the operation because of conflicts.',
+      retryable: false,
+    );
+  }
+  return error;
 }
 
 Future<String> _canonicalizeDirectory(String path, {bool moved = false}) async {

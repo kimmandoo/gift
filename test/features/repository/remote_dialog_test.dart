@@ -1,79 +1,87 @@
+import 'dart:async';
+
 import 'package:branchline/src/backend/branch.dart';
 import 'package:branchline/src/backend/commit.dart';
 import 'package:branchline/src/backend/discard.dart';
 import 'package:branchline/src/backend/diff.dart';
 import 'package:branchline/src/backend/domain.dart';
+import 'package:branchline/src/backend/error.dart';
 import 'package:branchline/src/backend/executor.dart';
 import 'package:branchline/src/backend/git_gateway.dart';
 import 'package:branchline/src/backend/history.dart';
-import 'package:branchline/src/backend/status.dart';
 import 'package:branchline/src/backend/remote.dart';
-import 'package:branchline/src/features/repository/branch_dialog.dart';
+import 'package:branchline/src/backend/status.dart';
+import 'package:branchline/src/features/repository/remote_dialog.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
-  testWidgets('lists local branches and switches the selected branch', (
+  testWidgets('shows remote progress and cancels the running operation', (
     tester,
   ) async {
     final repository = const RepositoryOpened(
-      repositoryId: RepositoryId(value: 'branch-repository'),
+      repositoryId: RepositoryId(value: 'remote-repository'),
       root: '/workspace/project',
     );
-    final gateway = FakeBranchGateway(
-      branches: const [
-        GitBranch(name: 'feature/demo'),
-        GitBranch(name: 'main', isCurrent: true),
-      ],
-      action: GitBranchActionResult(
-        repositoryId: repository.repositoryId,
-        branchName: 'feature/demo',
-        status: GitStatusSnapshot(
-          repositoryId: repository.repositoryId,
-          root: repository.root,
-          branch: GitBranchStatus(head: 'feature/demo'),
-          changes: const [],
-          contentHash: 'changed',
-          generation: 2,
-        ),
-      ),
-    );
-
+    final gateway = FakeRemoteGateway(repository);
     await tester.pumpWidget(
       MaterialApp(
-        home: Scaffold(
-          body: BranchDialog(gateway: gateway, repository: repository),
+        home: Builder(
+          builder: (context) => FilledButton(
+            onPressed: () => showDialog<void>(
+              context: context,
+              builder: (_) =>
+                  RemoteDialog(gateway: gateway, repository: repository),
+            ),
+            child: const Text('Open remotes'),
+          ),
         ),
       ),
     );
+    await tester.tap(find.text('Open remotes'));
     await tester.pumpAndSettle();
 
-    expect(find.text('feature/demo'), findsOneWidget);
-    expect(find.text('Current branch'), findsOneWidget);
-    await tester.tap(find.byKey(const ValueKey('branch:feature/demo')));
+    expect(find.byKey(const ValueKey('fetch:origin')), findsOneWidget);
+    await tester.tap(find.byKey(const ValueKey('fetch:origin')));
+    await tester.pump();
+    expect(find.byKey(const Key('remote-progress')), findsOneWidget);
+    expect(find.byKey(const Key('cancel-remote')), findsOneWidget);
+
+    await tester.tap(find.byKey(const Key('cancel-remote')));
+    expect(gateway.token?.isCancelled, isTrue);
+    gateway.pending.completeError(
+      const GitError(
+        category: GitErrorCategory.cancelled,
+        userMessage: 'The Git operation was cancelled.',
+        diagnostic: 'test cancellation',
+        retryable: true,
+      ),
+    );
     await tester.pumpAndSettle();
-    expect(gateway.switchedTo, 'feature/demo');
+    expect(find.text('The Git operation was cancelled.'), findsOneWidget);
   });
 }
 
-class FakeBranchGateway implements GitGateway {
-  FakeBranchGateway({required this.branches, required this.action});
+class FakeRemoteGateway implements GitGateway {
+  FakeRemoteGateway(this.repository);
 
-  final List<GitBranch> branches;
-  final GitBranchActionResult action;
-  String? switchedTo;
-
-  @override
-  Future<List<GitBranch>> getBranches(RepositoryId repositoryId) async =>
-      branches;
+  final RepositoryOpened repository;
+  final pending = Completer<GitRemoteOperationResult>();
+  GitCancellationToken? token;
 
   @override
-  Future<GitBranchActionResult> switchBranch(
+  Future<List<GitRemote>> getRemotes(RepositoryId repositoryId) async => const [
+    GitRemote(name: 'origin', fetchUrl: 'https://example.test/repo'),
+  ];
+
+  @override
+  Future<GitRemoteOperationResult> fetch(
     RepositoryId repositoryId,
-    String name,
-  ) async {
-    switchedTo = name;
-    return action;
+    String remote, {
+    GitCancellationToken? cancellationToken,
+  }) {
+    token = cancellationToken;
+    return pending.future;
   }
 
   @override
@@ -99,6 +107,22 @@ class FakeBranchGateway implements GitGateway {
   }) => throw UnimplementedError();
 
   @override
+  Future<List<GitBranch>> getBranches(RepositoryId repositoryId) =>
+      throw UnimplementedError();
+
+  @override
+  Future<GitBranchActionResult> createBranch(
+    RepositoryId repositoryId,
+    String name,
+  ) => throw UnimplementedError();
+
+  @override
+  Future<GitBranchActionResult> switchBranch(
+    RepositoryId repositoryId,
+    String name,
+  ) => throw UnimplementedError();
+
+  @override
   Future<GitDiffSnapshot> getDiff(
     RepositoryId repositoryId,
     String path, {
@@ -117,23 +141,6 @@ class FakeBranchGateway implements GitGateway {
   @override
   Future<GitCommitResult> commit(RepositoryId repositoryId, String message) =>
       throw UnimplementedError();
-
-  @override
-  Future<GitBranchActionResult> createBranch(
-    RepositoryId repositoryId,
-    String name,
-  ) => throw UnimplementedError();
-
-  @override
-  Future<List<GitRemote>> getRemotes(RepositoryId repositoryId) =>
-      throw UnimplementedError();
-
-  @override
-  Future<GitRemoteOperationResult> fetch(
-    RepositoryId repositoryId,
-    String remote, {
-    GitCancellationToken? cancellationToken,
-  }) => throw UnimplementedError();
 
   @override
   Future<GitRemoteOperationResult> pull(

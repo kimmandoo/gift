@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:async';
 import 'dart:io';
 
 import 'error.dart';
@@ -6,6 +7,25 @@ import 'error.dart';
 /// Describes why a Git process is being run. Mutation and remote operations
 /// will use this value for serialization and cancellation in later tasks.
 enum GitOperationKind { read, mutation, remote }
+
+/// A cooperative cancellation signal shared by a UI operation and its
+/// ProcessGitRunner invocation.
+class GitCancellationToken {
+  Completer<void>? _completer;
+  var _isCancelled = false;
+
+  bool get isCancelled => _isCancelled;
+
+  Future<void> get whenCancelled {
+    return (_completer ??= Completer<void>()).future;
+  }
+
+  void cancel() {
+    if (_isCancelled) return;
+    _isCancelled = true;
+    _completer?.complete();
+  }
+}
 
 sealed class OutputPolicy {
   const OutputPolicy._({required this.limit});
@@ -39,6 +59,7 @@ class GitInvocation {
     List<int>? stdin,
     required this.kind,
     required this.outputPolicy,
+    this.cancellationToken,
   }) : args = List.unmodifiable(args),
        stdin = stdin == null ? null : List<int>.unmodifiable(stdin);
 
@@ -48,6 +69,7 @@ class GitInvocation {
   final List<int>? stdin;
   final GitOperationKind kind;
   final OutputPolicy outputPolicy;
+  final GitCancellationToken? cancellationToken;
 }
 
 class ProcessOutput {
@@ -66,6 +88,9 @@ class ProcessGitRunner {
   const ProcessGitRunner();
 
   Future<ProcessOutput> run(GitInvocation invocation) async {
+    if (invocation.cancellationToken?.isCancelled == true) {
+      throw _cancelledError();
+    }
     // 1. Start Git with separate argv values. No shell command string is built.
     late final Process process;
     try {
@@ -100,6 +125,9 @@ class ProcessGitRunner {
       stdinFuture,
     ]);
     final exitCodeFuture = process.exitCode;
+    if (invocation.cancellationToken case final token?) {
+      unawaited(token.whenCancelled.then((_) => process.kill()));
+    }
 
     // 4. Wait for all output and for Git to exit before interpreting the
     // result. The readers have already drained any bytes beyond the limit.
@@ -108,6 +136,10 @@ class ProcessGitRunner {
     final stdout = outputResults[0]! as _ReadResult;
     final stderr = outputResults[1]! as _ReadResult;
     final stdinError = outputResults[2];
+
+    if (invocation.cancellationToken?.isCancelled == true) {
+      throw _cancelledError(exitCode: exitCode);
+    }
 
     if (stdinError case final Object error?) {
       if (error is! SocketException || error.osError?.errorCode != 32) {
@@ -152,6 +184,14 @@ class ProcessGitRunner {
     );
   }
 }
+
+GitError _cancelledError({int? exitCode}) => GitError(
+  category: GitErrorCategory.cancelled,
+  userMessage: 'The Git operation was cancelled.',
+  diagnostic: 'the operation cancellation token stopped the process',
+  retryable: true,
+  exitCode: exitCode,
+);
 
 class _ReadResult {
   const _ReadResult(this.bytes, this.exceeded);

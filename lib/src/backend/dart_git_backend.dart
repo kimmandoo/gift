@@ -6,6 +6,8 @@ import 'diff.dart';
 import 'git_installation_service.dart';
 import 'history.dart';
 import 'repository_service.dart';
+import 'executor.dart';
+import 'remote.dart';
 import 'status.dart';
 
 /// Application-facing entry point for backend operations.
@@ -87,6 +89,50 @@ class DartGitBackend {
       gitPath: installation.executablePath,
       state: _state,
     ).switchBranch(repositoryId, name);
+  }
+
+  Future<List<GitRemote>> getRemotes(RepositoryId repositoryId) async {
+    final installation = await getGitInstallation();
+    return RepositoryService(
+      gitPath: installation.executablePath,
+      state: _state,
+    ).getRemotes(repositoryId);
+  }
+
+  Future<GitRemoteOperationResult> fetch(
+    RepositoryId repositoryId,
+    String remote, {
+    GitCancellationToken? cancellationToken,
+  }) async {
+    final installation = await getGitInstallation();
+    return RepositoryService(
+      gitPath: installation.executablePath,
+      state: _state,
+    ).fetch(repositoryId, remote, cancellationToken: cancellationToken);
+  }
+
+  Future<GitRemoteOperationResult> pull(
+    RepositoryId repositoryId,
+    String remote, {
+    GitCancellationToken? cancellationToken,
+  }) async {
+    final installation = await getGitInstallation();
+    return RepositoryService(
+      gitPath: installation.executablePath,
+      state: _state,
+    ).pull(repositoryId, remote, cancellationToken: cancellationToken);
+  }
+
+  Future<GitRemoteOperationResult> push(
+    RepositoryId repositoryId,
+    String remote, {
+    GitCancellationToken? cancellationToken,
+  }) async {
+    final installation = await getGitInstallation();
+    return RepositoryService(
+      gitPath: installation.executablePath,
+      state: _state,
+    ).push(repositoryId, remote, cancellationToken: cancellationToken);
   }
 
   Future<GitDiffSnapshot> getDiff(

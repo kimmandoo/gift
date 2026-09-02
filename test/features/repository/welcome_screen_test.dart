@@ -3,11 +3,13 @@ import 'package:branchline/src/features/repository/welcome_screen.dart';
 import 'package:branchline/src/backend/domain.dart';
 import 'package:branchline/src/backend/branch.dart';
 import 'package:branchline/src/backend/commit.dart';
+import 'package:branchline/src/backend/executor.dart';
 import 'package:branchline/src/backend/discard.dart';
 import 'package:branchline/src/backend/diff.dart';
 import 'package:branchline/src/backend/error.dart';
 import 'package:branchline/src/backend/git_gateway.dart';
 import 'package:branchline/src/backend/history.dart';
+import 'package:branchline/src/backend/remote.dart';
 import 'package:branchline/src/backend/status.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -238,6 +240,31 @@ class FakeGitGateway implements GitGateway {
     RepositoryId repositoryId,
     String name,
   ) => throw UnimplementedError();
+
+  @override
+  Future<List<GitRemote>> getRemotes(RepositoryId repositoryId) =>
+      throw UnimplementedError();
+
+  @override
+  Future<GitRemoteOperationResult> fetch(
+    RepositoryId repositoryId,
+    String remote, {
+    GitCancellationToken? cancellationToken,
+  }) => throw UnimplementedError();
+
+  @override
+  Future<GitRemoteOperationResult> pull(
+    RepositoryId repositoryId,
+    String remote, {
+    GitCancellationToken? cancellationToken,
+  }) => throw UnimplementedError();
+
+  @override
+  Future<GitRemoteOperationResult> push(
+    RepositoryId repositoryId,
+    String remote, {
+    GitCancellationToken? cancellationToken,
+  }) => throw UnimplementedError();
 
   @override
   Future<GitDiffSnapshot> getDiff(
