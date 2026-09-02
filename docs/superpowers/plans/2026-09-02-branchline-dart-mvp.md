@@ -149,8 +149,17 @@ system Git 2.35+.
 3. Added remote URL redaction, progress, cancellation, and refresh feedback.
 4. Passed `flutter analyze`, remote tests, and the backend suite.
 
-## Next vertical: UX and pixel theme
+## Completed vertical: UX and pixel theme
 
 1. Add theme, focus, shortcut, and responsive layout tests.
-2. Apply the dark pixel palette and shared shell components.
-3. Add keyboard-first navigation and diagnostic feedback polish.
+2. Applied the dark pixel palette and shared shell components.
+3. Added keyboard-first navigation, responsive layouts, and diagnostic
+   feedback polish.
+4. Passed `flutter analyze`, the full Flutter test suite, and responsive widget
+   tests.
+
+## Next vertical: packaging and CI
+
+1. Add a cross-platform Dart verification entry point.
+2. Add desktop build helpers and CI coverage for Linux, macOS, and Windows.
+3. Document local verification and release artifact creation.

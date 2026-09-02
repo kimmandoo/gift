@@ -71,6 +71,54 @@ void main() {
     expect(gateway.historyCalls, [0, 1]);
     controller.dispose();
   });
+
+  testWidgets('stacks the history workspace at a narrow window width', (
+    tester,
+  ) async {
+    addTearDown(tester.view.reset);
+    tester.view.physicalSize = const Size(560, 800);
+    tester.view.devicePixelRatio = 1;
+
+    final repository = const RepositoryOpened(
+      repositoryId: RepositoryId(value: 'narrow-history-repository'),
+      root: '/workspace/project',
+    );
+    final commit = makeCommit('c' * 40, 'Narrow history');
+    final gateway = FakeHistoryGateway(
+      pages: {
+        0: GitHistoryPage(
+          repositoryId: repository.repositoryId,
+          commits: [commit],
+          offset: 0,
+          limit: 1,
+          hasMore: false,
+        ),
+      },
+    );
+    final controller = HistoryController(
+      gateway: gateway,
+      repositoryId: repository.repositoryId,
+      pageSize: 1,
+    );
+    await controller.refresh();
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: HistoryScreen(
+          gateway: gateway,
+          repository: repository,
+          controller: controller,
+          autoInitialize: false,
+        ),
+      ),
+    );
+    await tester.pump();
+
+    expect(tester.takeException(), isNull);
+    expect(find.text('Narrow history'), findsOneWidget);
+    expect(find.byKey(const Key('history-status-strip')), findsOneWidget);
+    controller.dispose();
+  });
 }
 
 GitCommit makeCommit(String oid, String subject) {

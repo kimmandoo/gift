@@ -11,6 +11,7 @@ import 'package:branchline/src/backend/status.dart';
 import 'package:branchline/src/features/repository/changes_controller.dart';
 import 'package:branchline/src/features/repository/changes_screen.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
@@ -349,6 +350,84 @@ void main() {
     expect(find.text('Working tree is clean.'), findsOneWidget);
     controller.dispose();
   });
+
+  testWidgets('refreshes from the visible Ctrl+R shortcut and status strip', (
+    tester,
+  ) async {
+    final repository = const RepositoryOpened(
+      repositoryId: RepositoryId(value: 'repository-id'),
+      root: '/workspace/project',
+    );
+    final gateway = FakeChangesGateway(
+      snapshots: [snapshot(repository, changes: const <GitChange>[])],
+    );
+    final controller = ChangesController(
+      gateway: gateway,
+      repositoryId: repository.repositoryId,
+      pollInterval: const Duration(hours: 1),
+    );
+    await controller.refresh();
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: ChangesScreen(
+          gateway: gateway,
+          repository: repository,
+          controller: controller,
+          autoInitialize: false,
+        ),
+      ),
+    );
+    await tester.pump();
+    await tester.sendKeyDownEvent(LogicalKeyboardKey.controlLeft);
+    await tester.sendKeyEvent(LogicalKeyboardKey.keyR);
+    await tester.sendKeyUpEvent(LogicalKeyboardKey.controlLeft);
+    await tester.pumpAndSettle();
+
+    expect(gateway.statusCalls, 2);
+    expect(find.byKey(const Key('status-strip')), findsOneWidget);
+    expect(find.text('Ctrl+R refresh · Ctrl+H history'), findsOneWidget);
+    controller.dispose();
+  });
+
+  testWidgets('stacks the changes workspace at a narrow window width', (
+    tester,
+  ) async {
+    addTearDown(tester.view.reset);
+    tester.view.physicalSize = const Size(560, 800);
+    tester.view.devicePixelRatio = 1;
+
+    final repository = const RepositoryOpened(
+      repositoryId: RepositoryId(value: 'narrow-repository'),
+      root: '/workspace/project',
+    );
+    final gateway = FakeChangesGateway(
+      snapshots: [snapshot(repository, changes: const <GitChange>[])],
+    );
+    final controller = ChangesController(
+      gateway: gateway,
+      repositoryId: repository.repositoryId,
+      pollInterval: const Duration(hours: 1),
+    );
+    await controller.refresh();
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: ChangesScreen(
+          gateway: gateway,
+          repository: repository,
+          controller: controller,
+          autoInitialize: false,
+        ),
+      ),
+    );
+    await tester.pump();
+
+    expect(tester.takeException(), isNull);
+    expect(find.text('Working tree is clean.'), findsOneWidget);
+    expect(find.text('Ctrl+R refresh · Ctrl+H history'), findsNothing);
+    controller.dispose();
+  });
 }
 
 GitChange change(String path) {
@@ -409,6 +488,7 @@ class FakeChangesGateway implements GitGateway {
   final DiscardPreview? discardPreview;
   final GitStatusSnapshot? discardSnapshot;
   var diffCalls = 0;
+  var statusCalls = 0;
   var stageCalls = 0;
   var unstageCalls = 0;
   var commitCalls = 0;
@@ -433,6 +513,7 @@ class FakeChangesGateway implements GitGateway {
 
   @override
   Future<GitStatusSnapshot> getStatus(RepositoryId repositoryId) async {
+    statusCalls++;
     final snapshot = snapshots[_index];
     if (_index < snapshots.length - 1) _index++;
     return snapshot;

@@ -5,8 +5,8 @@ This file is the handoff record for continuing work across query sessions.
 ## Current checkpoint
 
 - Date: 2026-09-02
-- Milestone: Task 12, Remotes & cancellation, is complete; Task 13,
-  JetBrains-equivalent UX & pixel theme, is the next active product task.
+- Milestone: Task 13, JetBrains-equivalent UX & pixel theme, is complete;
+  Task 14, Packaging & CI, is the next active product task.
 - Source of truth: `TASKS.md` and
   `docs/superpowers/plans/2026-09-02-branchline-dart-mvp.md`.
 - Completed scope: removed the native implementation, FFI bridge, generated
@@ -16,28 +16,27 @@ This file is the handoff record for continuing work across query sessions.
   session-local opaque handles; rewired Flutter screens and tests; added
   `docs/ARCHITECTURE.md` and beginner-oriented source comments.
 - Verification: installed the pinned Flutter 3.47.2 SDK with Dart 3.13.2 in
-  `/tmp/codex-flutter`; passed remote parser (2 tests), backend remote push /
-  fetch / pull and cancellation coverage (23 backend tests), remote popup (1
-  test), and `flutter analyze` (`No issues found!`). The full suite and
-  integration smoke test remain the final gate for this task batch.
+  `/tmp/codex-flutter`; passed `flutter analyze`, the full Flutter test suite,
+  Changes and History responsive widget tests, remote parser/backend/widget
+  tests, and keyboard shortcut coverage.
 - Commit identity cleanup: rewrote all reachable commits to
   `kimmandoo <mingyu5675@gmail.com>`, removed the temporary rewrite refs, and
   force-pushed `main` to GitHub. `git log --all` reports only that identity.
   The pre-rewrite history remains recoverable from
   `/tmp/gitflu-before-author-rewrite.bundle`.
-- Current Task 12 changes: added typed remote records and parser, cancellable
-  process execution, serialized fetch/pull/push operations, typed remote
-  failure mapping, a progress/cancel popup, Changes integration, backend,
-  parser, executor, and widget tests, and beginner-oriented documentation.
-- Changed files in this task include `lib/src/backend/executor.dart`,
-  `lib/src/backend/remote.dart`, the backend/gateway remote contracts,
-  `lib/src/features/repository/remote_dialog.dart`, Changes integration,
-  remote/backend/widget tests, and the task, README, changelog, plan,
-  architecture, ledger, and checkpoint documentation.
+- Current Task 13 changes: added the shared dark pixel theme, square focusable
+  surfaces, responsive Changes/History layouts and operation dialog sizing,
+  keyboard shortcuts, bottom status feedback, responsive widget tests, and
+  beginner-oriented architecture documentation.
+- Changed files in this task include `lib/src/app/pixel_theme.dart`,
+  `lib/src/app/branchline_app.dart`, responsive Changes and History screens,
+  operation dialog sizing, theme/shortcut/responsive widget tests, and the
+  task, README, changelog, plan, architecture, and checkpoint documentation.
 - Blockers: none. The pre-existing untracked `.serena/` directory was left
   untouched and is not part of the commit.
-- Next action: begin Task 13 by adding theme, focus, shortcut, and responsive
-  layout tests, then apply the shared pixel shell.
+- Next action: implement Task 14's `dart run tool/verify.dart` command,
+  desktop build helper, CI workflow, and release documentation; then run the
+  full verification and Linux integration smoke test.
 
 ## Resume procedure
 

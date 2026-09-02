@@ -19,9 +19,9 @@ The project is intentionally easy to read. Flutter owns the interface and
 navigation, while a pure Dart backend talks to the Git executable installed on
 the user's machine.
 
-> **Project status:** Early development. The repository and Git execution
-> foundations, changes view, and local commit flow are in place; history is
-> the next active milestone.
+> **Project status:** Early development. The repository, change review,
+> history, branch, and remote workflows are in place; packaging and CI are the
+> next milestone.
 
 ## Highlights
 
@@ -122,7 +122,8 @@ work is tracked in [`TASKS.md`](TASKS.md).
 - [x] Bounded local history with merge-aware graph lanes and pagination.
 - [x] Local branch listing, creation, switching, and popup feedback.
 - [x] Fetch, pull, push, cancellation, and remote progress feedback.
-- [ ] Responsive pixel UI, desktop shortcuts, packaging, and CI.
+- [x] Responsive pixel UI and desktop shortcuts.
+- [ ] Packaging, CI, and release artifacts.
 
 ## Contributing
 

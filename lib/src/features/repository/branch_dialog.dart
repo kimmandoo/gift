@@ -40,10 +40,11 @@ class _BranchDialogState extends State<BranchDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final width = (MediaQuery.sizeOf(context).width - 64).clamp(240.0, 380.0);
     return AlertDialog(
       title: const Text('Branches'),
       content: SizedBox(
-        width: 380,
+        width: width,
         height: 420,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,

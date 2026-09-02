@@ -10,6 +10,8 @@
 - feat(task10): added paginated history with deterministic graph lanes.
 - feat(task11): added local branch management and switch feedback.
 - feat(task12): added cancellable fetch, pull, push, and remote feedback.
+- feat(task13): applied the responsive dark pixel workspace and keyboard
+  shortcuts.
 - docs(branding): updated the README logo with an original pixel-game Git mascot.
 - docs(spec): defined the desktop Git behavior target and minimal pixel UI direction.
 - breaking(architecture): migrated the Git backend from a native bridge to pure Dart.

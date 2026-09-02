@@ -36,10 +36,11 @@ class _RemoteDialogState extends State<RemoteDialog> {
   @override
   Widget build(BuildContext context) {
     final busy = _runningOperation != null;
+    final width = (MediaQuery.sizeOf(context).width - 64).clamp(240.0, 440.0);
     return AlertDialog(
       title: const Text('Remote operations'),
       content: SizedBox(
-        width: 440,
+        width: width,
         height: 360,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,

@@ -14,6 +14,7 @@ import 'package:branchline/src/features/repository/history_screen.dart';
 import 'package:branchline/src/features/repository/remote_dialog.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter/services.dart';
 
 /// Shows the repository's current changes grouped by their Git facets.
 class ChangesScreen extends StatelessWidget {
@@ -106,7 +107,7 @@ class _ChangesScreenBodyState extends ConsumerState<_ChangesScreenBody> {
         ref.watch(changesControllerProvider(_providerArgs))!;
     final state = controller.state;
     final snapshot = state.snapshot;
-    return Scaffold(
+    final scaffold = Scaffold(
       appBar: AppBar(
         leading: widget.onBack == null
             ? null
@@ -172,9 +173,35 @@ class _ChangesScreenBodyState extends ConsumerState<_ChangesScreenBody> {
                   ? const Center(child: CircularProgressIndicator())
                   : _changesLayout(context, snapshot, state),
             ),
+            if (snapshot != null) _statusStrip(context, snapshot, state),
           ],
         ),
       ),
+    );
+    return CallbackShortcuts(
+      bindings: {
+        const SingleActivator(LogicalKeyboardKey.keyR, control: true):
+            controller.refresh,
+        const SingleActivator(LogicalKeyboardKey.keyH, control: true): () =>
+            unawaited(_openHistory(context)),
+        const SingleActivator(
+          LogicalKeyboardKey.keyB,
+          control: true,
+          shift: true,
+        ): () =>
+            unawaited(_openBranches(context)),
+        const SingleActivator(
+          LogicalKeyboardKey.keyR,
+          control: true,
+          shift: true,
+        ): () =>
+            unawaited(_openRemotes(context)),
+        const SingleActivator(LogicalKeyboardKey.enter, control: true): () =>
+            unawaited(_submitCommit(controller)),
+        if (widget.onBack != null)
+          const SingleActivator(LogicalKeyboardKey.escape): widget.onBack!,
+      },
+      child: Focus(autofocus: true, child: scaffold),
     );
   }
 
@@ -186,18 +213,85 @@ class _ChangesScreenBodyState extends ConsumerState<_ChangesScreenBody> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
       color: Theme.of(context).colorScheme.surfaceContainerHighest,
-      child: Row(
-        children: [
-          const Icon(Icons.account_tree_outlined, size: 18),
-          const SizedBox(width: 8),
-          Text(branch, style: const TextStyle(fontWeight: FontWeight.w600)),
-          const SizedBox(width: 12),
-          Text(sync),
-          const Spacer(),
-          Text('${snapshot.changes.length} changes'),
-          const SizedBox(width: 12),
-          Text('generation ${snapshot.generation}'),
-        ],
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final items = [
+            const Icon(Icons.account_tree_outlined, size: 18),
+            Text(branch, style: const TextStyle(fontWeight: FontWeight.w600)),
+            Text(sync),
+            Text('${snapshot.changes.length} changes'),
+            Text('generation ${snapshot.generation}'),
+          ];
+          if (constraints.maxWidth < 640) {
+            return Wrap(
+              spacing: 12,
+              runSpacing: 8,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              children: items,
+            );
+          }
+          return Row(
+            children: [
+              items[0],
+              const SizedBox(width: 8),
+              items[1],
+              const SizedBox(width: 12),
+              items[2],
+              const Spacer(),
+              items[3],
+              const SizedBox(width: 12),
+              items[4],
+            ],
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _statusStrip(
+    BuildContext context,
+    GitStatusSnapshot snapshot,
+    ChangesState state,
+  ) {
+    final status = state.isCommitting
+        ? 'Committing…'
+        : state.isMutating
+        ? 'Updating repository…'
+        : snapshot.isClean
+        ? 'Working tree clean'
+        : '${snapshot.staged.length} staged · ${snapshot.unstaged.length} unstaged';
+    return Container(
+      key: const Key('status-strip'),
+      color: Theme.of(context).colorScheme.surfaceContainerHighest,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final icon = Icon(
+            state.isMutating ? Icons.sync : Icons.check_circle_outline,
+            size: 16,
+          );
+          if (constraints.maxWidth < 640) {
+            return Row(
+              children: [
+                icon,
+                const SizedBox(width: 8),
+                Expanded(child: Text(status, overflow: TextOverflow.ellipsis)),
+              ],
+            );
+          }
+          return Row(
+            children: [
+              icon,
+              const SizedBox(width: 8),
+              Expanded(child: Text(status, overflow: TextOverflow.ellipsis)),
+              const SizedBox(width: 12),
+              Text(
+                'Ctrl+R refresh · Ctrl+H history',
+                style: Theme.of(context).textTheme.labelSmall,
+              ),
+            ],
+          );
+        },
       ),
     );
   }
@@ -297,6 +391,19 @@ class _ChangesScreenBodyState extends ConsumerState<_ChangesScreenBody> {
   ) {
     return LayoutBuilder(
       builder: (context, constraints) {
+        if (constraints.maxWidth < 680) {
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              SizedBox(
+                height: constraints.maxHeight * 0.42,
+                child: _groupedChanges(context, snapshot, state),
+              ),
+              const Divider(height: 1),
+              Expanded(child: _details(context, snapshot, state)),
+            ],
+          );
+        }
         final listWidth = constraints.maxWidth < 720 ? 260.0 : 340.0;
         return Row(
           crossAxisAlignment: CrossAxisAlignment.stretch,

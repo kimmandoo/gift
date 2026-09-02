@@ -242,12 +242,38 @@ ChangesScreen
    실패 진단은 authentication, network, non-fast-forward, merge conflict로
    분류해 사용자가 다음 조치를 알 수 있게 합니다.
 
+## pixel workspace와 keyboard 흐름
+
+```text
+BranchlineApp
+  └─ buildPixelTheme()
+       ├─ dark canvas + flat panel tokens
+       ├─ square borders + visible focus color
+       └─ screen CallbackShortcuts
+            ├─ Ctrl+R → refresh
+            ├─ Ctrl+H → history
+            ├─ Ctrl+Shift+B → branches
+            ├─ Ctrl+Shift+R → remotes
+            └─ Ctrl+Enter → commit
+```
+
+1. `lib/src/app/pixel_theme.dart`에 색상과 표면 규칙을 모아 두어 화면마다
+   임의의 색을 다시 정하지 않습니다. 선택 상태는 색상뿐 아니라 일반적인
+   ListTile semantics와 텍스트로도 드러납니다.
+2. Changes와 History는 넓은 창에서 목록/상세 pane을 나란히 보여주고,
+   680 px보다 좁아지면 목록을 위에, 상세를 아래에 배치합니다. 따라서
+   작은 데스크톱 창에서도 상세 내용을 잃지 않습니다.
+3. 각 화면의 최상위 `Focus`가 단축키를 받고, 하단 status strip은 현재
+   상태와 자주 쓰는 단축키를 함께 보여줍니다. Git 진단은 기존 typed
+   `GitError.userMessage`를 사용하므로 원시 명령어나 인증 정보가 화면에
+   나타나지 않습니다.
+
 ## 폴더별 역할
 
 | 경로 | 역할 |
 |---|---|
 | `lib/main.dart` | 앱 시작과 의존성 조립 |
-| `lib/src/app/` | 최상위 Material 앱과 테마 |
+| `lib/src/app/` | 최상위 Material 앱과 픽셀 테마 |
 | `lib/src/features/` | 화면별 UI와 컨트롤러 |
 | `lib/src/backend/domain.dart` | 백엔드와 UI가 주고받는 값 객체 |
 | `lib/src/backend/commit.dart` | commit ID와 post-commit status 결과 |

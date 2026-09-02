@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+
+import 'pixel_theme.dart';
+
 import 'package:branchline/src/features/repository/recent_repository_store.dart';
 import 'package:branchline/src/features/repository/welcome_screen.dart';
 import 'package:branchline/src/backend/dart_git_gateway.dart';
@@ -23,10 +26,7 @@ class BranchlineApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Branchline',
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.indigo),
-        useMaterial3: true,
-      ),
+      theme: buildPixelTheme(),
       home: WelcomeScreen(
         gateway: gateway ?? DartGitGateway(),
         recentStore: recentStore ?? RecentRepositoryStore.inMemory(),

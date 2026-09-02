@@ -7,8 +7,8 @@
 ## Progress
 
 - **Total Tasks:** 14
-- **Completed:** 12 / 14 (85.7%)
-- **Current Active Task:** `Task 13: JetBrains-equivalent UX & pixel theme`
+- **Completed:** 13 / 14 (92.9%)
+- **Current Active Task:** `Task 14: Packaging & CI`
 
 | # | Scope | Dart backend deliverables | Flutter deliverables | Status |
 |---|---|---|---|:---:|
@@ -24,7 +24,7 @@
 | **10** | History & graph | Paginated log and deterministic lanes | History screen and details | ✅ |
 | **11** | Branch management | Ref parsing, validation, and switch | Branch popup and tracking flow | ✅ |
 | **12** | Remotes & cancellation | Fetch/pull/push and operation cancellation | Progress bar and controls | ✅ |
-| **13** | JetBrains-equivalent UX & pixel theme | Redacted diagnostics and classification | Minimal 2D pixel-game shell, responsive layout, theme, shortcuts | ⏳ |
+| **13** | JetBrains-equivalent UX & pixel theme | Redacted diagnostics and classification | Minimal 2D pixel-game shell, responsive layout, theme, shortcuts | ✅ |
 | **14** | Packaging & CI | Cross-platform verification scripts | Desktop release artifacts | ⏳ |
 
 ## Completed foundations
@@ -54,6 +54,8 @@
   branch popup feedback.
 - [x] Remote parsing, cancellable fetch/pull/push, typed failures, and
   progress feedback.
+- [x] Dark pixel theme, crisp focusable surfaces, responsive workflow panes,
+  keyboard shortcuts, and visible status feedback.
 - [x] Removed FFI, generated bindings, native build plugins, and the former
   native implementation.
 
@@ -133,13 +135,23 @@
 - [x] Added indeterminate progress, cancellation control, and completion
   refresh feedback.
 
+## Completed task
+
+### ✅ Task 13: JetBrains-equivalent UX & pixel theme
+
+- [x] Applied the dark pixel palette with flat surfaces, crisp borders, and
+  visible focus treatment.
+- [x] Added Ctrl+R, Ctrl+H, Ctrl+Shift+B, Ctrl+Shift+R, Ctrl+Enter, and Esc
+  shortcuts with discoverable status-strip hints.
+- [x] Added narrow-window stacked layouts for Changes and History, plus
+  responsive operation dialogs and visible operation status.
+
 ## Active task
 
-### ⏳ Task 13: JetBrains-equivalent UX & pixel theme
+### ⏳ Task 14: Packaging & CI
 
-- [ ] Apply the dark pixel palette, crisp surfaces, and focus treatment.
-- [ ] Add keyboard shortcuts and responsive navigation states.
-- [ ] Polish visible diagnostic and operation feedback.
+- [ ] Add cross-platform verification and desktop build scripts.
+- [ ] Add CI checks and release artifact workflows.
 
 Task 14 retains the same product scope above and will build on the Dart
-backend contracts established here.
+backend contracts and pixel shell established here.

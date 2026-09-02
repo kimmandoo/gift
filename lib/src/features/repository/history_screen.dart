@@ -6,6 +6,7 @@ import 'package:branchline/src/backend/git_gateway.dart';
 import 'package:branchline/src/backend/history.dart';
 import 'package:branchline/src/features/repository/history_controller.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 class HistoryScreen extends StatefulWidget {
   const HistoryScreen({
@@ -56,7 +57,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
   Widget build(BuildContext context) {
     final state = _controller.state;
     final page = state.page;
-    return Scaffold(
+    final scaffold = Scaffold(
       appBar: AppBar(
         leading: IconButton(
           tooltip: 'Back to changes',
@@ -94,9 +95,28 @@ class _HistoryScreenState extends State<HistoryScreen> {
                         : const Center(child: CircularProgressIndicator())
                   : _historyLayout(context, page, state),
             ),
+            if (page != null)
+              Container(
+                key: const Key('history-status-strip'),
+                color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 8,
+                ),
+                child: const Text('Ctrl+R refresh · Esc back'),
+              ),
           ],
         ),
       ),
+    );
+    return CallbackShortcuts(
+      bindings: {
+        const SingleActivator(LogicalKeyboardKey.keyR, control: true):
+            _controller.refresh,
+        const SingleActivator(LogicalKeyboardKey.escape): () =>
+            Navigator.of(context).maybePop(),
+      },
+      child: Focus(autofocus: true, child: scaffold),
     );
   }
 
@@ -107,6 +127,19 @@ class _HistoryScreenState extends State<HistoryScreen> {
   ) {
     return LayoutBuilder(
       builder: (context, constraints) {
+        if (constraints.maxWidth < 680) {
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              SizedBox(
+                height: constraints.maxHeight * 0.45,
+                child: _commitList(context, page, state),
+              ),
+              const Divider(height: 1),
+              Expanded(child: _commitDetails(context, state.selectedCommit)),
+            ],
+          );
+        }
         final listWidth = constraints.maxWidth < 720 ? 320.0 : 400.0;
         return Row(
           crossAxisAlignment: CrossAxisAlignment.stretch,
