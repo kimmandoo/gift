@@ -1,8 +1,8 @@
-import 'package:gitflu/src/features/repository/recent_repository_store.dart';
-import 'package:gitflu/src/features/settings/git_settings_controller.dart';
-import 'package:gitflu/src/backend/domain.dart';
-import 'package:gitflu/src/backend/error.dart';
-import 'package:gitflu/src/backend/git_gateway.dart';
+import 'package:gitshiba/src/features/repository/recent_repository_store.dart';
+import 'package:gitshiba/src/features/settings/git_settings_controller.dart';
+import 'package:gitshiba/src/backend/domain.dart';
+import 'package:gitshiba/src/backend/error.dart';
+import 'package:gitshiba/src/backend/git_gateway.dart';
 import 'package:flutter/foundation.dart';
 
 class RepositoryState {

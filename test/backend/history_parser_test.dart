@@ -1,7 +1,7 @@
 import 'dart:convert';
 
-import 'package:gitflu/src/backend/domain.dart';
-import 'package:gitflu/src/backend/history.dart';
+import 'package:gitshiba/src/backend/domain.dart';
+import 'package:gitshiba/src/backend/history.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {

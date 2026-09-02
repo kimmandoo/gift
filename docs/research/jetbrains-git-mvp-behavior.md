@@ -2,7 +2,7 @@
 
 This is the product's primary behavior ledger for black-box reverse engineering
 of the user-visible Git GUI system in JetBrains IDEs. It records the workflow
-and information hierarchy that gitflu intends to reproduce, using neutral
+and information hierarchy that gitshiba intends to reproduce, using neutral
 implementation names and independently verifiable Git state.
 
 This clean-room ledger contains no proprietary captures, source, binaries,
@@ -25,7 +25,7 @@ minimal 2D pixel-game interface with desktop Git GUI information density.
 | LOG-01 | approved design | The repository has one or more commits. | Browse recent history. | The UI lists commits in stable topological order with author/date/subject metadata, shows merge context, and loads the next bounded page on request. | `git log --all --topo-order --format=... --max-count=<page+1> --skip=<offset>` supplies the represented commit ordering, parents, metadata, and page boundary. |
 | BRANCH-01 | approved design | The repository has a current branch and may have additional local branches. | View, create, or switch a local branch. | The popup identifies the current branch, validates a new name, reports dirty-worktree failures, and reflects a successful branch creation or selection. | `git for-each-ref` supplies local refs; `git switch --create <name>` or `git switch <name>` updates `HEAD`, and the returned status identifies the selected branch. |
 | REMOTE-01 | approved design | The repository has a configured remote and a local branch that can synchronize. | Fetch, pull, or push through the selected remote. | The UI shows the selected remote, indeterminate progress, cancellation, authentication/network/non-fast-forward/conflict feedback, and the resulting local/remote relationship. | `git remote --verbose` supplies the configured remote; `git fetch --prune <remote>`, `git pull --ff-only <remote> <branch>`, or `git push <remote> <branch>` updates refs according to the operation result, unless the cancellation token stops the process. |
-| WORKSPACE-01 | approved design | The app has previously opened several canonical repository roots. | Resume work after restarting gitflu. | The workspace restores the saved tab order and last active tab; an unavailable path stays visible with a recoverable explanation. | Each saved path is independently validated by the backend and receives a new session-local opaque repository ID; persisted data never contains those IDs. |
+| WORKSPACE-01 | approved design | The app has previously opened several canonical repository roots. | Resume work after restarting gitshiba. | The workspace restores the saved tab order and last active tab; an unavailable path stays visible with a recoverable explanation. | Each saved path is independently validated by the backend and receives a new session-local opaque repository ID; persisted data never contains those IDs. |
 | WORKSPACE-02 | approved design | One or more repository tabs are open. | Open, close, reorder, or switch repository tabs. | The active tab is visibly selected, tab operations preserve the remaining order, duplicate canonical roots are not added, and the last active path is persisted. | Each tab's Git requests use only its own validated root and opaque repository ID. |
 | WORKSPACE-03 | approved design | A repository mutation is running while another repository tab is selected. | Continue inspecting another repository without cross-talk. | The selected tab remains responsive; progress, errors, selection, and refresh results remain attached to the originating tab. | The mutation queue and status snapshot are scoped to the originating repository ID and cannot update another repository. |
 
@@ -47,5 +47,5 @@ For every new JetBrains behavior, record the following in order:
 “Equivalent” means that a user can complete the same Git workflow, understand
 the same important state transitions, and recover from the same failure class.
 It does not mean copying source code, private protocols, exact assets, or
-unnecessary visual details. gitflu's UI must keep its own minimal 2D pixel-game
+unnecessary visual details. gitshiba's UI must keep its own minimal 2D pixel-game
 visual language while preserving the observed workflow semantics.

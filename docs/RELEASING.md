@@ -48,7 +48,7 @@ native Windows use.
 The helper prints the output location after a successful build:
 
 - Linux: `build/linux/x64/release/bundle/`
-- macOS: `build/macos/Build/Products/Release/gitflu.app`
+- macOS: `build/macos/Build/Products/Release/gitshiba.app`
 - Windows: `build/windows/x64/runner/Release/`
 
 ## Continuous integration

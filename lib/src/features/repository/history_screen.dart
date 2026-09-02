@@ -1,13 +1,13 @@
 import 'dart:async';
 
-import 'package:gitflu/src/backend/domain.dart';
-import 'package:gitflu/src/backend/error.dart';
-import 'package:gitflu/src/backend/git_gateway.dart';
-import 'package:gitflu/src/backend/history.dart';
-import 'package:gitflu/src/features/repository/history_controller.dart';
+import 'package:gitshiba/src/backend/domain.dart';
+import 'package:gitshiba/src/backend/error.dart';
+import 'package:gitshiba/src/backend/git_gateway.dart';
+import 'package:gitshiba/src/backend/history.dart';
+import 'package:gitshiba/src/features/repository/history_controller.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:gitflu/src/app/pixel_theme.dart';
+import 'package:gitshiba/src/app/pixel_theme.dart';
 
 class HistoryScreen extends StatefulWidget {
   const HistoryScreen({

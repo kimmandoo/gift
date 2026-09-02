@@ -1,6 +1,6 @@
 # 코드 흐름 안내
 
-이 문서는 처음 코드를 읽는 사람을 위한 gitflu의 지도입니다. 앱은
+이 문서는 처음 코드를 읽는 사람을 위한 gitshiba의 지도입니다. 앱은
 Flutter 화면과 Dart 백엔드가 같은 프로세스 안에서 동작합니다.
 
 제품의 동작 목표는 익숙한 데스크톱 Git 작업 흐름과 상태 전환을 명확하게
@@ -15,7 +15,7 @@ Flutter 화면과 Dart 백엔드가 같은 프로세스 안에서 동작합니�
 
 ```text
 main.dart
-  └─ GitfluApp
+  └─ GitshibaApp
        └─ WelcomeScreen
             └─ RepositoryController
                  └─ GitGateway
@@ -28,7 +28,7 @@ main.dart
 ```
 
 1. `lib/main.dart`가 Flutter를 준비하고 `DartGitGateway`와 설정 저장소를
-   `GitfluApp`에 전달합니다.
+   `GitshibaApp`에 전달합니다.
 2. `WelcomeScreen`은 화면을 그리고 `RepositoryController`를 통해 버튼
    동작을 처리합니다. 화면은 Git 명령을 직접 실행하지 않습니다.
 3. `GitGateway`는 화면이 의존하는 작은 계약입니다. 테스트에서는 이
@@ -245,7 +245,7 @@ ChangesScreen
 ## pixel workspace와 keyboard 흐름
 
 ```text
-GitfluApp
+GitshibaApp
   ├─ persisted ThemeMode
   └─ buildPixelTheme(light/dark)
        ├─ bundled Atkinson Hyperlegible Next body font + Jersey 15 display font
@@ -273,7 +273,7 @@ GitfluApp
 ## multi-repository workspace 흐름
 
 ```text
-GitfluApp
+GitshibaApp
   └─ WorkspaceController
        ├─ WorkspaceStore → canonical paths + active path (durable)
        ├─ WorkspaceTab → fresh RepositoryOpened (session-local opaque ID)

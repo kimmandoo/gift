@@ -1,8 +1,8 @@
-import 'package:gitflu/src/backend/domain.dart';
-import 'package:gitflu/src/backend/error.dart';
-import 'package:gitflu/src/backend/executor.dart';
-import 'package:gitflu/src/backend/git_gateway.dart';
-import 'package:gitflu/src/backend/remote.dart';
+import 'package:gitshiba/src/backend/domain.dart';
+import 'package:gitshiba/src/backend/error.dart';
+import 'package:gitshiba/src/backend/executor.dart';
+import 'package:gitshiba/src/backend/git_gateway.dart';
+import 'package:gitshiba/src/backend/remote.dart';
 import 'package:flutter/material.dart';
 
 /// Shows remotes and keeps one cancellable synchronization operation visible.

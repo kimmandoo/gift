@@ -1,4 +1,4 @@
-import 'package:gitflu/src/features/settings/git_settings_controller.dart';
+import 'package:gitshiba/src/features/settings/git_settings_controller.dart';
 import 'package:file_selector/file_selector.dart';
 import 'package:flutter/material.dart';
 

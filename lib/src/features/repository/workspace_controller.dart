@@ -1,11 +1,11 @@
 import 'package:flutter/foundation.dart';
-import 'package:gitflu/src/backend/domain.dart';
-import 'package:gitflu/src/backend/error.dart';
-import 'package:gitflu/src/backend/git_gateway.dart';
-import 'package:gitflu/src/features/repository/changes_controller.dart';
-import 'package:gitflu/src/features/repository/history_controller.dart';
-import 'package:gitflu/src/features/repository/recent_repository_store.dart';
-import 'package:gitflu/src/features/repository/workspace_store.dart';
+import 'package:gitshiba/src/backend/domain.dart';
+import 'package:gitshiba/src/backend/error.dart';
+import 'package:gitshiba/src/backend/git_gateway.dart';
+import 'package:gitshiba/src/features/repository/changes_controller.dart';
+import 'package:gitshiba/src/features/repository/history_controller.dart';
+import 'package:gitshiba/src/features/repository/recent_repository_store.dart';
+import 'package:gitshiba/src/features/repository/workspace_store.dart';
 
 /// One visible tab and its session-local repository state.
 ///

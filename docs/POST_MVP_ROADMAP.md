@@ -1,7 +1,7 @@
 # Post-MVP roadmap
 
 This roadmap turns the MVP into a dependable daily Git client while preserving
-gitflu's clean-room workflow research and minimal 2D pixel-game interface.
+gitshiba's clean-room workflow research and minimal 2D pixel-game interface.
 Task 15 was marked safe done under WSL because the remaining native bundle
 check is CI-only in this environment. Task 16 is complete and Task 17 is next.
 Do not start a later post-MVP task until its dependencies are complete and its

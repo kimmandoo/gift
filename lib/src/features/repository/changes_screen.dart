@@ -1,22 +1,22 @@
 import 'dart:async';
 
-import 'package:gitflu/src/backend/commit.dart';
-import 'package:gitflu/src/backend/branch.dart';
-import 'package:gitflu/src/backend/domain.dart';
-import 'package:gitflu/src/backend/diff.dart';
-import 'package:gitflu/src/backend/error.dart';
-import 'package:gitflu/src/backend/git_gateway.dart';
-import 'package:gitflu/src/backend/remote.dart';
-import 'package:gitflu/src/backend/status.dart';
-import 'package:gitflu/src/features/repository/changes_controller.dart';
-import 'package:gitflu/src/features/repository/branch_dialog.dart';
-import 'package:gitflu/src/features/repository/history_screen.dart';
-import 'package:gitflu/src/features/repository/history_controller.dart';
-import 'package:gitflu/src/features/repository/remote_dialog.dart';
+import 'package:gitshiba/src/backend/commit.dart';
+import 'package:gitshiba/src/backend/branch.dart';
+import 'package:gitshiba/src/backend/domain.dart';
+import 'package:gitshiba/src/backend/diff.dart';
+import 'package:gitshiba/src/backend/error.dart';
+import 'package:gitshiba/src/backend/git_gateway.dart';
+import 'package:gitshiba/src/backend/remote.dart';
+import 'package:gitshiba/src/backend/status.dart';
+import 'package:gitshiba/src/features/repository/changes_controller.dart';
+import 'package:gitshiba/src/features/repository/branch_dialog.dart';
+import 'package:gitshiba/src/features/repository/history_screen.dart';
+import 'package:gitshiba/src/features/repository/history_controller.dart';
+import 'package:gitshiba/src/features/repository/remote_dialog.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter/services.dart';
-import 'package:gitflu/src/app/pixel_theme.dart';
+import 'package:gitshiba/src/app/pixel_theme.dart';
 
 /// Shows the repository's current changes grouped by their Git facets.
 class ChangesScreen extends StatelessWidget {

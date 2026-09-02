@@ -5,10 +5,31 @@ This file is the handoff record for continuing work across query sessions.
 ## Current checkpoint
 
 - Date: 2026-09-02
+- Active task: completed the product identity rename to `gitshiba` across source,
+  package metadata, desktop bundle identifiers, documentation, and branded
+  assets. Task 17 partial staging remains paused as recoverable WIP.
+- Changed files: all tracked text references were migrated to `gitshiba`; the
+  app source, plan, Linux AppStream metadata, and four branded image assets
+  were renamed to match.
+- Verification: `flutter pub get`, `flutter analyze`, `flutter test` (81
+  tests), `PATH=/home/mgkim/.local/flutter/bin:$PATH dart run tool/verify.dart`,
+  `git diff --check`, and repository-wide legacy name/file scans all passed.
+- WIP preservation: Task 17 changes are stored in `stash@{0}` as
+  `wip(task17): partial staging before gitshiba rename` and must be applied
+  rather than discarded when that task resumes.
+- Next action: finish the gitshiba rename commit and push it, then apply the
+  preserved Task 17 stash and resolve its known real-Git patch application
+  failure before continuing the roadmap.
+- Blockers: the Linux release build still requires host package `libgtk-3-dev`;
+  installation requires a sudo password unavailable to this WSL session.
+
+## Previous checkpoint
+
+- Date: 2026-09-02
 - Milestone: Task 15 hardening, UI stabilization, and product identity are
   safe done under WSL; Task 16 multi-repository workspace is complete.
 - Source of truth: `TASKS.md` and
-  `docs/superpowers/plans/2026-09-02-gitflu-dart-mvp.md`.
+  `docs/superpowers/plans/2026-09-02-gitshiba-dart-mvp.md`.
 - Completed scope: removed the native implementation, FFI bridge, generated
   bindings, native build plugin, and native build metadata; added a `dart:io`
   Git backend with direct argv execution, bounded output, redacted errors,
@@ -23,7 +44,7 @@ This file is the handoff record for continuing work across query sessions.
   `kimmandoo <mingyu5675@gmail.com>`, removed the temporary rewrite refs, and
   force-pushed `main` to GitHub. `git log --all` reports only that identity.
   The pre-rewrite history remains recoverable from
-  `/tmp/gitflu-before-author-rewrite.bundle`.
+  `/tmp/gitshiba-before-author-rewrite.bundle`.
 - Final Task 13 changes added the shared dark pixel theme, square focusable
   surfaces, responsive Changes/History layouts and operation dialog sizing,
   keyboard shortcuts, bottom status feedback, responsive widget tests, and
@@ -55,7 +76,7 @@ This file is the handoff record for continuing work across query sessions.
   and expiry cleanup.
 - Task 15 unified the Dart package, app shell, Linux binary/application ID,
   macOS product/bundle ID, Windows executable metadata, docs, tests, and build
-  output paths under the lowercase `gitflu` product identity.
+  output paths under the lowercase `gitshiba` product identity.
 - Release automation now starts only for `release-*` tags whose commit uses a
   `release(scope): subject` message. Third-party Actions are pinned by commit.
 - Added the MIT `LICENSE` and updated the public README license statement.
@@ -80,7 +101,7 @@ This file is the handoff record for continuing work across query sessions.
   explicit line spacing, button sizing, and centralized heading tokens.
 - Added persisted light/dark theme switching, compact 360x640 layout coverage,
   and responsive dialog bounds.
-- `assets/images/gitflu_icon.png` is now the release icon source. Generated
+- `assets/images/gitshiba_icon.png` is now the release icon source. Generated
   macOS AppIcon PNGs and the Windows multi-size ICO use that asset; Flutter
   also bundles it for Linux packaging.
 - UI verification: `dart run tool/verify.dart` passed formatting, analysis,
@@ -100,7 +121,7 @@ This file is the handoff record for continuing work across query sessions.
   dragging across multiple rows stays continuous.
 - Current packaging fix changed Windows and macOS executable copyright fields to
   `kimmandoo`, added matching Linux AppStream developer metadata, and unified
-  desktop bundle identifiers under `app.kimmandoo.gitflu`.
+  desktop bundle identifiers under `app.kimmandoo.gitshiba`.
 - Current layout hardening made narrow summary/status rows wrap safely, added
   branch-input stacking below 300 px, and enabled dialog action overflow
   spacing so text and buttons do not collide.
@@ -132,7 +153,7 @@ This file is the handoff record for continuing work across query sessions.
 - Task 16 verification passed the workspace store/controller tests, including
   compact 360x640 tabs at 1.2x text scaling, keyboard navigation, controller
   isolation, and app-entry restoration.
-- Changed implementation files this session: `lib/src/app/gitflu_app.dart`,
+- Changed implementation files this session: `lib/src/app/gitshiba_app.dart`,
   `lib/src/features/repository/{changes_screen,repository_controller,welcome_screen,workspace_controller,workspace_screen,workspace_store}.dart`,
   plus the workspace behavior, architecture, plan, task, changelog, and test
   files.
