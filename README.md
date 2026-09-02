@@ -93,6 +93,57 @@ flutter run -d linux   # or windows / macos
 The first screen lets you choose a working repository. Git settings can be
 opened from the same screen when Git is not found automatically.
 
+## Manual desktop builds
+
+Run the build on the same operating system as the target. Flutter desktop
+builds are not cross-compiled by this project.
+
+### Linux
+
+Install the Linux desktop toolchain first. On Ubuntu/Debian, the usual
+packages are:
+
+```bash
+sudo apt-get install clang cmake ninja-build pkg-config libgtk-3-dev
+flutter config --enable-linux-desktop
+flutter pub get
+flutter build linux --release
+```
+
+The bundle is written to `build/linux/x64/release/bundle/`.
+
+### macOS
+
+Install Xcode and its command-line tools, then run:
+
+```bash
+flutter config --enable-macos-desktop
+flutter pub get
+flutter build macos --release
+```
+
+The application bundle is written to
+`build/macos/Build/Products/Release/branchline.app`.
+
+### Windows
+
+Install Visual Studio with the **Desktop development with C++** workload and
+the Windows SDK, then run from PowerShell:
+
+```powershell
+flutter config --enable-windows-desktop
+flutter pub get
+flutter build windows --release
+```
+
+The release files are written to `build/windows/x64/runner/Release/`.
+
+The equivalent beginner-friendly helper is available for every platform:
+
+```bash
+dart run tool/build_desktop.dart linux   # macos or windows
+```
+
 ## Development
 
 Run the formatter, analyzer, and test suite before opening a pull request:
@@ -101,13 +152,7 @@ Run the formatter, analyzer, and test suite before opening a pull request:
 dart run tool/verify.dart
 ```
 
-Build a desktop release bundle with the target platform as the only argument:
-
-```bash
-dart run tool/build_desktop.dart linux   # or macos / windows
-```
-
-See [`docs/RELEASING.md`](docs/RELEASING.md) for the output paths and the
+See [`docs/RELEASING.md`](docs/RELEASING.md) for release output paths and the
 GitHub Actions workflow used for cross-platform checks.
 
 For a quick map of the call flow, read

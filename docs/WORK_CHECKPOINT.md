@@ -32,6 +32,8 @@ This file is the handoff record for continuing work across query sessions.
   `tool/build_desktop.dart`, `.github/workflows/ci.yml`, and
   `docs/RELEASING.md`; the task board, README, changelog, plan, and this
   checkpoint were updated for the completed 14-task MVP.
+- Follow-up documentation changes added platform-specific manual Linux, macOS,
+  and Windows build steps to `README.md` and linked each release output path.
 - Blockers: none. The pre-existing untracked `.serena/` directory was left
   untouched and is not part of the commit.
 - Next action: none for the planned MVP. Add a new task to `TASKS.md` before
