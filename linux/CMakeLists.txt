@@ -4,10 +4,10 @@ project(runner LANGUAGES CXX)
 
 # The name of the executable created for the application. Change this to change
 # the on-disk name of your application.
-set(BINARY_NAME "gitshiba")
+set(BINARY_NAME "gift")
 # The unique GTK application identifier for this application. See:
 # https://wiki.gnome.org/HowDoI/ChooseApplicationID
-set(APPLICATION_ID "app.kimmandoo.gitshiba")
+set(APPLICATION_ID "app.kimmandoo.gift")
 
 # Linux bundles do not have a PE-style file-properties table. The installed
 # AppStream metadata carries the same owner as the Windows and macOS artifacts.
@@ -125,7 +125,7 @@ install(DIRECTORY "${PROJECT_BUILD_DIR}/${FLUTTER_ASSET_DIR_NAME}"
   DESTINATION "${INSTALL_BUNDLE_DATA_DIR}" COMPONENT Runtime)
 
 install(FILES
-  "${CMAKE_CURRENT_SOURCE_DIR}/packaging/app.kimmandoo.gitshiba.metainfo.xml"
+  "${CMAKE_CURRENT_SOURCE_DIR}/packaging/app.kimmandoo.gift.metainfo.xml"
   DESTINATION "${CMAKE_INSTALL_PREFIX}/share/metainfo"
   COMPONENT Runtime)
 

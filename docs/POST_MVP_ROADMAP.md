@@ -1,7 +1,7 @@
 # Post-MVP roadmap
 
 This roadmap turns the MVP into a dependable daily Git client while preserving
-gitshiba's clean-room workflow research and minimal 2D pixel-game interface.
+gift's clean-room workflow research and minimal 2D pixel-game interface.
 Task 15 was marked safe done under WSL because the remaining native bundle
 check is CI-only in this environment. Tasks 16 and 17 are complete; Task 18
 is next.

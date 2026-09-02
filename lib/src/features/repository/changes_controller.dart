@@ -1,12 +1,12 @@
 import 'dart:async';
 
-import 'package:gitshiba/src/backend/commit.dart';
-import 'package:gitshiba/src/backend/domain.dart';
-import 'package:gitshiba/src/backend/discard.dart';
-import 'package:gitshiba/src/backend/diff.dart';
-import 'package:gitshiba/src/backend/error.dart';
-import 'package:gitshiba/src/backend/git_gateway.dart';
-import 'package:gitshiba/src/backend/status.dart';
+import 'package:gift/src/backend/commit.dart';
+import 'package:gift/src/backend/domain.dart';
+import 'package:gift/src/backend/discard.dart';
+import 'package:gift/src/backend/diff.dart';
+import 'package:gift/src/backend/error.dart';
+import 'package:gift/src/backend/git_gateway.dart';
+import 'package:gift/src/backend/status.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 

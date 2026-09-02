@@ -5,29 +5,29 @@ This file is the handoff record for continuing work across query sessions.
 ## Current checkpoint
 
 - Date: 2026-09-02
-- Active task: completed Task 17, hunk and line staging. Task 18, commit
-  creation and history depth, is next.
-- Changed files: added direction-aware Git patch parsing and selection in
-  `lib/src/backend/diff.dart`, typed patch errors and gateway/service support,
-  controller selection state, hunk and line controls in the Changes screen,
-  real-Git and responsive UI tests, and the beginner-oriented architecture,
-  task board, roadmap, plan, changelog, and checkpoint updates.
+- Active task: completed the current product identity rename to `gift` and
+  replaced the mascot/logo with the approved 2D pixel-game GIFT artwork on the
+  isolated `feat/gift-branding` worktree branch. The branch is ready to commit
+  and integrate.
+- Changed files: renamed the Dart package/imports, `GiftApp` source file and
+  symbols, desktop metadata, Linux AppStream file, CI artifact paths, README,
+  tests, and current documentation; generated the square GIFT mascot,
+  deterministic wordmark, macOS icon sizes, and Windows ICO.
 - Verification: `dart format --output=none --set-exit-if-changed lib test
-  integration_test tool`, `flutter analyze`, full `flutter test` (90 tests),
-  `PATH=/home/mgkim/.local/flutter/bin:$PATH dart run tool/verify.dart`,
-  `git diff --check`, and repository-wide legacy product text/path scans all
-  passed. Partial staging coverage passed six backend tests and 15 Changes
-  screen tests.
-- Patch safety: stale selections, unsupported rename/binary patches, missing
-  newline markers, and Git rejection outcomes are covered. Failed patch
-  application preserves the current diff and selection for recovery.
-- WIP preservation: the pre-completion snapshot remains recoverable as
-  `stash@{0}` (`wip(task17): partial staging before gitshiba rename`). It is
-  intentionally retained and is not needed to continue from the current tree.
-- Next action: commit this completed Task 17 vertical with the checkpoint,
-  then push `main` to `origin` and begin Task 18 in a later session.
-- Blockers: the Linux release build still requires host package `libgtk-3-dev`;
-  installation requires a sudo password unavailable to this WSL session.
+  integration_test tool` passed for 53 files; `flutter analyze` passed;
+  `flutter test --no-pub` completed with 89 passing and 2 unrelated
+  Windows-platform expectation failures in `dart_git_backend_test.dart`
+  (UTF-8 process output and CRLF newline normalization); `dart run
+  tool/verify.dart` completed pub get, formatting, and analysis, then reported
+  the same 2 test failures; `git diff --check` passed; the repository-wide
+  legacy identity scan passed; and asset validation passed for the 1024px
+  source icon, 1280x512 wordmark, all macOS sizes, and the six-entry PNG ICO.
+- Next action: commit this completed branding vertical on
+  `feat/gift-branding`, then use the branch-completion workflow to integrate
+  it into `main`.
+- Blockers: `flutter build windows --release` remains blocked by the host's
+  disabled Windows Developer Mode symlink requirement. The two backend test
+  failures are platform-specific expectations outside this branding change.
 
 ## Previous checkpoint
 
@@ -35,7 +35,7 @@ This file is the handoff record for continuing work across query sessions.
 - Milestone: Task 15 hardening, UI stabilization, and product identity are
   safe done under WSL; Task 16 multi-repository workspace is complete.
 - Source of truth: `TASKS.md` and
-  `docs/superpowers/plans/2026-09-02-gitshiba-dart-mvp.md`.
+  `docs/superpowers/plans/2026-09-02-gift-dart-mvp.md`.
 - Completed scope: removed the native implementation, FFI bridge, generated
   bindings, native build plugin, and native build metadata; added a `dart:io`
   Git backend with direct argv execution, bounded output, redacted errors,
@@ -50,7 +50,7 @@ This file is the handoff record for continuing work across query sessions.
   `kimmandoo <mingyu5675@gmail.com>`, removed the temporary rewrite refs, and
   force-pushed `main` to GitHub. `git log --all` reports only that identity.
   The pre-rewrite history remains recoverable from
-  `/tmp/gitshiba-before-author-rewrite.bundle`.
+  `/tmp/gift-before-author-rewrite.bundle`.
 - Final Task 13 changes added the shared dark pixel theme, square focusable
   surfaces, responsive Changes/History layouts and operation dialog sizing,
   keyboard shortcuts, bottom status feedback, responsive widget tests, and
@@ -82,7 +82,7 @@ This file is the handoff record for continuing work across query sessions.
   and expiry cleanup.
 - Task 15 unified the Dart package, app shell, Linux binary/application ID,
   macOS product/bundle ID, Windows executable metadata, docs, tests, and build
-  output paths under the lowercase `gitshiba` product identity.
+  output paths under the lowercase `gift` product identity.
 - Release automation now starts only for `release-*` tags whose commit uses a
   `release(scope): subject` message. Third-party Actions are pinned by commit.
 - Added the MIT `LICENSE` and updated the public README license statement.
@@ -107,7 +107,7 @@ This file is the handoff record for continuing work across query sessions.
   explicit line spacing, button sizing, and centralized heading tokens.
 - Added persisted light/dark theme switching, compact 360x640 layout coverage,
   and responsive dialog bounds.
-- `assets/images/gitshiba_icon.png` is now the release icon source. Generated
+- `assets/images/gift_icon.png` is now the release icon source. Generated
   macOS AppIcon PNGs and the Windows multi-size ICO use that asset; Flutter
   also bundles it for Linux packaging.
 - UI verification: `dart run tool/verify.dart` passed formatting, analysis,
@@ -127,7 +127,7 @@ This file is the handoff record for continuing work across query sessions.
   dragging across multiple rows stays continuous.
 - Current packaging fix changed Windows and macOS executable copyright fields to
   `kimmandoo`, added matching Linux AppStream developer metadata, and unified
-  desktop bundle identifiers under `app.kimmandoo.gitshiba`.
+  desktop bundle identifiers under `app.kimmandoo.gift`.
 - Current layout hardening made narrow summary/status rows wrap safely, added
   branch-input stacking below 300 px, and enabled dialog action overflow
   spacing so text and buttons do not collide.
@@ -159,7 +159,7 @@ This file is the handoff record for continuing work across query sessions.
 - Task 16 verification passed the workspace store/controller tests, including
   compact 360x640 tabs at 1.2x text scaling, keyboard navigation, controller
   isolation, and app-entry restoration.
-- Changed implementation files this session: `lib/src/app/gitshiba_app.dart`,
+- Changed implementation files this session: `lib/src/app/gift_app.dart`,
   `lib/src/features/repository/{changes_screen,repository_controller,welcome_screen,workspace_controller,workspace_screen,workspace_store}.dart`,
   plus the workspace behavior, architecture, plan, task, changelog, and test
   files.

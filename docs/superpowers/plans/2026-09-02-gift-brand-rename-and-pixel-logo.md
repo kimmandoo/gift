@@ -23,7 +23,7 @@ Identity migration touches every tracked text file currently containing the
 product name, including `pubspec.yaml`, Dart sources and tests, README,
 `TASKS.md`, `CHANGELOG.md`, `docs/`, `.serena/project.yml`, CI, and the Linux,
 macOS, and Windows runner metadata. The source file
-`lib/src/app/gitshiba_app.dart` becomes `lib/src/app/gift_app.dart`; the root
+`lib/src/app/gift_app.dart` becomes `lib/src/app/gift_app.dart`; the root
 widget becomes `GiftApp`.
 
 Brand assets have these responsibilities:
@@ -75,10 +75,10 @@ Update the existing app boot, backend health, and integration smoke imports and
 expectations to use these exact replacements:
 
 ```text
-package:gitshiba             -> package:gift
-src/app/gitshiba_app.dart    -> src/app/gift_app.dart
-GitshibaApp                  -> GiftApp
-'gitshiba'                   -> 'gift'
+package:gift             -> package:gift
+src/app/gift_app.dart    -> src/app/gift_app.dart
+GiftApp                  -> GiftApp
+'gift'                   -> 'gift'
 ```
 
 - [ ] **Step 2: Run the focused tests and confirm the expected RED state**
@@ -97,16 +97,16 @@ different assertion pass.
 
 **Files:**
 
-- Rename: `lib/src/app/gitshiba_app.dart` to `lib/src/app/gift_app.dart`
+- Rename: `lib/src/app/gift_app.dart` to `lib/src/app/gift_app.dart`
 - Modify: all tracked text files returned by the repository-wide legacy scan,
   excluding `.git`, build output, and dependency caches
-- Rename: `assets/images/gitshiba_icon.png` to `assets/images/gift_icon.png`
-- Rename: `assets/images/gitshiba_logo.png` to `assets/images/gift_logo.png`
-- Rename: `assets/images/gitshiba_mascot_shiba.jpg` to
+- Rename: `assets/images/gift_icon.png` to `assets/images/gift_icon.png`
+- Rename: `assets/images/gift_logo.png` to `assets/images/gift_logo.png`
+- Rename: `assets/images/gift_mascot_shiba.jpg` to
   `assets/images/gift_mascot_shiba.jpg` before removing it in Task 3
-- Rename: `assets/images/gitshiba_shiba_icon.jpg` to
+- Rename: `assets/images/gift_shiba_icon.jpg` to
   `assets/images/gift_shiba_icon.jpg` before removing it in Task 3
-- Rename: `docs/superpowers/plans/2026-09-02-gitshiba-dart-mvp.md` to
+- Rename: `docs/superpowers/plans/2026-09-02-gift-dart-mvp.md` to
   `docs/superpowers/plans/2026-09-02-gift-dart-mvp.md`
 
 - [ ] **Step 1: Record the exact text-file set before replacement**
@@ -114,7 +114,7 @@ different assertion pass.
 Run:
 
 ```powershell
-rg -l -i --hidden -g '!.git/**' -g '!build/**' -g '!dist/**' -g '!node_modules/**' 'gitshiba|app\.kimmandoo' .
+rg -l -i --hidden -g '!.git/**' -g '!build/**' -g '!dist/**' -g '!node_modules/**' 'gift|app\.kimmandoo' .
 ```
 
 Review that the output contains only text/source/metadata files and the four
@@ -125,12 +125,12 @@ product-named image paths. Do not pass binary images to a text replacement.
 Run these exact moves:
 
 ```powershell
-git mv lib/src/app/gitshiba_app.dart lib/src/app/gift_app.dart
-git mv assets/images/gitshiba_icon.png assets/images/gift_icon.png
-git mv assets/images/gitshiba_logo.png assets/images/gift_logo.png
-git mv assets/images/gitshiba_mascot_shiba.jpg assets/images/gift_mascot_shiba.jpg
-git mv assets/images/gitshiba_shiba_icon.jpg assets/images/gift_shiba_icon.jpg
-git mv docs/superpowers/plans/2026-09-02-gitshiba-dart-mvp.md docs/superpowers/plans/2026-09-02-gift-dart-mvp.md
+git mv lib/src/app/gift_app.dart lib/src/app/gift_app.dart
+git mv assets/images/gift_icon.png assets/images/gift_icon.png
+git mv assets/images/gift_logo.png assets/images/gift_logo.png
+git mv assets/images/gift_mascot_shiba.jpg assets/images/gift_mascot_shiba.jpg
+git mv assets/images/gift_shiba_icon.jpg assets/images/gift_shiba_icon.jpg
+git mv docs/superpowers/plans/2026-09-02-gift-dart-mvp.md docs/superpowers/plans/2026-09-02-gift-dart-mvp.md
 ```
 
 - [ ] **Step 3: Apply the deterministic identity replacements to text files**
@@ -139,10 +139,10 @@ For each text path from Step 1, apply the following ordered replacements while
 preserving the file's existing encoding and line endings:
 
 ```text
-GITSHIBA -> GIFT
-Gitshiba -> Gift
-gitshiba -> gift
-app.kimmandoo.gitshiba -> app.kimmandoo.gift
+GIFT -> GIFT
+Gift -> Gift
+gift -> gift
+app.kimmandoo.gift -> app.kimmandoo.gift
 ```
 
 The replacement must update package imports, `GiftApp` references, the
@@ -166,7 +166,7 @@ package name.
 Run:
 
 ```powershell
-rg -n -i --hidden -g '!.git/**' -g '!build/**' -g '!dist/**' -g '!node_modules/**' 'gitshiba|app\.kimmandoo\.gitshiba' .
+rg -n -i --hidden -g '!.git/**' -g '!build/**' -g '!dist/**' -g '!node_modules/**' 'gift|app\.kimmandoo\.gift' .
 ```
 
 Expected result: no output. If a result is a historical explanation that is
@@ -233,11 +233,12 @@ retina slots to these files.
 - [ ] **Step 4: Rebuild the Windows ICO**
 
 Create a valid multi-image ICO from nearest-neighbor PNG derivatives at
-16x16, 32x32, 48x48, 64x64, 128x128, 256x256, and 512x512. Preserve alpha,
-write a six-byte ICO header and one directory entry per image, and store the
-PNG payloads without recompressing their pixel data. Overwrite
-`windows/runner/resources/app_icon.ico` and verify its directory contains all
-seven sizes.
+16x16, 32x32, 48x48, 64x64, 128x128, and 256x256. Preserve alpha, write a
+six-byte ICO header and one directory entry per image, and store the PNG
+payloads without recompressing their pixel data. The ICO directory dimension
+byte cannot represent 512px (zero means 256px), so the standard Windows
+maximum is used. Overwrite `windows/runner/resources/app_icon.ico` and verify
+its directory contains all six sizes.
 
 - [ ] **Step 5: Remove unreferenced alternate images**
 
@@ -345,7 +346,7 @@ Run:
 ```powershell
 dart run tool/verify.dart
 git diff --check
-rg -n -i --hidden -g '!.git/**' -g '!build/**' -g '!dist/**' -g '!node_modules/**' 'gitshiba|app\.kimmandoo\.gitshiba' .
+rg -n -i --hidden -g '!.git/**' -g '!build/**' -g '!dist/**' -g '!node_modules/**' 'gift|app\.kimmandoo\.gift' .
 ```
 
 Expected result: the verification helper passes, `git diff --check` is clean,

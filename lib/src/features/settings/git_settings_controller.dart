@@ -1,6 +1,6 @@
-import 'package:gitshiba/src/backend/domain.dart';
-import 'package:gitshiba/src/backend/error.dart';
-import 'package:gitshiba/src/backend/git_gateway.dart';
+import 'package:gift/src/backend/domain.dart';
+import 'package:gift/src/backend/error.dart';
+import 'package:gift/src/backend/git_gateway.dart';
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 

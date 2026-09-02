@@ -1,6 +1,6 @@
-import 'package:gitshiba/src/backend/diff.dart';
-import 'package:gitshiba/src/backend/domain.dart';
-import 'package:gitshiba/src/backend/status.dart';
+import 'package:gift/src/backend/diff.dart';
+import 'package:gift/src/backend/domain.dart';
+import 'package:gift/src/backend/status.dart';
 
 /// Existing feature fakes do not need partial-patch behavior unless a test is
 /// specifically about it. This keeps those focused fakes small as the

@@ -24,7 +24,7 @@ class DartGitBackend {
   final GitInstallationService _installationService;
   final AppState _state;
 
-  Health health() => const Health(product: 'gitshiba', coreVersion: version);
+  Health health() => const Health(product: 'gift', coreVersion: version);
 
   Future<GitInstallation> getGitInstallation() =>
       _installationService.getOrDiscover();

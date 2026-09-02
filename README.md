@@ -1,8 +1,8 @@
 <div align="center">
 
-<img src="assets/images/gitshiba_logo.png" alt="gitshiba pixel shiba Git mascot" width="260" style="image-rendering: pixelated;" />
+<img src="assets/images/gift_logo.png" alt="GIFT pixel shiba mascot" width="360" style="image-rendering: pixelated;" />
 
-# gitshiba
+# GIFT
 
 **A small, keyboard-first Git client for desktop.**
 
@@ -10,7 +10,7 @@ Flutter UI · Dart backend · Windows · macOS · Linux
 
 </div>
 
-gitshiba is an open-source desktop Git client for developers who want a calm,
+gift is an open-source desktop Git client for developers who want a calm,
 focused way to review and manage local repositories. It combines a compact
 workflow with a minimal 2D pixel-game visual language: dark surfaces, crisp
 pixel edges, small status markers, and clear feedback for every Git action.
@@ -168,8 +168,8 @@ The `flutter` command must be available in that new window before continuing.
 ## Getting started
 
 ```bash
-git clone https://github.com/kimmandoo/gitshiba.git
-cd gitshiba
+git clone https://github.com/kimmandoo/gift.git
+cd gift
 flutter pub get
 flutter run -d linux   # or windows / macos
 ```
@@ -212,7 +212,7 @@ flutter build macos --release
 ```
 
 The application bundle is written to
-`build/macos/Build/Products/Release/gitshiba.app`.
+`build/macos/Build/Products/Release/gift.app`.
 After the toolchain is installed, the same build is one command:
 
 ```bash
@@ -296,4 +296,4 @@ explain visible UI states in beginner-friendly terms. Use the commit format
 
 ## License
 
-gitshiba is open-source software released under the [MIT License](LICENSE).
+gift is open-source software released under the [MIT License](LICENSE).

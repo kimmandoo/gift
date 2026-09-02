@@ -90,12 +90,12 @@ BEGIN
         BLOCK "040904e4"
         BEGIN
             VALUE "CompanyName", "kimmandoo" "\0"
-            VALUE "FileDescription", "gitshiba" "\0"
+            VALUE "FileDescription", "gift" "\0"
             VALUE "FileVersion", VERSION_AS_STRING "\0"
-            VALUE "InternalName", "gitshiba" "\0"
+            VALUE "InternalName", "gift" "\0"
             VALUE "LegalCopyright", "Copyright (C) 2026 kimmandoo. All rights reserved." "\0"
-            VALUE "OriginalFilename", "gitshiba.exe" "\0"
-            VALUE "ProductName", "gitshiba" "\0"
+            VALUE "OriginalFilename", "gift.exe" "\0"
+            VALUE "ProductName", "gift" "\0"
             VALUE "ProductVersion", VERSION_AS_STRING "\0"
         END
     END

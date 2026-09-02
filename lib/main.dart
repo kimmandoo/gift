@@ -1,6 +1,6 @@
-import 'package:gitshiba/src/app/gitshiba_app.dart';
-import 'package:gitshiba/src/backend/dart_git_gateway.dart';
-import 'package:gitshiba/src/features/repository/recent_repository_store.dart';
+import 'package:gift/src/app/gift_app.dart';
+import 'package:gift/src/backend/dart_git_gateway.dart';
+import 'package:gift/src/features/repository/recent_repository_store.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -16,7 +16,7 @@ Future<void> main() async {
   final gateway = DartGitGateway();
   runApp(
     ProviderScope(
-      child: GitshibaApp(
+      child: GiftApp(
         gateway: gateway,
         recentStore: RecentRepositoryStore(preferences),
         preferences: preferences,

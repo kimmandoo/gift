@@ -1,12 +1,12 @@
-import 'package:gitshiba/src/app/gitshiba_app.dart';
-import 'package:gitshiba/src/app/pixel_theme.dart';
+import 'package:gift/src/app/gift_app.dart';
+import 'package:gift/src/app/pixel_theme.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
   testWidgets('boots into the repository welcome screen', (tester) async {
-    await tester.pumpWidget(const GitshibaApp());
+    await tester.pumpWidget(const GiftApp());
     expect(find.text('Open Repository'), findsOneWidget);
     expect(find.byKey(const Key('welcome-logo')), findsOneWidget);
     expect(find.byType(MaterialApp), findsOneWidget);
@@ -15,7 +15,7 @@ void main() {
   testWidgets('keeps the welcome action compact and aligned with the logo', (
     tester,
   ) async {
-    await tester.pumpWidget(const GitshibaApp());
+    await tester.pumpWidget(const GiftApp());
 
     final action = find.widgetWithText(FilledButton, 'Open Repository');
     expect(tester.getSize(action).height, lessThanOrEqualTo(44));
@@ -126,7 +126,7 @@ void main() {
   testWidgets('switches and persists the light theme', (tester) async {
     SharedPreferences.setMockInitialValues(<String, Object>{});
     final preferences = await SharedPreferences.getInstance();
-    await tester.pumpWidget(GitshibaApp(preferences: preferences));
+    await tester.pumpWidget(GiftApp(preferences: preferences));
 
     expect(
       tester.widget<MaterialApp>(find.byType(MaterialApp)).themeMode,
@@ -139,7 +139,7 @@ void main() {
       tester.widget<MaterialApp>(find.byType(MaterialApp)).themeMode,
       ThemeMode.light,
     );
-    expect(preferences.getString(GitshibaApp.themeModeKey), 'light');
+    expect(preferences.getString(GiftApp.themeModeKey), 'light');
   });
 
   testWidgets('welcome screen does not overflow in a compact window', (
@@ -151,7 +151,7 @@ void main() {
     tester.platformDispatcher.textScaleFactorTestValue = 1.2;
     addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
 
-    await tester.pumpWidget(const GitshibaApp());
+    await tester.pumpWidget(const GiftApp());
     await tester.pump();
 
     expect(tester.takeException(), isNull);

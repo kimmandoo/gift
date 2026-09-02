@@ -2,12 +2,12 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:gitshiba/src/backend/dart_git_backend.dart';
-import 'package:gitshiba/src/backend/diff.dart';
-import 'package:gitshiba/src/backend/domain.dart';
-import 'package:gitshiba/src/backend/error.dart';
-import 'package:gitshiba/src/backend/executor.dart';
-import 'package:gitshiba/src/backend/repository_service.dart';
+import 'package:gift/src/backend/dart_git_backend.dart';
+import 'package:gift/src/backend/diff.dart';
+import 'package:gift/src/backend/domain.dart';
+import 'package:gift/src/backend/error.dart';
+import 'package:gift/src/backend/executor.dart';
+import 'package:gift/src/backend/repository_service.dart';
 
 void main() {
   test(
@@ -338,12 +338,12 @@ Future<void> createCommittedRepository(
   await expectGitSuccess([
     'config',
     'user.name',
-    'Gitshiba Test',
+    'Gift Test',
   ], workingDirectory: path);
   await expectGitSuccess([
     'config',
     'user.email',
-    'gitshiba@example.test',
+    'gift@example.test',
   ], workingDirectory: path);
   final file = File('$path/$fileName');
   final content = lineCount == 2
@@ -366,7 +366,7 @@ Future<void> createCommittedRepository(
 Future<void> withTempDirectory(
   Future<void> Function(Directory directory) body,
 ) async {
-  final directory = await Directory.systemTemp.createTemp('gitshiba-partial-');
+  final directory = await Directory.systemTemp.createTemp('gift-partial-');
   try {
     await body(directory);
   } finally {

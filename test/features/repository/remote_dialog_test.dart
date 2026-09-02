@@ -1,17 +1,17 @@
 import 'dart:async';
 
-import 'package:gitshiba/src/backend/branch.dart';
-import 'package:gitshiba/src/backend/commit.dart';
-import 'package:gitshiba/src/backend/discard.dart';
-import 'package:gitshiba/src/backend/diff.dart';
-import 'package:gitshiba/src/backend/domain.dart';
-import 'package:gitshiba/src/backend/error.dart';
-import 'package:gitshiba/src/backend/executor.dart';
-import 'package:gitshiba/src/backend/git_gateway.dart';
-import 'package:gitshiba/src/backend/history.dart';
-import 'package:gitshiba/src/backend/remote.dart';
-import 'package:gitshiba/src/backend/status.dart';
-import 'package:gitshiba/src/features/repository/remote_dialog.dart';
+import 'package:gift/src/backend/branch.dart';
+import 'package:gift/src/backend/commit.dart';
+import 'package:gift/src/backend/discard.dart';
+import 'package:gift/src/backend/diff.dart';
+import 'package:gift/src/backend/domain.dart';
+import 'package:gift/src/backend/error.dart';
+import 'package:gift/src/backend/executor.dart';
+import 'package:gift/src/backend/git_gateway.dart';
+import 'package:gift/src/backend/history.dart';
+import 'package:gift/src/backend/remote.dart';
+import 'package:gift/src/backend/status.dart';
+import 'package:gift/src/features/repository/remote_dialog.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
