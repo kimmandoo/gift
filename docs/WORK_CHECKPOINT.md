@@ -44,6 +44,11 @@ This file is the handoff record for continuing work across query sessions.
   build helper, Dart analysis for the build helper, and workflow YAML parsing.
   macOS and Windows runners are configured in the matrix but are not available
   in this Linux workspace for local execution.
+- Follow-up build ergonomics added one-command Linux/macOS/Windows shell
+  wrappers plus native Windows PowerShell and batch launchers. The desktop
+  helper now enables the requested Flutter target before building.
+- Added `.gitattributes` so Git Bash shell wrappers keep LF endings and native
+  Windows launchers keep Windows-friendly line endings after checkout.
 - Blockers: none. The pre-existing untracked `.serena/` directory was left
   untouched and is not part of the commit.
 - Next action: none for the planned MVP. Add a new task to `TASKS.md` before

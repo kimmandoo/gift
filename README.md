@@ -195,6 +195,11 @@ flutter build linux --release
 ```
 
 The bundle is written to `build/linux/x64/release/bundle/`.
+After the toolchain is installed, the same build is one command:
+
+```bash
+./tool/build_linux.sh
+```
 
 ### macOS
 
@@ -208,6 +213,11 @@ flutter build macos --release
 
 The application bundle is written to
 `build/macos/Build/Products/Release/branchline.app`.
+After the toolchain is installed, the same build is one command:
+
+```bash
+./tool/build_macos.sh
+```
 
 ### Windows
 
@@ -221,6 +231,19 @@ flutter build windows --release
 ```
 
 The release files are written to `build/windows/x64/runner/Release/`.
+For a one-click build, use PowerShell or double-click the batch file:
+
+```powershell
+.\tool\build_windows.ps1
+```
+
+Git Bash and WSL users can run the matching shell script:
+
+```bash
+./tool/build_windows.sh
+```
+
+The double-clickable file is `tool\build_windows.bat`.
 
 The equivalent beginner-friendly helper is available for every platform:
 

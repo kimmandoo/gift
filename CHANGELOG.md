@@ -3,6 +3,8 @@
 ## 2026-09-02
 
 - fix(ci): gated desktop checks to release commits and hardened platform setup.
+- build(script): added one-command platform build wrappers and Windows launchers.
+- fix(build): preserved launcher line endings across operating systems.
 - docs(build): documented manual Linux, macOS, and Windows build steps.
 - docs(setup): documented Flutter SDK, PATH, and desktop toolchain setup.
 - feat(task5): added porcelain v2 status snapshots and grouped changes screen.

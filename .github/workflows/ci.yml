@@ -75,7 +75,13 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y clang cmake ninja-build pkg-config libgtk-3-dev
       - name: Build release bundle
-        run: dart run tool/build_desktop.dart ${{ matrix.target }}
+        if: matrix.target != 'windows'
+        shell: bash
+        run: ./tool/build_${{ matrix.target }}.sh
+      - name: Build Windows release bundle
+        if: matrix.target == 'windows'
+        shell: pwsh
+        run: ./tool/build_windows.ps1
       - name: Upload desktop artifact
         uses: actions/upload-artifact@v4
         with:

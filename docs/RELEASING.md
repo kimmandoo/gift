@@ -30,14 +30,20 @@ flutter test
 Build the target for the operating system you are currently using:
 
 ```bash
-dart run tool/build_desktop.dart linux
-dart run tool/build_desktop.dart macos
-dart run tool/build_desktop.dart windows
+./tool/build_linux.sh
+./tool/build_macos.sh
+./tool/build_windows.sh
 ```
 
 Use only the target that matches the host's Flutter desktop toolchain. Flutter
 does not promise that a Linux host can produce a macOS or Windows desktop
-bundle.
+bundle. Windows users can double-click `tool\\build_windows.bat` or run
+`tool\\build_windows.ps1` from PowerShell.
+
+The scripts select the repository root, enable the matching Flutter desktop
+target, install Dart packages, and call the release build. The Linux and macOS
+scripts require Bash; the Windows `.bat` and `.ps1` wrappers are provided for
+native Windows use.
 
 The helper prints the output location after a successful build:
 
