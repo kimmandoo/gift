@@ -104,16 +104,23 @@ This file is the handoff record for continuing work across query sessions.
 - Current layout hardening made narrow summary/status rows wrap safely, added
   branch-input stacking below 300 px, and enabled dialog action overflow
   spacing so text and buttons do not collide.
+- Current typography pass assigned OFL Atkinson Hyperlegible Next to body,
+  button, list, input, and status text while retaining Jersey 15 for pixel-game
+  headings. It tightened the shared type scale, explicitly mapped light/dark
+  text colors, reduced control heights, and added a compact repository action
+  menu plus responsive screen and dialog spacing.
 - Current session verification passed `flutter analyze`, `flutter test`, and
   `PATH=/home/mgkim/.local/flutter/bin:$PATH dart run tool/verify.dart` with
   all 71 tests passing.
+- Current typography verification passed the full `dart run tool/verify.dart`
+  suite and compact 320–360 px widget coverage at 1.2x text scaling for the
+  welcome, changes, history, branch, remote, and Git settings surfaces.
 - Current identity verification found no remaining obsolete bundle-ID or
   native-language metadata references in the source tree, and the Linux
   AppStream metadata parsed as valid XML.
-- Changed implementation files: `lib/src/app/gitflu_app.dart`,
-  `lib/src/app/pixel_theme.dart`, `lib/src/backend/history.dart`, core
-  repository screens/dialogs, `pubspec.yaml`, desktop icon resources, tests,
-  and UI documentation.
+- Changed implementation files: `lib/src/app/pixel_theme.dart`, repository and
+  settings screens/dialogs, `pubspec.yaml`, bundled font assets, and their
+  theme, contrast, and compact-layout widget tests.
 - Concurrent work note: the README Windows registry command and `.serena/`
   project configuration were included in this session's requested commit.
 - Blockers: no source blocker. The Linux release build still requires the host

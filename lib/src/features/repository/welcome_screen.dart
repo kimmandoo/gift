@@ -69,6 +69,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
   Widget build(BuildContext context) {
     final state = _repositoryController.state;
     final textTheme = Theme.of(context).textTheme;
+    final compact = MediaQuery.sizeOf(context).width < 480;
     if (state.openedRepository case final opened?) {
       return ChangesScreen(
         gateway: widget.gateway,
@@ -94,16 +95,21 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 720),
             child: Padding(
-              padding: const EdgeInsets.fromLTRB(24, 28, 24, 24),
+              padding: EdgeInsets.fromLTRB(
+                compact ? 16 : 24,
+                compact ? 20 : 28,
+                compact ? 16 : 24,
+                compact ? 16 : 24,
+              ),
               child: ListView(
                 children: [
-                  const Align(
+                  Align(
                     alignment: Alignment.centerLeft,
                     child: Image(
-                      key: Key('welcome-logo'),
-                      image: AssetImage('assets/images/gitflu_icon.png'),
-                      width: 96,
-                      height: 96,
+                      key: const Key('welcome-logo'),
+                      image: const AssetImage('assets/images/gitflu_icon.png'),
+                      width: compact ? 80 : 96,
+                      height: compact ? 80 : 96,
                       filterQuality: FilterQuality.none,
                       semanticLabel: 'gitflu mascot',
                     ),

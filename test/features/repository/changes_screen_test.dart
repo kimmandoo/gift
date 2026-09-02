@@ -10,6 +10,7 @@ import 'package:gitflu/src/backend/remote.dart';
 import 'package:gitflu/src/backend/status.dart';
 import 'package:gitflu/src/features/repository/changes_controller.dart';
 import 'package:gitflu/src/features/repository/changes_screen.dart';
+import 'package:gitflu/src/app/pixel_theme.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -413,6 +414,8 @@ void main() {
     addTearDown(tester.view.reset);
     tester.view.physicalSize = const Size(360, 640);
     tester.view.devicePixelRatio = 1;
+    tester.platformDispatcher.textScaleFactorTestValue = 1.2;
+    addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
 
     final repository = const RepositoryOpened(
       repositoryId: RepositoryId(value: 'narrow-repository'),
@@ -430,6 +433,7 @@ void main() {
 
     await tester.pumpWidget(
       MaterialApp(
+        theme: buildPixelTheme(brightness: Brightness.light),
         home: ChangesScreen(
           gateway: gateway,
           repository: repository,
@@ -443,6 +447,7 @@ void main() {
     expect(tester.takeException(), isNull);
     expect(find.text('Working tree is clean.'), findsOneWidget);
     expect(find.text('Ctrl+R refresh · Ctrl+H history'), findsNothing);
+    expect(find.byKey(const Key('repository-actions-menu')), findsOneWidget);
     controller.dispose();
   });
 }

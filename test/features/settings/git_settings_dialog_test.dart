@@ -25,6 +25,11 @@ void main() {
   testWidgets('selects a valid executable and persists its path', (
     tester,
   ) async {
+    addTearDown(tester.view.reset);
+    tester.view.physicalSize = const Size(320, 480);
+    tester.view.devicePixelRatio = 1;
+    tester.platformDispatcher.textScaleFactorTestValue = 1.2;
+    addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
     final preferences = await SharedPreferences.getInstance();
     final gateway = FakeSettingsGateway(
       installation: const GitInstallation(

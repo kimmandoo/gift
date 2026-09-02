@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
 
-const pixelFontFamily = 'Jersey 15';
+const pixelFontFamily = 'Atkinson Hyperlegible Next';
+const pixelDisplayFontFamily = 'Jersey 15';
 const pixelCanvas = Color(0xFF0D1117);
 const pixelPanel = Color(0xFF151B23);
 const pixelPanelRaised = Color(0xFF202938);
 const pixelInk = Color(0xFFF5F7E9);
-const pixelMuted = Color(0xFF9AA8A8);
+const pixelMuted = Color(0xFFB4BFC0);
 const pixelMint = Color(0xFF63E6BE);
 const pixelAmber = Color(0xFFFFCC66);
 const pixelCoral = Color(0xFFFF7B72);
@@ -14,7 +15,7 @@ const pixelLightCanvas = Color(0xFFF5F1E8);
 const pixelLightPanel = Color(0xFFFFFCF5);
 const pixelLightRaised = Color(0xFFE9E3D7);
 const pixelLightInk = Color(0xFF17212B);
-const pixelLightMuted = Color(0xFF526067);
+const pixelLightMuted = Color(0xFF46545C);
 const pixelLightMint = Color(0xFF056B4A);
 const pixelLightSky = Color(0xFF145A90);
 const pixelLightAmber = Color(0xFF7A4F00);
@@ -36,18 +37,18 @@ const pixelLightOnTertiaryContainer = Color(0xFF2B2100);
 const pixelLightErrorContainer = Color(0xFFFFDAD6);
 const pixelLightOnErrorContainer = Color(0xFF410002);
 
-// Keep the desktop type scale in one place so every screen stays readable as
-// the pixel UI grows. Jersey 15 keeps the pixel silhouette while using
-// heavier, simpler glyphs than the first-pass display font.
-const pixelBodyLargeSize = 16.0;
-const pixelBodyMediumSize = 15.0;
-const pixelBodySmallSize = 13.0;
-const pixelLabelLargeSize = 13.0;
-const pixelLabelSmallSize = 12.0;
-const pixelTitleMediumSize = 16.0;
-const pixelTitleLargeSize = 18.0;
-const pixelHeadlineSmallSize = 22.0;
-const pixelHeadlineMediumSize = 24.0;
+// Body copy uses a highly legible UI face while headings retain the pixel-game
+// silhouette. Keeping both scales here prevents one-off sizes from pushing
+// buttons, list rows, and status strips out of alignment.
+const pixelBodyLargeSize = 15.0;
+const pixelBodyMediumSize = 14.0;
+const pixelBodySmallSize = 12.5;
+const pixelLabelLargeSize = 12.5;
+const pixelLabelSmallSize = 11.5;
+const pixelTitleMediumSize = 15.0;
+const pixelTitleLargeSize = 17.0;
+const pixelHeadlineSmallSize = 20.0;
+const pixelHeadlineMediumSize = 22.0;
 
 ThemeData buildPixelTheme({Brightness brightness = Brightness.dark}) {
   final dark = brightness == Brightness.dark;
@@ -130,9 +131,9 @@ ThemeData buildPixelTheme({Brightness brightness = Brightness.dark}) {
   const buttonTextStyle = TextStyle(
     fontFamily: pixelFontFamily,
     fontSize: pixelLabelLargeSize,
-    height: 1.25,
+    height: 1.2,
     fontWeight: FontWeight.w600,
-    letterSpacing: 0.15,
+    letterSpacing: 0.05,
   );
   final base = ThemeData(
     colorScheme: scheme,
@@ -143,61 +144,85 @@ ThemeData buildPixelTheme({Brightness brightness = Brightness.dark}) {
     canvasColor: canvas,
   );
   final textTheme = base.textTheme.copyWith(
-    bodyLarge: const TextStyle(
+    bodyLarge: TextStyle(
+      color: ink,
       fontSize: pixelBodyLargeSize,
-      height: 1.4,
-      letterSpacing: 0.1,
+      height: 1.42,
+      letterSpacing: 0,
       fontWeight: FontWeight.w500,
     ),
-    bodyMedium: const TextStyle(
+    bodyMedium: TextStyle(
+      color: ink,
       fontSize: pixelBodyMediumSize,
       height: 1.4,
-      letterSpacing: 0.1,
+      letterSpacing: 0,
       fontWeight: FontWeight.w500,
     ),
-    bodySmall: const TextStyle(
+    bodySmall: TextStyle(
+      color: muted,
       fontSize: pixelBodySmallSize,
-      height: 1.35,
-      letterSpacing: 0.1,
+      height: 1.38,
+      letterSpacing: 0,
       fontWeight: FontWeight.w500,
     ),
-    labelLarge: const TextStyle(
+    labelLarge: TextStyle(
+      color: ink,
       fontSize: pixelLabelLargeSize,
-      height: 1.25,
+      height: 1.2,
       fontWeight: FontWeight.w600,
-      letterSpacing: 0.15,
+      letterSpacing: 0.05,
     ),
-    labelSmall: const TextStyle(
+    labelSmall: TextStyle(
+      color: muted,
       fontSize: pixelLabelSmallSize,
       height: 1.25,
-      letterSpacing: 0.1,
+      fontWeight: FontWeight.w500,
+      letterSpacing: 0.05,
     ),
-    titleMedium: const TextStyle(
+    titleMedium: TextStyle(
+      color: ink,
       fontSize: pixelTitleMediumSize,
-      height: 1.3,
+      height: 1.28,
       fontWeight: FontWeight.w600,
-      letterSpacing: 0.1,
+      letterSpacing: 0,
     ),
-    titleLarge: const TextStyle(
+    titleLarge: TextStyle(
+      color: ink,
       fontSize: pixelTitleLargeSize,
-      height: 1.3,
+      height: 1.28,
       fontWeight: FontWeight.w600,
-      letterSpacing: 0.1,
+      letterSpacing: 0,
     ),
-    headlineSmall: const TextStyle(
+    headlineSmall: TextStyle(
+      color: ink,
+      fontFamily: pixelDisplayFontFamily,
       fontSize: pixelHeadlineSmallSize,
-      height: 1.25,
-      fontWeight: FontWeight.w600,
+      height: 1.15,
+      fontWeight: FontWeight.w400,
+      letterSpacing: 0.2,
     ),
-    headlineMedium: const TextStyle(
+    headlineMedium: TextStyle(
+      color: ink,
+      fontFamily: pixelDisplayFontFamily,
       fontSize: pixelHeadlineMediumSize,
-      height: 1.25,
-      fontWeight: FontWeight.w600,
+      height: 1.15,
+      fontWeight: FontWeight.w400,
+      letterSpacing: 0.2,
     ),
   );
+  final resolvedTextTheme = textTheme
+      .apply(fontFamily: pixelFontFamily)
+      .copyWith(
+        headlineSmall: textTheme.headlineSmall,
+        headlineMedium: textTheme.headlineMedium,
+      );
   return base.copyWith(
-    textTheme: textTheme.apply(fontFamily: pixelFontFamily),
-    primaryTextTheme: base.primaryTextTheme.apply(fontFamily: pixelFontFamily),
+    textTheme: resolvedTextTheme,
+    primaryTextTheme: base.primaryTextTheme.apply(
+      fontFamily: pixelFontFamily,
+      bodyColor: ink,
+      displayColor: ink,
+    ),
     dividerTheme: DividerThemeData(color: border.color, thickness: 1),
     appBarTheme: AppBarTheme(
       backgroundColor: panel,
@@ -206,12 +231,14 @@ ThemeData buildPixelTheme({Brightness brightness = Brightness.dark}) {
       elevation: 0,
       centerTitle: false,
       titleTextStyle: TextStyle(
-        fontFamily: pixelFontFamily,
+        fontFamily: pixelDisplayFontFamily,
         color: ink,
         fontSize: pixelTitleLargeSize,
-        height: 1.3,
-        fontWeight: FontWeight.bold,
+        height: 1.15,
+        fontWeight: FontWeight.w400,
+        letterSpacing: 0.2,
       ),
+      toolbarHeight: 52,
     ),
     cardTheme: CardThemeData(
       color: panel,
@@ -225,6 +252,13 @@ ThemeData buildPixelTheme({Brightness brightness = Brightness.dark}) {
       elevation: 0,
       surfaceTintColor: Colors.transparent,
       shape: square,
+      titleTextStyle: TextStyle(
+        color: ink,
+        fontFamily: pixelDisplayFontFamily,
+        fontSize: pixelHeadlineSmallSize,
+        height: 1.15,
+      ),
+      contentTextStyle: resolvedTextTheme.bodyMedium,
     ),
     snackBarTheme: SnackBarThemeData(
       backgroundColor: raised,
@@ -240,46 +274,83 @@ ThemeData buildPixelTheme({Brightness brightness = Brightness.dark}) {
         borderSide: BorderSide(color: primary, width: 2),
       ),
       labelStyle: TextStyle(color: muted),
+      floatingLabelStyle: TextStyle(color: primary),
+      hintStyle: TextStyle(color: muted),
+      helperStyle: TextStyle(color: muted),
+      errorStyle: TextStyle(color: scheme.error),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
     ),
     filledButtonTheme: FilledButtonThemeData(
       style: FilledButton.styleFrom(
         backgroundColor: primary,
         foregroundColor: dark ? pixelCanvas : pixelLightPanel,
         textStyle: buttonTextStyle,
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         tapTargetSize: MaterialTapTargetSize.shrinkWrap,
         shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
         side: BorderSide(color: primary, width: 2),
-        minimumSize: const Size(44, 40),
+        minimumSize: const Size(40, 36),
       ),
     ),
     outlinedButtonTheme: OutlinedButtonThemeData(
       style: OutlinedButton.styleFrom(
         foregroundColor: primary,
         textStyle: buttonTextStyle,
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         tapTargetSize: MaterialTapTargetSize.shrinkWrap,
         shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
         side: BorderSide(color: primary),
-        minimumSize: const Size(44, 40),
+        minimumSize: const Size(40, 36),
       ),
     ),
     textButtonTheme: TextButtonThemeData(
       style: TextButton.styleFrom(
         foregroundColor: primary,
         textStyle: buttonTextStyle,
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
         tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-        minimumSize: const Size(44, 40),
+        minimumSize: const Size(40, 36),
+      ),
+    ),
+    iconButtonTheme: IconButtonThemeData(
+      style: IconButton.styleFrom(
+        foregroundColor: muted,
+        minimumSize: const Size(36, 36),
+        maximumSize: const Size(40, 40),
+        padding: const EdgeInsets.all(8),
+        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+        shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
       ),
     ),
     listTileTheme: ListTileThemeData(
       selectedTileColor: raised,
       selectedColor: ink,
       iconColor: muted,
+      textColor: ink,
+      titleTextStyle: resolvedTextTheme.bodyMedium?.copyWith(
+        color: ink,
+        fontWeight: FontWeight.w600,
+      ),
+      subtitleTextStyle: resolvedTextTheme.bodySmall?.copyWith(color: muted),
+      minTileHeight: 48,
+      minVerticalPadding: 6,
+      contentPadding: const EdgeInsets.symmetric(horizontal: 12),
+      dense: true,
+    ),
+    tooltipTheme: TooltipThemeData(
+      textStyle: resolvedTextTheme.labelLarge?.copyWith(color: ink),
+      decoration: BoxDecoration(
+        color: raised,
+        border: Border.all(color: muted),
+      ),
+    ),
+    textSelectionTheme: TextSelectionThemeData(
+      cursorColor: primary,
+      selectionColor: primary.withValues(alpha: 0.28),
+      selectionHandleColor: primary,
     ),
     focusColor: primary.withValues(alpha: 0.24),
-    visualDensity: VisualDensity.standard,
+    visualDensity: VisualDensity.compact,
   );
 }
 

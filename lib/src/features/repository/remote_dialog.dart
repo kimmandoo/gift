@@ -37,8 +37,13 @@ class _RemoteDialogState extends State<RemoteDialog> {
   Widget build(BuildContext context) {
     final busy = _runningOperation != null;
     final size = MediaQuery.sizeOf(context);
+    final compact = size.width < 480;
     final width = (size.width - 80).clamp(0.0, 440.0);
     return AlertDialog(
+      insetPadding: EdgeInsets.symmetric(
+        horizontal: compact ? 16 : 40,
+        vertical: 24,
+      ),
       title: const Text('Remote operations'),
       actionsOverflowButtonSpacing: 4,
       content: SizedBox(
@@ -103,12 +108,13 @@ class _RemoteDialogState extends State<RemoteDialog> {
               children: [
                 Text(
                   remote.name,
-                  style: const TextStyle(fontWeight: FontWeight.w700),
+                  style: Theme.of(context).textTheme.titleMedium,
                 ),
                 if (remote.fetchUrl case final url?)
                   Text(
                     'fetch: ${redactRemote(url)}',
                     overflow: TextOverflow.ellipsis,
+                    style: Theme.of(context).textTheme.bodySmall,
                   ),
                 Wrap(
                   spacing: 8,

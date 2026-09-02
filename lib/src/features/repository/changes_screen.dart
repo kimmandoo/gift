@@ -108,6 +108,7 @@ class _ChangesScreenBodyState extends ConsumerState<_ChangesScreenBody> {
         ref.watch(changesControllerProvider(_providerArgs))!;
     final state = controller.state;
     final snapshot = state.snapshot;
+    final compactAppBar = MediaQuery.sizeOf(context).width < 600;
     final scaffold = Scaffold(
       appBar: AppBar(
         leading: widget.onBack == null
@@ -131,29 +132,72 @@ class _ChangesScreenBodyState extends ConsumerState<_ChangesScreenBody> {
         ),
         actions: [
           const PixelThemeToggle(),
-          IconButton(
-            key: const Key('open-remotes'),
-            tooltip: 'Open remote operations',
-            onPressed: () => unawaited(_openRemotes(context)),
-            icon: const Icon(Icons.cloud_outlined),
-          ),
-          IconButton(
-            key: const Key('open-branches'),
-            tooltip: 'Open branches',
-            onPressed: () => unawaited(_openBranches(context)),
-            icon: const Icon(Icons.call_split),
-          ),
-          IconButton(
-            key: const Key('open-history'),
-            tooltip: 'Open history',
-            onPressed: () => unawaited(_openHistory(context)),
-            icon: const Icon(Icons.history),
-          ),
-          IconButton(
-            tooltip: 'Refresh changes',
-            onPressed: state.isRefreshing ? null : controller.refresh,
-            icon: const Icon(Icons.refresh),
-          ),
+          if (compactAppBar)
+            PopupMenuButton<_ChangesMenuAction>(
+              key: const Key('repository-actions-menu'),
+              tooltip: 'Repository actions',
+              icon: const Icon(Icons.more_vert),
+              onSelected: (action) {
+                switch (action) {
+                  case _ChangesMenuAction.remotes:
+                    unawaited(_openRemotes(context));
+                    break;
+                  case _ChangesMenuAction.branches:
+                    unawaited(_openBranches(context));
+                    break;
+                  case _ChangesMenuAction.history:
+                    unawaited(_openHistory(context));
+                    break;
+                  case _ChangesMenuAction.refresh:
+                    unawaited(controller.refresh());
+                    break;
+                }
+              },
+              itemBuilder: (context) => [
+                const PopupMenuItem(
+                  value: _ChangesMenuAction.remotes,
+                  child: Text('Remote operations'),
+                ),
+                const PopupMenuItem(
+                  value: _ChangesMenuAction.branches,
+                  child: Text('Branches'),
+                ),
+                const PopupMenuItem(
+                  value: _ChangesMenuAction.history,
+                  child: Text('History'),
+                ),
+                PopupMenuItem(
+                  value: _ChangesMenuAction.refresh,
+                  enabled: !state.isRefreshing,
+                  child: const Text('Refresh changes'),
+                ),
+              ],
+            )
+          else ...[
+            IconButton(
+              key: const Key('open-remotes'),
+              tooltip: 'Open remote operations',
+              onPressed: () => unawaited(_openRemotes(context)),
+              icon: const Icon(Icons.cloud_outlined),
+            ),
+            IconButton(
+              key: const Key('open-branches'),
+              tooltip: 'Open branches',
+              onPressed: () => unawaited(_openBranches(context)),
+              icon: const Icon(Icons.call_split),
+            ),
+            IconButton(
+              key: const Key('open-history'),
+              tooltip: 'Open history',
+              onPressed: () => unawaited(_openHistory(context)),
+              icon: const Icon(Icons.history),
+            ),
+            IconButton(
+              tooltip: 'Refresh changes',
+              onPressed: state.isRefreshing ? null : controller.refresh,
+              icon: const Icon(Icons.refresh),
+            ),
+          ],
         ],
       ),
       body: SafeArea(
@@ -210,12 +254,16 @@ class _ChangesScreenBodyState extends ConsumerState<_ChangesScreenBody> {
   }
 
   Widget _summary(BuildContext context, GitStatusSnapshot snapshot) {
+    final compact = MediaQuery.sizeOf(context).width < 480;
     final branch = snapshot.branch.head ?? 'Detached HEAD';
     final sync = snapshot.branch.hasUpstream
         ? '↑${snapshot.branch.ahead} ↓${snapshot.branch.behind}'
         : 'no upstream';
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+      padding: EdgeInsets.symmetric(
+        horizontal: compact ? 12 : 20,
+        vertical: compact ? 8 : 10,
+      ),
       color: Theme.of(context).colorScheme.surfaceContainerHighest,
       child: LayoutBuilder(
         builder: (context, constraints) {
@@ -263,6 +311,7 @@ class _ChangesScreenBodyState extends ConsumerState<_ChangesScreenBody> {
     GitStatusSnapshot snapshot,
     ChangesState state,
   ) {
+    final compact = MediaQuery.sizeOf(context).width < 480;
     final status = state.isCommitting
         ? 'Committing…'
         : state.isMutating
@@ -273,7 +322,7 @@ class _ChangesScreenBodyState extends ConsumerState<_ChangesScreenBody> {
     return Container(
       key: const Key('status-strip'),
       color: Theme.of(context).colorScheme.surfaceContainerHighest,
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+      padding: EdgeInsets.symmetric(horizontal: compact ? 12 : 20, vertical: 7),
       child: LayoutBuilder(
         builder: (context, constraints) {
           final icon = Icon(
@@ -313,16 +362,17 @@ class _ChangesScreenBodyState extends ConsumerState<_ChangesScreenBody> {
     ChangesController controller,
     ChangesState state,
   ) {
+    final compact = MediaQuery.sizeOf(context).width < 480;
     final canSubmit =
         controller.canCommit &&
         !state.isMutating &&
         _commitMessageController.text.trim().isNotEmpty;
     return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 12, 20, 4),
+      padding: EdgeInsets.fromLTRB(compact ? 12 : 20, 10, compact ? 12 : 20, 4),
       child: Card(
         margin: EdgeInsets.zero,
         child: Padding(
-          padding: const EdgeInsets.all(14),
+          padding: EdgeInsets.all(compact ? 10 : 14),
           child: LayoutBuilder(
             builder: (context, constraints) {
               final editor = TextField(
@@ -353,7 +403,7 @@ class _ChangesScreenBodyState extends ConsumerState<_ChangesScreenBody> {
                     : const Icon(Icons.check, size: 18),
                 label: const Text('Commit'),
               );
-              if (constraints.maxWidth < 520) {
+              if (constraints.maxWidth < 540) {
                 return Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [editor, const SizedBox(height: 10), button],
@@ -532,22 +582,31 @@ class _ChangesScreenBodyState extends ConsumerState<_ChangesScreenBody> {
   }
 
   Widget _statusBadge(BuildContext context, GitChange change) {
-    final color = change.isConflicted
-        ? Theme.of(context).colorScheme.error
+    final scheme = Theme.of(context).colorScheme;
+    final (background, foreground, border) = change.isConflicted
+        ? (scheme.errorContainer, scheme.onErrorContainer, scheme.error)
         : change.isUntracked
-        ? Theme.of(context).colorScheme.tertiary
-        : Theme.of(context).colorScheme.primary;
+        ? (
+            scheme.tertiaryContainer,
+            scheme.onTertiaryContainer,
+            scheme.tertiary,
+          )
+        : (scheme.primaryContainer, scheme.onPrimaryContainer, scheme.primary);
     return Container(
       width: 28,
       height: 24,
       alignment: Alignment.center,
       decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.14),
-        border: Border.all(color: color),
+        color: background,
+        border: Border.all(color: border),
       ),
       child: Text(
         change.shortStatus,
-        style: TextStyle(color: color, fontWeight: FontWeight.w700),
+        style: TextStyle(
+          color: foreground,
+          fontSize: pixelLabelSmallSize,
+          fontWeight: FontWeight.w700,
+        ),
       ),
     );
   }
@@ -572,12 +631,23 @@ class _ChangesScreenBodyState extends ConsumerState<_ChangesScreenBody> {
       return const Center(child: Text('That change is no longer present.'));
     }
 
+    final compact = MediaQuery.sizeOf(context).width < 480;
     return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 24, 20, 0),
+      padding: EdgeInsets.fromLTRB(
+        compact ? 12 : 20,
+        compact ? 16 : 24,
+        compact ? 12 : 20,
+        0,
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(selected.path, style: Theme.of(context).textTheme.headlineSmall),
+          Text(
+            selected.path,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            style: Theme.of(context).textTheme.headlineSmall,
+          ),
           const SizedBox(height: 10),
           Text('Status ${selected.shortStatus}'),
           const SizedBox(height: 6),
@@ -915,3 +985,5 @@ String _remoteOperationLabel(GitRemoteOperation operation) =>
       GitRemoteOperation.pull => 'Pull',
       GitRemoteOperation.push => 'Push',
     };
+
+enum _ChangesMenuAction { remotes, branches, history, refresh }

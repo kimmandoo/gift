@@ -41,8 +41,13 @@ class _BranchDialogState extends State<BranchDialog> {
   @override
   Widget build(BuildContext context) {
     final size = MediaQuery.sizeOf(context);
+    final compact = size.width < 480;
     final width = (size.width - 80).clamp(0.0, 380.0);
     return AlertDialog(
+      insetPadding: EdgeInsets.symmetric(
+        horizontal: compact ? 16 : 40,
+        vertical: 24,
+      ),
       title: const Text('Branches'),
       actionsOverflowButtonSpacing: 4,
       content: SizedBox(
@@ -72,7 +77,7 @@ class _BranchDialogState extends State<BranchDialog> {
                       : _createBranch,
                   icon: const Icon(Icons.add),
                 );
-                if (constraints.maxWidth < 300) {
+                if (constraints.maxWidth < 320) {
                   return Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [

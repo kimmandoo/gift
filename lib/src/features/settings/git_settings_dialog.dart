@@ -33,8 +33,14 @@ class _GitSettingsDialogState extends State<GitSettingsDialog> {
   @override
   Widget build(BuildContext context) {
     final state = widget.controller.state;
-    final width = (MediaQuery.sizeOf(context).width - 80).clamp(0.0, 420.0);
+    final size = MediaQuery.sizeOf(context);
+    final compact = size.width < 480;
+    final width = (size.width - 80).clamp(0.0, 420.0);
     return AlertDialog(
+      insetPadding: EdgeInsets.symmetric(
+        horizontal: compact ? 16 : 40,
+        vertical: 24,
+      ),
       title: const Text('Git executable'),
       actionsOverflowButtonSpacing: 4,
       content: SizedBox(
@@ -45,7 +51,11 @@ class _GitSettingsDialogState extends State<GitSettingsDialog> {
           children: [
             if (state.isLoading) const LinearProgressIndicator(),
             if (state.installation case final installation?) ...[
-              SelectableText(installation.executablePath),
+              SelectableText(
+                installation.executablePath,
+                style: Theme.of(context).textTheme.bodySmall
+                    ?.copyWith(fontFamily: 'monospace'),
+              ),
               const SizedBox(height: 4),
               Text('Version ${installation.version}'),
             ],

@@ -16,6 +16,11 @@ void main() {
   testWidgets('lists local branches and switches the selected branch', (
     tester,
   ) async {
+    addTearDown(tester.view.reset);
+    tester.view.physicalSize = const Size(320, 480);
+    tester.view.devicePixelRatio = 1;
+    tester.platformDispatcher.textScaleFactorTestValue = 1.2;
+    addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
     final repository = const RepositoryOpened(
       repositoryId: RepositoryId(value: 'branch-repository'),
       root: '/workspace/project',
@@ -50,6 +55,7 @@ void main() {
 
     expect(find.text('feature/demo'), findsOneWidget);
     expect(find.text('Current branch'), findsOneWidget);
+    expect(tester.takeException(), isNull);
     await tester.tap(find.byKey(const ValueKey('branch:feature/demo')));
     await tester.pumpAndSettle();
     expect(gateway.switchedTo, 'feature/demo');

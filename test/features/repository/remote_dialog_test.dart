@@ -19,6 +19,11 @@ void main() {
   testWidgets('shows remote progress and cancels the running operation', (
     tester,
   ) async {
+    addTearDown(tester.view.reset);
+    tester.view.physicalSize = const Size(320, 480);
+    tester.view.devicePixelRatio = 1;
+    tester.platformDispatcher.textScaleFactorTestValue = 1.2;
+    addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
     final repository = const RepositoryOpened(
       repositoryId: RepositoryId(value: 'remote-repository'),
       root: '/workspace/project',

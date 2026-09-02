@@ -103,11 +103,14 @@ class _HistoryScreenState extends State<HistoryScreen> {
               Container(
                 key: const Key('history-status-strip'),
                 color: Theme.of(context).colorScheme.surfaceContainerHighest,
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 20,
-                  vertical: 8,
+                padding: EdgeInsets.symmetric(
+                  horizontal: MediaQuery.sizeOf(context).width < 480 ? 12 : 20,
+                  vertical: 7,
                 ),
-                child: const Text('Ctrl+R refresh · Esc back'),
+                child: Text(
+                  'Ctrl+R refresh · Esc back',
+                  style: Theme.of(context).textTheme.labelSmall,
+                ),
               ),
           ],
         ),
@@ -238,6 +241,8 @@ class _HistoryScreenState extends State<HistoryScreen> {
                             : commit.subject,
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
+                        style: Theme.of(context).textTheme.bodyMedium
+                            ?.copyWith(fontWeight: FontWeight.w600),
                       ),
                       const SizedBox(height: 3),
                       Text(
@@ -274,11 +279,18 @@ class _HistoryScreenState extends State<HistoryScreen> {
           const SizedBox(height: 12),
           SelectableText(
             commit.oid,
-            style: const TextStyle(fontFamily: 'monospace'),
+            style: Theme.of(context).textTheme.bodySmall
+                ?.copyWith(fontFamily: 'monospace'),
           ),
           const SizedBox(height: 8),
-          Text('${commit.authorName} <${commit.authorEmail}>'),
-          Text(_formatDate(commit.authoredAt)),
+          Text(
+            '${commit.authorName} <${commit.authorEmail}>',
+            style: Theme.of(context).textTheme.bodySmall,
+          ),
+          Text(
+            _formatDate(commit.authoredAt),
+            style: Theme.of(context).textTheme.bodySmall,
+          ),
           if (commit.parents.isNotEmpty) ...[
             const SizedBox(height: 16),
             Text('Parents: ${commit.parents.length}'),

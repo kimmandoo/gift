@@ -8,6 +8,7 @@
 - fix(ui): aligned light and dark semantic color roles and added contrast checks.
 - fix(ui): refined the compact pixel type scale and prevented text and button overflow.
 - fix(ui): corrected light-theme contrast, tightened button proportions, and aligned screen gutters.
+- fix(ui): improved dual-font readability, theme contrast, and compact component alignment.
 - fix(ui): enabled continuous multi-line selection across rendered diff rows.
 - fix(build): changed desktop executable copyright metadata to kimmandoo.
 - change(identity): changed desktop bundle identifiers to app.kimmandoo.gitflu.

@@ -35,6 +35,7 @@ void main() {
     expect(theme.colorScheme.error, pixelCoral);
     expect(theme.cardTheme.elevation, 0);
     expect(theme.textTheme.bodyMedium?.fontFamily, pixelFontFamily);
+    expect(theme.textTheme.headlineMedium?.fontFamily, pixelDisplayFontFamily);
     expect(theme.textTheme.bodyLarge?.fontSize, pixelBodyLargeSize);
     expect(theme.textTheme.bodyMedium?.fontSize, pixelBodyMediumSize);
     expect(theme.textTheme.bodySmall?.fontSize, pixelBodySmallSize);
@@ -45,11 +46,11 @@ void main() {
     expect(theme.appBarTheme.titleTextStyle?.fontSize, pixelTitleLargeSize);
     expect(
       theme.filledButtonTheme.style?.minimumSize?.resolve({}),
-      const Size(44, 40),
+      const Size(40, 36),
     );
     expect(
       theme.outlinedButtonTheme.style?.minimumSize?.resolve({}),
-      const Size(44, 40),
+      const Size(40, 36),
     );
     expect(theme.colorScheme.surfaceContainerHighest, pixelPanelRaised);
     expect(light.brightness, Brightness.light);
@@ -110,6 +111,16 @@ void main() {
         greaterThanOrEqualTo(4.5),
       );
     }
+    expect(theme.textTheme.bodyMedium?.color, theme.colorScheme.onSurface);
+    expect(
+      theme.textTheme.bodySmall?.color,
+      theme.colorScheme.onSurfaceVariant,
+    );
+    expect(light.textTheme.bodyMedium?.color, light.colorScheme.onSurface);
+    expect(
+      light.textTheme.bodySmall?.color,
+      light.colorScheme.onSurfaceVariant,
+    );
   });
 
   testWidgets('switches and persists the light theme', (tester) async {
@@ -137,6 +148,8 @@ void main() {
     addTearDown(tester.view.reset);
     tester.view.physicalSize = const Size(320, 480);
     tester.view.devicePixelRatio = 1;
+    tester.platformDispatcher.textScaleFactorTestValue = 1.2;
+    addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
 
     await tester.pumpWidget(const GitfluApp());
     await tester.pump();
