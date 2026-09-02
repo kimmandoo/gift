@@ -2,6 +2,7 @@
 
 ## 2026-09-03
 
+- fix(graph): refined history lanes, curves, and commit markers.
 - feat(task20): added preview-bound advanced branch operations and explicit recovery states.
 - feat(task19): added snapshot-bound history search and lazy commit inspection.
 

@@ -5,30 +5,29 @@ This file is the handoff record for continuing work across query sessions.
 ## Current checkpoint
 
 - Date: 2026-09-03
-- Active task: Task 20, safe advanced branch operations, is complete on `main`.
+- Active task: the requested history graph visual refinement is complete on
+  `main`; Task 20 remains complete and Task 21 has not been activated.
 - Branch: `main`; no new branch or worktree was created.
 - History cleanup: removed the pull-request merge commit from local and remote
   `main` with a lease-protected force update; the branding commits and Task 18
   content remain in a linear history. The two remaining obsolete branding
   labels in reachable commit messages were also replaced, and the rewrite
   backup ref was removed.
-- Changed files: Task 20 branch models, typed errors, AppState preview tokens,
-  repository service/backend/gateway APIs, branch dialog and fakes/tests, plus
-  behavior ledger, task board, roadmap, architecture, plan, changelog, and
-  this checkpoint.
-- Verification: Task 20 backend tests (8) and Branch dialog tests (2) passed;
-  `flutter analyze` passed; formatting passed; the full suite completed with
-  109 passing and the same 2 known Windows-platform expectation failures in
-  `dart_git_backend_test.dart` (UTF-8 process output and CRLF newline
-  normalization); `git diff --check` passed; the current-file scan found no
-  obsolete product-name references; and the post-rewrite `main` graph contains
-  no merge commit. Reachable commit subjects and bodies were also scanned and
-  contain no obsolete product-name references.
+- Changed files: history graph rendering and widget coverage, architecture,
+  changelog, and this checkpoint.
+- Verification: the focused history screen suite passed all 6 tests and the
+  history parser suite passed all 5 tests; `flutter analyze` passed with no
+  issues. The full suite completed with 110 passing tests and the same 2 known
+  Windows-platform expectation failures in `dart_git_backend_test.dart`
+  (UTF-8 process output and CRLF newline normalization). `git diff --check`
+  passed after the graph width, lane semantics, curves, merge markers, and
+  selected-row styling were updated.
 - Next action: activate Task21 by recording its behavior scenarios and first
   RED test in a later requested session.
-- First failing test: the initial Task20 test failed to compile because the
-  operation models, preview APIs, and stale-preview error category were
-  missing; the implementation subsequently passed it.
+- First failing test: the wide-lane graph test expected the new 120-pixel
+  layout but received the previous 104-pixel width; after rendering changed,
+  its accessibility assertion exposed a merged semantics node and passed once
+  the graph became an explicit semantics container.
 - Blockers: none.
 
 ## Previous checkpoint

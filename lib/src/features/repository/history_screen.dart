@@ -331,7 +331,10 @@ class _HistoryScreenState extends State<HistoryScreen> {
       (maximum, commit) =>
           commit.laneCount > maximum ? commit.laneCount : maximum,
     );
-    final graphWidth = (maxLaneCount * 14.0 + 20).clamp(42.0, 180.0);
+    // A fixed lane rhythm keeps the graph stable as branches appear and
+    // disappear. Stretching the same lanes to fill the available gutter made
+    // short histories look loose and wide histories look cramped.
+    final graphWidth = (maxLaneCount * 16.0 + 24).clamp(48.0, 152.0);
     final extraRows = page.hasMore ? 1 : 0;
     return ListView.builder(
       padding: const EdgeInsets.symmetric(vertical: 8),
@@ -354,34 +357,57 @@ class _HistoryScreenState extends State<HistoryScreen> {
         }
         final commit = page.commits[index];
         final scheme = Theme.of(context).colorScheme;
+        final selected = state.selectedOid == commit.oid;
+        final rowSurface = selected
+            ? scheme.surfaceContainerHighest
+            : Theme.of(context).scaffoldBackgroundColor;
         return InkWell(
           key: ValueKey('commit:${commit.oid}'),
           onTap: () => _controller.selectCommit(commit),
           child: Container(
-            constraints: const BoxConstraints(minHeight: 64),
-            color: state.selectedOid == commit.oid
-                ? scheme.surfaceContainerHighest
-                : null,
+            constraints: const BoxConstraints(minHeight: 72),
+            decoration: BoxDecoration(
+              color: rowSurface,
+              border: Border(
+                bottom: BorderSide(
+                  color: scheme.outline.withValues(alpha: 0.16),
+                ),
+                left: selected
+                    ? BorderSide(color: scheme.primary, width: 2)
+                    : BorderSide.none,
+              ),
+            ),
             padding: const EdgeInsets.only(right: 12),
             child: Row(
               children: [
-                SizedBox(
-                  width: graphWidth,
-                  height: 64,
-                  child: CustomPaint(
-                    key: ValueKey('graph:${commit.oid}'),
-                    painter: _CommitGraphPainter(
-                      lane: commit.lane,
-                      laneCount: maxLaneCount,
-                      segments: commit.graphSegments,
-                      hasIncoming: commit.graphHasIncoming,
-                      colors: [
-                        scheme.primary,
-                        scheme.secondary,
-                        scheme.tertiary,
-                        scheme.error,
-                      ],
-                      background: Theme.of(context).scaffoldBackgroundColor,
+                Semantics(
+                  container: true,
+                  explicitChildNodes: true,
+                  image: true,
+                  label:
+                      'Commit graph · lane ${commit.lane + 1} of ${commit.laneCount}'
+                      '${commit.parents.length > 1 ? ' · merge commit' : ''}',
+                  child: SizedBox(
+                    width: graphWidth,
+                    height: 72,
+                    child: CustomPaint(
+                      key: ValueKey('graph:${commit.oid}'),
+                      painter: _CommitGraphPainter(
+                        lane: commit.lane,
+                        laneCount: maxLaneCount,
+                        segments: commit.graphSegments,
+                        hasIncoming: commit.graphHasIncoming,
+                        parentCount: commit.parents.length,
+                        isSelected: selected,
+                        colors: [
+                          scheme.primary,
+                          scheme.secondary,
+                          scheme.tertiary,
+                          scheme.error,
+                        ],
+                        surface: rowSurface,
+                        outline: scheme.outline,
+                      ),
                     ),
                   ),
                 ),
@@ -596,21 +622,25 @@ class _CommitGraphPainter extends CustomPainter {
     required this.laneCount,
     required this.segments,
     required this.hasIncoming,
+    required this.parentCount,
+    required this.isSelected,
     required this.colors,
-    required this.background,
+    required this.surface,
+    required this.outline,
   });
 
   final int lane;
   final int laneCount;
   final List<GitGraphSegment> segments;
   final bool hasIncoming;
+  final int parentCount;
+  final bool isSelected;
   final List<Color> colors;
-  final Color background;
+  final Color surface;
+  final Color outline;
 
   double _laneX(int value, Size size) {
-    if (laneCount <= 1) return size.width / 2;
-    final spacing = ((size.width - 20) / (laneCount - 1)).clamp(3.0, 14.0);
-    return 10 + value * spacing;
+    return (20.0 + value * 16.0).clamp(10.0, size.width - 10.0);
   }
 
   @override
@@ -619,17 +649,33 @@ class _CommitGraphPainter extends CustomPainter {
     for (final segment in segments) {
       final from = _laneX(segment.fromLane, size);
       final to = _laneX(segment.toLane, size);
-      final paint = Paint()
-        ..color = colors[segment.fromLane % colors.length]
-        ..strokeWidth = 2
-        ..isAntiAlias = false
-        ..style = PaintingStyle.stroke;
       final startsAtNode = segment.fromLane == lane;
-      final path = Path()
-        ..moveTo(from, startsAtNode ? middle : 0)
-        ..lineTo(from, startsAtNode ? middle : middle - 5)
-        ..lineTo(to, middle + 5)
-        ..lineTo(to, size.height);
+      final colorLane = startsAtNode && segment.fromLane != segment.toLane
+          ? segment.toLane
+          : segment.fromLane;
+      final paint = Paint()
+        ..color = colors[colorLane % colors.length].withValues(alpha: 0.88)
+        ..strokeWidth = 2.25
+        ..strokeCap = StrokeCap.round
+        ..strokeJoin = StrokeJoin.round
+        ..isAntiAlias = true
+        ..style = PaintingStyle.stroke;
+      final path = Path();
+      if (from == to) {
+        path
+          ..moveTo(from, startsAtNode ? middle : 0)
+          ..lineTo(to, size.height);
+      } else if (startsAtNode) {
+        path
+          ..moveTo(from, middle)
+          ..cubicTo(from, middle + 9, to, middle + 9, to, size.height);
+      } else {
+        path
+          ..moveTo(from, 0)
+          ..lineTo(from, middle - 9)
+          ..cubicTo(from, middle - 2, to, middle + 2, to, middle + 9)
+          ..lineTo(to, size.height);
+      }
       canvas.drawPath(path, paint);
     }
     final nodeColor = colors[lane % colors.length];
@@ -640,22 +686,56 @@ class _CommitGraphPainter extends CustomPainter {
         center,
         Paint()
           ..color = nodeColor
-          ..strokeWidth = 2
-          ..isAntiAlias = false,
+          ..strokeWidth = 2.25
+          ..strokeCap = StrokeCap.round
+          ..isAntiAlias = true,
       );
     }
-    canvas.drawRect(
-      Rect.fromCenter(center: center, width: 10, height: 10),
+    if (isSelected) {
+      canvas.drawCircle(
+        center,
+        parentCount > 1 ? 10 : 9,
+        Paint()
+          ..color = nodeColor.withValues(alpha: 0.16)
+          ..isAntiAlias = true,
+      );
+    }
+    final outerRadius = parentCount > 1 ? 7.0 : 6.0;
+    canvas.drawCircle(
+      center,
+      outerRadius,
       Paint()
-        ..color = background
-        ..isAntiAlias = false,
+        ..color = surface
+        ..style = PaintingStyle.fill
+        ..isAntiAlias = true,
     );
-    canvas.drawRect(
-      Rect.fromCenter(center: center, width: 8, height: 8),
+    canvas.drawCircle(
+      center,
+      outerRadius,
       Paint()
         ..color = nodeColor
-        ..isAntiAlias = false,
+        ..strokeWidth = parentCount > 1 ? 2.5 : 2.25
+        ..style = PaintingStyle.stroke
+        ..isAntiAlias = true,
     );
+    canvas.drawCircle(
+      center,
+      parentCount > 1 ? 3.0 : 2.75,
+      Paint()
+        ..color = nodeColor
+        ..isAntiAlias = true,
+    );
+    if (parentCount > 1) {
+      canvas.drawCircle(
+        center,
+        9,
+        Paint()
+          ..color = outline.withValues(alpha: 0.34)
+          ..strokeWidth = 1
+          ..style = PaintingStyle.stroke
+          ..isAntiAlias = true,
+      );
+    }
   }
 
   @override
@@ -664,8 +744,11 @@ class _CommitGraphPainter extends CustomPainter {
       oldDelegate.laneCount != laneCount ||
       oldDelegate.segments != segments ||
       oldDelegate.hasIncoming != hasIncoming ||
+      oldDelegate.parentCount != parentCount ||
+      oldDelegate.isSelected != isSelected ||
       oldDelegate.colors != colors ||
-      oldDelegate.background != background;
+      oldDelegate.surface != surface ||
+      oldDelegate.outline != outline;
 }
 
 String _formatDate(DateTime date) {

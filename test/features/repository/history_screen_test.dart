@@ -318,7 +318,7 @@ void main() {
     );
     final commit = GitCommit(
       oid: 'd' * 40,
-      parents: const [],
+      parents: ['e' * 40, 'f' * 40],
       authorName: 'Kimmandoo',
       authorEmail: 'kimmandoo@example.test',
       authoredAt: DateTime(2026, 9, 2, 12),
@@ -359,7 +359,11 @@ void main() {
 
     expect(
       tester.getSize(find.byKey(ValueKey('graph:${commit.oid}'))).width,
-      104,
+      120,
+    );
+    expect(
+      find.bySemanticsLabel('Commit graph · lane 6 of 6 · merge commit'),
+      findsOneWidget,
     );
     expect(tester.takeException(), isNull);
     controller.dispose();
