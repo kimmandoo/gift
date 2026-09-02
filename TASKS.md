@@ -1,9 +1,8 @@
 # 📋 gitflu Task Management
 
-> **Project Goal:** Black-box reverse-engineer the user-visible Git GUI system
-> in JetBrains IDEs, then build a clean-room, cross-platform equivalent with a
-> minimal 2D pixel-game UI, a Flutter Desktop frontend, and a pure Dart backend
-> for Windows, macOS, and Linux.
+> **Project Goal:** Build a clean-room, cross-platform desktop Git client with
+> familiar IDE-style workflows, a minimal 2D pixel-game UI, a Flutter Desktop
+> frontend, and a pure Dart backend for Windows, macOS, and Linux.
 
 ## Progress
 
@@ -45,7 +44,7 @@
 ## Product contracts
 
 - `docs/research/jetbrains-git-mvp-behavior.md` is the clean-room behavior
-  ledger for the JetBrains Git GUI reverse-engineering target.
+  ledger for the desktop Git workflow target.
 - `docs/superpowers/specs/2026-09-02-jetbrains-git-gui-pixel-ui-design.md`
   defines the original minimal 2D pixel-game visual system, desktop shell,
   interaction states, accessibility, and acceptance criteria.

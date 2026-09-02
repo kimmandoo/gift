@@ -1,119 +1,131 @@
 <div align="center">
 
-<img src="assets/images/gitflu_logo.png" alt="gitflu pixel shiba Git mascot" width="260" style="image-rendering: pixelated; border: 4px solid #1A222C;" />
+<img src="assets/images/gitflu_logo.png" alt="gitflu pixel shiba Git mascot" width="260" style="image-rendering: pixelated;" />
 
 # gitflu
 
-**`gitflow` + `flutter` + `git gui`**
+**A small, keyboard-first Git client for desktop.**
 
-*A keyboard-first, clean-room behavioral reverse engineering of a JetBrains-style Git GUI, presented as a minimal 2D pixel-game interface.*
-
-[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-[![Flutter](https://img.shields.io/badge/Flutter-3.x-02569B?logo=flutter&logoColor=white)](https://flutter.dev)
-[![Dart](https://img.shields.io/badge/Dart-3.x-0175C2?logo=dart&logoColor=white)](https://dart.dev)
-[![Platform](https://img.shields.io/badge/Platform-Windows%20%7C%20macOS%20%7C%20Linux-lightgrey)](https://github.com)
+Flutter UI · Dart backend · Windows · macOS · Linux
 
 </div>
 
-## About gitflu
+gitflu is an open-source desktop Git client for developers who want a calm,
+focused way to review and manage local repositories. It combines a compact
+workflow with a minimal 2D pixel-game visual language: dark surfaces, crisp
+pixel edges, small status markers, and clear feedback for every Git action.
 
-gitflu is a lightweight, cross-platform Git GUI whose product target is the
-user-visible workflow and information hierarchy of the Git GUI system in
-JetBrains IDEs. The project uses black-box behavioral reverse engineering: it
-reproduces observable states and feedback with original code and assets,
-without copying proprietary implementation details.
+The project is intentionally easy to read. Flutter owns the interface and
+navigation, while a pure Dart backend talks to the Git executable installed on
+the user's machine.
 
-The UI is intentionally minimal and game-like: a restrained dark palette,
-crisp pixel borders, compact panels, and small original 2D pixel motifs. It
-keeps desktop Git density and keyboard-first behavior while making the next
-safe action obvious to a new user. Flutter owns presentation; a pure Dart
-backend runs the system Git executable directly and exposes typed domain
-services to the UI.
+> **Project status:** Early development. The repository and Git execution
+> foundations are in place; the changes view is the next active milestone.
 
-The backend uses `Process.start` with an argument list and
-`runInShell: false`. Git commands never cross a shell, credentials are
-redacted from diagnostics, and captured output is bounded.
+## Highlights
 
-처음 코드를 읽는다면 [코드 흐름 안내](docs/ARCHITECTURE.md)에서 화면부터
-백엔드와 system Git까지 이어지는 호출 순서를 먼저 확인하세요.
+- Review local changes, diffs, branches, history, and remote operations from
+  one desktop workspace.
+- Use keyboard-first workflows with visible focus and discoverable actions.
+- Run Git directly with `dart:io` and explicit argument lists; no shell command
+  strings are built.
+- Discover and validate Git installations, including a user-selected path.
+- Keep repository handles opaque and scoped to the current application session.
+- Bound captured output and redact credential-bearing values in diagnostics.
+- Keep screens, controllers, backend services, and tests separated so a new
+  contributor can follow one feature from button to Git result.
 
 ## Architecture
 
-```mermaid
-flowchart TD
-    subgraph Flutter["Flutter Desktop UI"]
-        UI[Pixel App Shell & Features\nChanges · Log · Branches · Diff]
-        State[Riverpod / Controller State]
-        Gateway[GitGateway Contract]
-    end
-
-    subgraph Dart["Dart Backend"]
-        API[DartGitBackend]
-        Service[Repository & Git Services]
-        Executor[ProcessGitRunner\nargv · bounded output · redaction]
-    end
-
-    subgraph System["Operating System"]
-        GitCLI[System Git CLI 2.35+\nSSH Keys · GPG · Credential Helpers]
-    end
-
-    UI --> State
-    State --> Gateway
-    Gateway --> API
-    API --> Service
-    Service --> Executor
-    Executor --> GitCLI
+```text
+Flutter screen
+    ↓
+Controller and visible state
+    ↓
+GitGateway
+    ↓
+DartGitBackend
+    ├─ GitInstallationService
+    └─ RepositoryService
+         ↓
+    ProcessGitRunner
+         ↓
+    System Git executable
 ```
 
-## Features
+The UI never assembles raw Git commands. A feature begins with a typed backend
+contract, passes through a small gateway, and ends in an explicit loading,
+success, warning, or error state on screen.
 
-- Flutter Desktop frontend with Material 3.
-- JetBrains Git GUI behavior ledger with a clean-room, black-box reverse-engineering target.
-- Minimal 2D pixel-game visual system with keyboard-first desktop interactions.
-- Dart-only backend with no FFI, native bridge, or generated bindings.
-- System Git discovery and validation for Git 2.35+.
-- Opaque, session-local repository handles.
-- Recent repository persistence and configurable Git executable path.
-- Shell-free process execution with bounded output and credential-safe errors.
+## Visual direction
+
+The interface is inspired by compact 2D pixel games without turning Git into a
+game. The visual system uses:
+
+- a restrained dark palette with mint, amber, sky, and coral status accents;
+- a 4 px base grid, 8 px primary spacing, and crisp stepped borders;
+- flat surfaces instead of gradients, glass effects, or heavy shadows;
+- original pixel motifs for repositories, branches, commits, and status; and
+- normal Flutter semantics, text labels, keyboard support, and visible focus.
+
+The visual and interaction contract lives in
+[`docs/superpowers/specs/2026-09-02-jetbrains-git-gui-pixel-ui-design.md`](docs/superpowers/specs/2026-09-02-jetbrains-git-gui-pixel-ui-design.md).
+
+## Requirements
+
+- Flutter stable with desktop support enabled.
+- Dart SDK 3.13 or newer, provided by the matching Flutter SDK.
+- Git 2.35 or newer available in `PATH`.
+
+The repository's pinned tool versions are documented in
+[`tool/versions.json`](tool/versions.json).
 
 ## Getting started
 
-### Prerequisites
-
-- System Git `2.35+` available in `PATH`.
-- Flutter stable with Windows, macOS, or Linux desktop enabled.
-- Dart SDK `3.13+` (provided by the matching Flutter SDK).
-
-### Build and verify
-
 ```bash
-git clone https://github.com/your-org/gitflu.git
+git clone https://github.com/kimmandoo/gitflu.git
 cd gitflu
 flutter pub get
+flutter run -d linux   # or windows / macos
+```
+
+The first screen lets you choose a working repository. Git settings can be
+opened from the same screen when Git is not found automatically.
+
+## Development
+
+Run the formatter, analyzer, and test suite before opening a pull request:
+
+```bash
+dart format lib test integration_test
 flutter analyze
 flutter test
 ```
 
-Run the desktop app with `flutter run -d windows`, `flutter run -d macos`, or
-`flutter run -d linux`.
+For a quick map of the call flow, read
+[`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md). For behavior scenarios and
+state expectations, read the
+[Git behavior ledger](docs/research/jetbrains-git-mvp-behavior.md). The active
+work is tracked in [`TASKS.md`](TASKS.md).
 
 ## Roadmap
 
-- [x] Dart backend scaffold, safe Git executor, Git discovery, and repository opening.
-- [ ] JetBrains-equivalent behavior slices with the original pixel UI system.
+- [x] Flutter desktop shell and Dart Git backend foundation.
+- [x] Git discovery, safe process execution, repository validation, and recent
+  repositories.
 - [ ] Repository status and grouped changes view.
-- [ ] Bounded unified diff viewer.
-- [ ] Staging, discard, and commit workflows.
-- [ ] Branch graph, branch management, and remote operations.
-- [ ] Packaging and multi-OS CI.
+- [ ] Unified diff viewer with staged and unstaged scopes.
+- [ ] Staging, discard, commit, branch, history, and remote workflows.
+- [ ] Responsive pixel UI, desktop shortcuts, packaging, and CI.
 
 ## Contributing
 
-Follow the commit convention `type(scope): subject`, keep Git execution
-argument-based, and run `flutter analyze` plus `flutter test` before opening a
-pull request.
+Small, focused pull requests are welcome. Please keep backend operations
+typed, keep Git execution shell-free, add tests for behavior changes, and
+explain visible UI states in beginner-friendly terms. Use the commit format
+`type(scope): subject`.
 
 ## License
 
-Distributed under the MIT License. See [LICENSE](LICENSE) for more
-information.
+gitflu is an open-source work in progress. Licensing terms will be added to
+the repository before the first public release.

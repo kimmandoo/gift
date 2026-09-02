@@ -30,9 +30,16 @@ This file is the handoff record for continuing work across query sessions.
   force-pushed `main` to GitHub. Local and remote `main` both point to
   `9f4c87b`; `git log --all` reports only that identity. The pre-rewrite
   history remains recoverable from `/tmp/gitflu-before-author-rewrite.bundle`.
-- Current session: updated the product specs and replaced the README logo with
-  `assets/images/gitflu_logo.png`, an original pixel-game Git mascot based on
-  the existing shiba identity. The old JPEG logo was removed from the project.
+- Current session: rewrote the README in English as an open-source desktop Git
+  client introduction, kept the methodology wording in design documentation,
+  and removed it from public-facing project docs. Replaced the README logo with
+  `assets/images/gitflu_logo.png`, an original transparent RGBA pixel-game Git
+  mascot based on the existing shiba identity. The old JPEG logo was removed.
+- Verification: the replacement logo is a `1312x1199` RGBA PNG, README points
+  only to the PNG, and no methodology wording remains in README, TASKS,
+  architecture, or changelog files. `git diff --check` and the existing Flutter
+  test/analyzer verification remain green; this session changes docs and an
+  image asset only.
 - Next action: in the next product session, continue with the first failing
   Task 5 status-parser test.
 
