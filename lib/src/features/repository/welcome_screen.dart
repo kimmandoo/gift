@@ -2,7 +2,7 @@ import 'package:branchline/src/features/repository/recent_repository_store.dart'
 import 'package:branchline/src/features/repository/repository_controller.dart';
 import 'package:branchline/src/features/settings/git_settings_controller.dart';
 import 'package:branchline/src/features/settings/git_settings_dialog.dart';
-import 'package:branchline/src/rust/git_gateway.dart';
+import 'package:branchline/src/backend/git_gateway.dart';
 import 'package:file_selector/file_selector.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -36,6 +36,8 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
   @override
   void initState() {
     super.initState();
+    // The controller owns loading and errors; this widget only rebuilds when
+    // the controller tells it that visible state changed.
     if (widget.preferences case final preferences?) {
       _gitSettingsController = GitSettingsController(
         gateway: widget.gateway,

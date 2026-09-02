@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:branchline/src/features/repository/recent_repository_store.dart';
 import 'package:branchline/src/features/repository/welcome_screen.dart';
-import 'package:branchline/src/rust/frb_git_gateway.dart';
-import 'package:branchline/src/rust/git_gateway.dart';
+import 'package:branchline/src/backend/dart_git_gateway.dart';
+import 'package:branchline/src/backend/git_gateway.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class BranchlineApp extends StatelessWidget {
@@ -28,7 +28,7 @@ class BranchlineApp extends StatelessWidget {
         useMaterial3: true,
       ),
       home: WelcomeScreen(
-        gateway: gateway ?? const FrbGitGateway(),
+        gateway: gateway ?? DartGitGateway(),
         recentStore: recentStore ?? RecentRepositoryStore.inMemory(),
         preferences: preferences,
         autoInitialize: autoInitialize,

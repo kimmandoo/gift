@@ -1,9 +1,8 @@
 import 'package:branchline/src/features/repository/recent_repository_store.dart';
 import 'package:branchline/src/features/repository/welcome_screen.dart';
-import 'package:branchline/src/rust/generated/domain.dart';
-import 'package:branchline/src/rust/generated/domain/repository.dart';
-import 'package:branchline/src/rust/generated/error.dart';
-import 'package:branchline/src/rust/git_gateway.dart';
+import 'package:branchline/src/backend/domain.dart';
+import 'package:branchline/src/backend/error.dart';
+import 'package:branchline/src/backend/git_gateway.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';

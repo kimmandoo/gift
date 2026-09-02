@@ -1,6 +1,6 @@
-import 'package:branchline/src/rust/generated/domain.dart';
-import 'package:branchline/src/rust/generated/error.dart';
-import 'package:branchline/src/rust/git_gateway.dart';
+import 'package:branchline/src/backend/domain.dart';
+import 'package:branchline/src/backend/error.dart';
+import 'package:branchline/src/backend/git_gateway.dart';
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 

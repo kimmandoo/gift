@@ -1,9 +1,8 @@
 import 'package:branchline/src/features/repository/recent_repository_store.dart';
 import 'package:branchline/src/features/settings/git_settings_controller.dart';
-import 'package:branchline/src/rust/generated/domain.dart';
-import 'package:branchline/src/rust/generated/domain/repository.dart';
-import 'package:branchline/src/rust/generated/error.dart';
-import 'package:branchline/src/rust/git_gateway.dart';
+import 'package:branchline/src/backend/domain.dart';
+import 'package:branchline/src/backend/error.dart';
+import 'package:branchline/src/backend/git_gateway.dart';
 import 'package:flutter/foundation.dart';
 
 class RepositoryState {
@@ -73,6 +72,8 @@ class RepositoryController extends ChangeNotifier {
   RepositoryState get state => _state;
 
   Future<void> initialize() async {
+    // Load recent paths independently so they remain visible even when Git is
+    // missing or an outdated executable is configured.
     _setState(_state.copyWith(isLoading: true, clearError: true));
     final recentRepositories = await recentStore.load();
 
@@ -101,6 +102,8 @@ class RepositoryController extends ChangeNotifier {
   }
 
   Future<void> openPath(String path) async {
+    // The screen passes only a path. The gateway/backend performs all Git
+    // validation and returns a canonical repository root.
     if (!state.canOpen) return;
     _setState(
       _state.copyWith(

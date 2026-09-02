@@ -1,0 +1,58 @@
+# Branchline Dart MVP Implementation Plan
+
+**Goal:** Build a clean-room, cross-platform Git GUI with a Flutter Desktop
+frontend and a pure Dart backend.
+
+**Architecture:** Flutter owns presentation, navigation, keyboard handling,
+and UI state. Dart backend services own repository identity, direct system-Git
+execution, machine-readable parsing, mutations, cancellation, and typed
+errors. The UI consumes the backend through `GitGateway`, which is a normal
+Dart interface rather than a native bridge.
+
+**Tooling:** Flutter stable, Dart 3.13+, Material 3, Riverpod, `dart:io`, and
+system Git 2.35+.
+
+## Execution rules
+
+- Apply test-driven development to each behavior change.
+- Keep Git execution shell-free: pass executable, arguments, working directory,
+  and stdin as separate values to `Process.start`.
+- Bound captured output and continuously drain both process pipes.
+- Redact credential URLs and sensitive values before putting Git output in a
+  diagnostic.
+- Keep one mutation per repository at a time and validate opaque IDs against
+  the in-memory registry that created them.
+- Follow `AGENTS.md`: update `CHANGELOG.md`, maintain the checkpoint, and use a
+  conventional commit for each query session.
+
+## Dart backend file map
+
+- `lib/src/backend/domain.dart` — public value objects and health contract.
+- `lib/src/backend/error.dart` — typed Git error categories.
+- `lib/src/backend/executor.dart` — direct process runner, bounded output, and
+  redaction.
+- `lib/src/backend/git_installation_service.dart` — Git discovery, version
+  parsing, and explicit path validation.
+- `lib/src/backend/repository_service.dart` — repository root validation and
+  opaque handle registry.
+- `lib/src/backend/dart_git_backend.dart` — backend service facade.
+- `lib/src/backend/dart_git_gateway.dart` — Flutter-facing adapter.
+
+## Foundation status
+
+- [x] Flutter shell and Dart backend health contract.
+- [x] Clean-room temporary Git fixture coverage.
+- [x] Direct argv process execution with bounded output.
+- [x] Git discovery, version validation, and redacted diagnostics.
+- [x] Canonical repository opening and session-local opaque IDs.
+- [x] Recent repository persistence and configurable Git path UI.
+- [x] Removed the previous native implementation and generated bridge assets.
+
+## Next vertical: status and changes
+
+1. Add failing tests for porcelain v2 `-z` records and each status facet.
+2. Implement a bounded status invocation and parser in the backend.
+3. Add generation-aware snapshots and a `ChangesController`.
+4. Render grouped changes in Flutter.
+5. Run `flutter analyze` and `flutter test`, then update the checkpoint and
+   commit.

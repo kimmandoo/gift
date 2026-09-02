@@ -1,23 +1,32 @@
 # Work Checkpoint
 
-This file is the handoff record for continuing work across query sessions. It
-keeps the next action and verification evidence in the repository instead of
-depending on conversation history.
+This file is the handoff record for continuing work across query sessions.
 
 ## Current checkpoint
 
 - Date: 2026-09-02
-- Milestone: Task 4 is complete; Task 5 is the next active task.
-- Source of truth: `TASKS.md` for milestone status and
-  `docs/superpowers/plans/2026-09-01-branchline-mvp.md` for implementation steps.
-- Completed scope: opaque repository IDs, canonical repository opening, bare
-  repository rejection, registry-local ID validation, persisted recent paths,
-  Git executable settings, retry flow, and fake-gateway Flutter tests.
-- Verification: Rust tests, repository-open tests, Flutter tests, Flutter
-  analyze, Rust clippy, Rust format check, and FRB generation completed
-  successfully for this milestone.
-- Next action: read this checkpoint and the Task 5 plan section before writing
-  code; begin with the first failing status-parser test.
+- Milestone: Dart-only backend migration is implemented; Task 5 remains the
+  next active product task.
+- Source of truth: `TASKS.md` and
+  `docs/superpowers/plans/2026-09-02-branchline-dart-mvp.md`.
+- Completed scope: removed the native implementation, FFI bridge, generated
+  bindings, native build plugin, and native build metadata; added a `dart:io`
+  Git backend with direct argv execution, bounded output, redacted errors,
+  Git discovery/version validation, repository root validation, and
+  session-local opaque handles; rewired Flutter screens and tests; added
+  `docs/ARCHITECTURE.md` and beginner-oriented source comments.
+- Verification: installed the pinned Flutter 3.47.2 SDK with Dart 3.13.2 in
+  `/tmp/codex-flutter`, then passed `flutter pub get`,
+  `dart format --output=none --set-exit-if-changed lib test integration_test`,
+  `flutter analyze` (`No issues found!`), the full `flutter test` suite (19
+  tests), `flutter test test/backend/dart_git_backend_test.dart` (9 tests),
+  and `flutter test integration_test/app_smoke_test.dart` (1 test). A local
+  GTK staging directory under `/tmp/codex-gtk` supplied Linux desktop build
+  dependencies because the system package manager required an unavailable
+  sudo password. `git diff --check` passed, and repository-wide searches found
+  no references to the removed native implementation or build system.
+- Next action: in the next product session, continue with the first failing
+  Task 5 status-parser test.
 
 ## Resume procedure
 
@@ -25,25 +34,9 @@ depending on conversation history.
    implementation plan.
 2. Run `git status --short --branch` and inspect the latest commit before
    touching files.
-3. If the checkpoint says a task is in progress, continue that task at its
-   recorded step. Do not start the next task based only on the latest commit
-   title.
-4. Re-run the recorded failing or verification command before changing the
-   implementation when the checkpoint describes an unresolved failure.
-5. Update this file before ending the session with the exact files changed,
-   tests run, observed results, blockers, and next action.
-
-## Handoff format for an incomplete task
-
-When pausing before a task is complete, record:
-
-- the active task and exact plan step;
-- the behavior already implemented and the behavior still missing;
-- the current working-tree state and changed files;
-- the last RED/GREEN or verification command and its output summary;
-- any environmental blocker and the safe next diagnostic;
-- the single next action for the next session.
-
-An incomplete task must remain marked active in `TASKS.md`. Mark it complete
-only after the plan's required verification commands pass and the same-session
-commit has been created.
+3. Continue the exact active task and recorded next action. Do not infer
+   completion from a clean tree or a commit title.
+4. Re-run the recorded verification command before changing implementation if
+   this checkpoint describes an unresolved failure.
+5. Update this file before ending the session with exact files changed, tests
+   run, observed results, blockers, and the next action.

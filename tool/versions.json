@@ -1,9 +1,5 @@
 {
   "flutter": "3.47.2 (stable, framework d3b14c8769, engine 1cf1c4773fb941c4c74a7f8bb144a8837596c0f4)",
   "dart": "3.13.2 (stable)",
-  "rustc": "1.92.0 (ded5c06cf 2025-12-08)",
-  "cargo": "1.92.0 (344c4567c 2025-10-21)",
-  "git": "2.49.0.windows.1",
-  "flutter_rust_bridge": "2.13.0",
-  "flutter_rust_bridge_codegen": "2.13.0"
+  "git": "2.49.0.windows.1"
 }

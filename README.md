@@ -6,57 +6,42 @@
 
 **`gitflow` + `flutter` + `git gui`**
 
-*A blazing fast, keyboard-first, clean-room Git GUI built with Flutter Desktop & high-performance Rust.*
+*A keyboard-first, clean-room Git GUI built entirely with Dart and Flutter.*
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Flutter](https://img.shields.io/badge/Flutter-3.x-02569B?logo=flutter&logoColor=white)](https://flutter.dev)
-[![Rust](https://img.shields.io/badge/Rust-1.80+-DEA584?logo=rust&logoColor=white)](https://www.rust-lang.org)
+[![Dart](https://img.shields.io/badge/Dart-3.x-0175C2?logo=dart&logoColor=white)](https://dart.dev)
 [![Platform](https://img.shields.io/badge/Platform-Windows%20%7C%20macOS%20%7C%20Linux-lightgrey)](https://github.com)
-[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](https://github.com)
-
----
 
 </div>
 
-## 💡 About gitflu
+## About gitflu
 
-**gitflu** is a standalone, lightweight, cross-platform Git GUI client designed for developers who love the smooth, keyboard-centric Git workflow of modern IDEs (such as JetBrains Git tool window and GitFlow branching) without the weight and memory footprint of opening a full IDE.
+gitflu is a lightweight, cross-platform Git GUI for a smooth, keyboard-centric
+workflow. Flutter owns the desktop UI, while a pure Dart backend runs the
+system Git executable directly and exposes typed domain services to the UI.
 
-Built with a **Flutter Desktop** frontend for crisp, responsive UI and a **Rust** backend engine for secure, shell-free Git execution, **gitflu** gives you instant visibility into your changes, seamless branch management, and zero-latency diff navigation.
+The backend uses `Process.start` with an argument list and
+`runInShell: false`. Git commands never cross a shell, credentials are
+redacted from diagnostics, and captured output is bounded.
 
----
+처음 코드를 읽는다면 [코드 흐름 안내](docs/ARCHITECTURE.md)에서 화면부터
+백엔드와 system Git까지 이어지는 호출 순서를 먼저 확인하세요.
 
-## ✨ Key Features
-
-- ⚡ **Blazing Fast & Ultra Lightweight**: Rust-powered background engine coupled with Flutter Desktop provides smooth 60/120 FPS UI responsiveness and minimal memory usage.
-- 🦋 **Intuitive GitFlow & Branch Graph**: Visual commit topology graph, lane-based branch history, and frictionless branch creation/checkout.
-- ⌨️ **Keyboard-First Ergonomics**: Instant keyboard shortcuts for staging, committing, diff jumping, log browsing, and branch switching.
-- 🔒 **Native & Secure Git Integration**: Directly leverages your system Git CLI (`2.35+`). Uses your existing SSH keys, GPG configuration, and credential helpers without storing credentials or exposing tokens in diagnostics.
-- 🛡️ **Shell-Free Process Safety**: Direct argument-vector process execution in Rust (`tokio::process`), preventing command injection and shell escape vulnerabilities.
-- 🎨 **Modern Material 3 Design**: Clean pixel & dark/light theme aesthetics with unified diff highlighting, hunk navigation, and responsive layouts.
-- 🧪 **Clean-Room Verification**: Designed and verified independently from first principles using clean-room behavioral test harnesses.
-
----
-
-## 🏗️ Architecture
+## Architecture
 
 ```mermaid
 flowchart TD
-    subgraph Flutter["Flutter Desktop UI (Dart)"]
+    subgraph Flutter["Flutter Desktop UI"]
         UI[App Shell & Features\nChanges · Log · Branches · Diff]
-        State[Riverpod State Management]
-        Gateway[Git Gateway Contract]
+        State[Riverpod / Controller State]
+        Gateway[GitGateway Contract]
     end
 
-    subgraph Bridge["Boundary Layer"]
-        FRB[flutter_rust_bridge v2]
-    end
-
-    subgraph Rust["Rust Core Engine"]
-        API[Bridge API Endpoints]
-        Service[Domain Services & State\nRepo · Changes · Log · Branch · Remote]
-        Parser[Porcelain v2 & Diff Parsers]
-        Executor[Tokio Shell-Free Process Runner\nRedaction & Bounded Buffers]
+    subgraph Dart["Dart Backend"]
+        API[DartGitBackend]
+        Service[Repository & Git Services]
+        Executor[ProcessGitRunner\nargv · bounded output · redaction]
     end
 
     subgraph System["Operating System"]
@@ -65,87 +50,58 @@ flowchart TD
 
     UI --> State
     State --> Gateway
-    Gateway --> FRB
-    FRB --> API
+    Gateway --> API
     API --> Service
-    Service --> Parser
     Service --> Executor
     Executor --> GitCLI
 ```
 
----
+## Features
 
-## 🚀 Getting Started
+- Flutter Desktop frontend with Material 3.
+- Dart-only backend with no FFI, native bridge, or generated bindings.
+- System Git discovery and validation for Git 2.35+.
+- Opaque, session-local repository handles.
+- Recent repository persistence and configurable Git executable path.
+- Shell-free process execution with bounded output and credential-safe errors.
+
+## Getting started
 
 ### Prerequisites
 
-- **System Git**: `2.35+` installed and available in `PATH`
-- **Flutter**: `3.24+` (Desktop enabled: `flutter config --enable-windows-desktop` / `--enable-macos-desktop` / `--enable-linux-desktop`)
-- **Rust**: `1.80+` (stable toolchain)
-- **flutter_rust_bridge_codegen**: `2.13.0` (`cargo install flutter_rust_bridge_codegen --version 2.13.0`)
+- System Git `2.35+` available in `PATH`.
+- Flutter stable with Windows, macOS, or Linux desktop enabled.
+- Dart SDK `3.13+` (provided by the matching Flutter SDK).
 
-### Building from Source
+### Build and verify
 
-1. **Clone the repository:**
-   ```bash
-   git clone https://github.com/your-org/gitflu.git
-   cd gitflu
-   ```
+```bash
+git clone https://github.com/your-org/gitflu.git
+cd gitflu
+flutter pub get
+flutter analyze
+flutter test
+```
 
-2. **Install Flutter dependencies:**
-   ```bash
-   flutter pub get
-   ```
+Run the desktop app with `flutter run -d windows`, `flutter run -d macos`, or
+`flutter run -d linux`.
 
-3. **Verify Rust & Dart test suites:**
-   ```bash
-   # Run Rust tests
-   cargo test --manifest-path native/Cargo.toml
+## Roadmap
 
-   # Run Flutter unit & widget tests
-   flutter test
-   ```
+- [x] Dart backend scaffold, safe Git executor, Git discovery, and repository opening.
+- [ ] Repository status and grouped changes view.
+- [ ] Bounded unified diff viewer.
+- [ ] Staging, discard, and commit workflows.
+- [ ] Branch graph, branch management, and remote operations.
+- [ ] Packaging and multi-OS CI.
 
-4. **Run the desktop app:**
-   ```bash
-   # On Windows
-   flutter run -d windows
+## Contributing
 
-   # On macOS
-   flutter run -d macos
+Follow the commit convention `type(scope): subject`, keep Git execution
+argument-based, and run `flutter analyze` plus `flutter test` before opening a
+pull request.
 
-   # On Linux
-   flutter run -d linux
-   ```
+## License
 
----
-
-## 🧭 MVP Roadmap
-
-- [x] **Core Bridge & Scaffold**: Cargokit + `flutter_rust_bridge` desktop integration.
-- [x] **Behavior Contract Harness**: Clean-room Git behavior testing with environment isolation.
-- [ ] **Git Engine & Safety**: Shell-free process runner, URL credential redaction, and Git 2.35+ discovery.
-- [ ] **Repository State & Changes**: Staged/Unstaged/Untracked file groups, single/multi-file staging, safe discard.
-- [ ] **Unified Diff Viewer**: Lazy syntax-highlighted diffs, hunk boundaries, binary file detection.
-- [ ] **Commit Workflow**: Commit message editor, author preservation, and instant tree refresh.
-- [ ] **Branch & GitFlow Manager**: Local/remote branch list, search, checkout, and fast branch creation.
-- [ ] **Visual Log & Graph**: Paginated log (200 commits/page), topology lane renderer, commit details.
-- [ ] **Remote Operations**: `fetch`, fast-forward `pull --ff-only`, safe `push`, background operation bar & cancel.
-
----
-
-## 🤝 Contributing
-
-Contributions, feature requests, and bug reports are warmly welcome!
-
-1. Fork the Project
-2. Create your Feature Branch (`git checkout -b feature/amazing-feature`)
-3. Follow the commit convention: `type(scope): subject` (e.g., `feat(diff): add syntax highlighting`)
-4. Verify tests before opening a PR (`cargo test` & `flutter test`)
-5. Open a Pull Request
-
----
-
-## 📄 License
-
-Distributed under the **MIT License**. See `LICENSE` for more information.
+Distributed under the MIT License. See [LICENSE](LICENSE) for more
+information.
