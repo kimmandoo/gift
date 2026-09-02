@@ -7,8 +7,8 @@
 ## Progress
 
 - **Total Tasks:** 14
-- **Completed:** 5 / 14 (35.7%)
-- **Current Active Task:** `Task 6: Unified Diff`
+- **Completed:** 6 / 14 (42.9%)
+- **Current Active Task:** `Task 7: Staging & Mutation`
 
 | # | Scope | Dart backend deliverables | Flutter deliverables | Status |
 |---|---|---|---|:---:|
@@ -17,7 +17,7 @@
 | **3** | Git executor & discovery | `ProcessGitRunner`, typed errors, redaction, PATH scan | Git settings bridge contract | ✅ |
 | **4** | Repository registry & open | `AppState`, opaque IDs, root validation | Welcome screen and recent paths | ✅ |
 | **5** | Status parser & changes | Porcelain v2 `-z` parser and snapshots | Grouped changes list | ✅ |
-| **6** | Unified diff | Bounded diff parser and rename detection | Lazy unified diff view | ⏳ |
+| **6** | Unified diff | Bounded diff parser and rename detection | Lazy unified diff view | ✅ |
 | **7** | Staging & mutation | Serialized `git add`/`restore --staged` | Selection and action buttons | ⏳ |
 | **8** | Discard changes | Expiring preview token and safe restore | Confirmation dialog | ⏳ |
 | **9** | Commit panel | UTF-8 message stdin and hook mapping | Commit editor and shortcuts | ⏳ |
@@ -41,6 +41,8 @@
 - [x] Porcelain v2 status parsing, independent change facets, content hashes,
   and generation-aware snapshots.
 - [x] Polling `ChangesController` and grouped changes screen.
+- [x] Bounded staged/working-tree unified diff parsing, rename metadata, and
+  lazy selected-file rendering.
 - [x] Removed FFI, generated bindings, native build plugins, and the former
   native implementation.
 
@@ -67,13 +69,20 @@
 - [x] Grouped `ChangesScreen` for conflicts, staged, unstaged, untracked, and
   conflicted files.
 
+### ✅ Task 6: Unified Diff
+
+- [x] Added staged and working-tree unified diff parser/backend tests.
+- [x] Added a 4 MiB bounded diff invocation with rename-aware path arguments.
+- [x] Added lazy selected-file rendering with line numbers, binary handling,
+  and scope switching.
+
 ## Active task
 
-### ⏳ Task 6: Unified Diff
+### ⏳ Task 7: Staging & Mutation
 
-- [ ] Add failing tests for staged and unstaged unified diff output.
-- [ ] Implement bounded diff parsing and rename-aware file details.
-- [ ] Render a readable lazy diff view without blocking the changes list.
+- [ ] Add failing tests for staging and un-staging selected paths.
+- [ ] Implement serialized `git add` and `git restore --staged` operations.
+- [ ] Add selection-aware staging actions and status refresh.
 
 Tasks 6–14 retain the same product scope above and will build on the Dart
 backend contracts established here.

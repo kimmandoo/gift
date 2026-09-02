@@ -1,4 +1,5 @@
 import 'package:branchline/src/backend/domain.dart';
+import 'package:branchline/src/backend/diff.dart';
 import 'package:branchline/src/backend/git_gateway.dart';
 import 'package:branchline/src/backend/status.dart';
 import 'package:branchline/src/features/repository/changes_controller.dart';
@@ -80,8 +81,87 @@ void main() {
     expect(find.text('notes/todo.txt'), findsOneWidget);
 
     await tester.tap(find.text('notes/todo.txt'));
-    await tester.pump();
+    await tester.pumpAndSettle();
     expect(find.text('This path is not tracked by Git yet.'), findsOneWidget);
+    controller.dispose();
+  });
+
+  testWidgets('loads a selected file diff and switches its scope lazily', (
+    tester,
+  ) async {
+    final repository = const RepositoryOpened(
+      repositoryId: RepositoryId(value: 'repository-id'),
+      root: '/workspace/project',
+    );
+    final gateway = FakeChangesGateway(
+      snapshots: [
+        snapshot(
+          repository,
+          changes: [
+            GitChange(
+              type: GitChangeType.tracked,
+              path: 'lib/app.dart',
+              indexStatus: 'M',
+              worktreeStatus: 'M',
+              submoduleStatus: 'N...',
+            ),
+          ],
+        ),
+      ],
+      diffs: {
+        'lib/app.dart:workingTree': diff(
+          repository,
+          path: 'lib/app.dart',
+          scope: GitDiffScope.workingTree,
+          lines: const [
+            GitDiffLine(
+              kind: GitDiffLineKind.addition,
+              text: '+working change',
+              newLineNumber: 2,
+            ),
+          ],
+        ),
+        'lib/app.dart:staged': diff(
+          repository,
+          path: 'lib/app.dart',
+          scope: GitDiffScope.staged,
+          lines: const [
+            GitDiffLine(
+              kind: GitDiffLineKind.addition,
+              text: '+staged change',
+              newLineNumber: 2,
+            ),
+          ],
+        ),
+      },
+    );
+    final controller = ChangesController(
+      gateway: gateway,
+      repositoryId: repository.repositoryId,
+      pollInterval: const Duration(hours: 1),
+    );
+    await controller.refresh();
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: ChangesScreen(
+          gateway: gateway,
+          repository: repository,
+          controller: controller,
+          autoInitialize: false,
+        ),
+      ),
+    );
+
+    await tester.tap(find.byKey(const ValueKey('unstaged:lib/app.dart')));
+    await tester.pumpAndSettle();
+    expect(find.text('+working change'), findsOneWidget);
+    expect(gateway.diffCalls, 1);
+
+    await tester.tap(find.text('Staged'));
+    await tester.pumpAndSettle();
+    expect(find.text('+staged change'), findsOneWidget);
+    expect(gateway.diffCalls, 2);
     controller.dispose();
   });
 }
@@ -110,10 +190,27 @@ GitStatusSnapshot snapshot(
   );
 }
 
+GitDiffSnapshot diff(
+  RepositoryOpened repository, {
+  required String path,
+  required GitDiffScope scope,
+  required List<GitDiffLine> lines,
+}) {
+  return GitDiffSnapshot(
+    repositoryId: repository.repositoryId,
+    path: path,
+    scope: scope,
+    lines: lines,
+    contentHash: 'diff-${scope.name}',
+  );
+}
+
 class FakeChangesGateway implements GitGateway {
-  FakeChangesGateway({required this.snapshots});
+  FakeChangesGateway({required this.snapshots, this.diffs = const {}});
 
   final List<GitStatusSnapshot> snapshots;
+  final Map<String, GitDiffSnapshot> diffs;
+  var diffCalls = 0;
   var _index = 0;
 
   @override
@@ -136,5 +233,23 @@ class FakeChangesGateway implements GitGateway {
     final snapshot = snapshots[_index];
     if (_index < snapshots.length - 1) _index++;
     return snapshot;
+  }
+
+  @override
+  Future<GitDiffSnapshot> getDiff(
+    RepositoryId repositoryId,
+    String path, {
+    GitDiffScope scope = GitDiffScope.workingTree,
+    String? originalPath,
+  }) async {
+    diffCalls++;
+    return diffs['$path:${scope.name}'] ??
+        GitDiffSnapshot(
+          repositoryId: repositoryId,
+          path: path,
+          scope: scope,
+          lines: const [],
+          contentHash: 'empty',
+        );
   }
 }

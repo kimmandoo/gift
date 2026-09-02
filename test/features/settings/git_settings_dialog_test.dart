@@ -1,6 +1,7 @@
 import 'package:branchline/src/features/settings/git_settings_controller.dart';
 import 'package:branchline/src/features/settings/git_settings_dialog.dart';
 import 'package:branchline/src/backend/domain.dart';
+import 'package:branchline/src/backend/diff.dart';
 import 'package:branchline/src/backend/error.dart';
 import 'package:branchline/src/backend/git_gateway.dart';
 import 'package:branchline/src/backend/status.dart';
@@ -160,6 +161,16 @@ class FakeSettingsGateway implements GitGateway {
 
   @override
   Future<GitStatusSnapshot> getStatus(RepositoryId repositoryId) {
+    throw UnimplementedError();
+  }
+
+  @override
+  Future<GitDiffSnapshot> getDiff(
+    RepositoryId repositoryId,
+    String path, {
+    GitDiffScope scope = GitDiffScope.workingTree,
+    String? originalPath,
+  }) {
     throw UnimplementedError();
   }
 }

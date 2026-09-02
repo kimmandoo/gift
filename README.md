@@ -114,7 +114,7 @@ work is tracked in [`TASKS.md`](TASKS.md).
 - [x] Git discovery, safe process execution, repository validation, and recent
   repositories.
 - [x] Repository status and grouped changes view.
-- [ ] Unified diff viewer with staged and unstaged scopes.
+- [x] Unified diff viewer with staged and unstaged scopes.
 - [ ] Staging, discard, commit, branch, history, and remote workflows.
 - [ ] Responsive pixel UI, desktop shortcuts, packaging, and CI.
 

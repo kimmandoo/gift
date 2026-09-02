@@ -1,4 +1,7 @@
+import 'dart:async';
+
 import 'package:branchline/src/backend/domain.dart';
+import 'package:branchline/src/backend/diff.dart';
 import 'package:branchline/src/backend/error.dart';
 import 'package:branchline/src/backend/git_gateway.dart';
 import 'package:branchline/src/backend/status.dart';
@@ -271,7 +274,7 @@ class _ChangesScreenBodyState extends ConsumerState<_ChangesScreenBody> {
               'from ${change.originalPath}',
               overflow: TextOverflow.ellipsis,
             ),
-      onTap: () => _activeController.selectPath(change.path),
+      onTap: () => unawaited(_activeController.selectChange(change)),
     );
   }
 
@@ -316,26 +319,143 @@ class _ChangesScreenBodyState extends ConsumerState<_ChangesScreenBody> {
       return const Center(child: Text('That change is no longer present.'));
     }
 
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(28),
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(28, 24, 28, 0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(selected.path, style: Theme.of(context).textTheme.headlineSmall),
-          const SizedBox(height: 12),
+          const SizedBox(height: 10),
           Text('Status ${selected.shortStatus}'),
-          const SizedBox(height: 8),
+          const SizedBox(height: 6),
           Text(_groupText(selected)),
           if (selected.originalPath case final originalPath?) ...[
-            const SizedBox(height: 8),
+            const SizedBox(height: 6),
             Text('Original path: $originalPath'),
           ],
-          const SizedBox(height: 24),
-          const Text(
-            'Diff preview will appear here in the next task.',
-            style: TextStyle(fontStyle: FontStyle.italic),
+          if (selected.isStaged || selected.isUnstaged) ...[
+            const SizedBox(height: 16),
+            _scopeSelector(context, selected, state),
+          ],
+          const SizedBox(height: 16),
+          if (state.isDiffLoading) const LinearProgressIndicator(),
+          if (state.diffError case final error?) ...[
+            const SizedBox(height: 12),
+            Text(
+              error.userMessage,
+              key: const Key('diff-error'),
+              style: TextStyle(color: Colors.red),
+            ),
+          ],
+          const SizedBox(height: 12),
+          Expanded(child: _diffBody(context, state)),
+        ],
+      ),
+    );
+  }
+
+  Widget _scopeSelector(
+    BuildContext context,
+    GitChange selected,
+    ChangesState state,
+  ) {
+    return SegmentedButton<GitDiffScope>(
+      segments: const [
+        ButtonSegment(
+          value: GitDiffScope.workingTree,
+          label: Text('Working tree'),
+        ),
+        ButtonSegment(value: GitDiffScope.staged, label: Text('Staged')),
+      ],
+      selected: {state.diffScope},
+      onSelectionChanged: (scopes) {
+        final scope = scopes.firstOrNull;
+        if (scope == null) return;
+        unawaited(
+          _activeController.loadDiff(
+            selected.path,
+            originalPath: selected.originalPath,
+            scope: scope,
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _diffBody(BuildContext context, ChangesState state) {
+    if (state.isDiffLoading && state.diff == null) {
+      return const Center(child: CircularProgressIndicator());
+    }
+    if (state.diffError != null && state.diff == null) {
+      return const Center(child: Text('The diff could not be loaded.'));
+    }
+    final diff = state.diff;
+    if (diff == null) {
+      return const Center(child: Text('Select a change to inspect its diff.'));
+    }
+    if (diff.isBinary) {
+      return const Center(
+        child: Text('Binary file changes are not shown as text.'),
+      );
+    }
+    if (diff.isEmpty) {
+      return const Center(child: Text('No changes in this scope.'));
+    }
+
+    return ListView.builder(
+      key: const Key('diff-lines'),
+      itemCount: diff.lines.length,
+      itemBuilder: (context, index) =>
+          _diffLine(context, diff.lines[index], index),
+    );
+  }
+
+  Widget _diffLine(BuildContext context, GitDiffLine line, int index) {
+    final colors = Theme.of(context).colorScheme;
+    final background = switch (line.kind) {
+      GitDiffLineKind.addition => colors.tertiaryContainer,
+      GitDiffLineKind.deletion => colors.errorContainer,
+      GitDiffLineKind.hunkHeader => colors.primaryContainer,
+      _ => Colors.transparent,
+    };
+    final foreground = switch (line.kind) {
+      GitDiffLineKind.addition => colors.onTertiaryContainer,
+      GitDiffLineKind.deletion => colors.onErrorContainer,
+      GitDiffLineKind.hunkHeader => colors.onPrimaryContainer,
+      _ => colors.onSurface,
+    };
+    return Container(
+      key: ValueKey('diff-line-$index'),
+      color: background,
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _lineNumber(line.oldLineNumber),
+          _lineNumber(line.newLineNumber),
+          const SizedBox(width: 10),
+          Expanded(
+            child: SelectableText(
+              line.text,
+              style: TextStyle(
+                color: foreground,
+                fontFamily: 'monospace',
+                fontSize: 13,
+              ),
+            ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _lineNumber(int? number) {
+    return SizedBox(
+      width: 42,
+      child: Text(
+        number?.toString() ?? '',
+        textAlign: TextAlign.right,
+        style: const TextStyle(fontFamily: 'monospace', fontSize: 11),
       ),
     );
   }

@@ -1,6 +1,7 @@
 import 'package:branchline/src/features/repository/recent_repository_store.dart';
 import 'package:branchline/src/features/repository/welcome_screen.dart';
 import 'package:branchline/src/backend/domain.dart';
+import 'package:branchline/src/backend/diff.dart';
 import 'package:branchline/src/backend/error.dart';
 import 'package:branchline/src/backend/git_gateway.dart';
 import 'package:branchline/src/backend/status.dart';
@@ -207,5 +208,15 @@ class FakeGitGateway implements GitGateway {
       contentHash: 'test-status',
       generation: 1,
     );
+  }
+
+  @override
+  Future<GitDiffSnapshot> getDiff(
+    RepositoryId repositoryId,
+    String path, {
+    GitDiffScope scope = GitDiffScope.workingTree,
+    String? originalPath,
+  }) {
+    throw UnimplementedError();
   }
 }

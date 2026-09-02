@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:branchline/src/backend/domain.dart';
+import 'package:branchline/src/backend/diff.dart';
 import 'package:branchline/src/backend/error.dart';
 import 'package:branchline/src/backend/git_gateway.dart';
 import 'package:branchline/src/backend/status.dart';
@@ -34,15 +35,23 @@ class ChangesState {
     this.snapshot,
     this.error,
     this.selectedPath,
+    this.diff,
+    this.diffError,
     this.isLoading = false,
     this.isRefreshing = false,
+    this.isDiffLoading = false,
+    this.diffScope = GitDiffScope.workingTree,
   });
 
   final GitStatusSnapshot? snapshot;
   final GitError? error;
   final String? selectedPath;
+  final GitDiffSnapshot? diff;
+  final GitError? diffError;
   final bool isLoading;
   final bool isRefreshing;
+  final bool isDiffLoading;
+  final GitDiffScope diffScope;
 
   ChangesState copyWith({
     GitStatusSnapshot? snapshot,
@@ -51,8 +60,14 @@ class ChangesState {
     bool clearError = false,
     String? selectedPath,
     bool clearSelectedPath = false,
+    GitDiffSnapshot? diff,
+    bool clearDiff = false,
+    GitError? diffError,
+    bool clearDiffError = false,
     bool? isLoading,
     bool? isRefreshing,
+    bool? isDiffLoading,
+    GitDiffScope? diffScope,
   }) {
     return ChangesState(
       snapshot: clearSnapshot ? null : snapshot ?? this.snapshot,
@@ -60,8 +75,12 @@ class ChangesState {
       selectedPath: clearSelectedPath
           ? null
           : selectedPath ?? this.selectedPath,
+      diff: clearDiff ? null : diff ?? this.diff,
+      diffError: clearDiffError ? null : diffError ?? this.diffError,
       isLoading: isLoading ?? this.isLoading,
       isRefreshing: isRefreshing ?? this.isRefreshing,
+      isDiffLoading: isDiffLoading ?? this.isDiffLoading,
+      diffScope: diffScope ?? this.diffScope,
     );
   }
 }
@@ -81,6 +100,7 @@ class ChangesController extends ChangeNotifier {
   ChangesState _state = const ChangesState();
   Timer? _pollTimer;
   var _requestInFlight = false;
+  var _diffRequest = 0;
   var _started = false;
   var _disposed = false;
 
@@ -113,12 +133,16 @@ class ChangesController extends ChangeNotifier {
       final selectionStillExists =
           selectedPath != null &&
           snapshot.changes.any((change) => change.path == selectedPath);
+      if (!selectionStillExists) _diffRequest++;
       _setState(
         _state.copyWith(
           snapshot: snapshot,
           clearError: true,
           selectedPath: selectionStillExists ? selectedPath : null,
           clearSelectedPath: !selectionStillExists,
+          clearDiff: !selectionStillExists,
+          clearDiffError: !selectionStillExists,
+          isDiffLoading: selectionStillExists ? _state.isDiffLoading : false,
           isLoading: false,
           isRefreshing: false,
         ),
@@ -134,7 +158,61 @@ class ChangesController extends ChangeNotifier {
 
   void selectPath(String path) {
     if (_disposed) return;
-    _setState(_state.copyWith(selectedPath: path));
+    _diffRequest++;
+    _setState(
+      _state.copyWith(
+        selectedPath: path,
+        clearDiff: true,
+        clearDiffError: true,
+        isDiffLoading: false,
+      ),
+    );
+  }
+
+  /// Selects a status row and lazily loads only that file's diff.
+  Future<void> selectChange(GitChange change) async {
+    selectPath(change.path);
+    final scope = change.isStaged && !change.isUnstaged
+        ? GitDiffScope.staged
+        : GitDiffScope.workingTree;
+    await loadDiff(
+      change.path,
+      originalPath: change.originalPath,
+      scope: scope,
+    );
+  }
+
+  /// Loads the selected file in the requested scope.
+  Future<void> loadDiff(
+    String path, {
+    String? originalPath,
+    GitDiffScope scope = GitDiffScope.workingTree,
+  }) async {
+    if (_disposed) return;
+    final request = ++_diffRequest;
+    _setState(
+      _state.copyWith(
+        diffScope: scope,
+        clearDiff: true,
+        clearDiffError: true,
+        isDiffLoading: true,
+      ),
+    );
+    try {
+      final diff = await gateway.getDiff(
+        repositoryId,
+        path,
+        scope: scope,
+        originalPath: originalPath,
+      );
+      if (request != _diffRequest || _disposed) return;
+      _setState(
+        _state.copyWith(diff: diff, clearDiffError: true, isDiffLoading: false),
+      );
+    } on GitError catch (error) {
+      if (request != _diffRequest || _disposed) return;
+      _setState(_state.copyWith(diffError: error, isDiffLoading: false));
+    }
   }
 
   @override

@@ -1,5 +1,6 @@
 import 'dart_git_backend.dart';
 import 'domain.dart';
+import 'diff.dart';
 import 'git_gateway.dart';
 import 'status.dart';
 
@@ -26,4 +27,17 @@ class DartGitGateway implements GitGateway {
   @override
   Future<GitStatusSnapshot> getStatus(RepositoryId repositoryId) =>
       backend.getStatus(repositoryId);
+
+  @override
+  Future<GitDiffSnapshot> getDiff(
+    RepositoryId repositoryId,
+    String path, {
+    GitDiffScope scope = GitDiffScope.workingTree,
+    String? originalPath,
+  }) => backend.getDiff(
+    repositoryId,
+    path,
+    scope: scope,
+    originalPath: originalPath,
+  );
 }

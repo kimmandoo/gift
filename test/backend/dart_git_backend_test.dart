@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:branchline/src/backend/dart_git_backend.dart';
+import 'package:branchline/src/backend/diff.dart';
 import 'package:branchline/src/backend/domain.dart';
 import 'package:branchline/src/backend/error.dart';
 import 'package:branchline/src/backend/executor.dart';
@@ -262,6 +263,86 @@ void main() {
         final unchanged = await backend.getStatus(opened.repositoryId);
         expect(unchanged.generation, 2);
         expect(unchanged.contentHash, changed.contentHash);
+      });
+    },
+  );
+
+  test(
+    'reads staged and working-tree unified diffs with rename metadata',
+    () async {
+      await withTempDirectory((directory) async {
+        await expectGitSuccess([
+          'init',
+          '--quiet',
+        ], workingDirectory: directory.path);
+        await expectGitSuccess([
+          'config',
+          'user.name',
+          'Branchline Test',
+        ], workingDirectory: directory.path);
+        await expectGitSuccess([
+          'config',
+          'user.email',
+          'branchline@example.test',
+        ], workingDirectory: directory.path);
+
+        final tracked = File('${directory.path}/tracked.txt');
+        final original = File('${directory.path}/old.txt');
+        await tracked.writeAsString('initial\n');
+        await original.writeAsString('rename me\n');
+        await expectGitSuccess(['add', '.'], workingDirectory: directory.path);
+        await expectGitSuccess([
+          'commit',
+          '--quiet',
+          '-m',
+          'initial',
+        ], workingDirectory: directory.path);
+
+        final backend = DartGitBackend();
+        final opened = await backend.openRepository(directory.path);
+        await tracked.writeAsString('working tree\n');
+
+        final workingTree = await backend.getDiff(
+          opened.repositoryId,
+          'tracked.txt',
+        );
+        expect(workingTree.scope, GitDiffScope.workingTree);
+        expect(workingTree.additions, 1);
+        expect(workingTree.deletions, 1);
+        expect(
+          workingTree.lines.any((line) => line.text == '+working tree'),
+          isTrue,
+        );
+
+        await expectGitSuccess([
+          'add',
+          'tracked.txt',
+        ], workingDirectory: directory.path);
+        final staged = await backend.getDiff(
+          opened.repositoryId,
+          'tracked.txt',
+          scope: GitDiffScope.staged,
+        );
+        expect(staged.scope, GitDiffScope.staged);
+        expect(
+          staged.lines.any((line) => line.text == '+working tree'),
+          isTrue,
+        );
+
+        await expectGitSuccess([
+          'mv',
+          'old.txt',
+          'new.txt',
+        ], workingDirectory: directory.path);
+        final renamed = await backend.getDiff(
+          opened.repositoryId,
+          'new.txt',
+          scope: GitDiffScope.staged,
+          originalPath: 'old.txt',
+        );
+        expect(renamed.isRename, isTrue);
+        expect(renamed.oldPath, 'old.txt');
+        expect(renamed.newPath, 'new.txt');
       });
     },
   );

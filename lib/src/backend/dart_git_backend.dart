@@ -1,4 +1,5 @@
 import 'domain.dart';
+import 'diff.dart';
 import 'git_installation_service.dart';
 import 'repository_service.dart';
 import 'status.dart';
@@ -40,6 +41,19 @@ class DartGitBackend {
       gitPath: installation.executablePath,
       state: _state,
     ).getStatus(repositoryId);
+  }
+
+  Future<GitDiffSnapshot> getDiff(
+    RepositoryId repositoryId,
+    String path, {
+    GitDiffScope scope = GitDiffScope.workingTree,
+    String? originalPath,
+  }) async {
+    final installation = await getGitInstallation();
+    return RepositoryService(
+      gitPath: installation.executablePath,
+      state: _state,
+    ).getDiff(repositoryId, path, scope: scope, originalPath: originalPath);
   }
 
   Future<RepositoryHandle> lookup(RepositoryId repositoryId) =>

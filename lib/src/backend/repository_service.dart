@@ -3,6 +3,7 @@ import 'dart:io';
 import 'dart:math';
 
 import 'domain.dart';
+import 'diff.dart';
 import 'error.dart';
 import 'executor.dart';
 import 'status.dart';
@@ -165,6 +166,51 @@ class RepositoryService {
         stackTrace,
       );
     }
+  }
+
+  Future<GitDiffSnapshot> getDiff(
+    RepositoryId repositoryId,
+    String path, {
+    GitDiffScope scope = GitDiffScope.workingTree,
+    String? originalPath,
+  }) async {
+    if (path.isEmpty ||
+        path.contains('\u0000') ||
+        originalPath?.contains('\u0000') == true) {
+      throw const GitError(
+        category: GitErrorCategory.parseFailure,
+        userMessage: 'Git could not inspect that file path.',
+        diagnostic: 'diff path was empty or contained a NUL byte',
+        retryable: false,
+      );
+    }
+
+    final handle = await state.lookup(repositoryId);
+    final args = <String>[
+      'diff',
+      '--no-color',
+      '--no-ext-diff',
+      '--find-renames',
+      '--unified=3',
+      if (scope == GitDiffScope.staged) '--cached',
+      '--',
+      ...?originalPath == null ? null : [originalPath],
+      path,
+    ];
+    final output = await _runner.run(
+      GitInvocation(
+        program: gitPath,
+        args: args,
+        cwd: handle.root,
+        kind: GitOperationKind.read,
+        outputPolicy: const OutputPolicy.capture(maxBytes: 4 * 1024 * 1024),
+      ),
+    );
+    return parseUnifiedDiff(
+      output.stdout,
+      path: path,
+      scope: scope,
+    ).copyWith(repositoryId: repositoryId);
   }
 
   Future<ProcessOutput> _runGit(String cwd, List<String> args) => _runner.run(

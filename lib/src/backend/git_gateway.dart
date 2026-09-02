@@ -1,4 +1,5 @@
 import 'domain.dart';
+import 'diff.dart';
 import 'status.dart';
 
 /// The small API that Flutter features depend on.
@@ -13,4 +14,11 @@ abstract interface class GitGateway {
   Future<RepositoryOpened> openRepository(String path);
 
   Future<GitStatusSnapshot> getStatus(RepositoryId repositoryId);
+
+  Future<GitDiffSnapshot> getDiff(
+    RepositoryId repositoryId,
+    String path, {
+    GitDiffScope scope = GitDiffScope.workingTree,
+    String? originalPath,
+  });
 }

@@ -47,11 +47,15 @@ system Git 2.35+.
   opaque handle registry.
 - `lib/src/backend/status.dart` — porcelain v2 parser, change facets, and
   generation-aware snapshots.
+- `lib/src/backend/diff.dart` — bounded unified diff models and parser for
+  hunk lines, rename metadata, and binary output.
 - `lib/src/backend/dart_git_backend.dart` — backend service facade.
 - `lib/src/backend/dart_git_gateway.dart` — Flutter-facing adapter.
 - `lib/src/features/repository/changes_controller.dart` — Riverpod-backed
   polling controller and selection state.
 - `lib/src/features/repository/changes_screen.dart` — grouped changes UI.
+- `test/backend/diff_parser_test.dart` — parser coverage for hunk, rename,
+  binary, and empty output states.
 
 ## Foundation status
 
@@ -64,6 +68,7 @@ system Git 2.35+.
 - [x] Porcelain v2 status parsing, independent change facets, and
   generation-aware snapshots.
 - [x] Grouped Changes screen with timer refresh and selection retention.
+- [x] Bounded staged/working-tree diff snapshots and lazy selected-file view.
 - [x] Removed the previous native implementation and generated bridge assets.
 
 ## Product direction
@@ -83,10 +88,15 @@ system Git 2.35+.
 4. Rendered grouped changes in Flutter.
 5. Passed `flutter analyze` and `flutter test`.
 
-## Next vertical: unified diff
+## Completed vertical: unified diff
 
-1. Add failing tests for staged and unstaged unified diff output.
-2. Implement bounded diff parsing and rename-aware file details.
-3. Render a lazy diff view while preserving the selected change.
-4. Run `flutter analyze` and `flutter test`, then update the checkpoint and
-   commit.
+1. Added failing tests for staged and unstaged unified diff output.
+2. Implemented bounded diff parsing and rename-aware file details.
+3. Rendered a lazy diff view while preserving the selected change.
+4. Passed `flutter analyze` and `flutter test`.
+
+## Next vertical: staging and mutation
+
+1. Add failing tests for staging and un-staging selected paths.
+2. Implement serialized `git add` and `git restore --staged` operations.
+3. Add selection-aware actions and refresh the status snapshot after mutation.
