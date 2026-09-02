@@ -5,10 +5,10 @@ This file is the handoff record for continuing work across query sessions.
 ## Current checkpoint
 
 - Date: 2026-09-02
-- Milestone: all 14 planned tasks are complete, including Task 14 Packaging &
-  CI.
+- Milestone: Task 15 Hardening & product identity is implemented; local Linux
+  bundle verification remains active.
 - Source of truth: `TASKS.md` and
-  `docs/superpowers/plans/2026-09-02-branchline-dart-mvp.md`.
+  `docs/superpowers/plans/2026-09-02-gitflu-dart-mvp.md`.
 - Completed scope: removed the native implementation, FFI bridge, generated
   bindings, native build plugin, and native build metadata; added a `dart:io`
   Git backend with direct argv execution, bounded output, redacted errors,
@@ -49,10 +49,25 @@ This file is the handoff record for continuing work across query sessions.
   helper now enables the requested Flutter target before building.
 - Added `.gitattributes` so Git Bash shell wrappers keep LF endings and native
   Windows launchers keep Windows-friendly line endings after checkout.
-- Blockers: none. The pre-existing untracked `.serena/` directory was left
-  untouched and is not part of the commit.
-- Next action: none for the planned MVP. Add a new task to `TASKS.md` before
-  starting additional product work.
+- Task 15 added bounded non-interactive Git execution, deterministic
+  cancellation outcomes, continuous paginated history lanes, stale settings
+  request guards, canonical Git path persistence, discard-preview revocation,
+  and expiry cleanup.
+- Task 15 unified the Dart package, app shell, Linux binary/application ID,
+  macOS product/bundle ID, Windows executable metadata, docs, tests, and build
+  output paths under the lowercase `gitflu` product identity.
+- Release automation now starts only for `release-*` tags whose commit uses a
+  `release(scope): subject` message. Third-party Actions are pinned by commit.
+- Added the MIT `LICENSE` and updated the public README license statement.
+- Verification: `dart run tool/verify.dart` passed formatting, analysis, and
+  all 66 tests. Workflow YAML parsing and release-subject matching passed.
+- Local build note: `./tool/build_linux.sh` reached native compilation but the
+  host lacks `libgtk-3-dev`; installing it requires a sudo password unavailable
+  to this session. CI already installs this dependency before Linux builds.
+- Blockers: no source blocker. The pre-existing untracked `.serena/` directory
+  was left untouched and is not part of the commit.
+- Next action: install `libgtk-3-dev` on this Linux host and rerun
+  `./tool/build_linux.sh` when local bundle verification is needed.
 
 ## Resume procedure
 

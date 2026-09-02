@@ -48,17 +48,25 @@ native Windows use.
 The helper prints the output location after a successful build:
 
 - Linux: `build/linux/x64/release/bundle/`
-- macOS: `build/macos/Build/Products/Release/branchline.app`
+- macOS: `build/macos/Build/Products/Release/gitflu.app`
 - Windows: `build/windows/x64/runner/Release/`
 
 ## Continuous integration
 
 `.github/workflows/ci.yml` runs verification on Ubuntu, macOS, and Windows.
-The jobs run automatically only when the `main` branch receives a commit whose
-subject starts with `release(scope):`, such as
-`release(v1.0.0): publish desktop artifacts`. Ordinary commits create no
-runner job; use the workflow's manual dispatch when a maintainer needs a
-deliberate rerun.
+The workflow starts automatically only for a `release-*` tag. The tagged
+commit must have a subject such as
+`release(v1.0.0): publish desktop artifacts`; otherwise verification fails.
+For example:
+
+```bash
+git commit -m "release(v1.0.0): publish desktop artifacts"
+git tag release-v1.0.0
+git push origin main release-v1.0.0
+```
+
+Ordinary branch pushes create no workflow run. Use manual dispatch when a
+maintainer needs a deliberate rerun.
 After all three checks pass, it builds one release bundle per platform and
 uploads the bundles as workflow artifacts. A tagged public release can attach
 those artifacts after a maintainer has reviewed and signed them.

@@ -102,14 +102,16 @@ GitHistoryPage parseGitHistory(
   final pageCommits = hasMore ? parsed.take(limit).toList() : parsed;
   return GitHistoryPage(
     repositoryId: repositoryId,
-    commits: _assignGraphLanes(pageCommits),
+    commits: assignGraphLanes(pageCommits),
     offset: offset,
     limit: limit,
     hasMore: hasMore,
   );
 }
 
-List<GitCommit> _assignGraphLanes(List<GitCommit> commits) {
+/// Recomputes lanes for a complete visible sequence. Call this again after
+/// appending a page so branches that cross the page boundary stay connected.
+List<GitCommit> assignGraphLanes(List<GitCommit> commits) {
   // Keep empty lane slots instead of compacting after a branch line ends. This
   // makes a side parent stay on the same visual lane as later rows.
   final lanes = <String?>[];

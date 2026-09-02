@@ -15,7 +15,7 @@ Flutter 화면과 Dart 백엔드가 같은 프로세스 안에서 동작합니�
 
 ```text
 main.dart
-  └─ BranchlineApp
+  └─ GitfluApp
        └─ WelcomeScreen
             └─ RepositoryController
                  └─ GitGateway
@@ -28,7 +28,7 @@ main.dart
 ```
 
 1. `lib/main.dart`가 Flutter를 준비하고 `DartGitGateway`와 설정 저장소를
-   `BranchlineApp`에 전달합니다.
+   `GitfluApp`에 전달합니다.
 2. `WelcomeScreen`은 화면을 그리고 `RepositoryController`를 통해 버튼
    동작을 처리합니다. 화면은 Git 명령을 직접 실행하지 않습니다.
 3. `GitGateway`는 화면이 의존하는 작은 계약입니다. 테스트에서는 이
@@ -245,7 +245,7 @@ ChangesScreen
 ## pixel workspace와 keyboard 흐름
 
 ```text
-BranchlineApp
+GitfluApp
   └─ buildPixelTheme()
        ├─ dark canvas + flat panel tokens
        ├─ square borders + visible focus color

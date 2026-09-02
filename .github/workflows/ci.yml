@@ -2,7 +2,7 @@ name: Flutter desktop CI
 
 on:
   push:
-    branches: [main]
+    tags: ['release-*']
   workflow_dispatch:
 
 permissions:
@@ -11,7 +11,6 @@ permissions:
 jobs:
   verify:
     name: Verify (${{ matrix.os }})
-    if: ${{ github.event_name == 'workflow_dispatch' || startsWith(github.event.head_commit.message, 'release(') }}
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
@@ -25,9 +24,15 @@ jobs:
             target: windows
     steps:
       - name: Check out source
-        uses: actions/checkout@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - name: Validate release commit
+        if: github.event_name == 'push'
+        shell: bash
+        run: |
+          subject="$(git log -1 --format=%s)"
+          [[ "$subject" == release\(*\):* ]]
       - name: Set up Flutter
-        uses: subosito/flutter-action@v2
+        uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2
         with:
           flutter-version: '3.47.2'
           channel: stable
@@ -39,7 +44,6 @@ jobs:
 
   build:
     name: Build (${{ matrix.target }})
-    if: ${{ github.event_name == 'workflow_dispatch' || startsWith(github.event.head_commit.message, 'release(') }}
     needs: verify
     runs-on: ${{ matrix.os }}
     strategy:
@@ -53,16 +57,16 @@ jobs:
           - os: macos-latest
             target: macos
             artifact: gitflu-macos
-            path: build/macos/Build/Products/Release/branchline.app
+            path: build/macos/Build/Products/Release/gitflu.app
           - os: windows-latest
             target: windows
             artifact: gitflu-windows-x64
             path: build/windows/x64/runner/Release/
     steps:
       - name: Check out source
-        uses: actions/checkout@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
       - name: Set up Flutter
-        uses: subosito/flutter-action@v2
+        uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2
         with:
           flutter-version: '3.47.2'
           channel: stable
@@ -83,7 +87,7 @@ jobs:
         shell: pwsh
         run: ./tool/build_windows.ps1
       - name: Upload desktop artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: ${{ matrix.artifact }}
           path: ${{ matrix.path }}

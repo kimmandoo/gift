@@ -13,7 +13,7 @@ import 'status.dart';
 /// Adapts the UI-facing [GitGateway] contract to the Dart backend facade.
 ///
 /// Keeping this class thin makes it obvious where the UI/backend boundary is.
-class DartGitGateway implements GitGateway {
+class DartGitGateway implements GitGateway, DiscardPreviewCancellationGateway {
   DartGitGateway({DartGitBackend? backend})
     : backend = backend ?? DartGitBackend();
 
@@ -115,6 +115,10 @@ class DartGitGateway implements GitGateway {
     RepositoryId repositoryId,
     String path,
   ) => backend.createDiscardPreview(repositoryId, path);
+
+  @override
+  Future<void> cancelDiscardPreview(DiscardPreview preview) =>
+      backend.cancelDiscardPreview(preview);
 
   @override
   Future<GitStatusSnapshot> discard(

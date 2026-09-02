@@ -1,16 +1,18 @@
-import 'package:branchline/src/features/settings/git_settings_controller.dart';
-import 'package:branchline/src/features/settings/git_settings_dialog.dart';
-import 'package:branchline/src/backend/domain.dart';
-import 'package:branchline/src/backend/branch.dart';
-import 'package:branchline/src/backend/commit.dart';
-import 'package:branchline/src/backend/executor.dart';
-import 'package:branchline/src/backend/discard.dart';
-import 'package:branchline/src/backend/diff.dart';
-import 'package:branchline/src/backend/error.dart';
-import 'package:branchline/src/backend/git_gateway.dart';
-import 'package:branchline/src/backend/history.dart';
-import 'package:branchline/src/backend/remote.dart';
-import 'package:branchline/src/backend/status.dart';
+import 'dart:async';
+
+import 'package:gitflu/src/features/settings/git_settings_controller.dart';
+import 'package:gitflu/src/features/settings/git_settings_dialog.dart';
+import 'package:gitflu/src/backend/domain.dart';
+import 'package:gitflu/src/backend/branch.dart';
+import 'package:gitflu/src/backend/commit.dart';
+import 'package:gitflu/src/backend/executor.dart';
+import 'package:gitflu/src/backend/discard.dart';
+import 'package:gitflu/src/backend/diff.dart';
+import 'package:gitflu/src/backend/error.dart';
+import 'package:gitflu/src/backend/git_gateway.dart';
+import 'package:gitflu/src/backend/history.dart';
+import 'package:gitflu/src/backend/remote.dart';
+import 'package:gitflu/src/backend/status.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -51,6 +53,49 @@ void main() {
     expect(gateway.configuredPaths, ['/custom/git']);
     expect(preferences.getString(GitSettingsController.pathKey), '/custom/git');
     expect(find.text('/custom/git'), findsOneWidget);
+  });
+
+  testWidgets('persists the validated canonical executable path', (
+    tester,
+  ) async {
+    final preferences = await SharedPreferences.getInstance();
+    final gateway = FakeSettingsGateway(
+      installation: const GitInstallation(
+        executablePath: '/canonical/git',
+        version: '2.51.0',
+      ),
+    );
+    final controller = GitSettingsController(
+      gateway: gateway,
+      preferences: preferences,
+    );
+
+    await controller.configurePath('../linked-git');
+
+    expect(
+      preferences.getString(GitSettingsController.pathKey),
+      '/canonical/git',
+    );
+    controller.dispose();
+  });
+
+  testWidgets('ignores an async result after disposal', (tester) async {
+    final preferences = await SharedPreferences.getInstance();
+    final completer = Completer<GitInstallation>();
+    final gateway = DeferredSettingsGateway(completer.future);
+    final controller = GitSettingsController(
+      gateway: gateway,
+      preferences: preferences,
+    );
+    final future = controller.initialize();
+
+    controller.dispose();
+    completer.complete(
+      const GitInstallation(executablePath: '/late/git', version: '2.51.0'),
+    );
+
+    await future;
+    expect(tester.takeException(), isNull);
   });
 
   testWidgets(
@@ -260,4 +305,13 @@ class FakeSettingsGateway implements GitGateway {
   ) {
     throw UnimplementedError();
   }
+}
+
+class DeferredSettingsGateway extends FakeSettingsGateway {
+  DeferredSettingsGateway(this.result);
+
+  final Future<GitInstallation> result;
+
+  @override
+  Future<GitInstallation> getGitInstallation() => result;
 }

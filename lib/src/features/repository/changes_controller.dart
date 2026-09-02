@@ -1,12 +1,12 @@
 import 'dart:async';
 
-import 'package:branchline/src/backend/commit.dart';
-import 'package:branchline/src/backend/domain.dart';
-import 'package:branchline/src/backend/discard.dart';
-import 'package:branchline/src/backend/diff.dart';
-import 'package:branchline/src/backend/error.dart';
-import 'package:branchline/src/backend/git_gateway.dart';
-import 'package:branchline/src/backend/status.dart';
+import 'package:gitflu/src/backend/commit.dart';
+import 'package:gitflu/src/backend/domain.dart';
+import 'package:gitflu/src/backend/discard.dart';
+import 'package:gitflu/src/backend/diff.dart';
+import 'package:gitflu/src/backend/error.dart';
+import 'package:gitflu/src/backend/git_gateway.dart';
+import 'package:gitflu/src/backend/status.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -410,6 +410,7 @@ class ChangesController extends ChangeNotifier {
 
   void cancelDiscardPreview() {
     if (_disposed) return;
+    final preview = _state.discardPreview;
     _discardPreviewRequest++;
     _setState(
       _state.copyWith(
@@ -418,6 +419,11 @@ class ChangesController extends ChangeNotifier {
         isDiscardPreparing: false,
       ),
     );
+    if (preview != null) {
+      if (gateway case final DiscardPreviewCancellationGateway cancellable) {
+        unawaited(cancellable.cancelDiscardPreview(preview));
+      }
+    }
   }
 
   Future<void> confirmDiscard(DiscardPreview preview) async {

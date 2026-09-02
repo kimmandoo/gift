@@ -212,7 +212,7 @@ flutter build macos --release
 ```
 
 The application bundle is written to
-`build/macos/Build/Products/Release/branchline.app`.
+`build/macos/Build/Products/Release/gitflu.app`.
 After the toolchain is installed, the same build is one command:
 
 ```bash
@@ -261,8 +261,8 @@ dart run tool/verify.dart
 
 See [`docs/RELEASING.md`](docs/RELEASING.md) for release output paths and the
 GitHub Actions workflow used for release-only cross-platform checks. CI runs
-automatically for `release(scope): subject` commits; normal commits remain
-local-only until a release is intentionally prepared.
+automatically only when a `release-*` tag points to a
+`release(scope): subject` commit; normal pushes do not create workflow runs.
 
 For a quick map of the call flow, read
 [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md). For behavior scenarios and
@@ -295,5 +295,4 @@ explain visible UI states in beginner-friendly terms. Use the commit format
 
 ## License
 
-gitflu is an open-source work in progress. Licensing terms will be added to
-the repository before the first public release.
+gitflu is open-source software released under the [MIT License](LICENSE).

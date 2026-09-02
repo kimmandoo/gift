@@ -89,13 +89,13 @@ BEGIN
     BEGIN
         BLOCK "040904e4"
         BEGIN
-            VALUE "CompanyName", "dev.branchline" "\0"
-            VALUE "FileDescription", "branchline" "\0"
+            VALUE "CompanyName", "dev.gitflu" "\0"
+            VALUE "FileDescription", "gitflu" "\0"
             VALUE "FileVersion", VERSION_AS_STRING "\0"
-            VALUE "InternalName", "branchline" "\0"
-            VALUE "LegalCopyright", "Copyright (C) 2026 dev.branchline. All rights reserved." "\0"
-            VALUE "OriginalFilename", "branchline.exe" "\0"
-            VALUE "ProductName", "branchline" "\0"
+            VALUE "InternalName", "gitflu" "\0"
+            VALUE "LegalCopyright", "Copyright (C) 2026 dev.gitflu. All rights reserved." "\0"
+            VALUE "OriginalFilename", "gitflu.exe" "\0"
+            VALUE "ProductName", "gitflu" "\0"
             VALUE "ProductVersion", VERSION_AS_STRING "\0"
         END
     END

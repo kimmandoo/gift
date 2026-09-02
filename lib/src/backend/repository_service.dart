@@ -88,6 +88,9 @@ class AppState {
     required String statusHash,
     required String diffHash,
   }) {
+    _discardPreviews.removeWhere(
+      (_, record) => !record.expiresAt.isAfter(_now()),
+    );
     final token = _newOpaqueToken();
     final expiresAt = _now().add(discardPreviewLifetime);
     _discardPreviews[token] = _DiscardPreviewRecord(
@@ -129,6 +132,14 @@ class AppState {
 
   void consumeDiscardPreview(String token) {
     _discardPreviews.remove(token);
+  }
+
+  void cancelDiscardPreview(DiscardPreview preview) {
+    final record = _discardPreviews[preview.token];
+    if (record?.repositoryId == preview.repositoryId &&
+        record?.path == preview.path) {
+      _discardPreviews.remove(preview.token);
+    }
   }
 }
 
@@ -690,6 +701,10 @@ class RepositoryService {
       state.consumeDiscardPreview(preview.token);
       return getStatus(repositoryId);
     });
+  }
+
+  void cancelDiscardPreview(DiscardPreview preview) {
+    state.cancelDiscardPreview(preview);
   }
 
   Future<GitStatusSnapshot> _mutatePath(

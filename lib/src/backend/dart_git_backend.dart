@@ -24,7 +24,7 @@ class DartGitBackend {
   final GitInstallationService _installationService;
   final AppState _state;
 
-  Health health() => const Health(product: 'Branchline', coreVersion: version);
+  Health health() => const Health(product: 'gitflu', coreVersion: version);
 
   Future<GitInstallation> getGitInstallation() =>
       _installationService.getOrDiscover();
@@ -201,6 +201,14 @@ class DartGitBackend {
       gitPath: installation.executablePath,
       state: _state,
     ).discard(repositoryId, preview);
+  }
+
+  Future<void> cancelDiscardPreview(DiscardPreview preview) async {
+    final installation = await getGitInstallation();
+    RepositoryService(
+      gitPath: installation.executablePath,
+      state: _state,
+    ).cancelDiscardPreview(preview);
   }
 
   Future<RepositoryHandle> lookup(RepositoryId repositoryId) =>

@@ -1,8 +1,8 @@
-import 'package:branchline/src/features/repository/recent_repository_store.dart';
-import 'package:branchline/src/features/settings/git_settings_controller.dart';
-import 'package:branchline/src/backend/domain.dart';
-import 'package:branchline/src/backend/error.dart';
-import 'package:branchline/src/backend/git_gateway.dart';
+import 'package:gitflu/src/features/repository/recent_repository_store.dart';
+import 'package:gitflu/src/features/settings/git_settings_controller.dart';
+import 'package:gitflu/src/backend/domain.dart';
+import 'package:gitflu/src/backend/error.dart';
+import 'package:gitflu/src/backend/git_gateway.dart';
 import 'package:flutter/foundation.dart';
 
 class RepositoryState {

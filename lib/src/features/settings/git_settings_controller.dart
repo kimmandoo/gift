@@ -1,6 +1,6 @@
-import 'package:branchline/src/backend/domain.dart';
-import 'package:branchline/src/backend/error.dart';
-import 'package:branchline/src/backend/git_gateway.dart';
+import 'package:gitflu/src/backend/domain.dart';
+import 'package:gitflu/src/backend/error.dart';
+import 'package:gitflu/src/backend/git_gateway.dart';
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -25,11 +25,14 @@ class GitSettingsController extends ChangeNotifier {
   final SharedPreferences preferences;
   GitSettingsState _state = const GitSettingsState();
   bool _initialized = false;
+  bool _disposed = false;
+  int _requestGeneration = 0;
 
   GitSettingsState get state => _state;
 
   Future<void> initialize({bool force = false}) async {
     if (_initialized && !force) return;
+    final request = ++_requestGeneration;
     _initialized = true;
     _setState(const GitSettingsState(isLoading: true));
 
@@ -38,26 +41,44 @@ class GitSettingsController extends ChangeNotifier {
       final installation = configuredPath == null || configuredPath.isEmpty
           ? await gateway.getGitInstallation()
           : await gateway.configureGitPath(configuredPath);
-      _setState(GitSettingsState(installation: installation));
+      if (request == _requestGeneration) {
+        _setState(GitSettingsState(installation: installation));
+      }
     } on GitError catch (error) {
-      _setState(GitSettingsState(error: error));
+      if (request == _requestGeneration) {
+        _setState(GitSettingsState(error: error));
+      }
     }
   }
 
   Future<void> configurePath(String path) async {
+    final request = ++_requestGeneration;
     _setState(const GitSettingsState(isLoading: true));
     try {
       final installation = await gateway.configureGitPath(path);
-      await preferences.setString(pathKey, path);
-      _setState(GitSettingsState(installation: installation));
+      if (request != _requestGeneration || _disposed) return;
+      await preferences.setString(pathKey, installation.executablePath);
+      if (request == _requestGeneration) {
+        _setState(GitSettingsState(installation: installation));
+      }
     } on GitError catch (error) {
-      _setState(GitSettingsState(error: error));
+      if (request == _requestGeneration) {
+        _setState(GitSettingsState(error: error));
+      }
     }
   }
 
   Future<void> retry() => initialize(force: true);
 
+  @override
+  void dispose() {
+    _disposed = true;
+    _requestGeneration++;
+    super.dispose();
+  }
+
   void _setState(GitSettingsState state) {
+    if (_disposed) return;
     _state = state;
     notifyListeners();
   }

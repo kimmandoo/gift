@@ -2,14 +2,14 @@ import 'package:flutter/material.dart';
 
 import 'pixel_theme.dart';
 
-import 'package:branchline/src/features/repository/recent_repository_store.dart';
-import 'package:branchline/src/features/repository/welcome_screen.dart';
-import 'package:branchline/src/backend/dart_git_gateway.dart';
-import 'package:branchline/src/backend/git_gateway.dart';
+import 'package:gitflu/src/features/repository/recent_repository_store.dart';
+import 'package:gitflu/src/features/repository/welcome_screen.dart';
+import 'package:gitflu/src/backend/dart_git_gateway.dart';
+import 'package:gitflu/src/backend/git_gateway.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-class BranchlineApp extends StatelessWidget {
-  const BranchlineApp({
+class GitfluApp extends StatelessWidget {
+  const GitfluApp({
     super.key,
     this.gateway,
     this.recentStore,
@@ -25,7 +25,7 @@ class BranchlineApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Branchline',
+      title: 'gitflu',
       theme: buildPixelTheme(),
       home: WelcomeScreen(
         gateway: gateway ?? DartGitGateway(),

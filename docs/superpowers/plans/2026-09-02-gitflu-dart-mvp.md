@@ -1,4 +1,4 @@
-# Branchline Dart MVP Implementation Plan
+# Gitflu Dart MVP Implementation Plan
 
 **Goal:** Reverse-engineer the user-visible behavior and information
 architecture of the JetBrains IDE Git GUI through black-box observation, then
@@ -165,3 +165,14 @@ system Git 2.35+.
 3. Documented local verification and release artifact creation.
 4. Passed the local verification command, desktop build, and Linux integration
    smoke test.
+
+## Active vertical: hardening and product identity
+
+1. Added regression tests for process deadlines, discard revocation, history
+   page lane continuity, canonical Git settings, and controller disposal.
+2. Added non-interactive bounded process execution and deterministic
+   completion-versus-cancellation reporting.
+3. Unified package and native desktop metadata under the `gitflu` identity.
+4. Full verification passed. The next action is to install `libgtk-3-dev` and
+   rerun the Linux release build; this session could not provide sudo's
+   interactive password.

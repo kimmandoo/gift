@@ -1,4 +1,4 @@
-name: branchline
+name: gitflu
 description: "A keyboard-first Git GUI with a Flutter frontend and Dart backend."
 # The following line prevents the package from being accidentally published to
 # pub.dev using `flutter pub publish`. This is preferred for private packages.

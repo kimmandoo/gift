@@ -1,10 +1,10 @@
 import 'dart:async';
 
-import 'package:branchline/src/backend/domain.dart';
-import 'package:branchline/src/backend/error.dart';
-import 'package:branchline/src/backend/git_gateway.dart';
-import 'package:branchline/src/backend/history.dart';
-import 'package:branchline/src/features/repository/history_controller.dart';
+import 'package:gitflu/src/backend/domain.dart';
+import 'package:gitflu/src/backend/error.dart';
+import 'package:gitflu/src/backend/git_gateway.dart';
+import 'package:gitflu/src/backend/history.dart';
+import 'package:gitflu/src/features/repository/history_controller.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 

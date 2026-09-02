@@ -2,6 +2,11 @@
 
 ## 2026-09-02
 
+- fix(hardening): bounded Git processes, stabilized cancellation, preserved history lanes, and revoked discard previews.
+- fix(settings): ignored stale async results and persisted canonical Git executable paths.
+- breaking(branding): unified Dart packages and desktop product metadata under gitflu.
+- fix(ci): limited automatic workflows to release tags and pinned third-party actions.
+- docs(license): licensed gitflu under the MIT License.
 - fix(ci): gated desktop checks to release commits and hardened platform setup.
 - build(script): added one-command platform build wrappers and Windows launchers.
 - fix(build): preserved launcher line endings across operating systems.
@@ -38,5 +43,5 @@
 - fix(scaffold): excluded generated bridge bindings from native formatting.
 - fix(scaffold): preserved canonical generated bridge output after formatting.
 - build(scaffold): integrated desktop native bridge packaging.
-- test(scaffold): asserted the exact Branchline core version and documented the Windows build limitation.
-- build(scaffold): scaffolded the Branchline desktop bridge.
+- test(scaffold): asserted the exact Gitflu core version and documented the Windows build limitation.
+- build(scaffold): scaffolded the Gitflu desktop bridge.

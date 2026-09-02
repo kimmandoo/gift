@@ -60,6 +60,7 @@ class GitInvocation {
     required this.kind,
     required this.outputPolicy,
     this.cancellationToken,
+    this.timeout,
   }) : args = List.unmodifiable(args),
        stdin = stdin == null ? null : List<int>.unmodifiable(stdin);
 
@@ -70,6 +71,7 @@ class GitInvocation {
   final GitOperationKind kind;
   final OutputPolicy outputPolicy;
   final GitCancellationToken? cancellationToken;
+  final Duration? timeout;
 }
 
 class ProcessOutput {
@@ -85,7 +87,9 @@ class ProcessOutput {
 }
 
 class ProcessGitRunner {
-  const ProcessGitRunner();
+  const ProcessGitRunner({this.defaultTimeout = const Duration(minutes: 2)});
+
+  final Duration defaultTimeout;
 
   Future<ProcessOutput> run(GitInvocation invocation) async {
     if (invocation.cancellationToken?.isCancelled == true) {
@@ -100,6 +104,10 @@ class ProcessGitRunner {
         workingDirectory: invocation.cwd,
         runInShell: false,
         includeParentEnvironment: true,
+        environment: const {
+          'GIT_TERMINAL_PROMPT': '0',
+          'GCM_INTERACTIVE': 'Never',
+        },
       );
     } on ProcessException catch (error) {
       throw _spawnError(invocation.program, error);
@@ -125,8 +133,15 @@ class ProcessGitRunner {
       stdinFuture,
     ]);
     final exitCodeFuture = process.exitCode;
-    if (invocation.cancellationToken case final token?) {
-      unawaited(token.whenCancelled.then((_) => process.kill()));
+    final outcome = await Future.any<_ProcessOutcome>([
+      exitCodeFuture.then(_ProcessOutcome.completed),
+      if (invocation.cancellationToken case final token?)
+        token.whenCancelled.then((_) => const _ProcessOutcome.cancelled()),
+      Future<void>.delayed(invocation.timeout ?? defaultTimeout)
+          .then((_) => const _ProcessOutcome.timedOut()),
+    ]);
+    if (!outcome.completedNormally) {
+      process.kill();
     }
 
     // 4. Wait for all output and for Git to exit before interpreting the
@@ -137,8 +152,17 @@ class ProcessGitRunner {
     final stderr = outputResults[1]! as _ReadResult;
     final stdinError = outputResults[2];
 
-    if (invocation.cancellationToken?.isCancelled == true) {
+    if (outcome.wasCancelled) {
       throw _cancelledError(exitCode: exitCode);
+    }
+    if (outcome.didTimeOut) {
+      throw GitError(
+        category: GitErrorCategory.timeout,
+        userMessage: 'The Git operation took too long and was stopped.',
+        diagnostic: 'the Git process exceeded its configured timeout',
+        retryable: true,
+        exitCode: exitCode,
+      );
     }
 
     if (stdinError case final Object error?) {
@@ -183,6 +207,25 @@ class ProcessGitRunner {
       exitCode: exitCode,
     );
   }
+}
+
+enum _ProcessOutcomeKind { completed, cancelled, timedOut }
+
+class _ProcessOutcome {
+  const _ProcessOutcome.completed(this.exitCode)
+    : kind = _ProcessOutcomeKind.completed;
+  const _ProcessOutcome.cancelled()
+    : kind = _ProcessOutcomeKind.cancelled,
+      exitCode = null;
+  const _ProcessOutcome.timedOut()
+    : kind = _ProcessOutcomeKind.timedOut,
+      exitCode = null;
+
+  final _ProcessOutcomeKind kind;
+  final int? exitCode;
+  bool get completedNormally => kind == _ProcessOutcomeKind.completed;
+  bool get wasCancelled => kind == _ProcessOutcomeKind.cancelled;
+  bool get didTimeOut => kind == _ProcessOutcomeKind.timedOut;
 }
 
 GitError _cancelledError({int? exitCode}) => GitError(

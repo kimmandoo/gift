@@ -1,6 +1,6 @@
 import 'dart:convert';
 
-import 'package:branchline/src/backend/remote.dart';
+import 'package:gitflu/src/backend/remote.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {

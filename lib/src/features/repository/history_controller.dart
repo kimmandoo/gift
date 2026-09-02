@@ -1,9 +1,9 @@
 import 'dart:async';
 
-import 'package:branchline/src/backend/domain.dart';
-import 'package:branchline/src/backend/error.dart';
-import 'package:branchline/src/backend/git_gateway.dart';
-import 'package:branchline/src/backend/history.dart';
+import 'package:gitflu/src/backend/domain.dart';
+import 'package:gitflu/src/backend/error.dart';
+import 'package:gitflu/src/backend/git_gateway.dart';
+import 'package:gitflu/src/backend/history.dart';
 import 'package:flutter/foundation.dart';
 
 class HistoryState {
@@ -121,7 +121,7 @@ class HistoryController extends ChangeNotifier {
         _state.copyWith(
           page: GitHistoryPage(
             repositoryId: page.repositoryId,
-            commits: [...page.commits, ...nextPage.commits],
+            commits: assignGraphLanes([...page.commits, ...nextPage.commits]),
             offset: page.offset,
             limit: page.limit,
             hasMore: nextPage.hasMore,

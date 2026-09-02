@@ -6,9 +6,10 @@ When strategy code, strategy defaults, or strategy selection behavior changes, r
 
 ## CI
 
-- Run GitHub Actions automatically only for a release commit whose subject
-  starts with `release(scope):`, for example
-  `release(v1.0.0): publish desktop artifacts`.
+- Run GitHub Actions automatically only when a `release-*` tag points to a
+  release commit whose subject starts with `release(scope):`, for example
+  commit `release(v1.0.0): publish desktop artifacts` with tag
+  `release-v1.0.0`. A release commit without the tag remains local to Actions.
 - Ordinary feature, fix, documentation, and build commits must not use the
   `release(scope):` prefix. Keep `workflow_dispatch` available for a manual
   release verification or rerun.

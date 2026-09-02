@@ -40,7 +40,7 @@ Future<void> runCommand(String executable, List<String> arguments) async {
 
 String artifactPath(String target) => switch (target) {
   'linux' => 'build/linux/x64/release/bundle/',
-  'macos' => 'build/macos/Build/Products/Release/branchline.app',
+  'macos' => 'build/macos/Build/Products/Release/gitflu.app',
   'windows' => 'build/windows/x64/runner/Release/',
   _ => 'build/',
 };

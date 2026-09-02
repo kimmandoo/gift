@@ -82,3 +82,9 @@ abstract interface class GitGateway {
     DiscardPreview preview,
   );
 }
+
+/// Optional capability for gateways that can revoke an unused destructive
+/// confirmation immediately instead of waiting for its short expiry.
+abstract interface class DiscardPreviewCancellationGateway {
+  Future<void> cancelDiscardPreview(DiscardPreview preview);
+}

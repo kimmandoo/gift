@@ -1,9 +1,9 @@
-import 'package:branchline/src/features/repository/recent_repository_store.dart';
-import 'package:branchline/src/features/repository/changes_screen.dart';
-import 'package:branchline/src/features/repository/repository_controller.dart';
-import 'package:branchline/src/features/settings/git_settings_controller.dart';
-import 'package:branchline/src/features/settings/git_settings_dialog.dart';
-import 'package:branchline/src/backend/git_gateway.dart';
+import 'package:gitflu/src/features/repository/recent_repository_store.dart';
+import 'package:gitflu/src/features/repository/changes_screen.dart';
+import 'package:gitflu/src/features/repository/repository_controller.dart';
+import 'package:gitflu/src/features/settings/git_settings_controller.dart';
+import 'package:gitflu/src/features/settings/git_settings_dialog.dart';
+import 'package:gitflu/src/backend/git_gateway.dart';
 import 'package:file_selector/file_selector.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -76,7 +76,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
     }
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Branchline'),
+        title: const Text('Gitflu'),
         actions: [
           if (_gitSettingsController != null)
             IconButton(

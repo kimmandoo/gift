@@ -3,16 +3,16 @@ import 'dart:convert';
 import 'dart:io';
 import 'dart:math';
 
-import 'package:branchline/src/backend/dart_git_backend.dart';
-import 'package:branchline/src/backend/commit.dart';
-import 'package:branchline/src/backend/discard.dart';
-import 'package:branchline/src/backend/diff.dart';
-import 'package:branchline/src/backend/domain.dart';
-import 'package:branchline/src/backend/error.dart';
-import 'package:branchline/src/backend/executor.dart';
-import 'package:branchline/src/backend/git_installation_service.dart';
-import 'package:branchline/src/backend/repository_service.dart';
-import 'package:branchline/src/backend/remote.dart';
+import 'package:gitflu/src/backend/dart_git_backend.dart';
+import 'package:gitflu/src/backend/commit.dart';
+import 'package:gitflu/src/backend/discard.dart';
+import 'package:gitflu/src/backend/diff.dart';
+import 'package:gitflu/src/backend/domain.dart';
+import 'package:gitflu/src/backend/error.dart';
+import 'package:gitflu/src/backend/executor.dart';
+import 'package:gitflu/src/backend/git_installation_service.dart';
+import 'package:gitflu/src/backend/repository_service.dart';
+import 'package:gitflu/src/backend/remote.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
@@ -52,7 +52,7 @@ void main() {
   test('starts the Dart backend and reports health', () {
     final health = DartGitBackend().health();
 
-    expect(health, const Health(product: 'Branchline', coreVersion: '1.0.0'));
+    expect(health, const Health(product: 'gitflu', coreVersion: '1.0.0'));
   });
 
   test(
@@ -126,7 +126,7 @@ void main() {
     () async {
       final service = GitInstallationService();
       final discovered = await service.getOrDiscover();
-      final missingPath = '${Directory.systemTemp.path}/missing-branchline-git';
+      final missingPath = '${Directory.systemTemp.path}/missing-gitflu-git';
 
       await expectLater(
         service.configureGitPath(missingPath),
@@ -216,12 +216,12 @@ void main() {
         await expectGitSuccess([
           'config',
           'user.name',
-          'Branchline Test',
+          'Gitflu Test',
         ], workingDirectory: directory.path);
         await expectGitSuccess([
           'config',
           'user.email',
-          'branchline@example.test',
+          'gitflu@example.test',
         ], workingDirectory: directory.path);
 
         final tracked = File('${directory.path}/tracked.txt');
@@ -284,12 +284,12 @@ void main() {
         await expectGitSuccess([
           'config',
           'user.name',
-          'Branchline Test',
+          'Gitflu Test',
         ], workingDirectory: directory.path);
         await expectGitSuccess([
           'config',
           'user.email',
-          'branchline@example.test',
+          'gitflu@example.test',
         ], workingDirectory: directory.path);
 
         final tracked = File('${directory.path}/tracked.txt');
@@ -364,12 +364,12 @@ void main() {
         await expectGitSuccess([
           'config',
           'user.name',
-          'Branchline Test',
+          'Gitflu Test',
         ], workingDirectory: directory.path);
         await expectGitSuccess([
           'config',
           'user.email',
-          'branchline@example.test',
+          'gitflu@example.test',
         ], workingDirectory: directory.path);
 
         final path = 'notes & plan.txt';
@@ -677,6 +677,34 @@ void main() {
     },
   );
 
+  test('times out a process that does not finish', () async {
+    final program = Platform.isWindows
+        ? (Platform.environment['ComSpec'] ?? 'cmd.exe')
+        : 'sleep';
+    final args = Platform.isWindows
+        ? const ['/d', '/c', 'ping', '127.0.0.1', '-n', '6', '>', 'NUL']
+        : const ['5'];
+
+    await expectLater(
+      const ProcessGitRunner(defaultTimeout: Duration(milliseconds: 50)).run(
+        GitInvocation(
+          program: program,
+          args: args,
+          cwd: Directory.systemTemp.path,
+          kind: GitOperationKind.read,
+          outputPolicy: const OutputPolicy.capture(maxBytes: 1024),
+        ),
+      ),
+      throwsA(
+        isA<GitError>().having(
+          (error) => error.category,
+          'category',
+          GitErrorCategory.timeout,
+        ),
+      ),
+    );
+  });
+
   test('discards only the working-tree side after a fresh preview', () async {
     await withTempDirectory((directory) async {
       await createCommittedRepository(directory.path, 'tracked.txt');
@@ -705,6 +733,25 @@ void main() {
       expect(afterDiscard.unstaged, isEmpty);
       expect(await file.readAsString(), 'staged\n');
       await expectStaleDiscard(backend, opened.repositoryId, preview);
+    });
+  });
+
+  test('revokes a discard preview when confirmation is cancelled', () async {
+    await withTempDirectory((directory) async {
+      await createCommittedRepository(directory.path, 'tracked.txt');
+      final file = File('${directory.path}/tracked.txt');
+      await file.writeAsString('changed\n');
+      final backend = DartGitBackend();
+      final opened = await backend.openRepository(directory.path);
+      final preview = await backend.createDiscardPreview(
+        opened.repositoryId,
+        'tracked.txt',
+      );
+
+      await backend.cancelDiscardPreview(preview);
+
+      await expectStaleDiscard(backend, opened.repositoryId, preview);
+      expect(await file.readAsString(), 'changed\n');
     });
   });
 
@@ -769,12 +816,12 @@ Future<void> createCommittedRepository(String path, String fileName) async {
   await expectGitSuccess([
     'config',
     'user.name',
-    'Branchline Test',
+    'Gitflu Test',
   ], workingDirectory: path);
   await expectGitSuccess([
     'config',
     'user.email',
-    'branchline@example.test',
+    'gitflu@example.test',
   ], workingDirectory: path);
   await File('$path/$fileName').writeAsString('initial\n');
   await expectGitSuccess(['add', '--', fileName], workingDirectory: path);
@@ -804,7 +851,7 @@ Future<void> expectStaleDiscard(
 }
 
 Future<void> withTempDirectory(Future<void> Function(Directory) action) async {
-  final directory = await Directory.systemTemp.createTemp('branchline-test-');
+  final directory = await Directory.systemTemp.createTemp('gitflu-test-');
   try {
     await action(directory);
   } finally {

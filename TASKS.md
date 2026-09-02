@@ -6,13 +6,13 @@
 
 ## Progress
 
-- **Total Tasks:** 14
-- **Completed:** 14 / 14 (100%)
-- **Current Active Task:** `Complete`
+- **Total Tasks:** 15
+- **Completed:** 14 / 15
+- **Current Active Task:** `15 — Hardening & product identity verification`
 
 | # | Scope | Dart backend deliverables | Flutter deliverables | Status |
 |---|---|---|---|:---:|
-| **1** | Scaffold & contract | `DartGitBackend.health()` and backend contracts | `BranchlineApp` shell | ✅ |
+| **1** | Scaffold & contract | `DartGitBackend.health()` and backend contracts | `GitfluApp` shell | ✅ |
 | **2** | Behavior ledger & harness | Isolated Git fixtures and direct process helpers | Clean-room scenario ledger | ✅ |
 | **3** | Git executor & discovery | `ProcessGitRunner`, typed errors, redaction, PATH scan | Git settings bridge contract | ✅ |
 | **4** | Repository registry & open | `AppState`, opaque IDs, root validation | Welcome screen and recent paths | ✅ |
@@ -26,6 +26,7 @@
 | **12** | Remotes & cancellation | Fetch/pull/push and operation cancellation | Progress bar and controls | ✅ |
 | **13** | JetBrains-equivalent UX & pixel theme | Redacted diagnostics and classification | Minimal 2D pixel-game shell, responsive layout, theme, shortcuts | ✅ |
 | **14** | Packaging & CI | Cross-platform verification scripts | Desktop release artifacts | ✅ |
+| **15** | Hardening & identity | Process deadlines, safe cancellation, persistent graph lanes, preview revocation | Async lifecycle safety and unified gitflu metadata | 🚧 |
 
 ## Completed foundations
 
@@ -155,5 +156,15 @@
 - [x] Added CI checks and release artifact workflows for all three targets.
 - [x] Documented local verification, release output paths, and CI behavior.
 
-All planned tasks are complete. Future work should add a new task to this
-board before changing product scope.
+Task 15 is implemented and awaits local Linux bundle verification.
+
+### 🚧 Task 15: Hardening & product identity
+
+- [x] Added bounded Git process deadlines and disabled interactive credential
+  prompts.
+- [x] Preserved history graph lanes when another page is appended.
+- [x] Prevented stale Git settings requests from updating disposed UI state.
+- [x] Revoked cancelled discard confirmations and cleaned expired tokens.
+- [x] Unified Dart and desktop product metadata under `gitflu`.
+- [x] Added an MIT license and tag-only release workflow triggers.
+- [ ] Install the Linux GTK development dependency and pass the release build.

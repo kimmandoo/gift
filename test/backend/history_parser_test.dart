@@ -1,7 +1,7 @@
 import 'dart:convert';
 
-import 'package:branchline/src/backend/domain.dart';
-import 'package:branchline/src/backend/history.dart';
+import 'package:gitflu/src/backend/domain.dart';
+import 'package:gitflu/src/backend/history.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
@@ -74,6 +74,39 @@ void main() {
 
     expect(page.commits.map((commit) => commit.lane), [0, 0, 1]);
     expect(page.commits.first.laneCount, 2);
+  });
+
+  test('recomputes lanes across an appended page boundary', () {
+    final merge = 'm' * 40;
+    final firstParent = 'p' * 40;
+    final secondParent = 's' * 40;
+    final firstPage = parseGitHistory(
+      utf8.encode(
+        historyRecord(
+          oid: merge,
+          parents: '$firstParent $secondParent',
+          subject: 'Merge branch',
+        ),
+      ),
+      repositoryId: repositoryId,
+      offset: 0,
+      limit: 1,
+    );
+    final secondPage = parseGitHistory(
+      utf8.encode(
+        historyRecord(oid: secondParent, parents: '', subject: 'Side parent'),
+      ),
+      repositoryId: repositoryId,
+      offset: 1,
+      limit: 1,
+    );
+
+    final combined = assignGraphLanes([
+      ...firstPage.commits,
+      ...secondPage.commits,
+    ]);
+
+    expect(combined.map((commit) => commit.lane), [0, 1]);
   });
 }
 

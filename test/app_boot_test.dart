@@ -1,11 +1,11 @@
-import 'package:branchline/src/app/branchline_app.dart';
-import 'package:branchline/src/app/pixel_theme.dart';
+import 'package:gitflu/src/app/gitflu_app.dart';
+import 'package:gitflu/src/app/pixel_theme.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
   testWidgets('boots into the repository welcome screen', (tester) async {
-    await tester.pumpWidget(const BranchlineApp());
+    await tester.pumpWidget(const GitfluApp());
     expect(find.text('Open Repository'), findsOneWidget);
     expect(find.byType(MaterialApp), findsOneWidget);
   });
