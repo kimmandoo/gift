@@ -202,4 +202,19 @@ system Git 2.35+.
 4. Added a responsive tab shell with open, close, reorder, and keyboard
    actions.
 5. Passed formatting, analysis, the full Flutter test suite, and responsive
-   workspace widget tests. Task 17 is next.
+   workspace widget tests. Task 17 followed this vertical.
+
+## Completed vertical: hunk and line staging
+
+1. Recorded partial-stage behavior for hunk selection, line selection,
+   stale diffs, binary/rename-only files, and rejected patches.
+2. Added parsed hunk models and machine-owned selections bound to repository,
+   path, scope, and diff content hash.
+3. Implemented forward working-tree staging and reverse staged unstage with
+   serialized `git apply --cached` stdin and direction-aware replacement-line
+   handling.
+4. Added hunk/line controls, Shift+Space range selection, compact scrolling,
+   typed failure recovery, and beginner-oriented flow documentation.
+5. Passed the partial-staging backend fixtures, full Flutter test suite,
+   formatting, analysis, and responsive Changes screen coverage. Task 17 is
+   complete; Task 18 is next.

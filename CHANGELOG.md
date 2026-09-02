@@ -2,6 +2,7 @@
 
 ## 2026-09-02
 
+- feat(task17): added safe hunk and line staging with stale selection guards.
 - breaking(branding): renamed the product identity, package, assets, and desktop metadata to gitshiba.
 - feat(task16): added persisted multi-repository workspace tabs and isolated repository sessions.
 - feat(ui): rebuilt the Git graph and added persistent light and dark pixel themes.

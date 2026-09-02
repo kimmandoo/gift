@@ -70,6 +70,16 @@ abstract interface class GitGateway {
 
   Future<GitStatusSnapshot> unstage(RepositoryId repositoryId, String path);
 
+  Future<GitStatusSnapshot> stagePatch(
+    RepositoryId repositoryId,
+    GitPatchSelection selection,
+  );
+
+  Future<GitStatusSnapshot> unstagePatch(
+    RepositoryId repositoryId,
+    GitPatchSelection selection,
+  );
+
   Future<GitCommitResult> commit(RepositoryId repositoryId, String message);
 
   Future<DiscardPreview> createDiscardPreview(

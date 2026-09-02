@@ -568,6 +568,25 @@ class RepositoryService {
   Future<GitStatusSnapshot> unstage(RepositoryId repositoryId, String path) =>
       _mutatePath(repositoryId, const ['restore', '--staged'], path);
 
+  Future<GitStatusSnapshot> stagePatch(
+    RepositoryId repositoryId,
+    GitPatchSelection selection,
+  ) => _applyPatchSelection(
+    repositoryId,
+    selection,
+    expectedScope: GitDiffScope.workingTree,
+  );
+
+  Future<GitStatusSnapshot> unstagePatch(
+    RepositoryId repositoryId,
+    GitPatchSelection selection,
+  ) => _applyPatchSelection(
+    repositoryId,
+    selection,
+    expectedScope: GitDiffScope.staged,
+    reverse: true,
+  );
+
   /// Creates a commit from all currently staged content.
   ///
   /// The message is sent as UTF-8 on stdin through `--file=-`. This keeps
@@ -725,6 +744,72 @@ class RepositoryService {
         ),
       );
       // Return the post-mutation snapshot so the UI can update immediately.
+      return getStatus(repositoryId);
+    });
+  }
+
+  Future<GitStatusSnapshot> _applyPatchSelection(
+    RepositoryId repositoryId,
+    GitPatchSelection selection, {
+    required GitDiffScope expectedScope,
+    bool reverse = false,
+  }) async {
+    if (selection.scope != expectedScope) {
+      throw const GitError(
+        category: GitErrorCategory.stalePatch,
+        userMessage: 'Choose the matching staged or working-tree diff.',
+        diagnostic: 'patch operation scope did not match its command',
+        retryable: false,
+      );
+    }
+    return state.runMutation(repositoryId, () async {
+      final status = await getStatus(repositoryId);
+      final change = _findChange(status, selection.path);
+      if (change == null ||
+          change.isConflicted ||
+          (expectedScope == GitDiffScope.workingTree
+              ? !change.isUnstaged
+              : !change.isStaged)) {
+        throw const GitError(
+          category: GitErrorCategory.stalePatch,
+          userMessage: 'The selected change is no longer available.',
+          diagnostic: 'patch operation status facet was no longer present',
+          retryable: false,
+        );
+      }
+      final diff = await getDiff(
+        repositoryId,
+        selection.path,
+        scope: expectedScope,
+        originalPath: change.originalPath,
+      );
+      final patch = buildSelectedPatch(diff, selection, reverse: reverse);
+      final handle = await state.lookup(repositoryId);
+      try {
+        await _runner.run(
+          GitInvocation(
+            program: gitPath,
+            args: ['apply', '--cached', if (reverse) '--reverse'],
+            cwd: handle.root,
+            stdin: patch.bytes,
+            kind: GitOperationKind.mutation,
+            outputPolicy: const OutputPolicy.capture(maxBytes: 256 * 1024),
+          ),
+        );
+      } on GitError catch (error, stackTrace) {
+        if (error.category == GitErrorCategory.processFailed) {
+          Error.throwWithStackTrace(
+            error.copyWith(
+              category: GitErrorCategory.patchRejected,
+              userMessage: 'Git could not apply the selected changes.',
+              diagnostic: 'partial patch was rejected: ${error.diagnostic}',
+              retryable: false,
+            ),
+            stackTrace,
+          );
+        }
+        rethrow;
+      }
       return getStatus(repositoryId);
     });
   }

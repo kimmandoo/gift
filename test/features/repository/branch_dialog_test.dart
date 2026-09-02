@@ -12,6 +12,8 @@ import 'package:gitshiba/src/features/repository/branch_dialog.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import '../../helpers/git_patch_gateway_stub.dart';
+
 void main() {
   testWidgets('lists local branches and switches the selected branch', (
     tester,
@@ -62,7 +64,7 @@ void main() {
   });
 }
 
-class FakeBranchGateway implements GitGateway {
+class FakeBranchGateway with GitPatchGatewayStub implements GitGateway {
   FakeBranchGateway({required this.branches, required this.action});
 
   final List<GitBranch> branches;

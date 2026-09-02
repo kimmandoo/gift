@@ -15,6 +15,8 @@ import 'package:gitshiba/src/features/repository/remote_dialog.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import '../../helpers/git_patch_gateway_stub.dart';
+
 void main() {
   testWidgets('shows remote progress and cancels the running operation', (
     tester,
@@ -67,7 +69,7 @@ void main() {
   });
 }
 
-class FakeRemoteGateway implements GitGateway {
+class FakeRemoteGateway with GitPatchGatewayStub implements GitGateway {
   FakeRemoteGateway(this.repository);
 
   final RepositoryOpened repository;

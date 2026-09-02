@@ -3,7 +3,8 @@
 This roadmap turns the MVP into a dependable daily Git client while preserving
 gitshiba's clean-room workflow research and minimal 2D pixel-game interface.
 Task 15 was marked safe done under WSL because the remaining native bundle
-check is CI-only in this environment. Task 16 is complete and Task 17 is next.
+check is CI-only in this environment. Tasks 16 and 17 are complete; Task 18
+is next.
 Do not start a later post-MVP task until its dependencies are complete and its
 visible behavior has been recorded in the behavior ledger without copying
 proprietary implementation details or assets.
@@ -44,6 +45,8 @@ and tests prove operations cannot cross repository boundaries.
 ## Task 17 — Hunk and line staging
 
 **Depends on:** Task 16.
+
+**Status:** Complete.
 
 **Goal:** Stage or unstage selected hunks and lines without invoking a shell or
 silently applying a patch to changed content.

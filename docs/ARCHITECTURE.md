@@ -116,6 +116,39 @@ ChangesScreen
    실행합니다. 각 명령이 끝나면 status를 다시 읽어 staged/unstaged
    그룹과 generation을 즉시 갱신합니다.
 
+## hunk와 line stage/unstage 흐름
+
+```text
+ChangesScreen
+  └─ hunk/line checkbox selection
+       └─ ChangesController
+            └─ GitPatchSelection
+                 ├─ repository ID + path + scope + diff hash
+                 └─ hunk/line indexes
+                      └─ RepositoryService
+                           ├─ fresh status + fresh diff 확인
+                           ├─ parsed diff → machine-owned patch
+                           ├─ git apply --cached [--reverse] + stdin
+                           └─ getStatus() → refreshed snapshot
+```
+
+1. 화면은 patch 문자열을 만들거나 보내지 않습니다. 파싱된 diff에서
+   hunk와 변경 줄의 index만 선택해 `GitPatchSelection`으로 전달합니다.
+   선택에는 repository ID, 경로, staged/working-tree 범위와 diff hash가
+   함께 들어가므로 다른 저장소나 새로 고쳐진 diff에 재사용할 수 없습니다.
+2. 백엔드는 mutation queue 안에서 status와 diff를 다시 읽습니다. 선택이
+   더 이상 존재하지 않거나 hash가 달라지면 `stalePatch`로 중단하며,
+   `git apply`를 호출하지 않습니다. binary와 rename-only diff처럼 text
+   hunk가 없는 경우도 `patchRejected`로 안내합니다.
+3. working-tree staging은 index를 기준으로 선택한 변경을 앞으로 적용하고,
+   staged unstage는 같은 patch를 역방향으로 적용합니다. 선택하지 않은
+   추가/삭제 줄은 각 방향의 현재 index와 맞도록 context 또는 생략으로
+   다시 만들어 replacement hunk도 안전하게 부분 처리합니다.
+4. Git이 patch를 거부하면 오류를 typed state로 남기고 diff와 선택을
+   지우지 않습니다. 사용자는 원인을 확인한 뒤 새로 선택하거나 다시
+   시도할 수 있습니다. 성공한 경우에만 status를 갱신하고 diff를 다시
+   읽습니다.
+
 ## 선택 파일 discard 흐름
 
 ```text

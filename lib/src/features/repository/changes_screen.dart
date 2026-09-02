@@ -638,6 +638,67 @@ class _ChangesScreenBodyState extends ConsumerState<_ChangesScreenBody> {
     }
 
     final compact = MediaQuery.sizeOf(context).width < 480;
+    final header = <Widget>[
+      Text(
+        selected.path,
+        maxLines: 2,
+        overflow: TextOverflow.ellipsis,
+        style: Theme.of(context).textTheme.headlineSmall,
+      ),
+      const SizedBox(height: 10),
+      Text('Status ${selected.shortStatus}'),
+      const SizedBox(height: 6),
+      Text(_groupText(selected)),
+      if (selected.originalPath case final originalPath?) ...[
+        const SizedBox(height: 6),
+        Text('Original path: $originalPath'),
+      ],
+      if (selected.isStaged || selected.isUnstaged) ...[
+        const SizedBox(height: 16),
+        _scopeSelector(context, selected, state),
+      ],
+      if (_activeController.canStagePatch ||
+          _activeController.canUnstagePatch ||
+          _activeController.canStageSelected ||
+          _activeController.canUnstageSelected ||
+          _activeController.canDiscardSelected) ...[
+        const SizedBox(height: 16),
+        _mutationActions(context, state),
+      ],
+      if (state.mutationError case final error?) ...[
+        const SizedBox(height: 10),
+        Text(
+          error.userMessage,
+          key: const Key('mutation-error'),
+          style: TextStyle(color: Theme.of(context).colorScheme.error),
+        ),
+      ],
+      if (state.discardError case final error?) ...[
+        const SizedBox(height: 10),
+        Text(
+          error.userMessage,
+          key: const Key('discard-error'),
+          style: TextStyle(color: Theme.of(context).colorScheme.error),
+        ),
+      ],
+      if (state.isDiscardPreparing || state.isMutating)
+        const LinearProgressIndicator(),
+      const SizedBox(height: 16),
+      if (state.isDiffLoading) const LinearProgressIndicator(),
+      if (state.diffError case final error?) ...[
+        const SizedBox(height: 12),
+        Text(
+          error.userMessage,
+          key: const Key('diff-error'),
+          style: TextStyle(color: Theme.of(context).colorScheme.error),
+        ),
+      ],
+      if (state.diff?.hunks.isNotEmpty == true) ...[
+        const SizedBox(height: 8),
+        _patchSelectionHint(context, state),
+      ],
+      const SizedBox(height: 12),
+    ];
     return Padding(
       padding: EdgeInsets.fromLTRB(
         compact ? 12 : 20,
@@ -645,75 +706,54 @@ class _ChangesScreenBodyState extends ConsumerState<_ChangesScreenBody> {
         compact ? 12 : 20,
         0,
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            selected.path,
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-            style: Theme.of(context).textTheme.headlineSmall,
-          ),
-          const SizedBox(height: 10),
-          Text('Status ${selected.shortStatus}'),
-          const SizedBox(height: 6),
-          Text(_groupText(selected)),
-          if (selected.originalPath case final originalPath?) ...[
-            const SizedBox(height: 6),
-            Text('Original path: $originalPath'),
-          ],
-          if (selected.isStaged || selected.isUnstaged) ...[
-            const SizedBox(height: 16),
-            _scopeSelector(context, selected, state),
-          ],
-          if (_activeController.canStageSelected ||
-              _activeController.canUnstageSelected ||
-              _activeController.canDiscardSelected) ...[
-            const SizedBox(height: 16),
-            _mutationActions(context, state),
-          ],
-          if (state.mutationError case final error?) ...[
-            const SizedBox(height: 10),
-            Text(
-              error.userMessage,
-              key: const Key('mutation-error'),
-              style: TextStyle(color: Theme.of(context).colorScheme.error),
+      child: compact
+          ? ListView(
+              key: const Key('compact-details-scroll'),
+              children: [
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: header,
+                ),
+                _diffBody(context, state, scrollable: false),
+              ],
+            )
+          : Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                ...header,
+                Expanded(child: _diffBody(context, state)),
+              ],
             ),
-          ],
-          if (state.discardError case final error?) ...[
-            const SizedBox(height: 10),
-            Text(
-              error.userMessage,
-              key: const Key('discard-error'),
-              style: TextStyle(color: Theme.of(context).colorScheme.error),
-            ),
-          ],
-          if (state.isDiscardPreparing || state.isMutating)
-            const LinearProgressIndicator(),
-          const SizedBox(height: 16),
-          if (state.isDiffLoading) const LinearProgressIndicator(),
-          if (state.diffError case final error?) ...[
-            const SizedBox(height: 12),
-            Text(
-              error.userMessage,
-              key: const Key('diff-error'),
-              style: TextStyle(color: Theme.of(context).colorScheme.error),
-            ),
-          ],
-          const SizedBox(height: 12),
-          Expanded(child: _diffBody(context, state)),
-        ],
-      ),
     );
   }
 
   Widget _mutationActions(BuildContext context, ChangesState state) {
     final controller = _activeController;
+    final hasPartialStage = controller.canStagePatch;
+    final hasPartialUnstage = controller.canUnstagePatch;
     return Wrap(
       spacing: 8,
       runSpacing: 8,
       children: [
-        if (controller.canStageSelected)
+        if (controller.canStagePatch)
+          FilledButton.icon(
+            key: const Key('stage-selected-patch'),
+            onPressed: state.isMutating || state.isDiscardPreparing
+                ? null
+                : controller.stageSelectedPatch,
+            icon: const Icon(Icons.playlist_add, size: 18),
+            label: const Text('Stage selection'),
+          ),
+        if (controller.canUnstagePatch)
+          OutlinedButton.icon(
+            key: const Key('unstage-selected-patch'),
+            onPressed: state.isMutating || state.isDiscardPreparing
+                ? null
+                : controller.unstageSelectedPatch,
+            icon: const Icon(Icons.playlist_remove, size: 18),
+            label: const Text('Unstage selection'),
+          ),
+        if (controller.canStageSelected && !hasPartialStage)
           FilledButton.icon(
             key: const Key('stage-selected'),
             onPressed: state.isMutating || state.isDiscardPreparing
@@ -722,7 +762,7 @@ class _ChangesScreenBodyState extends ConsumerState<_ChangesScreenBody> {
             icon: const Icon(Icons.add, size: 18),
             label: const Text('Stage'),
           ),
-        if (controller.canUnstageSelected)
+        if (controller.canUnstageSelected && !hasPartialUnstage)
           OutlinedButton.icon(
             key: const Key('unstage-selected'),
             onPressed: state.isMutating || state.isDiscardPreparing
@@ -848,7 +888,11 @@ class _ChangesScreenBodyState extends ConsumerState<_ChangesScreenBody> {
     );
   }
 
-  Widget _diffBody(BuildContext context, ChangesState state) {
+  Widget _diffBody(
+    BuildContext context,
+    ChangesState state, {
+    bool scrollable = true,
+  }) {
     if (state.isDiffLoading && state.diff == null) {
       return const Center(child: CircularProgressIndicator());
     }
@@ -868,18 +912,44 @@ class _ChangesScreenBodyState extends ConsumerState<_ChangesScreenBody> {
       return const Center(child: Text('No changes in this scope.'));
     }
 
-    return SelectionArea(
-      key: const Key('diff-selection-area'),
-      child: ListView.builder(
-        key: const Key('diff-lines'),
-        itemCount: diff.lines.length,
-        itemBuilder: (context, index) =>
-            _diffLine(context, diff.lines[index], index),
-      ),
+    final lines = scrollable
+        ? ListView.builder(
+            key: const Key('diff-lines'),
+            itemCount: diff.lines.length,
+            itemBuilder: (context, index) =>
+                _diffLine(context, diff.lines[index], index, state),
+          )
+        : Column(
+            key: const Key('diff-lines'),
+            children: [
+              for (var index = 0; index < diff.lines.length; index++)
+                _diffLine(context, diff.lines[index], index, state),
+            ],
+          );
+    return SelectionArea(key: const Key('diff-selection-area'), child: lines);
+  }
+
+  Widget _patchSelectionHint(BuildContext context, ChangesState state) {
+    final selectedCount = _activeController.selectedDiffChangeCount;
+    final selectedHunks = state.selectedDiffHunks.length;
+    final scope = state.diffScope == GitDiffScope.workingTree
+        ? 'Working-tree changes'
+        : 'Staged changes';
+    return Text(
+      selectedCount == 0 && selectedHunks == 0
+          ? '$scope · select hunks or lines to make a partial change.'
+          : '$scope · $selectedCount line(s) selected. Shift+Space extends a range.',
+      key: const Key('diff-scope-label'),
+      style: Theme.of(context).textTheme.bodySmall,
     );
   }
 
-  Widget _diffLine(BuildContext context, GitDiffLine line, int index) {
+  Widget _diffLine(
+    BuildContext context,
+    GitDiffLine line,
+    int index,
+    ChangesState state,
+  ) {
     final colors = Theme.of(context).colorScheme;
     final background = switch (line.kind) {
       GitDiffLineKind.addition => colors.tertiaryContainer,
@@ -900,6 +970,7 @@ class _ChangesScreenBodyState extends ConsumerState<_ChangesScreenBody> {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          _diffSelector(context, line, index, state),
           SelectionContainer.disabled(child: _lineNumber(line.oldLineNumber)),
           SelectionContainer.disabled(child: _lineNumber(line.newLineNumber)),
           const SizedBox(width: 10),
@@ -917,6 +988,81 @@ class _ChangesScreenBodyState extends ConsumerState<_ChangesScreenBody> {
         ],
       ),
     );
+  }
+
+  Widget _diffSelector(
+    BuildContext context,
+    GitDiffLine line,
+    int lineIndex,
+    ChangesState state,
+  ) {
+    final controller = _activeController;
+    final hunkIndex = line.hunkIndex;
+    if (line.kind == GitDiffLineKind.hunkHeader && hunkIndex != null) {
+      return SizedBox(
+        width: 40,
+        child: Checkbox(
+          key: ValueKey('diff-hunk-select-$hunkIndex'),
+          value: controller.isDiffHunkSelected(hunkIndex),
+          onChanged: state.isMutating
+              ? null
+              : (selected) {
+                  if (selected != null) {
+                    controller.toggleDiffHunk(hunkIndex, selected);
+                  }
+                },
+          visualDensity: VisualDensity.compact,
+          materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+          semanticLabel: 'Select hunk ${hunkIndex + 1}',
+        ),
+      );
+    }
+    final isChanged =
+        line.kind == GitDiffLineKind.addition ||
+        line.kind == GitDiffLineKind.deletion;
+    if (!isChanged || hunkIndex == null) return const SizedBox(width: 40);
+    return SizedBox(
+      width: 40,
+      child: Focus(
+        onKeyEvent: (node, event) {
+          if (event is KeyDownEvent &&
+              event.logicalKey == LogicalKeyboardKey.space &&
+              _isShiftPressed) {
+            controller.toggleDiffLine(
+              lineIndex,
+              !controller.isDiffLineSelected(lineIndex),
+              extend: true,
+            );
+            return KeyEventResult.handled;
+          }
+          return KeyEventResult.ignored;
+        },
+        child: Checkbox(
+          key: ValueKey('diff-line-select-$lineIndex'),
+          value: controller.isDiffLineSelected(lineIndex),
+          onChanged: state.isMutating
+              ? null
+              : (selected) {
+                  if (selected != null) {
+                    controller.toggleDiffLine(
+                      lineIndex,
+                      selected,
+                      extend: _isShiftPressed,
+                    );
+                  }
+                },
+          visualDensity: VisualDensity.compact,
+          materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+          semanticLabel: 'Select changed line ${lineIndex + 1}',
+        ),
+      ),
+    );
+  }
+
+  bool get _isShiftPressed {
+    final pressed = HardwareKeyboard.instance.logicalKeysPressed;
+    return pressed.contains(LogicalKeyboardKey.shiftLeft) ||
+        pressed.contains(LogicalKeyboardKey.shiftRight);
   }
 
   Widget _lineNumber(int? number) {
