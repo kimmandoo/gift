@@ -1,5 +1,8 @@
 import 'dart:async';
 
+import 'package:flutter/material.dart';
+import 'package:gift/src/app/pixel_theme.dart';
+
 import 'package:gift/src/backend/branch.dart';
 import 'package:gift/src/backend/domain.dart';
 import 'package:gift/src/backend/error.dart';
@@ -7,7 +10,6 @@ import 'package:gift/src/backend/executor.dart';
 import 'package:gift/src/backend/git_gateway.dart';
 import 'package:gift/src/backend/remote_branch.dart';
 import 'package:gift/src/features/repository/comparison_dialog.dart';
-import 'package:flutter/material.dart';
 
 /// A small branch popup that keeps branch work separate from the Changes list.
 class BranchDialog extends StatefulWidget {
@@ -263,6 +265,7 @@ class _BranchDialogState extends State<BranchDialog> {
         DropdownButtonFormField<GitBranchOperation>(
           key: const Key('advanced-branch-operation'),
           initialValue: _operation,
+          isExpanded: true,
           decoration: const InputDecoration(
             labelText: 'Operation',
             border: OutlineInputBorder(),
@@ -271,7 +274,7 @@ class _BranchDialogState extends State<BranchDialog> {
             for (final operation in GitBranchOperation.values)
               DropdownMenuItem(
                 value: operation,
-                child: Text(_operationLabel(operation)),
+                child: pixelDropdownText(_operationLabel(operation)),
               ),
           ],
           onChanged: _isMutating

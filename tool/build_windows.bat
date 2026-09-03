@@ -9,5 +9,5 @@ if errorlevel 1 (
     exit /b 1
 )
 
-echo Windows release build completed.
+echo Windows release, portable, and setup artifacts completed.
 pause

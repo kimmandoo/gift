@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:gift/src/app/pixel_theme.dart';
 import 'package:gift/src/backend/domain.dart';
 import 'package:gift/src/backend/error.dart';
 import 'package:gift/src/backend/executor.dart';
@@ -88,7 +89,7 @@ class _PushDialogState extends State<PushDialog> {
                   for (final target in GitPushTarget.values)
                     DropdownMenuItem(
                       value: target,
-                      child: Text(_targetLabel(target)),
+                      child: pixelDropdownText(_targetLabel(target)),
                     ),
                 ],
                 onChanged: _busy
@@ -132,9 +133,8 @@ class _PushDialogState extends State<PushDialog> {
                     for (final commit in _commits)
                       DropdownMenuItem(
                         value: commit.oid,
-                        child: Text(
+                        child: pixelDropdownText(
                           '${commit.shortOid} ${commit.subject}',
-                          overflow: TextOverflow.ellipsis,
                         ),
                       ),
                   ],
@@ -270,7 +270,10 @@ class _PushDialogState extends State<PushDialog> {
       decoration: const InputDecoration(labelText: 'Remote'),
       items: [
         for (final remote in remotes)
-          DropdownMenuItem(value: remote.name, child: Text(remote.name)),
+          DropdownMenuItem(
+            value: remote.name,
+            child: pixelDropdownText(remote.name),
+          ),
       ],
       onChanged: _busy
           ? null

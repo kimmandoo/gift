@@ -7,8 +7,8 @@ This file is the handoff record for continuing work across query sessions.
 - Date: 2026-09-03
 - Active task: Post-Task-35 UI/UX audit is complete; Task 36 is next.
 - Branch: `main`; no new branch or worktree was created.
-- Latest completed implementation commit: `26a2235` (`fix(windows): hide
-  portable launcher and unclip labels`).
+- Latest completed implementation commit: `89c06db` (`docs(workflow): record
+  launcher and label fixes`).
 - Completed Task 28 after recording REMOTE-BRANCH-01/02 and UPDATE-01/02,
   adding the first RED fixture, and proving the real-Git implementation GREEN.
 - Added immutable remote ref snapshots with grouped remotes, local tracking,
@@ -341,6 +341,32 @@ This file is the handoff record for continuing work across query sessions.
   Windows Release plus `gift-portable.exe` successfully.
 - Next action: activate Task 36 after recording scale/resilience scenarios and
   adding its first failing performance or supervision fixture.
+
+## Current session: UI controls and Windows setup packaging
+
+- Date: 2026-09-04.
+- Changed files: `CHANGELOG.md`, `README.md`, `docs/RELEASING.md`,
+  `docs/superpowers/plans/2026-09-02-gift-dart-mvp.md`, this checkpoint,
+  `.github/workflows/ci.yml`, `lib/src/app/pixel_theme.dart`,
+  `lib/src/features/repository/{branch_dialog,changes_screen,ignore_dialog,interactive_rebase_dialog,object_dialog,push_dialog,update_project_dialog}.dart`,
+  `test/{branding_test.dart,features/repository/push_dialog_test.dart}`,
+  `tool/{build_windows.bat,package_windows.ps1,package_windows_installer.ps1,windows_setup_launcher.ps1,windows_setup_launcher.vbs,windows_uninstall.ps1,windows_uninstall.vbs}`.
+- UI change: standardized bounded dropdown option labels, added square pixel
+  button states, and made stage/unstage/discard actions visually distinct.
+- Windows change: `package_windows.ps1` now emits
+  `build/windows/x64/runner/gift-setup.exe`, a per-user installer that creates
+  a Start Menu shortcut and HKCU uninstall registration.
+- Verification: `flutter analyze` passed; focused branding, Push, and Changes
+  widget tests passed after the dropdown regression test was corrected; the
+  complete `flutter test` run passed all UI tests but retained 15 known
+  Windows-only backend fixture failures involving newline/path normalization,
+  interactive-rebase cleanup, and file locking.
+- `tool/build_windows.ps1` completed a clean Windows release build and
+  generated `gift-portable.exe` and `gift-setup.exe`; the rebuilt setup smoke
+  installed and launched the app, registered the current-user uninstaller,
+  exited, and the uninstaller removed the installed files and Start Menu entry.
+- `git diff --check` passed. No blockers.
+- Next action: inspect the final diff and commit this session.
 
 ## Resume procedure
 

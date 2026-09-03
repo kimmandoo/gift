@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:gift/src/app/pixel_theme.dart';
 import 'package:gift/src/backend/domain.dart';
 import 'package:gift/src/backend/error.dart';
 import 'package:gift/src/backend/git_gateway.dart';
@@ -287,10 +288,7 @@ class _IgnoreDialogState extends State<IgnoreDialog>
           ),
           items: [
             for (final path in paths)
-              DropdownMenuItem(
-                value: path,
-                child: Text(path, overflow: TextOverflow.ellipsis),
-              ),
+              DropdownMenuItem(value: path, child: pixelDropdownText(path)),
           ],
           onChanged: _isBusy
               ? null

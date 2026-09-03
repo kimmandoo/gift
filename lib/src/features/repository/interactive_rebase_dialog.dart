@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:gift/src/app/pixel_theme.dart';
 import 'package:gift/src/backend/domain.dart';
 import 'package:gift/src/backend/error.dart';
 import 'package:gift/src/backend/executor.dart';
@@ -137,9 +138,8 @@ class _InteractiveRebaseDialogState extends State<InteractiveRebaseDialog> {
       for (var index = 1; index < history.commits.length; index++)
         DropdownMenuItem(
           value: index,
-          child: Text(
+          child: pixelDropdownText(
             '${history.commits[index].shortOid} · ${history.commits[index].subject}',
-            overflow: TextOverflow.ellipsis,
           ),
         ),
     ];
@@ -299,7 +299,10 @@ class _InteractiveRebaseDialogState extends State<InteractiveRebaseDialog> {
                   },
             items: [
               for (final action in GitInteractiveRebaseAction.values)
-                DropdownMenuItem(value: action, child: Text(action.label)),
+                DropdownMenuItem(
+                  value: action,
+                  child: pixelDropdownText(action.label),
+                ),
             ],
           ),
           const SizedBox(width: 6),

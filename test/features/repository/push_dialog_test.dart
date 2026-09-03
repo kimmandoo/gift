@@ -52,6 +52,46 @@ void main() {
     expect(gateway.executedRequest?.confirmationToken, 'push-token');
     expect(tester.takeException(), isNull);
   });
+
+  testWidgets('bounds every push dropdown option to one line', (tester) async {
+    addTearDown(tester.view.reset);
+    tester.view.physicalSize = const Size(320, 640);
+    tester.view.devicePixelRatio = 1;
+    final repository = const RepositoryOpened(
+      repositoryId: RepositoryId(value: 'push-dropdown-repository'),
+      root: '/workspace/project',
+    );
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: PushDialog(
+          gateway: _PushGateway(repository),
+          repository: repository,
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.ensureVisible(find.byKey(const Key('push-target')));
+    await tester.tap(find.byKey(const Key('push-target')));
+    await tester.pumpAndSettle();
+    final longTargetLabel = tester.widget<Text>(
+      find.text('All local tags (explicit refs)'),
+    );
+    expect(longTargetLabel.maxLines, 1);
+    expect(longTargetLabel.overflow, TextOverflow.ellipsis);
+
+    await tester.tap(find.text('Up to selected commit'));
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(find.byKey(const Key('push-selected-commit')));
+    await tester.tap(find.byKey(const Key('push-selected-commit')));
+    await tester.pumpAndSettle();
+    final commitLabel = tester.widget<Text>(
+      find.textContaining('Publish this'),
+    );
+    expect(commitLabel.maxLines, 1);
+    expect(commitLabel.overflow, TextOverflow.ellipsis);
+  });
 }
 
 class _PushGateway with GitPatchGatewayStub implements GitGateway {

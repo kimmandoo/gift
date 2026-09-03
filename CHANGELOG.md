@@ -1,5 +1,13 @@
 # Changelog
 
+## 2026-09-04
+- fix(ui): constrained repository dropdown options to one line with ellipsis
+  so long branch, commit, path, and mode labels remain readable.
+- fix(ui): gave pixel buttons square themed hover, focus, pressed, and disabled
+  states, with distinct stage, unstage, and discard action treatments.
+- feat(windows): added a per-user gift setup executable with Start Menu and
+  uninstall registration alongside the release bundle and portable launcher.
+
 ## 2026-09-03
 - fix(ui): grouped repository actions into a categorized menu and reduced
   crowded Changes and History toolbars.

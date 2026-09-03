@@ -678,3 +678,22 @@ system Git 2.35+.
    again, and removed the dense attribute dropdown override.
 3. Verified Push, Ignore, Reset, Update Project, and Branch dialog layouts at
    narrow widths and larger text scales.
+
+## Completed follow-up: dropdown and pixel button polish
+
+1. Standardized dropdown option rendering with one-line ellipsis behavior
+   across push, update, branch, ignore, rebase, object, and commit controls.
+2. Added square pixel button states for hover, focus, pressed, and disabled
+   interactions, plus matching chip and segmented-control surfaces.
+3. Gave stage, unstage, and discard actions distinct repository-semantic
+   colors and directional icons.
+4. Added regression coverage for push dropdown labels and pixel button states.
+
+## Completed follow-up: Windows setup packaging
+
+1. Added a built-in IExpress setup executable that installs gift per user under
+   `%LOCALAPPDATA%\\Programs\\gift`.
+2. Added Start Menu shortcut creation and current-user uninstall registration,
+   with hidden PowerShell/VBScript install and uninstall launchers.
+3. Published `gift-setup.exe` alongside the Release bundle and portable
+   executable in the Windows CI artifact, and documented the install flow.

@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:gift/src/app/pixel_theme.dart';
 import 'package:gift/src/backend/domain.dart';
 import 'package:gift/src/backend/error.dart';
 import 'package:gift/src/backend/executor.dart';
@@ -508,12 +509,13 @@ class _ObjectDialogState extends State<ObjectDialog> {
         DropdownButtonFormField<String>(
           key: const Key('upstream-remote'),
           initialValue: selected,
+          isExpanded: true,
           decoration: const InputDecoration(labelText: 'Remote'),
           items: remotes
               .map(
                 (remote) => DropdownMenuItem(
                   value: remote.name,
-                  child: Text(remote.name),
+                  child: pixelDropdownText(remote.name),
                 ),
               )
               .toList(),

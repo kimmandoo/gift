@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:gift/src/app/pixel_theme.dart';
 import 'package:gift/src/backend/error.dart';
 import 'package:gift/src/backend/executor.dart';
 import 'package:gift/src/backend/git_gateway.dart';
@@ -62,7 +63,7 @@ class _UpdateProjectDialogState extends State<UpdateProjectDialog> {
                   for (final strategy in GitUpdateStrategy.values)
                     DropdownMenuItem(
                       value: strategy,
-                      child: Text(_strategyLabel(strategy)),
+                      child: pixelDropdownText(_strategyLabel(strategy)),
                     ),
                 ],
                 onChanged: _busy
@@ -86,14 +87,14 @@ class _UpdateProjectDialogState extends State<UpdateProjectDialog> {
                   helperText:
                       'Dirty worktrees are never changed without a choice.',
                 ),
-                items: const [
+                items: [
                   DropdownMenuItem(
                     value: GitUpdateLocalChanges.reject,
-                    child: Text('Require a clean worktree'),
+                    child: pixelDropdownText('Require a clean worktree'),
                   ),
                   DropdownMenuItem(
                     value: GitUpdateLocalChanges.stash,
-                    child: Text('Stash and restore after update'),
+                    child: pixelDropdownText('Stash and restore after update'),
                   ),
                 ],
                 onChanged: _busy

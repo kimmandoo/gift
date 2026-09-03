@@ -64,6 +64,7 @@ jobs:
             path: |
               build/windows/x64/runner/Release/
               build/windows/x64/runner/gift-portable.exe
+              build/windows/x64/runner/gift-setup.exe
     steps:
       - name: Check out source
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
