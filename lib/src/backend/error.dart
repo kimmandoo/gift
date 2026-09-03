@@ -23,6 +23,8 @@ enum GitErrorCategory {
   timeout,
   staleConfirmation,
   stalePatch,
+  staleComparison,
+  comparisonFileNotFound,
   patchRejected,
   invalidOpaqueId,
   staleOpaqueId,

@@ -293,7 +293,7 @@ system Git 2.35+.
 5. Passed focused backend/UI tests, formatting, analysis, and the full suite.
    Task 22 is complete.
 
-## Planned backlog expansion: JetBrains Git workflow gaps (Tasks 23–35)
+## Active vertical: Diff and comparison workbench (Task 23)
 
 1. Audited the public IntelliJ IDEA Git workflow documentation against the
    completed Tasks 1–22 and recorded the missing comparison, shelf, history,
@@ -301,6 +301,12 @@ system Git 2.35+.
    optional hosting scenarios in the behavior ledger.
 2. Added Tasks 23–35 to the post-MVP roadmap in dependency order, then moved
    the existing scale, accessibility, and release work to Tasks 36–38.
-3. Task 23, the diff and comparison workbench, is next. Its first RED test
-   must be recorded before implementation starts; no later task should be
-   activated until its dependency and behavior notes are complete.
+3. Activated Task 23 after recording its revision, branch, folder, and
+   three-way comparison scenarios.
+4. Added the first RED comparison test; it failed because the comparison
+   contract and backend methods did not exist. Implemented the bounded model,
+   revision/folder diff, selected-file loading, and responsive workbench.
+5. Passed the focused comparison backend/UI tests, formatting, analysis, and
+   the full Flutter suite. Task 23 remains active for clipboard/external-text,
+   three-way, and reviewed apply/revert flows; keep Task 24 planned until that
+   work is complete.

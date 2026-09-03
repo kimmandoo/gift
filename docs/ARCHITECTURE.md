@@ -540,7 +540,37 @@ ChangesScreen
    from command text. The object dialog remains bounded on compact windows and
    keeps remote selection state when more than one remote is configured.
 
-## Planned Git workflow coverage (Tasks 23–35)
+## Diff and comparison workbench (Task 23, active)
+
+```text
+ChangesScreen
+  └─ ComparisonDialog
+       ├─ revision + optional folder inputs
+       ├─ bounded NUL-delimited changed-file list
+       └─ lazy selected-file unified diff
+            └─ GitGateway → RepositoryService → serialized Git argv (read)
+```
+
+1. `compareRevisions` accepts validated commit expressions, branch names, and
+   tag names through separate argv values. Both endpoints are resolved to
+   commit OIDs before `git diff --name-status -z` runs, and the bounded parser
+   preserves rename/copy old and new paths without using list positions as
+   identity.
+2. A comparison request retains its repository ID, endpoint labels, optional
+   folder scope, and fingerprint. The fingerprint includes the raw file list,
+   query key, and resolved endpoint OIDs, so moving refs cannot silently
+   replace the reviewed comparison with another commit's content.
+3. File patches are loaded only after a selected path is checked against a
+   fresh comparison. The backend validates the path scope, rechecks the
+   fingerprint, bounds the unified diff, and returns explicit stale or missing
+   states instead of invoking Git for an invalid selection.
+4. The workbench uses a stacked compact layout and a split desktop layout. It
+   keeps revision fields, changed-file selection, binary/empty states, and
+   copyable diff text usable without depending on color or a fixed window
+   width. Clipboard/text sources, three-way transfer actions, and the
+   remaining apply/revert flows stay active for the next Task 23 slice.
+
+## Remaining Git workflow coverage (Tasks 23–35)
 
 The next implementation wave fills the gaps around the current repository and
 object flows in this order:

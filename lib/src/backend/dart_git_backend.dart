@@ -4,6 +4,7 @@ import 'commit.dart';
 import 'conflict.dart';
 import 'discard.dart';
 import 'diff.dart';
+import 'comparison.dart';
 import 'git_installation_service.dart';
 import 'history.dart';
 import 'repository_service.dart';
@@ -651,6 +652,33 @@ class DartGitBackend {
       gitPath: installation.executablePath,
       state: _state,
     ).getDiff(repositoryId, path, scope: scope, originalPath: originalPath);
+  }
+
+  Future<GitComparisonSnapshot> compareRevisions(
+    RepositoryId repositoryId,
+    String left,
+    String right, {
+    String? path,
+  }) async {
+    final installation = await getGitInstallation();
+    return RepositoryService(
+      gitPath: installation.executablePath,
+      state: _state,
+      runner: _runner,
+    ).compareRevisions(repositoryId, left, right, path: path);
+  }
+
+  Future<GitDiffSnapshot> getComparisonDiff(
+    RepositoryId repositoryId,
+    GitComparisonSnapshot comparison,
+    String path,
+  ) async {
+    final installation = await getGitInstallation();
+    return RepositoryService(
+      gitPath: installation.executablePath,
+      state: _state,
+      runner: _runner,
+    ).getComparisonDiff(repositoryId, comparison, path);
   }
 
   Future<GitStatusSnapshot> stage(

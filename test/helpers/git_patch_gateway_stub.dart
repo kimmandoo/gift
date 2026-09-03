@@ -2,6 +2,7 @@ import 'package:gift/src/backend/commit.dart';
 import 'package:gift/src/backend/conflict.dart';
 import 'package:gift/src/backend/branch.dart';
 import 'package:gift/src/backend/diff.dart';
+import 'package:gift/src/backend/comparison.dart';
 import 'package:gift/src/backend/domain.dart';
 import 'package:gift/src/backend/discard.dart';
 import 'package:gift/src/backend/history.dart';
@@ -201,6 +202,19 @@ mixin GitPatchGatewayStub {
     GitDiffScope scope = GitDiffScope.workingTree,
     String? originalPath,
   }) => throw UnimplementedError();
+
+  Future<GitComparisonSnapshot> compareRevisions(
+    RepositoryId repositoryId,
+    String left,
+    String right, {
+    String? path,
+  }) => throw UnimplementedError();
+
+  Future<GitDiffSnapshot> getComparisonDiff(
+    RepositoryId repositoryId,
+    GitComparisonSnapshot comparison,
+    String path,
+  ) => throw UnimplementedError();
 
   Future<GitStatusSnapshot> stage(RepositoryId repositoryId, String path) =>
       throw UnimplementedError();

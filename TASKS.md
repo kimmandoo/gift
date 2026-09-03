@@ -8,7 +8,7 @@
 
 - **Total Tasks:** 38
 - **Completed:** 22 / 38
-- **Current Active Task:** `23 — Diff and comparison workbench (next)`
+- **Current Active Task:** `23 — Diff and comparison workbench (active)`
 
 | # | Scope | Dart backend deliverables | Flutter deliverables | Status |
 |---|---|---|---|:---:|
@@ -34,7 +34,7 @@
 | **20** | Advanced branches | Rename, delete, merge, rebase, and cherry-pick safety | Preview-driven branch actions | ✅ |
 | **21** | Conflict resolution | Conflict-state parser and safe resolution mutations | Three-pane merge workflow | ✅ |
 | **22** | Git objects | Stash, tags, remotes, and upstream management | Focused object-management dialogs | ✅ |
-| **23** | Diff & compare | Revision, branch, folder, clipboard, and 3-way comparisons | Diff workbench and apply/revert actions | ⬜ |
+| **23** | Diff & compare | Revision, branch, folder, clipboard, and 3-way comparisons | Diff workbench and apply/revert actions | 🔄 |
 | **24** | Shelf & changelists | Shelf storage, changelist grouping, and patch import/export | Shelf/changelist workflow | ⬜ |
 | **25** | File history & blame | File/directory/selection history and blame metadata | History and annotation views | ⬜ |
 | **26** | Undo & reset | Revert commit, undo commit, and safe reset modes | Destructive history controls | ⬜ |
@@ -300,9 +300,27 @@ contract existed.
 - [x] Cover object identity, stale previews, remote configuration, tag push,
   stash recovery, and compact dialog rendering with isolated fixtures.
 
-Task 22 is complete. Task 23 is next. The first failing test was the initial
+Task 22 is complete. Task 23 is active. The first failing test was the initial
 compile failure in `test/backend/object_management_test.dart` before the
 object-management contract existed.
+
+### 🔄 Task 23: Diff and comparison workbench (active)
+
+- [x] Added validated revision, branch, tag, and optional folder comparison
+  requests with bounded NUL-delimited rename/copy-aware file parsing.
+- [x] Included resolved endpoint OIDs, query scope, and raw comparison output
+  in the stale-comparison fingerprint.
+- [x] Added lazy selected-file unified diffs with path-scope and repository
+  identity checks, explicit stale/missing errors, and bounded output.
+- [x] Added a responsive Compare revisions dialog and Changes-screen entry
+  points for compact and desktop layouts.
+- [x] Covered parser, real-Git revision/folder comparison, ref movement, stale
+  selection rejection, and compact dialog rendering.
+- [ ] Complete clipboard/external-text and three-way sources plus reviewed
+  apply/revert transfer actions.
+
+Task 23 remains active until its remaining source and transfer flows pass
+their backend and widget fixtures.
 
 ## Post-MVP backlog
 

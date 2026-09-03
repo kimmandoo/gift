@@ -4,7 +4,8 @@ This roadmap turns the MVP into a dependable daily Git client while preserving
 gift's clean-room workflow research and minimal 2D pixel-game interface.
 Task 15 was marked safe done under WSL because the remaining native bundle
 check is CI-only in this environment. Tasks 16 through 22 are complete;
-Tasks 23 through 35 are planned Git workflow coverage, with Task 23 next.
+Task 23 is active and Tasks 24 through 35 remain planned Git workflow
+coverage.
 Do not start a later post-MVP task until its dependencies are complete and its
 visible behavior has been recorded in the behavior ledger without copying
 proprietary implementation details or assets.
@@ -217,6 +218,8 @@ every mutation and destructive actions have real Git fixture coverage.
 ## Task 23 — Diff and comparison workbench
 
 **Depends on:** Tasks 6, 19, and 21.
+
+**Status:** In progress — revision/folder vertical complete.
 
 **Goal:** Make the diff surface useful for investigating and transferring
 changes between revisions, branches, folders, and arbitrary text sources.

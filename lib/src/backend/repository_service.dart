@@ -7,6 +7,7 @@ import 'domain.dart';
 import 'branch.dart';
 import 'commit.dart';
 import 'conflict.dart';
+import 'comparison.dart';
 import 'discard.dart';
 import 'diff.dart';
 import 'error.dart';
@@ -1864,6 +1865,33 @@ class RepositoryService {
     }
   }
 
+  void _validateComparisonPath(String? path) {
+    if (path == null) return;
+    if (path.isEmpty ||
+        path.startsWith('-') ||
+        path.startsWith('/') ||
+        path.contains('\u0000') ||
+        path.contains('\n') ||
+        path.contains('\r')) {
+      throw const GitError(
+        category: GitErrorCategory.parseFailure,
+        userMessage: 'Git could not inspect that comparison path.',
+        diagnostic:
+            'comparison path was empty, absolute, option-like, or '
+            'contained a control character',
+        retryable: false,
+      );
+    }
+  }
+
+  bool _isPathWithinComparisonScope(String path, String? scope) {
+    if (scope == null || scope == '.') return true;
+    final normalizedScope = scope.endsWith('/')
+        ? scope.substring(0, scope.length - 1)
+        : scope;
+    return path == normalizedScope || path.startsWith('$normalizedScope/');
+  }
+
   GitError _recoveryNotAllowed(
     GitBranchOperation operation,
     GitBranchOperationPhase phase,
@@ -2895,6 +2923,171 @@ class RepositoryService {
       output.stdout,
       path: path,
       scope: scope,
+    ).copyWith(repositoryId: repositoryId);
+  }
+
+  Future<GitComparisonSnapshot> compareRevisions(
+    RepositoryId repositoryId,
+    String left,
+    String right, {
+    String? path,
+  }) async {
+    _validateRevisionInput(left);
+    _validateRevisionInput(right);
+    _validateComparisonPath(path);
+
+    final handle = await state.lookup(repositoryId);
+    // Resolve both endpoints before building the diff. This gives branch,
+    // tag, and commit expressions the same typed invalid-revision behavior.
+    final leftOid = await _resolveCommit(handle, left);
+    final rightOid = await _resolveCommit(handle, right);
+
+    final output = await _runner.run(
+      GitInvocation(
+        program: gitPath,
+        args: [
+          'diff',
+          '--no-color',
+          '--no-ext-diff',
+          '--find-renames',
+          '--find-copies',
+          '--name-status',
+          '-z',
+          left,
+          right,
+          '--',
+          ...?path == null ? null : [path],
+        ],
+        cwd: handle.root,
+        kind: GitOperationKind.read,
+        outputPolicy: const OutputPolicy.capture(maxBytes: 2 * 1024 * 1024),
+      ),
+    );
+
+    late final List<GitComparisonFile> files;
+    try {
+      files = parseGitComparisonFiles(output.stdout);
+    } on FormatException catch (error) {
+      throw GitError(
+        category: GitErrorCategory.parseFailure,
+        userMessage: 'Git returned an unreadable comparison result.',
+        diagnostic: 'comparison name-status parser failed: $error',
+        retryable: false,
+      );
+    }
+    final request = GitComparisonRequest(
+      repositoryId: repositoryId,
+      left: GitComparisonSource(
+        kind: GitComparisonSourceKind.revision,
+        value: left,
+      ),
+      right: GitComparisonSource(
+        kind: GitComparisonSourceKind.revision,
+        value: right,
+      ),
+      path: path,
+    );
+    return GitComparisonSnapshot(
+      request: request,
+      files: files,
+      fingerprint: comparisonFingerprint(
+        request,
+        output.stdout,
+        leftOid: leftOid,
+        rightOid: rightOid,
+      ),
+    );
+  }
+
+  Future<GitDiffSnapshot> getComparisonDiff(
+    RepositoryId repositoryId,
+    GitComparisonSnapshot comparison,
+    String path,
+  ) async {
+    if (comparison.request.repositoryId != repositoryId) {
+      throw const GitError(
+        category: GitErrorCategory.staleComparison,
+        userMessage: 'This comparison belongs to a different repository.',
+        diagnostic: 'comparison repository ID did not match the request',
+        retryable: false,
+      );
+    }
+    if (comparison.request.left.kind != GitComparisonSourceKind.revision ||
+        comparison.request.right.kind != GitComparisonSourceKind.revision) {
+      throw const GitError(
+        category: GitErrorCategory.staleComparison,
+        userMessage: 'Refresh this comparison before opening a file diff.',
+        diagnostic: 'unsupported comparison source kind for historical diff',
+        retryable: false,
+      );
+    }
+    _validateRevisionInput(comparison.request.left.value);
+    _validateRevisionInput(comparison.request.right.value);
+    _validateComparisonPath(comparison.request.path);
+    _validateComparisonPath(path);
+    if (!_isPathWithinComparisonScope(path, comparison.request.path)) {
+      throw const GitError(
+        category: GitErrorCategory.comparisonFileNotFound,
+        userMessage: 'That file is outside the selected comparison folder.',
+        diagnostic: 'comparison file path escaped the requested path scope',
+        retryable: false,
+      );
+    }
+
+    final fresh = await compareRevisions(
+      repositoryId,
+      comparison.request.left.value,
+      comparison.request.right.value,
+      path: comparison.request.path,
+    );
+    if (fresh.fingerprint != comparison.fingerprint) {
+      throw const GitError(
+        category: GitErrorCategory.staleComparison,
+        userMessage: 'The repository changed. Refresh the comparison.',
+        diagnostic: 'comparison fingerprint no longer matched Git output',
+        retryable: true,
+      );
+    }
+    GitComparisonFile? selected;
+    for (final file in fresh.files) {
+      if (file.path == path || file.oldPath == path) {
+        selected = file;
+        break;
+      }
+    }
+    if (selected == null) {
+      throw const GitError(
+        category: GitErrorCategory.comparisonFileNotFound,
+        userMessage: 'That file is no longer part of the comparison.',
+        diagnostic: 'requested comparison file was absent from fresh output',
+        retryable: false,
+      );
+    }
+
+    final handle = await state.lookup(repositoryId);
+    final output = await _runner.run(
+      GitInvocation(
+        program: gitPath,
+        args: [
+          'diff',
+          '--no-color',
+          '--no-ext-diff',
+          '--find-renames',
+          '--unified=3',
+          comparison.request.left.value,
+          comparison.request.right.value,
+          '--',
+          path,
+        ],
+        cwd: handle.root,
+        kind: GitOperationKind.read,
+        outputPolicy: const OutputPolicy.capture(maxBytes: 4 * 1024 * 1024),
+      ),
+    );
+    return parseUnifiedDiff(
+      output.stdout,
+      path: path,
+      scope: comparisonDiffScope(comparison.request),
     ).copyWith(repositoryId: repositoryId);
   }
 

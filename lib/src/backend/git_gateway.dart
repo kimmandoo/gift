@@ -4,6 +4,7 @@ import 'commit.dart';
 import 'conflict.dart';
 import 'discard.dart';
 import 'diff.dart';
+import 'comparison.dart';
 import 'status.dart';
 import 'history.dart';
 import 'executor.dart';
@@ -258,6 +259,19 @@ abstract interface class GitGateway {
     GitDiffScope scope = GitDiffScope.workingTree,
     String? originalPath,
   });
+
+  Future<GitComparisonSnapshot> compareRevisions(
+    RepositoryId repositoryId,
+    String left,
+    String right, {
+    String? path,
+  });
+
+  Future<GitDiffSnapshot> getComparisonDiff(
+    RepositoryId repositoryId,
+    GitComparisonSnapshot comparison,
+    String path,
+  );
 
   Future<GitStatusSnapshot> stage(RepositoryId repositoryId, String path);
 

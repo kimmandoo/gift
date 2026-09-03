@@ -5,6 +5,7 @@ import 'conflict.dart';
 import 'domain.dart';
 import 'discard.dart';
 import 'diff.dart';
+import 'comparison.dart';
 import 'git_gateway.dart';
 import 'history.dart';
 import 'executor.dart';
@@ -394,6 +395,21 @@ class DartGitGateway implements GitGateway, DiscardPreviewCancellationGateway {
     scope: scope,
     originalPath: originalPath,
   );
+
+  @override
+  Future<GitComparisonSnapshot> compareRevisions(
+    RepositoryId repositoryId,
+    String left,
+    String right, {
+    String? path,
+  }) => backend.compareRevisions(repositoryId, left, right, path: path);
+
+  @override
+  Future<GitDiffSnapshot> getComparisonDiff(
+    RepositoryId repositoryId,
+    GitComparisonSnapshot comparison,
+    String path,
+  ) => backend.getComparisonDiff(repositoryId, comparison, path);
 
   @override
   Future<GitStatusSnapshot> stage(RepositoryId repositoryId, String path) =>

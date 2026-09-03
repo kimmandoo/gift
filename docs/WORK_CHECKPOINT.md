@@ -5,29 +5,36 @@ This file is the handoff record for continuing work across query sessions.
 ## Current checkpoint
 
 - Date: 2026-09-03
-- Active task: no implementation task is active; Task 22 is complete and
-  Task 23, the diff and comparison workbench, is next after the backlog audit.
+- Active task: Task 23, the diff and comparison workbench, is active; Task 22
+  is complete and its comparison scenarios are already in the behavior ledger.
 - Branch: `main`; no new branch or worktree was created.
-- Latest commit before this planning session: `a31d3a5
-  feat(objects): add stash tag remote and upstream workflows`.
+- Latest commit before this implementation session: `583f118
+  docs(roadmap): expand JetBrains Git workflow backlog`.
 - History cleanup: removed the pull-request merge commit from local and remote
   `main` with a lease-protected force update; the branding commits and Task 18
   content remain in a linear history. The two remaining obsolete branding
   labels in reachable commit messages were also replaced, and the rewrite
   backup ref was removed.
 - Changed files in this session: `TASKS.md`, `CHANGELOG.md`,
-  `docs/ARCHITECTURE.md`, `docs/POST_MVP_ROADMAP.md`,
-  `docs/research/jetbrains-git-mvp-behavior.md`,
-  `docs/superpowers/plans/2026-09-02-gift-dart-mvp.md`, and
-  `docs/WORK_CHECKPOINT.md`.
-- Verification: the planning audit passed `git diff --check`; the previous
-  Task 22 commit passed `flutter analyze` and the full Flutter suite with 128
+  `docs/POST_MVP_ROADMAP.md`, `docs/ARCHITECTURE.md`,
+  `docs/WORK_CHECKPOINT.md`,
+  `docs/superpowers/plans/2026-09-02-gift-dart-mvp.md`, comparison backend
+  contracts/services, the Changes entry point, and comparison backend/UI
   tests.
-- Next action: activate Task 23 by adding its first failing diff contract test
-  for revision/branch/folder comparison and record the RED result before
-  changing implementation. Keep Tasks 24–35 planned until their dependencies
-  are implemented.
-- First failing signal for the next task: none yet; Task 23 has not started.
+- Verification: the first Task 23 RED command
+  `/tmp/codex-flutter/flutter/bin/flutter --suppress-analytics test --no-pub
+  test/backend/comparison_test.dart` failed as expected because
+  `lib/src/backend/comparison.dart`, `compareRevisions`, and
+  `getComparisonDiff` did not exist.
+- Verification after implementation: focused comparison backend/UI tests,
+  `flutter analyze`, `git diff --check`, and the full Flutter suite all passed
+  (`131` tests). The initial RED was preserved in the plan above.
+- Next action: continue Task 23 with bounded clipboard/external-text and
+  three-way source contracts, then add reviewed apply/revert transfers. Keep
+  Task 24 planned until Task 23's remaining fixtures pass.
+- First failing signal for this task: the comparison test could not import
+  `package:gift/src/backend/comparison.dart` and reported both missing backend
+  methods.
 - Blockers: none.
 
 ## Previous checkpoint

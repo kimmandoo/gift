@@ -15,6 +15,7 @@ import 'package:gift/src/features/repository/history_screen.dart';
 import 'package:gift/src/features/repository/history_controller.dart';
 import 'package:gift/src/features/repository/remote_dialog.dart';
 import 'package:gift/src/features/repository/object_dialog.dart';
+import 'package:gift/src/features/repository/comparison_dialog.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter/services.dart';
@@ -171,6 +172,9 @@ class _ChangesScreenBodyState extends ConsumerState<_ChangesScreenBody> {
                   case _ChangesMenuAction.objects:
                     unawaited(_openObjects(context));
                     break;
+                  case _ChangesMenuAction.comparison:
+                    unawaited(_openComparison(context));
+                    break;
                   case _ChangesMenuAction.refresh:
                     unawaited(controller.refresh());
                     break;
@@ -192,6 +196,10 @@ class _ChangesScreenBodyState extends ConsumerState<_ChangesScreenBody> {
                 const PopupMenuItem(
                   value: _ChangesMenuAction.objects,
                   child: Text('Git objects'),
+                ),
+                const PopupMenuItem(
+                  value: _ChangesMenuAction.comparison,
+                  child: Text('Compare revisions'),
                 ),
                 PopupMenuItem(
                   value: _ChangesMenuAction.refresh,
@@ -224,6 +232,12 @@ class _ChangesScreenBodyState extends ConsumerState<_ChangesScreenBody> {
               tooltip: 'Open Git objects',
               onPressed: () => unawaited(_openObjects(context)),
               icon: const Icon(Icons.inventory_2_outlined),
+            ),
+            IconButton(
+              key: const Key('open-comparison'),
+              tooltip: 'Compare revisions',
+              onPressed: () => unawaited(_openComparison(context)),
+              icon: const Icon(Icons.compare_arrows),
             ),
             IconButton(
               tooltip: 'Refresh changes',
@@ -1282,6 +1296,16 @@ class _ChangesScreenBodyState extends ConsumerState<_ChangesScreenBody> {
     await _activeController.refresh();
   }
 
+  Future<void> _openComparison(BuildContext context) async {
+    await showDialog<void>(
+      context: context,
+      builder: (_) => ComparisonDialog(
+        gateway: widget.gateway,
+        repository: widget.repository,
+      ),
+    );
+  }
+
   Widget _scopeSelector(
     BuildContext context,
     GitChange selected,
@@ -1566,4 +1590,11 @@ String _cleanupLabel(GitCommitCleanupMode mode) => switch (mode) {
   GitCommitCleanupMode.scissors => 'Scissors marker',
 };
 
-enum _ChangesMenuAction { remotes, branches, history, objects, refresh }
+enum _ChangesMenuAction {
+  remotes,
+  branches,
+  history,
+  objects,
+  comparison,
+  refresh,
+}
