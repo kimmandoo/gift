@@ -7,8 +7,8 @@ This file is the handoff record for continuing work across query sessions.
 - Date: 2026-09-03
 - Active task: Post-Task-35 UI/UX audit is complete; Task 36 is next.
 - Branch: `main`; no new branch or worktree was created.
-- Latest completed implementation commit: `67683e5` (`fix(ui): expose actions
-  and protect expandable text`).
+- Latest completed implementation commit: `0118905` (`feat(windows): add
+  portable single-file launcher`).
 - Completed Task 28 after recording REMOTE-BRANCH-01/02 and UPDATE-01/02,
   adding the first RED fixture, and proving the real-Git implementation GREEN.
 - Added immutable remote ref snapshots with grouped remotes, local tracking,
@@ -303,6 +303,25 @@ This file is the handoff record for continuing work across query sessions.
   plus the updated Changes and History toolbar widgets and UI records.
 - Additional verification: focused Changes, History, and Reset widget tests
   passed after the follow-up edits.
+- Implemented the portable Windows packaging follow-up: the Windows PowerShell
+  and batch wrappers now build the normal Release directory and create
+  `build/windows/x64/runner/gift-portable.exe`. The wrapper embeds the Release
+  bundle as a ZIP in IExpress, extracts to a unique temporary directory,
+  waits for `gift.exe`, and cleans up. Windows CI publishes both the Release
+  directory and the portable EXE. Git remains a system dependency.
+- Clarified Push review UX in `push_dialog.dart`: the dialog explains that
+  review does not write remotely, the preview has ready/blocked states and
+  explicit destination/commit/remote-tip labels, and actions are named
+  `Review changes` and `Push to <remote>`.
+- Increased shared floating-label line height and input vertical padding in
+  `pixel_theme.dart`; added a narrow 360x640, 1.2x text-scale Push regression
+  assertion for dropdown label bounds.
+- Additional verification: the portable builder produced a 13,795,328-byte
+  PE32+ GUI executable; launching it created the temporary extraction directory
+  and exited cleanly when the supervised smoke process stopped. The Windows
+  build wrapper completed `flutter build windows --release` and created the
+  portable EXE. `flutter analyze`, formatting, `git diff --check`, the focused
+  Push test, and the 69-test feature suite passed.
 - Next action: activate Task 36 after recording scale/resilience scenarios and
   adding its first failing performance or supervision fixture.
 
