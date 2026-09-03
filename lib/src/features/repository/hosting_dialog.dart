@@ -81,10 +81,9 @@ class _HostingDialogState extends State<HostingDialog> {
   Widget build(BuildContext context) {
     final size = MediaQuery.sizeOf(context);
     final compact = size.width < 560;
-    final horizontalInset = compact ? 24.0 : 64.0;
-    final dialogWidth = (size.width - horizontalInset).clamp(240.0, 760.0);
+    final dialogWidth = (size.width - (compact ? 24 : 64)).clamp(240.0, 760.0);
     final dialogHeight = (size.height - (compact ? 120 : 40)).clamp(
-      300.0,
+      240.0,
       700.0,
     );
     return Dialog(
@@ -128,7 +127,7 @@ class _HostingDialogState extends State<HostingDialog> {
                   ],
                 ),
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: 12),
               Row(
                 mainAxisAlignment: MainAxisAlignment.end,
                 children: [
@@ -137,6 +136,7 @@ class _HostingDialogState extends State<HostingDialog> {
                     onPressed: _isBusy ? null : _load,
                     child: const Text('Refresh'),
                   ),
+                  const SizedBox(width: 8),
                   TextButton(
                     key: const Key('close-hosting-dialog'),
                     onPressed: _isBusy

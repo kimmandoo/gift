@@ -143,19 +143,42 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
                     'Choose a working folder to start reviewing changes.',
                   ),
                   const SizedBox(height: 24),
-                  FilledButton(
-                    onPressed: state.canOpen && !state.isLoading
-                        ? _selectAndOpen
-                        : null,
-                    child: const Text('Open Repository'),
-                  ),
-                  const SizedBox(height: 8),
-                  OutlinedButton(
-                    key: const Key('setup-repository'),
-                    onPressed: state.gitInstallation == null || state.isLoading
-                        ? null
-                        : _showRepositorySetup,
-                    child: const Text('Clone or initialize'),
+                  LayoutBuilder(
+                    builder: (context, constraints) {
+                      final openButton = FilledButton.icon(
+                        onPressed: state.canOpen && !state.isLoading
+                            ? _selectAndOpen
+                            : null,
+                        icon: const Icon(Icons.folder_open, size: 18),
+                        label: const Text('Open Repository'),
+                      );
+                      final setupButton = OutlinedButton.icon(
+                        key: const Key('setup-repository'),
+                        onPressed:
+                            state.gitInstallation == null || state.isLoading
+                            ? null
+                            : _showRepositorySetup,
+                        icon: const Icon(Icons.add_box_outlined, size: 18),
+                        label: const Text('Clone or initialize'),
+                      );
+                      if (constraints.maxWidth < 520) {
+                        return Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            openButton,
+                            const SizedBox(height: 8),
+                            setupButton,
+                          ],
+                        );
+                      }
+                      return Row(
+                        children: [
+                          Expanded(child: openButton),
+                          const SizedBox(width: 12),
+                          Expanded(child: setupButton),
+                        ],
+                      );
+                    },
                   ),
                   if (state.isLoading) ...[
                     const SizedBox(height: 12),
@@ -191,21 +214,36 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
         child: Text('No recently opened repositories.'),
       );
     }
-    return ListView.builder(
+    return ListView.separated(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
       itemCount: repositories.length,
+      separatorBuilder: (_, _) => const SizedBox(height: 8),
       itemBuilder: (context, index) {
         final repository = repositories[index];
-        return ListTile(
-          contentPadding: EdgeInsets.zero,
-          title: Text(repository.path),
-          subtitle: Text(repository.exists ? 'Available' : 'Missing'),
-          onTap: repository.exists ? () => _openPath(repository.path) : null,
-          trailing: IconButton(
-            tooltip: 'Remove',
-            onPressed: () => _repositoryController.removeRecent(repository),
-            icon: const Icon(Icons.close),
+        final available = repository.exists;
+        final colors = Theme.of(context).colorScheme;
+        return Card(
+          key: ValueKey('recent-repository:${repository.path}'),
+          child: ListTile(
+            leading: Icon(
+              available
+                  ? Icons.account_tree_outlined
+                  : Icons.folder_off_outlined,
+              color: available ? colors.primary : colors.error,
+            ),
+            title: Text(
+              repository.path,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+            ),
+            subtitle: Text(available ? 'Available · click to open' : 'Missing'),
+            onTap: available ? () => _openPath(repository.path) : null,
+            trailing: IconButton(
+              tooltip: 'Remove',
+              onPressed: () => _repositoryController.removeRecent(repository),
+              icon: const Icon(Icons.close),
+            ),
           ),
         );
       },

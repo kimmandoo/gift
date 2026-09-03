@@ -1,6 +1,13 @@
 # Changelog
 
 ## 2026-09-03
+- fix(ui): grouped repository actions into a categorized menu and reduced
+  crowded Changes and History toolbars.
+- fix(ui): improved the welcome action hierarchy and gave recent repositories
+  clearer card, status, and open affordances.
+- fix(ui): standardized dialog action spacing and hardened compact hosting and
+  repository-setup layouts against cramped windows.
+
 
 - feat(task31): added source-aware ignore status, scoped ignore rules, and
   bounded repository metadata inspection.

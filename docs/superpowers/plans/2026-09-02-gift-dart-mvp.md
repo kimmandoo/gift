@@ -611,3 +611,20 @@ system Git 2.35+.
    actions, plus Changes and History entry points. Verification passed
    formatting, analysis, and the full Flutter suite with 206 tests. Task 35
    is complete; Task 36 is next.
+
+## Completed follow-up: post-Task-35 UI/UX audit
+
+1. Replaced the crowded Changes toolbar with one categorized repository
+   actions menu, keeping sync/navigation, review/history, and repository tools
+   discoverable without a row of competing icons.
+2. Applied the same compact action-menu treatment to History and retained
+   visible refresh controls and keyboard shortcuts for high-frequency work.
+3. Improved the Welcome screen's primary action hierarchy and recent-repository
+   cards so available, missing, and removable entries are easy to scan.
+4. Added shared dialog and popup-menu surface spacing, stronger action padding,
+   and safer compact sizing for hosting and repository setup flows.
+5. Passed formatting, analysis, and the complete feature widget suite with
+   69 tests. The repository-wide verification command completed formatting and
+   analysis but retained 15 known Windows-only backend fixture failures
+   (newline/path normalization, rebase process cleanup, and Windows file
+   locking); no UI test failed.

@@ -252,6 +252,8 @@ ThemeData buildPixelTheme({Brightness brightness = Brightness.dark}) {
       elevation: 0,
       surfaceTintColor: Colors.transparent,
       shape: square,
+      insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
+      actionsPadding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
       titleTextStyle: TextStyle(
         color: ink,
         fontFamily: pixelDisplayFontFamily,
@@ -259,6 +261,16 @@ ThemeData buildPixelTheme({Brightness brightness = Brightness.dark}) {
         height: 1.15,
       ),
       contentTextStyle: resolvedTextTheme.bodyMedium,
+    ),
+    popupMenuTheme: PopupMenuThemeData(
+      color: panel,
+      surfaceTintColor: Colors.transparent,
+      shape: square,
+      textStyle: resolvedTextTheme.bodyMedium?.copyWith(color: ink),
+      labelTextStyle: WidgetStatePropertyAll(
+        resolvedTextTheme.bodyMedium?.copyWith(color: ink),
+      ),
+      menuPadding: const EdgeInsets.symmetric(vertical: 8),
     ),
     snackBarTheme: SnackBarThemeData(
       backgroundColor: raised,

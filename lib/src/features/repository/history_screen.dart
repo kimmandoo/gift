@@ -106,33 +106,68 @@ class _HistoryScreenState extends State<HistoryScreen> {
           ],
         ),
         actions: [
+          PopupMenuButton<_HistoryMenuAction>(
+            key: const Key('history-actions-menu'),
+            tooltip: 'History actions',
+            icon: const Icon(Icons.menu_open),
+            onSelected: (action) {
+              switch (action) {
+                case _HistoryMenuAction.rollback:
+                  unawaited(_openHistoryRollback(context));
+                  break;
+                case _HistoryMenuAction.rebase:
+                  unawaited(_openInteractiveRebase(context));
+                  break;
+                case _HistoryMenuAction.hosting:
+                  unawaited(_openHosting(context, state));
+                  break;
+              }
+            },
+            itemBuilder: (context) => [
+              const PopupMenuItem(
+                value: _HistoryMenuAction.rollback,
+                child: Row(
+                  children: [
+                    Icon(Icons.history_toggle_off, size: 18),
+                    SizedBox(width: 12),
+                    Text('Undo, reset, or revert'),
+                  ],
+                ),
+              ),
+              const PopupMenuItem(
+                value: _HistoryMenuAction.rebase,
+                child: Row(
+                  children: [
+                    Icon(Icons.reorder, size: 18),
+                    SizedBox(width: 12),
+                    Text('Interactive rebase'),
+                  ],
+                ),
+              ),
+              PopupMenuItem(
+                value: _HistoryMenuAction.hosting,
+                enabled: state.selectedCommit != null,
+                child: const Row(
+                  children: [
+                    Icon(Icons.link_outlined, size: 18),
+                    SizedBox(width: 12),
+                    Text('Open hosting links'),
+                  ],
+                ),
+              ),
+            ],
+          ),
           const PixelThemeToggle(),
-          IconButton(
-            key: const Key('history-rollback'),
-            tooltip: 'Undo, reset, or revert history',
-            onPressed: () => unawaited(_openHistoryRollback(context)),
-            icon: const Icon(Icons.history_toggle_off),
-          ),
-          IconButton(
-            key: const Key('history-interactive-rebase'),
-            tooltip: 'Interactive rebase',
-            onPressed: state.isLoading
-                ? null
-                : () => unawaited(_openInteractiveRebase(context)),
-            icon: const Icon(Icons.reorder),
-          ),
-          IconButton(
-            key: const Key('history-hosting'),
-            tooltip: 'Open hosting links',
-            onPressed: state.selectedCommit == null
-                ? null
-                : () => unawaited(_openHosting(context, state)),
-            icon: const Icon(Icons.link_outlined),
-          ),
           IconButton(
             tooltip: 'Refresh history',
             onPressed: state.isLoading ? null : _controller.refresh,
-            icon: const Icon(Icons.refresh),
+            icon: state.isLoading
+                ? const SizedBox(
+                    width: 18,
+                    height: 18,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : const Icon(Icons.refresh),
           ),
         ],
       ),
@@ -1076,6 +1111,8 @@ class _HistoryScreenState extends State<HistoryScreen> {
         .showSnackBar(SnackBar(content: Text(result.summary)));
   }
 }
+
+enum _HistoryMenuAction { rollback, rebase, hosting }
 
 class _CommitGraphPainter extends CustomPainter {
   const _CommitGraphPainter({

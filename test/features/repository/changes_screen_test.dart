@@ -614,6 +614,13 @@ void main() {
     expect(find.text('Working tree is clean.'), findsOneWidget);
     expect(find.text('Ctrl+R refresh · Ctrl+H history'), findsNothing);
     expect(find.byKey(const Key('repository-actions-menu')), findsOneWidget);
+    await tester.tap(find.byKey(const Key('repository-actions-menu')));
+    await tester.pumpAndSettle();
+    expect(find.text('SYNC & NAVIGATION'), findsOneWidget);
+    expect(find.text('REVIEW & HISTORY'), findsOneWidget);
+    expect(find.text('REPOSITORY TOOLS'), findsOneWidget);
+    await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+    await tester.pumpAndSettle();
     controller.dispose();
   });
 

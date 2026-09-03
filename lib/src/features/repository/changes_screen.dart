@@ -151,10 +151,6 @@ class _ChangesScreenBodyState extends ConsumerState<_ChangesScreenBody> {
         ref.watch(changesControllerProvider(_providerArgs))!;
     final state = controller.state;
     final snapshot = state.snapshot;
-    // Ten action icons do not fit beside a repository path on tablet-sized
-    // windows. Keep the app bar predictable by switching to the same menu
-    // before those actions start crowding the title.
-    final compactAppBar = MediaQuery.sizeOf(context).width < 1040;
     final scaffold = Scaffold(
       appBar: AppBar(
         leading: widget.onBack == null
@@ -177,255 +173,187 @@ class _ChangesScreenBodyState extends ConsumerState<_ChangesScreenBody> {
           ],
         ),
         actions: [
+          PopupMenuButton<_ChangesMenuAction>(
+            key: const Key('repository-actions-menu'),
+            tooltip: 'Repository actions',
+            icon: const Icon(Icons.menu_open),
+            onSelected: (action) {
+              switch (action) {
+                case _ChangesMenuAction.remotes:
+                  unawaited(_openRemotes(context));
+                  break;
+                case _ChangesMenuAction.push:
+                  unawaited(_openPush(context));
+                  break;
+                case _ChangesMenuAction.updateProject:
+                  unawaited(_openUpdateProject(context));
+                  break;
+                case _ChangesMenuAction.branches:
+                  unawaited(_openBranches(context));
+                  break;
+                case _ChangesMenuAction.history:
+                  unawaited(_openHistory(context));
+                  break;
+                case _ChangesMenuAction.objects:
+                  unawaited(_openObjects(context));
+                  break;
+                case _ChangesMenuAction.comparison:
+                  unawaited(_openComparison(context));
+                  break;
+                case _ChangesMenuAction.threeWayComparison:
+                  unawaited(_openThreeWayComparison(context));
+                  break;
+                case _ChangesMenuAction.shelves:
+                  unawaited(_openShelves(context));
+                  break;
+                case _ChangesMenuAction.fileHistory:
+                  unawaited(_openFileHistory(context));
+                  break;
+                case _ChangesMenuAction.historyRollback:
+                  unawaited(_openHistoryRollback(context));
+                  break;
+                case _ChangesMenuAction.worktrees:
+                  unawaited(_openWorktrees(context));
+                  break;
+                case _ChangesMenuAction.ignoreMetadata:
+                  unawaited(_openIgnoreMetadata(context));
+                  break;
+                case _ChangesMenuAction.submodules:
+                  unawaited(_openSubmodules(context));
+                  break;
+                case _ChangesMenuAction.recovery:
+                  unawaited(_openRecovery(context));
+                  break;
+                case _ChangesMenuAction.setup:
+                  unawaited(_openRepositorySetup(context));
+                  break;
+                case _ChangesMenuAction.hosting:
+                  unawaited(_openHosting(context));
+                  break;
+                case _ChangesMenuAction.refresh:
+                  unawaited(controller.refresh());
+                  break;
+              }
+            },
+            itemBuilder: (context) => [
+              _menuHeading(context, 'SYNC & NAVIGATION'),
+              _menuItem(
+                _ChangesMenuAction.remotes,
+                Icons.cloud_outlined,
+                'Remote operations',
+              ),
+              _menuItem(
+                _ChangesMenuAction.push,
+                Icons.cloud_upload_outlined,
+                'Push',
+              ),
+              _menuItem(
+                _ChangesMenuAction.updateProject,
+                Icons.cloud_download_outlined,
+                'Update project',
+              ),
+              _menuItem(
+                _ChangesMenuAction.branches,
+                Icons.call_split,
+                'Branches',
+              ),
+              _menuItem(_ChangesMenuAction.history, Icons.history, 'History'),
+              const PopupMenuDivider(),
+              _menuHeading(context, 'REVIEW & HISTORY'),
+              _menuItem(
+                _ChangesMenuAction.objects,
+                Icons.inventory_2_outlined,
+                'Git objects',
+              ),
+              _menuItem(
+                _ChangesMenuAction.comparison,
+                Icons.compare_arrows,
+                'Compare revisions',
+              ),
+              _menuItem(
+                _ChangesMenuAction.threeWayComparison,
+                Icons.call_split,
+                'Three-way compare',
+              ),
+              _menuItem(
+                _ChangesMenuAction.shelves,
+                Icons.archive_outlined,
+                'Shelves & changelists',
+              ),
+              _menuItem(
+                _ChangesMenuAction.fileHistory,
+                Icons.history_edu_outlined,
+                'File history & blame',
+              ),
+              _menuItem(
+                _ChangesMenuAction.historyRollback,
+                Icons.history_toggle_off,
+                'Undo, reset, or revert',
+              ),
+              const PopupMenuDivider(),
+              _menuHeading(context, 'REPOSITORY TOOLS'),
+              _menuItem(
+                _ChangesMenuAction.worktrees,
+                Icons.account_tree_outlined,
+                'Worktrees',
+              ),
+              _menuItem(
+                _ChangesMenuAction.ignoreMetadata,
+                Icons.rule_folder_outlined,
+                'Ignore & metadata',
+              ),
+              _menuItem(
+                _ChangesMenuAction.submodules,
+                Icons.account_tree_outlined,
+                'Submodules & nested roots',
+              ),
+              _menuItem(
+                _ChangesMenuAction.recovery,
+                Icons.restore,
+                'Recovery diagnostics',
+              ),
+              _menuItem(
+                _ChangesMenuAction.setup,
+                Icons.settings_system_daydream_outlined,
+                'Setup, roots, or full history',
+              ),
+              _menuItem(
+                _ChangesMenuAction.hosting,
+                Icons.link_outlined,
+                'Hosting links & review',
+              ),
+              const PopupMenuDivider(),
+              PopupMenuItem(
+                value: _ChangesMenuAction.refresh,
+                enabled: !state.isRefreshing,
+                child: Row(
+                  children: [
+                    const Icon(Icons.refresh, size: 18),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        state.isRefreshing ? 'Refreshing…' : 'Refresh changes',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
           const PixelThemeToggle(),
-          if (compactAppBar)
-            PopupMenuButton<_ChangesMenuAction>(
-              key: const Key('repository-actions-menu'),
-              tooltip: 'Repository actions',
-              icon: const Icon(Icons.more_vert),
-              onSelected: (action) {
-                switch (action) {
-                  case _ChangesMenuAction.remotes:
-                    unawaited(_openRemotes(context));
-                    break;
-                  case _ChangesMenuAction.push:
-                    unawaited(_openPush(context));
-                    break;
-                  case _ChangesMenuAction.updateProject:
-                    unawaited(_openUpdateProject(context));
-                    break;
-                  case _ChangesMenuAction.branches:
-                    unawaited(_openBranches(context));
-                    break;
-                  case _ChangesMenuAction.history:
-                    unawaited(_openHistory(context));
-                    break;
-                  case _ChangesMenuAction.objects:
-                    unawaited(_openObjects(context));
-                    break;
-                  case _ChangesMenuAction.comparison:
-                    unawaited(_openComparison(context));
-                    break;
-                  case _ChangesMenuAction.threeWayComparison:
-                    unawaited(_openThreeWayComparison(context));
-                    break;
-                  case _ChangesMenuAction.shelves:
-                    unawaited(_openShelves(context));
-                    break;
-                  case _ChangesMenuAction.fileHistory:
-                    unawaited(_openFileHistory(context));
-                    break;
-                  case _ChangesMenuAction.historyRollback:
-                    unawaited(_openHistoryRollback(context));
-                    break;
-                  case _ChangesMenuAction.worktrees:
-                    unawaited(_openWorktrees(context));
-                    break;
-                  case _ChangesMenuAction.ignoreMetadata:
-                    unawaited(_openIgnoreMetadata(context));
-                    break;
-                  case _ChangesMenuAction.submodules:
-                    unawaited(_openSubmodules(context));
-                    break;
-                  case _ChangesMenuAction.recovery:
-                    unawaited(_openRecovery(context));
-                    break;
-                  case _ChangesMenuAction.setup:
-                    unawaited(_openRepositorySetup(context));
-                    break;
-                  case _ChangesMenuAction.hosting:
-                    unawaited(_openHosting(context));
-                    break;
-                  case _ChangesMenuAction.refresh:
-                    unawaited(controller.refresh());
-                    break;
-                }
-              },
-              itemBuilder: (context) => [
-                const PopupMenuItem(
-                  value: _ChangesMenuAction.remotes,
-                  child: Text('Remote operations'),
-                ),
-                const PopupMenuItem(
-                  value: _ChangesMenuAction.push,
-                  child: Text('Push'),
-                ),
-                const PopupMenuItem(
-                  value: _ChangesMenuAction.updateProject,
-                  child: Text('Update project'),
-                ),
-                const PopupMenuItem(
-                  value: _ChangesMenuAction.branches,
-                  child: Text('Branches'),
-                ),
-                const PopupMenuItem(
-                  value: _ChangesMenuAction.history,
-                  child: Text('History'),
-                ),
-                const PopupMenuItem(
-                  value: _ChangesMenuAction.objects,
-                  child: Text('Git objects'),
-                ),
-                const PopupMenuItem(
-                  value: _ChangesMenuAction.comparison,
-                  child: Text('Compare revisions'),
-                ),
-                const PopupMenuItem(
-                  value: _ChangesMenuAction.threeWayComparison,
-                  child: Text('Three-way compare'),
-                ),
-                const PopupMenuItem(
-                  value: _ChangesMenuAction.shelves,
-                  child: Text('Shelves & changelists'),
-                ),
-                const PopupMenuItem(
-                  value: _ChangesMenuAction.fileHistory,
-                  child: Text('File history & blame'),
-                ),
-                const PopupMenuItem(
-                  value: _ChangesMenuAction.historyRollback,
-                  child: Text('Undo, reset, or revert'),
-                ),
-                const PopupMenuItem(
-                  value: _ChangesMenuAction.worktrees,
-                  child: Text('Worktrees'),
-                ),
-                const PopupMenuItem(
-                  value: _ChangesMenuAction.ignoreMetadata,
-                  child: Text('Ignore & metadata'),
-                ),
-                const PopupMenuItem(
-                  value: _ChangesMenuAction.submodules,
-                  child: Text('Submodules & nested roots'),
-                ),
-                const PopupMenuItem(
-                  value: _ChangesMenuAction.recovery,
-                  child: Text('Recovery diagnostics'),
-                ),
-                const PopupMenuItem(
-                  value: _ChangesMenuAction.setup,
-                  child: Text('Setup, roots, or full history'),
-                ),
-                const PopupMenuItem(
-                  value: _ChangesMenuAction.hosting,
-                  child: Text('Hosting links & review'),
-                ),
-                PopupMenuItem(
-                  value: _ChangesMenuAction.refresh,
-                  enabled: !state.isRefreshing,
-                  child: const Text('Refresh changes'),
-                ),
-              ],
-            )
-          else ...[
-            IconButton(
-              key: const Key('open-remotes'),
-              tooltip: 'Open remote operations',
-              onPressed: () => unawaited(_openRemotes(context)),
-              icon: const Icon(Icons.cloud_outlined),
-            ),
-            IconButton(
-              key: const Key('open-push'),
-              tooltip: 'Push to remote',
-              onPressed: () => unawaited(_openPush(context)),
-              icon: const Icon(Icons.cloud_upload_outlined),
-            ),
-            IconButton(
-              key: const Key('update-project'),
-              tooltip: 'Update project',
-              onPressed: () => unawaited(_openUpdateProject(context)),
-              icon: const Icon(Icons.cloud_download_outlined),
-            ),
-            IconButton(
-              key: const Key('open-branches'),
-              tooltip: 'Open branches',
-              onPressed: () => unawaited(_openBranches(context)),
-              icon: const Icon(Icons.call_split),
-            ),
-            IconButton(
-              key: const Key('open-history'),
-              tooltip: 'Open history',
-              onPressed: () => unawaited(_openHistory(context)),
-              icon: const Icon(Icons.history),
-            ),
-            IconButton(
-              key: const Key('open-objects'),
-              tooltip: 'Open Git objects',
-              onPressed: () => unawaited(_openObjects(context)),
-              icon: const Icon(Icons.inventory_2_outlined),
-            ),
-            IconButton(
-              key: const Key('open-comparison'),
-              tooltip: 'Compare revisions',
-              onPressed: () => unawaited(_openComparison(context)),
-              icon: const Icon(Icons.compare_arrows),
-            ),
-            IconButton(
-              key: const Key('open-three-way-comparison'),
-              tooltip: 'Three-way comparison',
-              onPressed: () => unawaited(_openThreeWayComparison(context)),
-              icon: const Icon(Icons.call_split),
-            ),
-            IconButton(
-              key: const Key('open-shelves'),
-              tooltip: 'Shelves and changelists',
-              onPressed: () => unawaited(_openShelves(context)),
-              icon: const Icon(Icons.archive_outlined),
-            ),
-            IconButton(
-              key: const Key('open-file-history'),
-              tooltip: 'File history and blame',
-              onPressed: () => unawaited(_openFileHistory(context)),
-              icon: const Icon(Icons.history_edu_outlined),
-            ),
-            IconButton(
-              key: const Key('open-history-rollback'),
-              tooltip: 'Undo, reset, or revert history',
-              onPressed: () => unawaited(_openHistoryRollback(context)),
-              icon: const Icon(Icons.history_toggle_off),
-            ),
-            IconButton(
-              key: const Key('open-worktrees'),
-              tooltip: 'Manage worktrees',
-              onPressed: () => unawaited(_openWorktrees(context)),
-              icon: const Icon(Icons.account_tree_outlined),
-            ),
-            IconButton(
-              key: const Key('open-ignore-metadata'),
-              tooltip: 'Inspect ignore and metadata',
-              onPressed: () => unawaited(_openIgnoreMetadata(context)),
-              icon: const Icon(Icons.rule_folder_outlined),
-            ),
-            IconButton(
-              key: const Key('open-submodules'),
-              tooltip: 'Manage submodules and nested roots',
-              onPressed: () => unawaited(_openSubmodules(context)),
-              icon: const Icon(Icons.account_tree_outlined),
-            ),
-            IconButton(
-              key: const Key('open-recovery'),
-              tooltip: 'Open recovery diagnostics',
-              onPressed: () => unawaited(_openRecovery(context)),
-              icon: const Icon(Icons.restore),
-            ),
-            IconButton(
-              key: const Key('open-repository-setup'),
-              tooltip: 'Open repository setup',
-              onPressed: () => unawaited(_openRepositorySetup(context)),
-              icon: const Icon(Icons.settings_system_daydream_outlined),
-            ),
-            IconButton(
-              key: const Key('open-hosting'),
-              tooltip: 'Open hosting links and review handoff',
-              onPressed: () => unawaited(_openHosting(context)),
-              icon: const Icon(Icons.link_outlined),
-            ),
-            IconButton(
-              tooltip: 'Refresh changes',
-              onPressed: state.isRefreshing ? null : controller.refresh,
-              icon: const Icon(Icons.refresh),
-            ),
-          ],
+          IconButton(
+            tooltip: 'Refresh changes',
+            onPressed: state.isRefreshing ? null : controller.refresh,
+            icon: state.isRefreshing
+                ? const SizedBox(
+                    width: 18,
+                    height: 18,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : const Icon(Icons.refresh),
+          ),
         ],
       ),
       body: SafeArea(
@@ -484,6 +412,41 @@ class _ChangesScreenBodyState extends ConsumerState<_ChangesScreenBody> {
           const SingleActivator(LogicalKeyboardKey.escape): widget.onBack!,
       },
       child: Focus(autofocus: true, child: scaffold),
+    );
+  }
+
+  PopupMenuItem<_ChangesMenuAction> _menuHeading(
+    BuildContext context,
+    String label,
+  ) {
+    return PopupMenuItem<_ChangesMenuAction>(
+      enabled: false,
+      height: 28,
+      child: Text(
+        label,
+        style: Theme.of(context).textTheme.labelSmall?.copyWith(
+          color: Theme.of(context).colorScheme.primary,
+          fontWeight: FontWeight.w700,
+          letterSpacing: 0.8,
+        ),
+      ),
+    );
+  }
+
+  PopupMenuItem<_ChangesMenuAction> _menuItem(
+    _ChangesMenuAction action,
+    IconData icon,
+    String label,
+  ) {
+    return PopupMenuItem<_ChangesMenuAction>(
+      value: action,
+      child: Row(
+        children: [
+          Icon(icon, size: 18),
+          const SizedBox(width: 12),
+          Expanded(child: Text(label)),
+        ],
+      ),
     );
   }
 

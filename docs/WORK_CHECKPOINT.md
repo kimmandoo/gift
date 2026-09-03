@@ -5,10 +5,10 @@ This file is the handoff record for continuing work across query sessions.
 ## Current checkpoint
 
 - Date: 2026-09-03
-- Active task: None. Task 35 — Hosting integration is complete; Task 36 is
-  next.
+- Active task: Post-Task-35 UI/UX audit is complete; Task 36 is next.
 - Branch: `main`; no new branch or worktree was created.
-- Latest completed implementation commit before this task: `592dc56`.
+- Latest completed implementation commit: `4d9f65f` (`fix(ui): polish
+  post-task35 navigation and dialogs`).
 - Completed Task 28 after recording REMOTE-BRANCH-01/02 and UPDATE-01/02,
   adding the first RED fixture, and proving the real-Git implementation GREEN.
 - Added immutable remote ref snapshots with grouped remotes, local tracking,
@@ -278,6 +278,21 @@ This file is the handoff record for continuing work across query sessions.
 - Verification: `PATH=/home/mgkim/.local/flutter/bin:$PATH dart run
   tool/verify.dart` passed formatting, analysis, and all 206 Flutter tests;
   `git diff --check` passed.
+- Completed a post-Task-35 UI/UX audit focused on crowded navigation,
+  dialog spacing/readability, and compact-window reachability.
+- Replaced the Changes toolbar's long icon row with a categorized repository
+  actions menu and applied the same compact action-menu treatment to History.
+- Improved Welcome primary actions and recent-repository cards; added shared
+  dialog action spacing and safer compact Hosting/Repository Setup sizing.
+- Changed files: `CHANGELOG.md`, this checkpoint, the implementation plan,
+  `lib/src/app/pixel_theme.dart`, the Changes, History, Hosting dialog,
+  Repository Setup dialog, Welcome screen, and Changes widget test.
+- Verification: `dart format` passed; `flutter analyze` passed; `flutter test
+  test/features` passed with 69 tests; `git diff --check` passed. The
+  repository-wide `dart run tool/verify.dart` completed format and analysis but
+  retained 15 known Windows-only backend fixture failures involving
+  newline/path normalization, rebase cleanup, and file locking. Desktop
+  `flutter run -d windows` built and synced successfully.
 - Next action: activate Task 36 after recording scale/resilience scenarios and
   adding its first failing performance or supervision fixture.
 

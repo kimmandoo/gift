@@ -62,10 +62,12 @@ class _RepositorySetupDialogState extends State<RepositorySetupDialog> {
     return AlertDialog(
       insetPadding: EdgeInsets.symmetric(
         horizontal: compact ? 12 : 32,
-        vertical: 20,
+        vertical: compact ? 12 : 20,
       ),
       title: Row(
         children: [
+          const Icon(Icons.settings_system_daydream_outlined, size: 20),
+          const SizedBox(width: 8),
           const Expanded(child: Text('Repository setup')),
           if (_isBusy)
             const SizedBox(
@@ -76,8 +78,8 @@ class _RepositorySetupDialogState extends State<RepositorySetupDialog> {
         ],
       ),
       content: SizedBox(
-        width: (size.width - (compact ? 24 : 64)).clamp(280.0, 760.0),
-        height: (size.height - 150).clamp(300.0, 580.0),
+        width: (size.width - (compact ? 24 : 64)).clamp(260.0, 760.0),
+        height: (size.height - (compact ? 200 : 150)).clamp(160.0, 580.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
