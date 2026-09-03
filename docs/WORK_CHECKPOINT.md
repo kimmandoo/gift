@@ -5,9 +5,10 @@ This file is the handoff record for continuing work across query sessions.
 ## Current checkpoint
 
 - Date: 2026-09-03
-- Active task: Task 35 — Hosting integration.
+- Active task: None. Task 35 — Hosting integration is complete; Task 36 is
+  next.
 - Branch: `main`; no new branch or worktree was created.
-- Latest completed implementation commit before this task: `fe6fb4c`.
+- Latest completed implementation commit before this task: `592dc56`.
 - Completed Task 28 after recording REMOTE-BRANCH-01/02 and UPDATE-01/02,
   adding the first RED fixture, and proving the real-Git implementation GREEN.
 - Added immutable remote ref snapshots with grouped remotes, local tracking,
@@ -248,9 +249,10 @@ This file is the handoff record for continuing work across query sessions.
   tool/verify.dart` passed formatting, analysis, and all 200 Flutter tests;
   `git diff --check` passed.
 - Task 34 activation recorded SETUP-02/03 in the behavior ledger. The first
-  RED command is `/home/mgkim/.local/flutter/bin/flutter test
-  test/backend/setup_test.dart` and is expected to fail until the typed setup
-  and root-discovery contracts exist.
+  RED command `/home/mgkim/.local/flutter/bin/flutter test
+  test/backend/setup_test.dart` failed before implementation; the real-Git
+  setup fixture then passed after the typed setup and root-discovery contracts
+  were added.
 - Task 34 is complete. It added validated clone/init/unshallow operations,
   bounded nested-root discovery, reviewed publish entry points, and responsive
   Welcome/repository setup controls.
@@ -263,10 +265,21 @@ This file is the handoff record for continuing work across query sessions.
 - Verification: `PATH=/home/mgkim/.local/flutter/bin:$PATH dart run
   tool/verify.dart` passed formatting, analysis, and all 203 Flutter tests;
   `git diff --check` passed.
-- Task 35 activation recorded HOST-02/03 in the behavior ledger. The first
-  RED command is `/home/mgkim/.local/flutter/bin/flutter test
-  test/backend/hosting_test.dart` and is expected to fail until the provider
-  adapters and hosting link contracts exist.
+- Task 35 is complete. It added provider-neutral GitHub/GitLab URL adapters,
+  credential-safe repository metadata, commit/file/blame link generation,
+  copy/browser-open actions, optional review-handoff capability reporting,
+  and responsive Changes/History entry points.
+- Changed Task 35 files: `TASKS.md`, `CHANGELOG.md`,
+  `docs/research/jetbrains-git-mvp-behavior.md`,
+  `docs/superpowers/plans/2026-09-02-gift-dart-mvp.md`, this checkpoint,
+  `lib/src/backend/{hosting,git_gateway,dart_git_backend,dart_git_gateway,repository_service}.dart`,
+  `lib/src/features/repository/{hosting_dialog,changes_screen,history_screen}.dart`,
+  and the related hosting backend/UI test and gateway-stub files.
+- Verification: `PATH=/home/mgkim/.local/flutter/bin:$PATH dart run
+  tool/verify.dart` passed formatting, analysis, and all 206 Flutter tests;
+  `git diff --check` passed.
+- Next action: activate Task 36 after recording scale/resilience scenarios and
+  adding its first failing performance or supervision fixture.
 
 ## Resume procedure
 

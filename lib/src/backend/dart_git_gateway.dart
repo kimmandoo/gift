@@ -23,6 +23,7 @@ import 'ignore.dart';
 import 'submodule.dart';
 import 'recovery.dart';
 import 'setup.dart';
+import 'hosting.dart';
 
 /// Adapts the UI-facing [GitGateway] contract to the Dart backend facade.
 ///
@@ -392,6 +393,35 @@ class DartGitGateway implements GitGateway, DiscardPreviewCancellationGateway {
   @override
   Future<GitRootDiscoverySnapshot> discoverRepositoryRoots(String path) =>
       backend.discoverRepositoryRoots(path);
+
+  @override
+  Future<GitHostingSnapshot> getHostingRepository(
+    RepositoryId repositoryId, {
+    String remote = 'origin',
+  }) => backend.getHostingRepository(repositoryId, remote: remote);
+
+  @override
+  Future<GitHostingLinks> getHostingLinks(
+    RepositoryId repositoryId,
+    String commitOid, {
+    String? remote,
+    String? path,
+    int? lineStart,
+    int? lineEnd,
+  }) => backend.getHostingLinks(
+    repositoryId,
+    commitOid,
+    remote: remote,
+    path: path,
+    lineStart: lineStart,
+    lineEnd: lineEnd,
+  );
+
+  @override
+  Future<GitHostingReviewCapability> getHostingReviewCapability(
+    RepositoryId repositoryId, {
+    String remote = 'origin',
+  }) => backend.getHostingReviewCapability(repositoryId, remote: remote);
 
   @override
   Future<GitStashSnapshot> getStashes(RepositoryId repositoryId) =>

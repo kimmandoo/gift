@@ -7,8 +7,8 @@
 ## Progress
 
 - **Total Tasks:** 38
-- **Completed:** 34 / 38
-- **Current Active Task:** Task 35 — Hosting integration (active).
+- **Completed:** 35 / 38
+- **Current Active Task:** None. Task 36 — Scale & resilience is next.
 
 | # | Scope | Dart backend deliverables | Flutter deliverables | Status |
 |---|---|---|---|:---:|
@@ -46,7 +46,7 @@
 | **32** | Submodules & nested roots | Submodule status, sync, update, and nested repository mapping | Nested-root workspace | ✅ |
 | **33** | Recovery diagnostics | Reflog browsing, recovery refs, and Git operation console | Recovery and command diagnostics | ✅ |
 | **34** | Repository setup | Clone, init, publish, shallow/unshallow, and root mapping | Repository setup flows | ✅ |
-| **35** | Hosting integration | Optional GitHub/GitLab links and review handoff contracts | Hosting links and review entry points | 🔄 |
+| **35** | Hosting integration | Optional GitHub/GitLab links and review handoff contracts | Hosting links and review entry points | ✅ |
 | **36** | Scale & resilience | File watching, cache invalidation, process supervision | Large-repository responsiveness | ⬜ |
 | **37** | Accessibility & preferences | Versioned settings and locale-ready text contracts | Scaling, remapping, themes, and accessibility | ⬜ |
 | **38** | Public release | Signed packages, provenance, update metadata, and release checks | Installers and first-run diagnostics | ⬜ |
@@ -552,15 +552,21 @@ Task 34 is complete. Repository setup now covers local/URL clone, empty-folder
 initialization, shallow recovery, bounded nested-root discovery, and reviewed
 publish entry points. The full Flutter verification suite passed with 203 tests.
 
-### 🔄 Task 35: Hosting integration
+### ✅ Task 35: Hosting integration
 
-- [ ] Record GitHub/GitLab URL, credential redaction, link, and review-handoff
+- [x] Record GitHub/GitLab URL, credential redaction, link, and review-handoff
   scenarios.
-- [ ] Add the first RED real-Git hosting fixture.
-- [ ] Implement provider adapters and optional review-handoff contracts.
-- [ ] Add responsive hosting links and review entry points.
-- [ ] Verify unsupported hosts, SSH/HTTPS remotes, encoded paths, copy/open
+- [x] Add the first RED real-Git hosting fixture.
+- [x] Implement provider adapters and optional review-handoff contracts.
+- [x] Add responsive hosting links and review entry points.
+- [x] Verify unsupported hosts, SSH/HTTPS remotes, encoded paths, copy/open
   actions, and local-flow fallback.
+
+Task 35 is complete. GitHub/GitLab SSH and HTTPS remotes now produce
+credential-safe repository, commit, file, and blame links. Copy/open actions
+and an explicitly optional review-handoff capability are available without
+coupling local Git operations to hosting authentication. The full Flutter
+verification suite passed with 206 tests. Task 36 is next.
 
 ## Post-MVP backlog
 

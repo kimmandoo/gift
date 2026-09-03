@@ -21,6 +21,7 @@ import 'ignore.dart';
 import 'submodule.dart';
 import 'recovery.dart';
 import 'setup.dart';
+import 'hosting.dart';
 
 /// The small API that Flutter features depend on.
 ///
@@ -263,6 +264,25 @@ abstract interface class GitGateway {
   });
 
   Future<GitRootDiscoverySnapshot> discoverRepositoryRoots(String path);
+
+  Future<GitHostingSnapshot> getHostingRepository(
+    RepositoryId repositoryId, {
+    String remote = 'origin',
+  });
+
+  Future<GitHostingLinks> getHostingLinks(
+    RepositoryId repositoryId,
+    String commitOid, {
+    String? remote,
+    String? path,
+    int? lineStart,
+    int? lineEnd,
+  });
+
+  Future<GitHostingReviewCapability> getHostingReviewCapability(
+    RepositoryId repositoryId, {
+    String remote = 'origin',
+  });
 
   Future<GitStashSnapshot> getStashes(RepositoryId repositoryId);
 

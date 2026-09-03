@@ -27,6 +27,7 @@ import 'ignore.dart';
 import 'submodule.dart';
 import 'recovery.dart';
 import 'setup.dart';
+import 'hosting.dart';
 
 /// In-memory registry for repository roots and session-local opaque IDs.
 ///
@@ -5655,6 +5656,78 @@ class RepositoryService {
         stackTrace,
       );
     }
+  }
+
+  /// Resolves only the selected remote's web identity. The configured remote
+  /// may contain credentials, so the raw value never crosses this boundary.
+  Future<GitHostingSnapshot> getHostingRepository(
+    RepositoryId repositoryId, {
+    String remote = 'origin',
+  }) async {
+    _validateRemoteName(remote);
+    final remotes = await getRemotes(repositoryId);
+    final selected = _findRemote(remotes, remote);
+    final remoteUrl = selected?.fetchUrl ?? selected?.pushUrl;
+    if (remoteUrl == null) {
+      return GitHostingSnapshot(
+        repositoryId: repositoryId,
+        remoteName: remote,
+        reason: 'The $remote remote has no URL.',
+      );
+    }
+    final repository = parseGitHostingRemote(remoteUrl);
+    if (repository == null) {
+      return GitHostingSnapshot(
+        repositoryId: repositoryId,
+        remoteName: remote,
+        reason: 'This remote has no supported GitHub or GitLab web adapter.',
+      );
+    }
+    return GitHostingSnapshot(
+      repositoryId: repositoryId,
+      remoteName: remote,
+      repository: repository,
+      sanitizedRemoteUrl: repository.webBase,
+    );
+  }
+
+  Future<GitHostingLinks> getHostingLinks(
+    RepositoryId repositoryId,
+    String commitOid, {
+    String? remote,
+    String? path,
+    int? lineStart,
+    int? lineEnd,
+  }) async {
+    final snapshot = await getHostingRepository(
+      repositoryId,
+      remote: remote ?? 'origin',
+    );
+    final repository = snapshot.repository;
+    if (repository == null) return const GitHostingLinks();
+    return buildGitHostingLinks(
+      repository,
+      commitOid,
+      path: path,
+      lineStart: lineStart,
+      lineEnd: lineEnd,
+    );
+  }
+
+  Future<GitHostingReviewCapability> getHostingReviewCapability(
+    RepositoryId repositoryId, {
+    String remote = 'origin',
+  }) async {
+    final snapshot = await getHostingRepository(repositoryId, remote: remote);
+    final repository = snapshot.repository;
+    if (repository == null) {
+      return GitHostingReviewCapability(
+        provider: null,
+        isSupported: false,
+        reason: snapshot.reason ?? 'Hosting integration is unavailable.',
+      );
+    }
+    return hostingReviewCapability(repository);
   }
 
   Future<GitRemoteOperationResult> fetch(

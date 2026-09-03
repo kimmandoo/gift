@@ -18,6 +18,10 @@
   bounded nested-root discovery flows.
 - feat(setup): added responsive repository setup and reviewed publish controls
   from Welcome and repository actions.
+- feat(task35): added GitHub and GitLab adapter contracts for safe hosted links
+  and optional review handoff.
+- feat(hosting): added responsive commit, file, blame, copy, and browser-open
+  entry points with local-flow fallback for unsupported hosts.
 - feat(task30): added typed worktree listing, isolated creation/opening, and
   preview-bound remove, lock, unlock, and prune actions.
 - feat(workspace): opened linked worktrees as independent repository tabs and

@@ -29,6 +29,7 @@ import 'package:gift/src/features/repository/ignore_dialog.dart';
 import 'package:gift/src/features/repository/submodule_dialog.dart';
 import 'package:gift/src/features/repository/recovery_dialog.dart';
 import 'package:gift/src/features/repository/repository_setup_dialog.dart';
+import 'package:gift/src/features/repository/hosting_dialog.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter/services.dart';
@@ -232,6 +233,9 @@ class _ChangesScreenBodyState extends ConsumerState<_ChangesScreenBody> {
                   case _ChangesMenuAction.setup:
                     unawaited(_openRepositorySetup(context));
                     break;
+                  case _ChangesMenuAction.hosting:
+                    unawaited(_openHosting(context));
+                    break;
                   case _ChangesMenuAction.refresh:
                     unawaited(controller.refresh());
                     break;
@@ -301,6 +305,10 @@ class _ChangesScreenBodyState extends ConsumerState<_ChangesScreenBody> {
                 const PopupMenuItem(
                   value: _ChangesMenuAction.setup,
                   child: Text('Setup, roots, or full history'),
+                ),
+                const PopupMenuItem(
+                  value: _ChangesMenuAction.hosting,
+                  child: Text('Hosting links & review'),
                 ),
                 PopupMenuItem(
                   value: _ChangesMenuAction.refresh,
@@ -405,6 +413,12 @@ class _ChangesScreenBodyState extends ConsumerState<_ChangesScreenBody> {
               tooltip: 'Open repository setup',
               onPressed: () => unawaited(_openRepositorySetup(context)),
               icon: const Icon(Icons.settings_system_daydream_outlined),
+            ),
+            IconButton(
+              key: const Key('open-hosting'),
+              tooltip: 'Open hosting links and review handoff',
+              onPressed: () => unawaited(_openHosting(context)),
+              icon: const Icon(Icons.link_outlined),
             ),
             IconButton(
               tooltip: 'Refresh changes',
@@ -1630,6 +1644,17 @@ class _ChangesScreenBodyState extends ConsumerState<_ChangesScreenBody> {
     await _activeController.refresh();
   }
 
+  Future<void> _openHosting(BuildContext context) async {
+    await showDialog<void>(
+      context: context,
+      builder: (_) => HostingDialog(
+        gateway: widget.gateway,
+        repository: widget.repository,
+        initialPath: _activeController.state.selectedPath ?? '',
+      ),
+    );
+  }
+
   Widget _scopeSelector(
     BuildContext context,
     GitChange selected,
@@ -1943,5 +1968,6 @@ enum _ChangesMenuAction {
   submodules,
   recovery,
   setup,
+  hosting,
   refresh,
 }

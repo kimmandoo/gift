@@ -10,6 +10,7 @@ import 'package:gift/src/backend/reset.dart';
 import 'package:gift/src/features/repository/history_controller.dart';
 import 'package:gift/src/features/repository/interactive_rebase_dialog.dart';
 import 'package:gift/src/features/repository/reset_dialog.dart';
+import 'package:gift/src/features/repository/hosting_dialog.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:gift/src/app/pixel_theme.dart';
@@ -121,6 +122,14 @@ class _HistoryScreenState extends State<HistoryScreen> {
             icon: const Icon(Icons.reorder),
           ),
           IconButton(
+            key: const Key('history-hosting'),
+            tooltip: 'Open hosting links',
+            onPressed: state.selectedCommit == null
+                ? null
+                : () => unawaited(_openHosting(context, state)),
+            icon: const Icon(Icons.link_outlined),
+          ),
+          IconButton(
             tooltip: 'Refresh history',
             onPressed: state.isLoading ? null : _controller.refresh,
             icon: const Icon(Icons.refresh),
@@ -172,6 +181,20 @@ class _HistoryScreenState extends State<HistoryScreen> {
             Navigator.of(context).maybePop(),
       },
       child: Focus(autofocus: true, child: scaffold),
+    );
+  }
+
+  Future<void> _openHosting(BuildContext context, HistoryState state) async {
+    final commit = state.selectedCommit;
+    if (commit == null) return;
+    await showDialog<void>(
+      context: context,
+      builder: (_) => HostingDialog(
+        gateway: widget.gateway,
+        repository: widget.repository,
+        initialCommitOid: commit.oid,
+        initialPath: state.selectedPath ?? '',
+      ),
     );
   }
 

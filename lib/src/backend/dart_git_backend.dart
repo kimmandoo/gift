@@ -23,6 +23,7 @@ import 'ignore.dart';
 import 'submodule.dart';
 import 'recovery.dart';
 import 'setup.dart';
+import 'hosting.dart';
 
 /// Application-facing entry point for backend operations.
 ///
@@ -664,6 +665,53 @@ class DartGitBackend {
       state: _state,
       runner: _runner,
     ).discoverRepositoryRoots(path);
+  }
+
+  Future<GitHostingSnapshot> getHostingRepository(
+    RepositoryId repositoryId, {
+    String remote = 'origin',
+  }) async {
+    final installation = await getGitInstallation();
+    return RepositoryService(
+      gitPath: installation.executablePath,
+      state: _state,
+      runner: _runner,
+    ).getHostingRepository(repositoryId, remote: remote);
+  }
+
+  Future<GitHostingLinks> getHostingLinks(
+    RepositoryId repositoryId,
+    String commitOid, {
+    String? remote,
+    String? path,
+    int? lineStart,
+    int? lineEnd,
+  }) async {
+    final installation = await getGitInstallation();
+    return RepositoryService(
+      gitPath: installation.executablePath,
+      state: _state,
+      runner: _runner,
+    ).getHostingLinks(
+      repositoryId,
+      commitOid,
+      remote: remote,
+      path: path,
+      lineStart: lineStart,
+      lineEnd: lineEnd,
+    );
+  }
+
+  Future<GitHostingReviewCapability> getHostingReviewCapability(
+    RepositoryId repositoryId, {
+    String remote = 'origin',
+  }) async {
+    final installation = await getGitInstallation();
+    return RepositoryService(
+      gitPath: installation.executablePath,
+      state: _state,
+      runner: _runner,
+    ).getHostingReviewCapability(repositoryId, remote: remote);
   }
 
   Future<GitStashSnapshot> getStashes(RepositoryId repositoryId) async {
