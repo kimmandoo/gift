@@ -314,10 +314,12 @@ object-management contract existed.
   identity checks, explicit stale/missing errors, and bounded output.
 - [x] Added a responsive Compare revisions dialog and Changes-screen entry
   points for compact and desktop layouts.
+- [x] Added reviewed Apply and Revert actions that use backend-generated
+  patches, `git apply --check`, serialized mutations, and refreshed status.
 - [x] Covered parser, real-Git revision/folder comparison, ref movement, stale
-  selection rejection, and compact dialog rendering.
+  selection rejection, reviewed transfer, and compact dialog rendering.
 - [ ] Complete clipboard/external-text and three-way sources plus reviewed
-  apply/revert transfer actions.
+  navigation and remaining transfer fixtures.
 
 Task 23 remains active until its remaining source and transfer flows pass
 their backend and widget fixtures.

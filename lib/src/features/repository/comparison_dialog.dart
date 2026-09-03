@@ -87,6 +87,24 @@ class _ComparisonDialogState extends State<ComparisonDialog> {
         ),
       ),
       actions: [
+        if (_diff != null) ...[
+          TextButton.icon(
+            key: const Key('apply-comparison'),
+            onPressed: _busy
+                ? null
+                : () => _transfer(GitComparisonTransferAction.apply),
+            icon: const Icon(Icons.input),
+            label: const Text('Apply'),
+          ),
+          TextButton.icon(
+            key: const Key('revert-comparison'),
+            onPressed: _busy
+                ? null
+                : () => _transfer(GitComparisonTransferAction.revert),
+            icon: const Icon(Icons.undo),
+            label: const Text('Revert'),
+          ),
+        ],
         TextButton(
           key: const Key('close-comparison-dialog'),
           onPressed: _busy ? null : () => Navigator.of(context).pop(),
@@ -144,13 +162,22 @@ class _ComparisonDialogState extends State<ComparisonDialog> {
           return Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              fields[0],
+              Row(
+                children: [
+                  Expanded(child: fields[0]),
+                  const SizedBox(width: 8),
+                  Expanded(child: fields[1]),
+                ],
+              ),
               const SizedBox(height: 8),
-              fields[1],
-              const SizedBox(height: 8),
-              path,
-              const SizedBox(height: 8),
-              Align(alignment: Alignment.centerRight, child: compareButton),
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(child: path),
+                  const SizedBox(width: 8),
+                  compareButton,
+                ],
+              ),
             ],
           );
         }
@@ -195,8 +222,8 @@ class _ComparisonDialogState extends State<ComparisonDialog> {
       return Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          SizedBox(height: 96, child: fileList),
-          const SizedBox(height: 10),
+          SizedBox(height: 64, child: fileList),
+          const SizedBox(height: 6),
           Expanded(child: diffPane),
         ],
       );
@@ -369,6 +396,34 @@ class _ComparisonDialogState extends State<ComparisonDialog> {
       });
     } on GitError catch (error) {
       if (!mounted || currentRequest != _requestNumber) return;
+      setState(() {
+        _busy = false;
+        _error = error;
+      });
+    }
+  }
+
+  Future<void> _transfer(GitComparisonTransferAction action) async {
+    final comparison = _comparison;
+    final path = _selectedPath;
+    if (comparison == null || path == null) return;
+    setState(() {
+      _busy = true;
+      _error = null;
+    });
+    try {
+      final result = await widget.gateway.applyComparison(
+        widget.repository.repositoryId,
+        comparison,
+        path,
+        action: action,
+      );
+      if (!mounted) return;
+      setState(() => _busy = false);
+      ScaffoldMessenger.maybeOf(context)
+          ?.showSnackBar(SnackBar(content: Text(result.summary)));
+    } on GitError catch (error) {
+      if (!mounted) return;
       setState(() {
         _busy = false;
         _error = error;

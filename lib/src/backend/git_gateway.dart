@@ -273,6 +273,13 @@ abstract interface class GitGateway {
     String path,
   );
 
+  Future<GitComparisonTransferResult> applyComparison(
+    RepositoryId repositoryId,
+    GitComparisonSnapshot comparison,
+    String path, {
+    GitComparisonTransferAction action = GitComparisonTransferAction.apply,
+  });
+
   Future<GitStatusSnapshot> stage(RepositoryId repositoryId, String path);
 
   Future<GitStatusSnapshot> unstage(RepositoryId repositoryId, String path);

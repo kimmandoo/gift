@@ -216,6 +216,13 @@ mixin GitPatchGatewayStub {
     String path,
   ) => throw UnimplementedError();
 
+  Future<GitComparisonTransferResult> applyComparison(
+    RepositoryId repositoryId,
+    GitComparisonSnapshot comparison,
+    String path, {
+    GitComparisonTransferAction action = GitComparisonTransferAction.apply,
+  }) => throw UnimplementedError();
+
   Future<GitStatusSnapshot> stage(RepositoryId repositoryId, String path) =>
       throw UnimplementedError();
 

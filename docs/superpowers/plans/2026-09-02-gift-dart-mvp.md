@@ -308,5 +308,10 @@ system Git 2.35+.
    revision/folder diff, selected-file loading, and responsive workbench.
 5. Passed the focused comparison backend/UI tests, formatting, analysis, and
    the full Flutter suite. Task 23 remains active for clipboard/external-text,
-   three-way, and reviewed apply/revert flows; keep Task 24 planned until that
-   work is complete.
+   and three-way flows; keep Task 24 planned until that work is complete.
+6. Added a RED real-Git transfer fixture; it initially failed because the
+   comparison transfer action and backend contract did not exist.
+7. Implemented reviewed Apply and Revert actions from parsed backend diffs,
+   checked the patch before mutation, refreshed status, and passed the focused
+   transfer and compact dialog tests. Continue with clipboard/external-text
+   and three-way sources.

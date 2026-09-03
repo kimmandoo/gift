@@ -219,7 +219,8 @@ every mutation and destructive actions have real Git fixture coverage.
 
 **Depends on:** Tasks 6, 19, and 21.
 
-**Status:** In progress — revision/folder vertical complete.
+**Status:** In progress — revision/folder and reviewed transfer verticals
+complete.
 
 **Goal:** Make the diff surface useful for investigating and transferring
 changes between revisions, branches, folders, and arbitrary text sources.

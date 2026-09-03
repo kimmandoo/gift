@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'domain.dart';
 import 'diff.dart';
 import 'objects.dart';
+import 'status.dart';
 
 enum GitComparisonSourceKind {
   revision,
@@ -100,6 +101,24 @@ class GitComparisonSnapshot {
   final GitComparisonRequest request;
   final List<GitComparisonFile> files;
   final String fingerprint;
+}
+
+enum GitComparisonTransferAction { apply, revert }
+
+class GitComparisonTransferResult {
+  const GitComparisonTransferResult({
+    required this.repositoryId,
+    required this.path,
+    required this.action,
+    required this.status,
+    required this.summary,
+  });
+
+  final RepositoryId repositoryId;
+  final String path;
+  final GitComparisonTransferAction action;
+  final GitStatusSnapshot status;
+  final String summary;
 }
 
 /// Parses `git diff --name-status -z` without using display order as identity.

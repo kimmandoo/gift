@@ -3091,6 +3091,78 @@ class RepositoryService {
     ).copyWith(repositoryId: repositoryId);
   }
 
+  Future<GitComparisonTransferResult> applyComparison(
+    RepositoryId repositoryId,
+    GitComparisonSnapshot comparison,
+    String path, {
+    GitComparisonTransferAction action = GitComparisonTransferAction.apply,
+  }) async {
+    return state.runMutation(repositoryId, () async {
+      final diff = await getComparisonDiff(repositoryId, comparison, path);
+      final patch = buildSelectedPatch(
+        diff,
+        GitPatchSelection(
+          repositoryId: repositoryId,
+          path: path,
+          scope: GitDiffScope.commit,
+          contentHash: diff.contentHash,
+          hunkIndexes: diff.hunks.map((hunk) => hunk.index),
+        ),
+        reverse: action == GitComparisonTransferAction.revert,
+      );
+      final handle = await state.lookup(repositoryId);
+      final reverse = action == GitComparisonTransferAction.revert;
+      final args = ['apply', if (reverse) '--reverse'];
+      try {
+        await _runner.run(
+          GitInvocation(
+            program: gitPath,
+            args: [...args, '--check'],
+            cwd: handle.root,
+            stdin: patch.bytes,
+            kind: GitOperationKind.mutation,
+            outputPolicy: const OutputPolicy.capture(maxBytes: 256 * 1024),
+          ),
+        );
+        await _runner.run(
+          GitInvocation(
+            program: gitPath,
+            args: args,
+            cwd: handle.root,
+            stdin: patch.bytes,
+            kind: GitOperationKind.mutation,
+            outputPolicy: const OutputPolicy.capture(maxBytes: 256 * 1024),
+          ),
+        );
+      } on GitError catch (error, stackTrace) {
+        if (error.category == GitErrorCategory.processFailed) {
+          Error.throwWithStackTrace(
+            error.copyWith(
+              category: GitErrorCategory.patchRejected,
+              userMessage: reverse
+                  ? 'Git could not revert the reviewed changes.'
+                  : 'Git could not apply the reviewed changes.',
+              diagnostic:
+                  'comparison transfer was rejected: ${error.diagnostic}',
+              retryable: false,
+            ),
+            stackTrace,
+          );
+        }
+        rethrow;
+      }
+      return GitComparisonTransferResult(
+        repositoryId: repositoryId,
+        path: path,
+        action: action,
+        status: await getStatus(repositoryId),
+        summary: reverse
+            ? 'Reviewed changes were reverted in the working tree.'
+            : 'Reviewed changes were applied to the working tree.',
+      );
+    });
+  }
+
   Future<GitStatusSnapshot> stage(RepositoryId repositoryId, String path) =>
       _mutatePath(repositoryId, const ['add'], path);
 

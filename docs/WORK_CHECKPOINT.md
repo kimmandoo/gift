@@ -8,27 +8,28 @@ This file is the handoff record for continuing work across query sessions.
 - Active task: Task 23, the diff and comparison workbench, is active; Task 22
   is complete and its comparison scenarios are already in the behavior ledger.
 - Branch: `main`; no new branch or worktree was created.
-- Latest commit before this build-fix session: `66fc7b4
-  feat(task23): add revision comparison workbench`.
+- Latest commit before this implementation session: `0636c61
+  fix(build): clear stale Flutter desktop caches`.
 - History cleanup: removed the pull-request merge commit from local and remote
   `main` with a lease-protected force update; the branding commits and Task 18
   content remain in a linear history. The two remaining obsolete branding
   labels in reachable commit messages were also replaced, and the rewrite
   backup ref was removed.
-- Changed files in this session: `README.md`, `CHANGELOG.md`,
-  `docs/RELEASING.md`, `docs/WORK_CHECKPOINT.md`, and
-  `tool/build_desktop.dart`.
-- Verification: `flutter analyze`, the full Flutter suite (`131` tests), and
-  `git diff --check` all passed. Native Windows compilation was not available
-  in this Linux workspace.
-- Next action: on Windows, run `flutter clean`, `flutter pub get`, and
-  `flutter build windows --release`, or use `tool\build_windows.ps1` which now
-  clears generated caches automatically. Then continue Task 23 with bounded
-  clipboard/external-text, three-way sources, and reviewed apply/revert
-  transfers. Keep Task 24 planned until Task 23's remaining fixtures pass.
+- Changed files in this session: comparison backend contracts/services,
+  reviewed transfer UI, comparison tests, `TASKS.md`, `CHANGELOG.md`,
+  `docs/POST_MVP_ROADMAP.md`, `docs/ARCHITECTURE.md`,
+  `docs/WORK_CHECKPOINT.md`, and the implementation plan.
+- Verification: focused comparison backend/UI tests, `flutter analyze`, the
+  full Flutter suite (`131` tests), and `git diff --check` passed. Native
+  Windows compilation was not available in this Linux workspace.
+- Next action: continue Task 23 with bounded clipboard/external-text and
+  three-way source contracts and fixtures. Keep Task 24 planned until those
+  remaining comparison flows pass.
 - First failing signal for Task 23 remains recorded in the plan. This session's
-  reported Windows signal was a cascade of missing Flutter widget and
-  `ChangeNotifier` types from the incremental build output.
+  second RED was the missing `GitComparisonTransferAction` and
+  `DartGitBackend.applyComparison` contract. The reported Windows signal was a
+  separate cascade of missing Flutter widget and `ChangeNotifier` types from
+  incremental build output.
 - Blockers: none.
 
 ## Previous checkpoint

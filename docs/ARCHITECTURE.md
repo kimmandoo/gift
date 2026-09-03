@@ -563,12 +563,14 @@ ChangesScreen
 3. File patches are loaded only after a selected path is checked against a
    fresh comparison. The backend validates the path scope, rechecks the
    fingerprint, bounds the unified diff, and returns explicit stale or missing
-   states instead of invoking Git for an invalid selection.
+   states instead of invoking Git for an invalid selection. Apply and Revert
+   rebuild a full patch from parsed hunks, run `git apply --check`, then run
+   the serialized mutation and return fresh status.
 4. The workbench uses a stacked compact layout and a split desktop layout. It
    keeps revision fields, changed-file selection, binary/empty states, and
    copyable diff text usable without depending on color or a fixed window
-   width. Clipboard/text sources, three-way transfer actions, and the
-   remaining apply/revert flows stay active for the next Task 23 slice.
+   width. Clipboard/text sources and three-way views remain active for the
+   next Task 23 slice.
 
 ## Remaining Git workflow coverage (Tasks 23–35)
 

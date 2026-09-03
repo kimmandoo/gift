@@ -76,6 +76,49 @@ void main() {
       ),
     );
   });
+
+  test('applies and reverts a reviewed comparison patch', () async {
+    final directory = await Directory.systemTemp.createTemp('gift-transfer-');
+    addTearDown(() => directory.delete(recursive: true));
+    await git(directory.path, ['init', '--quiet']);
+    await git(directory.path, ['config', 'user.name', 'Compare Tester']);
+    await git(directory.path, ['config', 'user.email', 'compare@test']);
+    await File('${directory.path}/notes.txt').writeAsString('before\n');
+    await git(directory.path, ['add', '--', 'notes.txt']);
+    await git(directory.path, ['commit', '--quiet', '-m', 'before']);
+    await File('${directory.path}/notes.txt').writeAsString('after\n');
+    await git(directory.path, ['add', '--', 'notes.txt']);
+    await git(directory.path, ['commit', '--quiet', '-m', 'after']);
+    await git(directory.path, ['checkout', 'HEAD~1', '--', 'notes.txt']);
+
+    final backend = DartGitBackend();
+    final opened = await backend.openRepository(directory.path);
+    final comparison = await backend.compareRevisions(
+      opened.repositoryId,
+      'HEAD~1',
+      'HEAD',
+    );
+
+    final applied = await backend.applyComparison(
+      opened.repositoryId,
+      comparison,
+      'notes.txt',
+    );
+    expect(applied.action, GitComparisonTransferAction.apply);
+    expect(await File('${directory.path}/notes.txt').readAsString(), 'after\n');
+
+    final reverted = await backend.applyComparison(
+      opened.repositoryId,
+      comparison,
+      'notes.txt',
+      action: GitComparisonTransferAction.revert,
+    );
+    expect(reverted.action, GitComparisonTransferAction.revert);
+    expect(
+      await File('${directory.path}/notes.txt').readAsString(),
+      'before\n',
+    );
+  });
 }
 
 Future<void> git(String directory, List<String> args) async {

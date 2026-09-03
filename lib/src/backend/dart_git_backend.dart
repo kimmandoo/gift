@@ -681,6 +681,20 @@ class DartGitBackend {
     ).getComparisonDiff(repositoryId, comparison, path);
   }
 
+  Future<GitComparisonTransferResult> applyComparison(
+    RepositoryId repositoryId,
+    GitComparisonSnapshot comparison,
+    String path, {
+    GitComparisonTransferAction action = GitComparisonTransferAction.apply,
+  }) async {
+    final installation = await getGitInstallation();
+    return RepositoryService(
+      gitPath: installation.executablePath,
+      state: _state,
+      runner: _runner,
+    ).applyComparison(repositoryId, comparison, path, action: action);
+  }
+
   Future<GitStatusSnapshot> stage(
     RepositoryId repositoryId,
     String path,
