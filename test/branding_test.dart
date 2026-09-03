@@ -25,9 +25,14 @@ void main() {
       BorderRadius.circular(4),
     );
     expect(filled.backgroundColor!.resolve(const {}), pixelMint);
+    expect(filled.textStyle!.resolve(const {})!.fontFamily, pixelFontFamily);
     expect(
-      pixelProminentButtonStyle.textStyle!.resolve(const {})!.fontFamily,
-      pixelDisplayFontFamily,
+      filled.minimumSize!.resolve(const {}),
+      outlined.minimumSize!.resolve(const {}),
+    );
+    expect(
+      filled.minimumSize!.resolve(const {}),
+      theme.textButtonTheme.style!.minimumSize!.resolve(const {}),
     );
     expect(outlined.backgroundColor!.resolve(const {}), Colors.transparent);
     expect(outlined.foregroundColor!.resolve(const {}), pixelInk);

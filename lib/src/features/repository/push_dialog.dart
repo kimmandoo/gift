@@ -202,7 +202,6 @@ class _PushDialogState extends State<PushDialog> {
           ),
         if (!_busy && preview?.canExecute == true)
           FilledButton(
-            style: pixelProminentButtonStyle,
             key: const Key('execute-push'),
             onPressed: _executePush,
             child: Text(

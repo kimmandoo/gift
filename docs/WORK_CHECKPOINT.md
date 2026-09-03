@@ -5,11 +5,11 @@ This file is the handoff record for continuing work across query sessions.
 ## Current checkpoint
 
 - Date: 2026-09-04
-- Active task: Push guidance spacing, primary-action typography, and Task 39
-  planning are complete; Task 36 remains next.
+- Active task: Button typography and geometry normalization are complete;
+  Task 36 remains next.
 - Branch: `main`; no new branch or worktree was created.
-- Latest completed implementation commit: `66564e1` (`fix(ui): stabilize
-  controls and silent refresh`).
+- Latest completed implementation commit: `28a103e` (`fix(ui): separate push
+  controls and style primary actions`).
 - Completed Task 28 after recording REMOTE-BRANCH-01/02 and UPDATE-01/02,
   adding the first RED fixture, and proving the real-Git implementation GREEN.
 - Added immutable remote ref snapshots with grouped remotes, local tracking,
@@ -420,6 +420,28 @@ This file is the handoff record for continuing work across query sessions.
 - Verification so far: formatting and `flutter analyze` passed; focused
   branding, app boot, and Push tests passed with 9 tests; the final complete
   feature UI suite passed with 71 tests.
+- `flutter build windows --release` rebuilt `gift.exe`; the resulting desktop
+  process stayed running and reported `Responding=True`.
+- Blockers: none.
+- Next action after this session commit: activate Task 36 after recording its
+  scale/resilience scenarios and first failing fixture.
+
+## Current session: unified button geometry
+
+- Date: 2026-09-04.
+- Changed files: `CHANGELOG.md`,
+  `docs/superpowers/plans/2026-09-02-gift-dart-mvp.md`, this checkpoint,
+  `lib/src/app/pixel_theme.dart`,
+  `lib/src/features/repository/{changes_screen,comparison_dialog,hosting_dialog,push_dialog,repository_setup_dialog,reset_dialog,update_project_dialog,welcome_screen}.dart`,
+  and `test/{app_boot_test.dart,branding_test.dart}`.
+- UI change: removed the selective `Jersey 15` primary-action style and its
+  per-screen overrides. Filled, outlined, and text buttons now share the
+  `Atkinson Hyperlegible Next` UI face, 12-pixel horizontal padding, 18-pixel
+  icon size, and 38-pixel height. Icon-only controls also use a 38-pixel square.
+  Fill, outline, text, and destructive color hierarchy remains intact.
+- Verification: formatting and `flutter analyze` passed; focused theme, app
+  boot, Push, File History, Shelf, and Changes tests passed with 25 tests; the
+  complete responsive feature UI suite passed with 71 tests.
 - `flutter build windows --release` rebuilt `gift.exe`; the resulting desktop
   process stayed running and reported `Responding=True`.
 - Blockers: none.

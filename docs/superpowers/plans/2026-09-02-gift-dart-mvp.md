@@ -698,9 +698,9 @@ system Git 2.35+.
    constrained hosting and conflict surfaces.
 7. Separated Push guidance from the Remote selector and locked the gap with a
    geometry regression assertion.
-8. Applied the display title face only to selected large, workflow-defining
-   primary actions, preserving compact filled controls and the body face for
-   secondary, text, and icon controls.
+8. Reverted the display-face button experiment and standardized every labeled
+   button family on the UI font, 12-pixel horizontal padding, 18-pixel icons,
+   and a 38-pixel control height; icon-only controls use the same height.
 
 ## Completed follow-up: Windows setup packaging
 

@@ -11,8 +11,8 @@
   action groups to wrap without clipping or horizontal overflow.
 - fix(push): separated the preflight notice from the Remote selector so their
   surfaces and labels no longer overlap.
-- fix(ui): gave large workflow-defining primary actions the display title face
-  and a slightly larger silhouette while keeping compact controls restrained.
+- fix(ui): restored the legible UI font and standardized filled, outlined,
+  text, and icon button geometry without changing their action hierarchy.
 - docs(roadmap): added cross-platform visual regression QA as Task 39.
 - feat(windows): added a per-user gift setup executable with Start Menu and
   uninstall registration alongside the release bundle and portable launcher.

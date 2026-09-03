@@ -50,23 +50,6 @@ const pixelTitleLargeSize = 17.0;
 const pixelHeadlineSmallSize = 20.0;
 const pixelHeadlineMediumSize = 22.0;
 
-/// Display-face treatment reserved for large, workflow-defining actions.
-const pixelProminentButtonStyle = ButtonStyle(
-  textStyle: WidgetStatePropertyAll(
-    TextStyle(
-      fontFamily: pixelDisplayFontFamily,
-      fontSize: 19,
-      height: 1.1,
-      fontWeight: FontWeight.w400,
-      letterSpacing: 0.25,
-    ),
-  ),
-  padding: WidgetStatePropertyAll(
-    EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-  ),
-  minimumSize: WidgetStatePropertyAll(Size(40, 42)),
-);
-
 ThemeData buildPixelTheme({Brightness brightness = Brightness.dark}) {
   final dark = brightness == Brightness.dark;
   final canvas = dark ? pixelCanvas : pixelLightCanvas;
@@ -179,10 +162,11 @@ ThemeData buildPixelTheme({Brightness brightness = Brightness.dark}) {
       return Colors.transparent;
     }),
     textStyle: const WidgetStatePropertyAll(buttonTextStyle),
+    iconSize: const WidgetStatePropertyAll(18),
     padding: const WidgetStatePropertyAll(buttonPadding),
     tapTargetSize: MaterialTapTargetSize.shrinkWrap,
     shape: WidgetStatePropertyAll(buttonShape),
-    minimumSize: const WidgetStatePropertyAll(Size(40, 40)),
+    minimumSize: const WidgetStatePropertyAll(Size(40, 38)),
     elevation: const WidgetStatePropertyAll(0),
   );
   final outlinedButtonStyle = ButtonStyle(
@@ -221,10 +205,11 @@ ThemeData buildPixelTheme({Brightness brightness = Brightness.dark}) {
       return border;
     }),
     textStyle: const WidgetStatePropertyAll(buttonTextStyle),
+    iconSize: const WidgetStatePropertyAll(18),
     padding: const WidgetStatePropertyAll(buttonPadding),
     tapTargetSize: MaterialTapTargetSize.shrinkWrap,
     shape: WidgetStatePropertyAll(buttonShape),
-    minimumSize: const WidgetStatePropertyAll(Size(40, 40)),
+    minimumSize: const WidgetStatePropertyAll(Size(40, 38)),
     elevation: const WidgetStatePropertyAll(0),
   );
   final textButtonStyle = ButtonStyle(
@@ -252,12 +237,11 @@ ThemeData buildPixelTheme({Brightness brightness = Brightness.dark}) {
       return Colors.transparent;
     }),
     textStyle: const WidgetStatePropertyAll(buttonTextStyle),
-    padding: const WidgetStatePropertyAll(
-      EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-    ),
+    iconSize: const WidgetStatePropertyAll(18),
+    padding: const WidgetStatePropertyAll(buttonPadding),
     tapTargetSize: MaterialTapTargetSize.shrinkWrap,
     shape: WidgetStatePropertyAll(buttonShape),
-    minimumSize: const WidgetStatePropertyAll(Size(36, 36)),
+    minimumSize: const WidgetStatePropertyAll(Size(40, 38)),
     elevation: const WidgetStatePropertyAll(0),
   );
   final base = ThemeData(
@@ -450,10 +434,10 @@ ThemeData buildPixelTheme({Brightness brightness = Brightness.dark}) {
           }
           return Colors.transparent;
         }),
-        padding: const WidgetStatePropertyAll(EdgeInsets.all(8)),
+        padding: const WidgetStatePropertyAll(EdgeInsets.all(7)),
         tapTargetSize: MaterialTapTargetSize.shrinkWrap,
         shape: WidgetStatePropertyAll(buttonShape),
-        minimumSize: const WidgetStatePropertyAll(Size(36, 36)),
+        minimumSize: const WidgetStatePropertyAll(Size(38, 38)),
       ),
     ),
     listTileTheme: ListTileThemeData(

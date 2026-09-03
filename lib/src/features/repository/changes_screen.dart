@@ -646,7 +646,6 @@ class _ChangesScreenBodyState extends ConsumerState<_ChangesScreenBody> {
                     onChanged: (_) => setState(() {}),
                   );
                   final button = FilledButton.icon(
-                    style: pixelProminentButtonStyle,
                     key: const Key('commit-staged'),
                     onPressed: canSubmit
                         ? () => unawaited(_submitCommit(controller))
@@ -1316,7 +1315,6 @@ class _ChangesScreenBodyState extends ConsumerState<_ChangesScreenBody> {
       children: [
         if (controller.canStagePatch)
           FilledButton.icon(
-            style: pixelProminentButtonStyle,
             key: const Key('stage-selected-patch'),
             onPressed: state.isMutating || state.isDiscardPreparing
                 ? null
@@ -1335,7 +1333,6 @@ class _ChangesScreenBodyState extends ConsumerState<_ChangesScreenBody> {
           ),
         if (controller.canStageSelected && !hasPartialStage)
           FilledButton.icon(
-            style: pixelProminentButtonStyle,
             key: const Key('stage-selected'),
             onPressed: state.isMutating || state.isDiscardPreparing
                 ? null
