@@ -5,12 +5,12 @@ This file is the handoff record for continuing work across query sessions.
 ## Current checkpoint
 
 - Date: 2026-09-03
-- Active task: None. Task 28 and its History diff viewer follow-up are complete;
-  Task 29 is the next pending task.
+- Active task: None. Task 28, its History diff viewer follow-up, and compact UI
+  hardening are complete; Task 29 is the next pending task.
 - Branch: `main`; no new branch or worktree was created.
 - Latest completed implementation commit: this session's
-  `feat(task28): add remote update and history diff UX` commit; use `git log -1`
-  for its exact hash.
+  `fix(ui): harden compact history controls` commit; use `git log -1` for its
+  exact hash.
 - Completed Task 28 after recording REMOTE-BRANCH-01/02 and UPDATE-01/02,
   adding the first RED fixture, and proving the real-Git implementation GREEN.
 - Added immutable remote ref snapshots with grouped remotes, local tracking,
@@ -24,22 +24,21 @@ This file is the handoff record for continuing work across query sessions.
   paint semantic backgrounds to the available viewer width, long code remains
   horizontally scrollable, the detail pane does not widen, and tapping the
   selected file row collapses its inline diff.
+- Completed the compact UI hardening follow-up: bounded the History filter
+  expansion and diff viewport fallback at small window sizes, made File History
+  use one scroll surface, and constrained/ellipsized Advanced revision and
+  rollback preview controls.
 - Changed files in this session: `CHANGELOG.md`, `TASKS.md`,
-  `docs/WORK_CHECKPOINT.md`, `docs/research/jetbrains-git-mvp-behavior.md`,
+  `docs/WORK_CHECKPOINT.md`,
   `docs/superpowers/plans/2026-09-02-gift-dart-mvp.md`,
-  `lib/src/backend/{dart_git_backend,dart_git_gateway,error,git_gateway,
-  remote_branch,repository_service}.dart`,
-  `lib/src/features/repository/{branch_dialog,changes_screen,
-  comparison_dialog,history_controller,history_screen,
-  update_project_dialog}.dart`, `test/backend/remote_branch_test.dart`,
-  `test/features/repository/{branch_dialog,history_screen,
-  update_project_dialog}_test.dart`, and
-  `test/helpers/git_patch_gateway_stub.dart`.
-- Verification: focused remote/update/branch tests passed with `11` tests;
-  History tests passed with `7` tests; `dart format --output=none
-  --set-exit-if-changed lib test`, `flutter analyze`, `flutter test` with `178`
-  tests, and `git diff --check` passed. Native Windows compilation is not
-  available in this Linux workspace.
+  `lib/src/features/repository/{history_screen,file_history_dialog,
+  reset_dialog}.dart`, and
+  `test/features/repository/{history_screen,file_history_dialog,
+  reset_dialog}_test.dart`.
+- Verification: focused History/File History/Advanced revision tests passed
+  with `11` tests; `dart format --output=none --set-exit-if-changed lib test`,
+  `flutter analyze`, `flutter test` with `180` tests, and `git diff --check`
+  passed. Native Windows compilation is not available in this Linux workspace.
 - Next action: Task 29 remains pending; start it only after activating its
   behavior-ledger scenarios and first RED test.
 - Earlier Task 23 and Windows incremental-build diagnostics remain recorded in

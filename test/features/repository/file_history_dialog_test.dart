@@ -57,6 +57,43 @@ void main() {
     expect(find.byKey(const Key('blame-line:1')), findsOneWidget);
     expect(gateway.blameCalls, 1);
   });
+
+  testWidgets(
+    'keeps file history controls usable in a narrow large-text window',
+    (tester) async {
+      final repository = const RepositoryOpened(
+        repositoryId: RepositoryId(value: 'file-history-narrow-repository'),
+        root: '/workspace/project',
+      );
+      final gateway = _FileHistoryGateway(repository.repositoryId);
+      tester.view.physicalSize = const Size(320, 480);
+      tester.view.devicePixelRatio = 1;
+      tester.platformDispatcher.textScaleFactorTestValue = 1.3;
+      addTearDown(tester.view.reset);
+      addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: buildPixelTheme(),
+          home: FileHistoryDialog(
+            gateway: gateway,
+            repository: repository,
+            initialPath: 'notes.txt',
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(tester.takeException(), isNull);
+      await tester.tap(find.byKey(const Key('load-file-history')));
+      await tester.pumpAndSettle();
+      expect(tester.takeException(), isNull);
+      await tester.tap(find.byKey(const Key('file-history-lines-toggle')));
+      await tester.pumpAndSettle();
+      expect(find.byKey(const Key('file-history-line-start')), findsOneWidget);
+      expect(find.byKey(const Key('file-history-line-end')), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    },
+  );
 }
 
 class _FileHistoryGateway with GitPatchGatewayStub implements GitGateway {

@@ -76,6 +76,36 @@ void main() {
       expect(find.byKey(const Key('rollback-result')), findsOneWidget);
     },
   );
+
+  testWidgets('keeps advanced revision controls usable in a narrow window', (
+    tester,
+  ) async {
+    addTearDown(tester.view.reset);
+    tester.view.physicalSize = const Size(320, 640);
+    tester.view.devicePixelRatio = 1;
+    tester.platformDispatcher.textScaleFactorTestValue = 1.25;
+    addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+    final repository = const RepositoryOpened(
+      repositoryId: RepositoryId(value: 'rollback-narrow-ui-repository'),
+      root: '/workspace/project',
+    );
+    final gateway = _RollbackGateway(repository.repositoryId);
+
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: buildPixelTheme(),
+        home: Scaffold(
+          body: ResetDialog(gateway: gateway, repository: repository),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(tester.takeException(), isNull);
+    await tester.tap(find.byKey(const Key('rollback-advanced-target')));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('rollback-target-revision')), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
 }
 
 class _RollbackGateway with GitPatchGatewayStub implements GitGateway {

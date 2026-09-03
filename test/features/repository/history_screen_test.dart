@@ -142,6 +142,11 @@ void main() {
   testWidgets('filters history and lazily displays a selected commit diff', (
     tester,
   ) async {
+    addTearDown(tester.view.reset);
+    tester.view.physicalSize = const Size(320, 480);
+    tester.view.devicePixelRatio = 1;
+    tester.platformDispatcher.textScaleFactorTestValue = 1.3;
+    addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
     final repository = const RepositoryOpened(
       repositoryId: RepositoryId(value: 'inspect-history-repository'),
       root: '/workspace/project',
@@ -238,12 +243,13 @@ void main() {
       tester.getSize(find.byKey(const Key('commit-diff-background:0'))).width,
       tester.getSize(find.byKey(const Key('commit-diff-background:1'))).width,
     );
-    expect(
-      tester.getSize(find.byKey(const Key('commit-diff-background:0'))).width,
-      lessThanOrEqualTo(
-        tester.getSize(find.byKey(const Key('commit-diff-scroll'))).width,
-      ),
-    );
+    final diffBackgroundWidth = tester
+        .getSize(find.byKey(const Key('commit-diff-background:0')))
+        .width;
+    final diffViewportWidth = tester
+        .getSize(find.byKey(const Key('commit-diff-scroll')))
+        .width;
+    expect(diffBackgroundWidth, closeTo(diffViewportWidth - 16, 0.01));
     expect(find.text('+1'), findsOneWidget);
     expect(find.text('-0'), findsOneWidget);
     expect(find.byKey(const Key('copy-commit-diff')), findsOneWidget);
@@ -255,17 +261,22 @@ void main() {
       ),
     );
 
-    await tester.tap(find.byKey(const Key('commit-file:notes.txt')));
+    tester
+        .widget<ListTile>(find.byKey(const Key('commit-file:notes.txt')))
+        .onTap!
+        .call();
     await tester.pumpAndSettle();
     expect(find.byKey(const Key('commit-diff')), findsNothing);
 
     await tester.tap(find.byIcon(Icons.expand_more));
     await tester.pumpAndSettle();
     expect(find.byKey(const Key('history-author-filter')), findsOneWidget);
+    expect(tester.takeException(), isNull);
     await tester.enterText(find.byKey(const Key('history-search')), 'Inspect');
     await tester.tap(find.byKey(const Key('history-apply-filters')));
     await tester.pumpAndSettle();
     expect(controller.state.filters.text, 'Inspect');
+    expect(tester.takeException(), isNull);
     controller.dispose();
   });
 

@@ -39,7 +39,7 @@
 | **25** | File history & blame | File/directory/selection history and blame metadata | History and annotation views | ✅ |
 | **26** | Undo & reset | Revert commit, undo commit, and safe reset modes | Destructive history controls | ✅ |
 | **27** | Interactive rebase | Reorder, reword, edit, squash, fixup, drop, and recovery | Rebase plan and conflict flow | ✅ |
-| **28** | Remote branches & update | Remote branch checkout, compare, update, and tracking | Incoming/update information | 🚧 |
+| **28** | Remote branches & update | Remote branch checkout, compare, update, and tracking | Incoming/update information | ✅ |
 | **29** | Push safety | Push review, force-with-lease, tags, and protected branches | Push review and rejection recovery | ⬜ |
 | **30** | Worktrees | Worktree list, create, open, remove, lock, and prune | Worktree manager | ⬜ |
 | **31** | Ignore & metadata | `.gitignore`, `.git/info/exclude`, ignored files, and attributes | Ignore/metadata actions | ⬜ |

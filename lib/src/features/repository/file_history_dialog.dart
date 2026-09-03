@@ -61,6 +61,7 @@ class _FileHistoryDialogState extends State<FileHistoryDialog> {
     final compact = size.width < 560;
     final width = (size.width - (compact ? 28 : 80)).clamp(0.0, 720.0);
     return AlertDialog(
+      key: const Key('file-history-dialog'),
       insetPadding: EdgeInsets.symmetric(
         horizontal: compact ? 14 : 40,
         vertical: 22,
@@ -70,32 +71,38 @@ class _FileHistoryDialogState extends State<FileHistoryDialog> {
         width: width,
         child: ConstrainedBox(
           constraints: BoxConstraints(maxHeight: size.height * .74),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              _pathControls(context, compact),
-              if (_error case final error?)
-                Padding(
-                  padding: const EdgeInsets.only(top: 8),
-                  child: Text(
-                    error.userMessage,
-                    key: const Key('file-history-error'),
+          child: SingleChildScrollView(
+            key: const Key('file-history-dialog-scroll'),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                _pathControls(context, compact),
+                if (_error case final error?)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 8),
+                    child: Text(
+                      error.userMessage,
+                      key: const Key('file-history-error'),
+                    ),
                   ),
-                ),
-              if (_message case final message?)
-                Padding(
-                  padding: const EdgeInsets.only(top: 8),
-                  child: Text(message, key: const Key('file-history-message')),
-                ),
-              if (_loading)
-                const Padding(
-                  padding: EdgeInsets.only(top: 12),
-                  child: LinearProgressIndicator(),
-                )
-              else
-                Expanded(child: _content(context)),
-            ],
+                if (_message case final message?)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 8),
+                    child: Text(
+                      message,
+                      key: const Key('file-history-message'),
+                    ),
+                  ),
+                if (_loading)
+                  const Padding(
+                    padding: EdgeInsets.only(top: 12),
+                    child: LinearProgressIndicator(),
+                  )
+                else
+                  _content(context),
+              ],
+            ),
           ),
         ),
       ),
@@ -271,6 +278,8 @@ class _FileHistoryDialogState extends State<FileHistoryDialog> {
     }
     return ListView.builder(
       key: const Key('file-history-list'),
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
       itemCount: history.entries.length,
       itemBuilder: (context, index) =>
           _historyTile(context, history.entries[index]),
@@ -303,6 +312,8 @@ class _FileHistoryDialogState extends State<FileHistoryDialog> {
     }
     return ListView.builder(
       key: const Key('blame-list'),
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
       itemCount: blame.lines.length,
       itemBuilder: (context, index) {
         final line = blame.lines[index];

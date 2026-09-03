@@ -176,6 +176,60 @@ class _HistoryScreenState extends State<HistoryScreen> {
   }
 
   Widget _filtersPanel(BuildContext context) {
+    final filterFields = Padding(
+      padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final fieldWidth = constraints.maxWidth < 520
+              ? constraints.maxWidth
+              : (constraints.maxWidth - 12) / 2;
+          return Wrap(
+            spacing: 12,
+            runSpacing: 8,
+            children: [
+              _filterField(
+                _authorController,
+                'Author',
+                'history-author-filter',
+                fieldWidth,
+              ),
+              _filterField(
+                _refController,
+                'Branch or ref',
+                'history-ref-filter',
+                fieldWidth,
+              ),
+              _filterField(
+                _pathController,
+                'Changed path',
+                'history-path-filter',
+                fieldWidth,
+              ),
+              _filterField(
+                _afterController,
+                'Authored after (ISO date)',
+                'history-after-filter',
+                fieldWidth,
+              ),
+              _filterField(
+                _beforeController,
+                'Authored before (ISO date)',
+                'history-before-filter',
+                fieldWidth,
+              ),
+              TextButton(
+                key: const Key('history-clear-filters'),
+                onPressed: _clearFilters,
+                child: const Text('Clear filters'),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+    final compactFilterHeight = (MediaQuery.sizeOf(context).height * 0.35)
+        .clamp(120.0, 180.0);
+
     return ExpansionTile(
       key: const Key('history-filters-toggle'),
       initiallyExpanded: false,
@@ -219,57 +273,13 @@ class _HistoryScreenState extends State<HistoryScreen> {
         },
       ),
       children: [
-        Padding(
-          padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
-          child: LayoutBuilder(
-            builder: (context, constraints) {
-              final fieldWidth = constraints.maxWidth < 520
-                  ? constraints.maxWidth
-                  : (constraints.maxWidth - 12) / 2;
-              return Wrap(
-                spacing: 12,
-                runSpacing: 8,
-                children: [
-                  _filterField(
-                    _authorController,
-                    'Author',
-                    'history-author-filter',
-                    fieldWidth,
-                  ),
-                  _filterField(
-                    _refController,
-                    'Branch or ref',
-                    'history-ref-filter',
-                    fieldWidth,
-                  ),
-                  _filterField(
-                    _pathController,
-                    'Changed path',
-                    'history-path-filter',
-                    fieldWidth,
-                  ),
-                  _filterField(
-                    _afterController,
-                    'Authored after (ISO date)',
-                    'history-after-filter',
-                    fieldWidth,
-                  ),
-                  _filterField(
-                    _beforeController,
-                    'Authored before (ISO date)',
-                    'history-before-filter',
-                    fieldWidth,
-                  ),
-                  TextButton(
-                    key: const Key('history-clear-filters'),
-                    onPressed: _clearFilters,
-                    child: const Text('Clear filters'),
-                  ),
-                ],
-              );
-            },
-          ),
-        ),
+        if (MediaQuery.sizeOf(context).height < 560)
+          SizedBox(
+            height: compactFilterHeight,
+            child: SingleChildScrollView(child: filterFields),
+          )
+        else
+          filterFields,
       ],
     );
   }
@@ -628,8 +638,14 @@ class _HistoryScreenState extends State<HistoryScreen> {
         dense: true,
         contentPadding: const EdgeInsets.symmetric(horizontal: 10),
         leading: Text(file.statusLabel),
-        title: Text(file.path),
-        subtitle: file.oldPath == null ? null : Text('from ${file.oldPath}'),
+        title: Text(file.path, maxLines: 1, overflow: TextOverflow.ellipsis),
+        subtitle: file.oldPath == null
+            ? null
+            : Text(
+                'from ${file.oldPath}',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
         trailing: Icon(
           selected ? Icons.keyboard_arrow_up : Icons.keyboard_arrow_down,
           size: 20,
@@ -763,7 +779,10 @@ class _HistoryScreenState extends State<HistoryScreen> {
               builder: (context, constraints) {
                 final backgroundWidth = constraints.hasBoundedWidth
                     ? (constraints.maxWidth - 16).clamp(0.0, double.infinity)
-                    : 680.0;
+                    : (MediaQuery.sizeOf(context).width - 16).clamp(
+                        0.0,
+                        double.infinity,
+                      );
                 return SelectionArea(
                   child: Scrollbar(
                     notificationPredicate: (notification) =>

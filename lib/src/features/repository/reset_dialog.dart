@@ -56,8 +56,13 @@ class _ResetDialogState extends State<ResetDialog> {
 
   @override
   Widget build(BuildContext context) {
-    final compact = MediaQuery.sizeOf(context).width < 600;
+    final size = MediaQuery.sizeOf(context);
+    final compact = size.width < 600;
     return AlertDialog(
+      insetPadding: EdgeInsets.symmetric(
+        horizontal: compact ? 14 : 40,
+        vertical: 22,
+      ),
       title: const Row(
         children: [
           Icon(Icons.history_toggle_off),
@@ -66,7 +71,7 @@ class _ResetDialogState extends State<ResetDialog> {
         ],
       ),
       content: SizedBox(
-        width: compact ? double.maxFinite : 680,
+        width: compact ? (size.width - 28).clamp(0.0, 680.0) : 680,
         child: SingleChildScrollView(
           key: const Key('rollback-dialog-scroll'),
           child: Column(
@@ -80,19 +85,32 @@ class _ResetDialogState extends State<ResetDialog> {
               DropdownButtonFormField<GitHistoryRollbackAction>(
                 key: const Key('rollback-action'),
                 initialValue: _action,
+                isExpanded: true,
                 decoration: const InputDecoration(labelText: 'Action'),
                 items: const [
                   DropdownMenuItem(
                     value: GitHistoryRollbackAction.reset,
-                    child: Text('Reset branch to a revision'),
+                    child: Text(
+                      'Reset branch to a revision',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
                   ),
                   DropdownMenuItem(
                     value: GitHistoryRollbackAction.undo,
-                    child: Text('Undo latest unpushed commit'),
+                    child: Text(
+                      'Undo latest unpushed commit',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
                   ),
                   DropdownMenuItem(
                     value: GitHistoryRollbackAction.revert,
-                    child: Text('Revert commit(s) with new commit(s)'),
+                    child: Text(
+                      'Revert commit(s) with new commit(s)',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
                   ),
                 ],
                 onChanged: _isBusy
@@ -119,6 +137,7 @@ class _ResetDialogState extends State<ResetDialog> {
                   DropdownButtonFormField<String>(
                     key: const Key('rollback-target-commit'),
                     initialValue: _selectedTarget,
+                    isExpanded: true,
                     decoration: const InputDecoration(
                       labelText: 'Target commit',
                       helperText:
@@ -161,9 +180,15 @@ class _ResetDialogState extends State<ResetDialog> {
                   initiallyExpanded: _advancedTargetExpanded,
                   tilePadding: EdgeInsets.zero,
                   childrenPadding: EdgeInsets.zero,
-                  title: const Text('Advanced revision'),
+                  title: const Text(
+                    'Advanced revision',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
                   subtitle: const Text(
                     'Use HEAD^, HEAD~1, a branch, or a full commit ID',
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
                   ),
                   onExpansionChanged: (expanded) {
                     setState(() => _advancedTargetExpanded = expanded);
@@ -190,6 +215,7 @@ class _ResetDialogState extends State<ResetDialog> {
                 DropdownButtonFormField<GitResetMode>(
                   key: const Key('rollback-reset-mode'),
                   initialValue: _mode,
+                  isExpanded: true,
                   decoration: const InputDecoration(labelText: 'Reset mode'),
                   items: GitResetMode.values
                       .map(
@@ -197,6 +223,8 @@ class _ResetDialogState extends State<ResetDialog> {
                           value: mode,
                           child: Text(
                             '${mode.label} — ${_modeDescription(mode)}',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
                           ),
                         ),
                       )
@@ -432,9 +460,14 @@ class _ResetDialogState extends State<ResetDialog> {
                     style: Theme.of(context).textTheme.titleSmall,
                   ),
                 ),
-                Text(
-                  preview.currentBranch ?? 'detached',
-                  style: Theme.of(context).textTheme.labelSmall,
+                Flexible(
+                  child: Text(
+                    preview.currentBranch ?? 'detached',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    textAlign: TextAlign.end,
+                    style: Theme.of(context).textTheme.labelSmall,
+                  ),
                 ),
               ],
             ),

@@ -2,6 +2,10 @@
 
 ## 2026-09-03
 
+- fix(ui): prevented compact History filters and details from overflowing, and
+  kept diff backgrounds tied to the available viewport width.
+- fix(ui): made File History and Advanced revision controls scrollable and
+  ellipsis-safe in narrow windows.
 - fix(history): made selected commit diff backgrounds fill the viewer width and
   added inline file-diff collapse toggles.
 - feat(task28): added remote-branch browsing, tracking checkout, safe deletion,

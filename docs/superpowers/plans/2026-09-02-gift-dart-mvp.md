@@ -471,3 +471,16 @@ system Git 2.35+.
    content into the horizontal scroller, and added regression coverage for
    full-width backgrounds and collapse behavior. Task 28 is fully complete;
    Task 29 is next.
+
+## Completed follow-up: compact History and revision UI hardening
+
+1. Reproduced compact-window failures with 320px-wide History, File History,
+   and Advanced revision widget scenarios at enlarged text scales.
+2. Bounded the History filter expansion and kept its fields vertically
+   scrollable so the detail pane and status strip retain usable space.
+3. Made File History results share one dialog scroll surface, constrained
+   rollback controls to the available width, and ellipsized long labels and
+   branch names.
+4. Made the historical diff viewport derive its fallback width from the window
+   instead of an arbitrary fixed width, and added compact regression coverage.
+   The full Flutter suite passed; Task 29 remains next.
