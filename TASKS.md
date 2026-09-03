@@ -8,7 +8,7 @@
 
 - **Total Tasks:** 38
 - **Completed:** 26 / 38
-- **Current Active Task:** `Task 26 follow-up — repository UI polish`
+- **Current Active Task:** `Task 27 — Interactive rebase and history rewriting`
 
 | # | Scope | Dart backend deliverables | Flutter deliverables | Status |
 |---|---|---|---|:---:|
@@ -37,8 +37,8 @@
 | **23** | Diff & compare | Revision, branch, folder, clipboard, and 3-way comparisons | Diff workbench and apply/revert actions | ✅ |
 | **24** | Shelf & changelists | Shelf storage, changelist grouping, and patch import/export | Shelf/changelist workflow | ✅ |
 | **25** | File history & blame | File/directory/selection history and blame metadata | History and annotation views | ✅ |
-| **26** | Undo & reset | Revert commit, undo commit, and safe reset modes | Destructive history controls | ⬜ |
-| **27** | Interactive rebase | Reorder, reword, edit, squash, fixup, drop, and recovery | Rebase plan and conflict flow | ⬜ |
+| **26** | Undo & reset | Revert commit, undo commit, and safe reset modes | Destructive history controls | ✅ |
+| **27** | Interactive rebase | Reorder, reword, edit, squash, fixup, drop, and recovery | Rebase plan and conflict flow | 🔄 |
 | **28** | Remote branches & update | Remote branch checkout, compare, update, and tracking | Incoming/update information | ⬜ |
 | **29** | Push safety | Push review, force-with-lease, tags, and protected branches | Push review and rejection recovery | ⬜ |
 | **30** | Worktrees | Worktree list, create, open, remove, lock, and prune | Worktree manager | ⬜ |
@@ -387,8 +387,8 @@ Task 26 is complete.
 - [x] Added a recent-commit target picker with automatic parent selection and
   kept special revision expressions available under Advanced revision.
 
-The Task 26 follow-up is complete. Keep Task 27 planned until it is explicitly
-activated with its behavior scenarios and first failing test.
+The Task 26 follow-up is complete. Task 27 is now active after its behavior
+scenarios and first failing test were recorded.
 
 ### ✅ Task 26 follow-up: repository UI polish
 
@@ -402,8 +402,23 @@ activated with its behavior scenarios and first failing test.
 - [x] Unified historical diff row backgrounds to the widest rendered line and
   added regression coverage for long-line coloring.
 
-The repository UI polish follow-up is complete. Keep Task 27 planned until it
-is explicitly activated with its behavior scenarios and first failing test.
+The repository UI polish follow-up is complete. Task 27 is now active.
+
+### 🔄 Task 27: Interactive rebase and history rewriting
+
+- [x] Record plan editing, action validation, protected-state, option, and
+  conflict-recovery scenarios in the behavior ledger.
+- [x] Add the first RED test for an immutable rebase plan that preserves
+  original commit identities and supports reorder/action edits.
+- [x] Implement the typed plan model with pick, reword, edit, squash, fixup,
+  drop, autosquash, root, update-refs, and preflight validation contracts.
+- [ ] Add repository-state preflight and machine-owned interactive todo
+  execution with explicit continue, skip, and abort recovery.
+- [ ] Report original OIDs, rewritten OIDs, and reflog recovery references.
+
+Task 27 is active. The next vertical is a real-Git preview fixture that loads
+the selected linear history and rejects dirty, detached, protected, pushed,
+and in-progress states before execution.
 
 ## Post-MVP backlog
 

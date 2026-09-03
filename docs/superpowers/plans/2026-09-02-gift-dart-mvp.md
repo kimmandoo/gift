@@ -402,3 +402,17 @@ system Git 2.35+.
    tests, analysis, formatting, and the full Flutter suite.
 4. Unified historical diff row backgrounds to the widest rendered line and
    covered the short-line/long-line width invariant in a widget test.
+
+## Active vertical: Interactive rebase and history rewriting (Task 27)
+
+1. Activated Task 27 after recording plan editing, action validation,
+   protected-state, option, and continue/skip/abort recovery scenarios in the
+   behavior ledger.
+2. Added the first RED test for an immutable plan that preserves original
+   commit OIDs and positions while allowing reorder and action edits.
+3. Implemented the typed plan model for pick, reword, edit, squash, fixup,
+   drop, autosquash, root, and update-refs, including duplicate identity,
+   invalid OID, root/upstream, and squash/fixup sequence validation.
+4. The next RED fixture will load a real linear history and preview repository
+   state before any interactive rebase process starts. It will cover dirty,
+   detached, protected, pushed, and in-progress blockers.

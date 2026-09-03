@@ -5,11 +5,9 @@ This file is the handoff record for continuing work across query sessions.
 ## Current checkpoint
 
 - Date: 2026-09-03
-- Active task: Task 26 and its completed History/file-viewer and repository UI
-  polish follow-ups; Task 27 remains planned and inactive.
+- Active task: Task 27 — interactive rebase and history rewriting.
 - Branch: `main`; no new branch or worktree was created.
-- Latest commit before this implementation session: `8b6e158
-  fix(task26): add recent commit rollback targets`.
+- Latest commit: `252fef6 fix(history): normalize diff row backgrounds`.
 - Implemented typed reset/undo/revert contracts, short-lived stale-bound
   previews, protected/pushed/dirty/detached/in-progress preflight, all four
   reset modes, multi-commit revert, and explicit revert conflict recovery.
@@ -28,23 +26,38 @@ This file is the handoff record for continuing work across query sessions.
 - Unified every historical diff row's background to the widest rendered line,
   so a long line no longer creates a colored protrusion beyond neighboring
   rows.
+- Activated Task 27 after recording REBASE-01 through REBASE-04 in the
+  behavior ledger and adding the first RED plan-model test at
+  `test/backend/interactive_rebase_test.dart` (`keeps original identities
+  while reordering and editing a plan`).
+- Added `GitInteractiveRebasePlan`, immutable reorder/action editing,
+  pick/reword/edit/squash/fixup/drop actions, autosquash/root/update-refs
+  option arguments, and validation for OIDs, duplicate identities,
+  squash/fixup targets, and root/upstream combinations.
 - Clarified repository menu labels and empty states, made the Changes app bar
   collapse to a menu before actions crowd the repository title, and fixed
   narrow file-history controls using their actual available width.
 - Changed files: `CHANGELOG.md`, `TASKS.md`,
   `docs/WORK_CHECKPOINT.md`,
+  `docs/research/jetbrains-git-mvp-behavior.md`,
   `docs/superpowers/plans/2026-09-02-gift-dart-mvp.md`,
+  `lib/src/backend/interactive_rebase.dart`,
+  `test/backend/interactive_rebase_test.dart`,
   `lib/src/features/repository/{changes_screen,comparison_dialog,
   file_history_dialog,history_screen,object_dialog,reset_dialog,
   shelf_dialog}.dart`, and
   `test/features/repository/{file_history_dialog,history_screen,
   object_dialog}_test.dart`.
-- Verification: formatting, `git diff --check`, and `flutter analyze` passed;
+- Verification: the initial RED run failed because the new plan contract did
+  not exist; after implementation, focused interactive-rebase tests passed.
+  `flutter analyze`, `git diff --check`, and the full Flutter suite passed
+  with `154` tests.
   the repository widget tests passed with `47` tests and the full Flutter suite
   passed with `151` tests. Native Windows compilation is not available in this
   Linux workspace.
-- Next action: when the user requests the next numbered task, activate Task 27
-  only after recording its behavior scenarios and first failing test.
+- Next action: add a real-Git linear-history fixture and first preview contract
+  test; reject dirty, detached, protected, pushed, and in-progress states
+  before wiring interactive todo execution.
 - Earlier Task 23 and Windows incremental-build diagnostics remain recorded in
   the plan and prior checkpoints.
 - Blockers: none.
