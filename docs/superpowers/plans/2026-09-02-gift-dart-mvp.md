@@ -278,3 +278,17 @@ system Git 2.35+.
    limited the single-lane optimization to genuinely linear pages.
 3. Passed the focused history parser/exploration tests and retained the full
    graph lane recomputation across pagination.
+
+## Completed vertical: Git object management (Task 22)
+
+1. Recorded stash identity/apply/drop/branch flows, lightweight and annotated
+   tags, remote configuration/prune, explicit tag push, and upstream tracking
+   scenarios in the behavior ledger.
+2. Added the first failing parser test for stable stash/tag object identities
+   before introducing the object-management contract.
+3. Implemented bounded stash/tag/ref models and a shared confirmation preview
+   contract before adding serialized Git mutations.
+4. Added focused object-management dialogs and upstream feedback, including
+   credential-safe remote display and stateful remote selection.
+5. Passed focused backend/UI tests, formatting, analysis, and the full suite.
+   Task 22 is complete; Task 23 is next.

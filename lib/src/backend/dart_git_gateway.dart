@@ -10,6 +10,7 @@ import 'history.dart';
 import 'executor.dart';
 import 'remote.dart';
 import 'status.dart';
+import 'objects.dart';
 
 /// Adapts the UI-facing [GitGateway] contract to the Dart backend facade.
 ///
@@ -202,6 +203,184 @@ class DartGitGateway implements GitGateway, DiscardPreviewCancellationGateway {
     GitCancellationToken? cancellationToken,
   }) =>
       backend.push(repositoryId, remote, cancellationToken: cancellationToken);
+
+  @override
+  Future<GitStashSnapshot> getStashes(RepositoryId repositoryId) =>
+      backend.getStashes(repositoryId);
+
+  @override
+  Future<GitStashActionResult> createStash(
+    RepositoryId repositoryId, {
+    String message = '',
+    bool includeUntracked = false,
+  }) => backend.createStash(
+    repositoryId,
+    message: message,
+    includeUntracked: includeUntracked,
+  );
+
+  @override
+  Future<GitStashActionResult> applyStash(
+    RepositoryId repositoryId,
+    String stashOid, {
+    required String fingerprint,
+  }) => backend.applyStash(repositoryId, stashOid, fingerprint: fingerprint);
+
+  @override
+  Future<GitStashActionResult> popStash(
+    RepositoryId repositoryId,
+    String stashOid, {
+    required String fingerprint,
+  }) => backend.popStash(repositoryId, stashOid, fingerprint: fingerprint);
+
+  @override
+  Future<GitObjectPreview> previewStashDrop(
+    RepositoryId repositoryId,
+    String stashOid,
+  ) => backend.previewStashDrop(repositoryId, stashOid);
+
+  @override
+  Future<GitStashActionResult> dropStash(
+    RepositoryId repositoryId,
+    GitObjectPreview preview,
+  ) => backend.dropStash(repositoryId, preview);
+
+  @override
+  Future<GitStashActionResult> branchFromStash(
+    RepositoryId repositoryId,
+    String branchName,
+    String stashOid, {
+    required String fingerprint,
+  }) => backend.branchFromStash(
+    repositoryId,
+    branchName,
+    stashOid,
+    fingerprint: fingerprint,
+  );
+
+  @override
+  Future<GitTagSnapshot> getTags(RepositoryId repositoryId) =>
+      backend.getTags(repositoryId);
+
+  @override
+  Future<GitTagActionResult> createTag(
+    RepositoryId repositoryId,
+    String name, {
+    String? target,
+    bool annotated = false,
+    String message = '',
+  }) => backend.createTag(
+    repositoryId,
+    name,
+    target: target,
+    annotated: annotated,
+    message: message,
+  );
+
+  @override
+  Future<GitTag> getTag(RepositoryId repositoryId, String name) =>
+      backend.getTag(repositoryId, name);
+
+  @override
+  Future<GitObjectPreview> previewTagDelete(
+    RepositoryId repositoryId,
+    String name,
+  ) => backend.previewTagDelete(repositoryId, name);
+
+  @override
+  Future<GitTagActionResult> deleteTag(
+    RepositoryId repositoryId,
+    GitObjectPreview preview,
+  ) => backend.deleteTag(repositoryId, preview);
+
+  @override
+  Future<GitRemoteActionResult> addRemote(
+    RepositoryId repositoryId,
+    String name,
+    String url,
+  ) => backend.addRemote(repositoryId, name, url);
+
+  @override
+  Future<GitRemoteActionResult> renameRemote(
+    RepositoryId repositoryId,
+    String oldName,
+    String newName,
+  ) => backend.renameRemote(repositoryId, oldName, newName);
+
+  @override
+  Future<GitRemoteActionResult> setRemoteUrl(
+    RepositoryId repositoryId,
+    String name,
+    String url, {
+    bool push = false,
+  }) => backend.setRemoteUrl(repositoryId, name, url, push: push);
+
+  @override
+  Future<GitObjectPreview> previewRemoteRemove(
+    RepositoryId repositoryId,
+    String name,
+  ) => backend.previewRemoteRemove(repositoryId, name);
+
+  @override
+  Future<GitRemoteActionResult> removeRemote(
+    RepositoryId repositoryId,
+    GitObjectPreview preview,
+  ) => backend.removeRemote(repositoryId, preview);
+
+  @override
+  Future<GitObjectPreview> previewRemotePrune(
+    RepositoryId repositoryId,
+    String name,
+  ) => backend.previewRemotePrune(repositoryId, name);
+
+  @override
+  Future<GitRemoteActionResult> pruneRemote(
+    RepositoryId repositoryId,
+    GitObjectPreview preview,
+  ) => backend.pruneRemote(repositoryId, preview);
+
+  @override
+  Future<GitRemoteOperationResult> pushTag(
+    RepositoryId repositoryId,
+    String remote,
+    String tagName, {
+    GitCancellationToken? cancellationToken,
+  }) => backend.pushTag(
+    repositoryId,
+    remote,
+    tagName,
+    cancellationToken: cancellationToken,
+  );
+
+  @override
+  Future<GitUpstreamSnapshot> getUpstream(RepositoryId repositoryId) =>
+      backend.getUpstream(repositoryId);
+
+  @override
+  Future<GitUpstreamActionResult> setUpstream(
+    RepositoryId repositoryId,
+    String remote, {
+    String? branch,
+    String? remoteBranch,
+  }) => backend.setUpstream(
+    repositoryId,
+    remote,
+    branch: branch,
+    remoteBranch: remoteBranch,
+  );
+
+  @override
+  Future<GitUpstreamActionResult> unsetUpstream(
+    RepositoryId repositoryId, {
+    String? branch,
+  }) => backend.unsetUpstream(repositoryId, branch: branch);
+
+  @override
+  Future<GitUpstreamActionResult> publishBranch(
+    RepositoryId repositoryId,
+    String remote, {
+    String? branch,
+  }) => backend.publishBranch(repositoryId, remote, branch: branch);
 
   @override
   Future<GitDiffSnapshot> getDiff(

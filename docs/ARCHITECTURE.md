@@ -505,3 +505,37 @@ ChangesScreen
    metadata, and continue is unavailable while any unmerged path remains.
    Cancellation and unresolved follow-up failures remain visible states so the
    UI does not guess whether to continue or abort.
+
+## Git object management (Task 22)
+
+```text
+ChangesScreen
+  └─ ObjectDialog
+       ├─ Stashes → identity-bound apply/pop/branch + previewed drop
+       ├─ Tags → lightweight/annotated create + inspect/push + previewed delete
+       ├─ Remotes → add/rename/url/prune + previewed remove
+       └─ Upstream → set/unset/publish + ahead/behind feedback
+            └─ GitGateway → RepositoryService → serialized Git argv
+```
+
+1. Stash and tag lists are parsed into stable object identities. Stash
+   mutations resolve the selected commit OID against a fresh stash snapshot;
+   the backend converts it to the current reflog selector only at execution
+   time, so display positions cannot target a different stash. Apply, pop, and
+   branch operations return refreshed status and stash snapshots, including an
+   explicit conflicted state when Git leaves unresolved changes.
+2. Destructive stash drops, tag deletions, remote removals, and remote prunes
+   use short-lived `AppState` previews. Each preview binds the repository,
+   operation, object identity, and current snapshot fingerprint. The mutation
+   revalidates that data inside the repository queue before consuming the
+   one-shot token; stale or expired confirmations never invoke Git.
+3. Tag inspection distinguishes lightweight refs from annotated tag objects,
+   peels annotated refs to their target commit, and bounds annotation reads.
+   Tag publication passes one explicit `refs/tags/<name>` refspec. Remote
+   URLs are parsed for display but redacted before reaching the UI, while
+   remote configuration operations return refreshed remotes and status.
+4. Upstream actions validate the attached branch and selected remote before
+   invoking Git. Set, unset, and publish return the resulting upstream remote,
+   branch, and ahead/behind counts, so the UI does not infer tracking state
+   from command text. The object dialog remains bounded on compact windows and
+   keeps remote selection state when more than one remote is configured.

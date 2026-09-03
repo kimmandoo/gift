@@ -14,6 +14,7 @@ import 'package:gift/src/features/repository/branch_dialog.dart';
 import 'package:gift/src/features/repository/history_screen.dart';
 import 'package:gift/src/features/repository/history_controller.dart';
 import 'package:gift/src/features/repository/remote_dialog.dart';
+import 'package:gift/src/features/repository/object_dialog.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter/services.dart';
@@ -167,6 +168,9 @@ class _ChangesScreenBodyState extends ConsumerState<_ChangesScreenBody> {
                   case _ChangesMenuAction.history:
                     unawaited(_openHistory(context));
                     break;
+                  case _ChangesMenuAction.objects:
+                    unawaited(_openObjects(context));
+                    break;
                   case _ChangesMenuAction.refresh:
                     unawaited(controller.refresh());
                     break;
@@ -184,6 +188,10 @@ class _ChangesScreenBodyState extends ConsumerState<_ChangesScreenBody> {
                 const PopupMenuItem(
                   value: _ChangesMenuAction.history,
                   child: Text('History'),
+                ),
+                const PopupMenuItem(
+                  value: _ChangesMenuAction.objects,
+                  child: Text('Git objects'),
                 ),
                 PopupMenuItem(
                   value: _ChangesMenuAction.refresh,
@@ -210,6 +218,12 @@ class _ChangesScreenBodyState extends ConsumerState<_ChangesScreenBody> {
               tooltip: 'Open history',
               onPressed: () => unawaited(_openHistory(context)),
               icon: const Icon(Icons.history),
+            ),
+            IconButton(
+              key: const Key('open-objects'),
+              tooltip: 'Open Git objects',
+              onPressed: () => unawaited(_openObjects(context)),
+              icon: const Icon(Icons.inventory_2_outlined),
             ),
             IconButton(
               tooltip: 'Refresh changes',
@@ -1258,6 +1272,16 @@ class _ChangesScreenBodyState extends ConsumerState<_ChangesScreenBody> {
     );
   }
 
+  Future<void> _openObjects(BuildContext context) async {
+    await showDialog<void>(
+      context: context,
+      builder: (_) =>
+          ObjectDialog(gateway: widget.gateway, repository: widget.repository),
+    );
+    if (!context.mounted) return;
+    await _activeController.refresh();
+  }
+
   Widget _scopeSelector(
     BuildContext context,
     GitChange selected,
@@ -1542,4 +1566,4 @@ String _cleanupLabel(GitCommitCleanupMode mode) => switch (mode) {
   GitCommitCleanupMode.scissors => 'Scissors marker',
 };
 
-enum _ChangesMenuAction { remotes, branches, history, refresh }
+enum _ChangesMenuAction { remotes, branches, history, objects, refresh }

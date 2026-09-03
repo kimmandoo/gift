@@ -20,6 +20,7 @@ class GitRemoteOperationResult {
     required this.operation,
     required this.status,
     required this.summary,
+    this.target,
   });
 
   final RepositoryId repositoryId;
@@ -27,6 +28,7 @@ class GitRemoteOperationResult {
   final GitRemoteOperation operation;
   final GitStatusSnapshot status;
   final String summary;
+  final String? target;
 }
 
 /// Parses the stable `git remote -v` shape without exposing raw command text

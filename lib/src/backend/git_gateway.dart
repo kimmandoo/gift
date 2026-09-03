@@ -8,6 +8,7 @@ import 'status.dart';
 import 'history.dart';
 import 'executor.dart';
 import 'remote.dart';
+import 'objects.dart';
 
 /// The small API that Flutter features depend on.
 ///
@@ -124,6 +125,131 @@ abstract interface class GitGateway {
     RepositoryId repositoryId,
     String remote, {
     GitCancellationToken? cancellationToken,
+  });
+
+  Future<GitStashSnapshot> getStashes(RepositoryId repositoryId);
+
+  Future<GitStashActionResult> createStash(
+    RepositoryId repositoryId, {
+    String message = '',
+    bool includeUntracked = false,
+  });
+
+  Future<GitStashActionResult> applyStash(
+    RepositoryId repositoryId,
+    String stashOid, {
+    required String fingerprint,
+  });
+
+  Future<GitStashActionResult> popStash(
+    RepositoryId repositoryId,
+    String stashOid, {
+    required String fingerprint,
+  });
+
+  Future<GitObjectPreview> previewStashDrop(
+    RepositoryId repositoryId,
+    String stashOid,
+  );
+
+  Future<GitStashActionResult> dropStash(
+    RepositoryId repositoryId,
+    GitObjectPreview preview,
+  );
+
+  Future<GitStashActionResult> branchFromStash(
+    RepositoryId repositoryId,
+    String branchName,
+    String stashOid, {
+    required String fingerprint,
+  });
+
+  Future<GitTagSnapshot> getTags(RepositoryId repositoryId);
+
+  Future<GitTagActionResult> createTag(
+    RepositoryId repositoryId,
+    String name, {
+    String? target,
+    bool annotated = false,
+    String message = '',
+  });
+
+  Future<GitTag> getTag(RepositoryId repositoryId, String name);
+
+  Future<GitObjectPreview> previewTagDelete(
+    RepositoryId repositoryId,
+    String name,
+  );
+
+  Future<GitTagActionResult> deleteTag(
+    RepositoryId repositoryId,
+    GitObjectPreview preview,
+  );
+
+  Future<GitRemoteActionResult> addRemote(
+    RepositoryId repositoryId,
+    String name,
+    String url,
+  );
+
+  Future<GitRemoteActionResult> renameRemote(
+    RepositoryId repositoryId,
+    String oldName,
+    String newName,
+  );
+
+  Future<GitRemoteActionResult> setRemoteUrl(
+    RepositoryId repositoryId,
+    String name,
+    String url, {
+    bool push = false,
+  });
+
+  Future<GitObjectPreview> previewRemoteRemove(
+    RepositoryId repositoryId,
+    String name,
+  );
+
+  Future<GitRemoteActionResult> removeRemote(
+    RepositoryId repositoryId,
+    GitObjectPreview preview,
+  );
+
+  Future<GitObjectPreview> previewRemotePrune(
+    RepositoryId repositoryId,
+    String name,
+  );
+
+  Future<GitRemoteActionResult> pruneRemote(
+    RepositoryId repositoryId,
+    GitObjectPreview preview,
+  );
+
+  Future<GitRemoteOperationResult> pushTag(
+    RepositoryId repositoryId,
+    String remote,
+    String tagName, {
+    GitCancellationToken? cancellationToken,
+  });
+
+  Future<GitUpstreamSnapshot> getUpstream(RepositoryId repositoryId);
+
+  Future<GitUpstreamActionResult> setUpstream(
+    RepositoryId repositoryId,
+    String remote, {
+    String? branch,
+    String? remoteBranch,
+  });
+
+  Future<GitUpstreamActionResult> unsetUpstream(
+    RepositoryId repositoryId, {
+    String? branch,
+  });
+
+  Future<GitUpstreamActionResult> publishBranch(
+    RepositoryId repositoryId,
+    String remote, {
+    String? branch,
   });
 
   Future<GitDiffSnapshot> getDiff(

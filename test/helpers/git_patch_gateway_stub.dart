@@ -8,6 +8,7 @@ import 'package:gift/src/backend/history.dart';
 import 'package:gift/src/backend/executor.dart';
 import 'package:gift/src/backend/remote.dart';
 import 'package:gift/src/backend/status.dart';
+import 'package:gift/src/backend/objects.dart';
 
 /// Existing feature fakes do not need partial-patch behavior unless a test is
 /// specifically about it. This keeps those focused fakes small as the
@@ -63,6 +64,135 @@ mixin GitPatchGatewayStub {
     RepositoryId repositoryId,
     String remote, {
     GitCancellationToken? cancellationToken,
+  }) => throw UnimplementedError();
+
+  Future<GitStashSnapshot> getStashes(RepositoryId repositoryId) =>
+      throw UnimplementedError();
+
+  Future<GitStashActionResult> createStash(
+    RepositoryId repositoryId, {
+    String message = '',
+    bool includeUntracked = false,
+  }) => throw UnimplementedError();
+
+  Future<GitStashActionResult> applyStash(
+    RepositoryId repositoryId,
+    String stashOid, {
+    required String fingerprint,
+  }) => throw UnimplementedError();
+
+  Future<GitStashActionResult> popStash(
+    RepositoryId repositoryId,
+    String stashOid, {
+    required String fingerprint,
+  }) => throw UnimplementedError();
+
+  Future<GitObjectPreview> previewStashDrop(
+    RepositoryId repositoryId,
+    String stashOid,
+  ) => throw UnimplementedError();
+
+  Future<GitStashActionResult> dropStash(
+    RepositoryId repositoryId,
+    GitObjectPreview preview,
+  ) => throw UnimplementedError();
+
+  Future<GitStashActionResult> branchFromStash(
+    RepositoryId repositoryId,
+    String branchName,
+    String stashOid, {
+    required String fingerprint,
+  }) => throw UnimplementedError();
+
+  Future<GitTagSnapshot> getTags(RepositoryId repositoryId) =>
+      throw UnimplementedError();
+
+  Future<GitTagActionResult> createTag(
+    RepositoryId repositoryId,
+    String name, {
+    String? target,
+    bool annotated = false,
+    String message = '',
+  }) => throw UnimplementedError();
+
+  Future<GitTag> getTag(RepositoryId repositoryId, String name) =>
+      throw UnimplementedError();
+
+  Future<GitObjectPreview> previewTagDelete(
+    RepositoryId repositoryId,
+    String name,
+  ) => throw UnimplementedError();
+
+  Future<GitTagActionResult> deleteTag(
+    RepositoryId repositoryId,
+    GitObjectPreview preview,
+  ) => throw UnimplementedError();
+
+  Future<GitRemoteActionResult> addRemote(
+    RepositoryId repositoryId,
+    String name,
+    String url,
+  ) => throw UnimplementedError();
+
+  Future<GitRemoteActionResult> renameRemote(
+    RepositoryId repositoryId,
+    String oldName,
+    String newName,
+  ) => throw UnimplementedError();
+
+  Future<GitRemoteActionResult> setRemoteUrl(
+    RepositoryId repositoryId,
+    String name,
+    String url, {
+    bool push = false,
+  }) => throw UnimplementedError();
+
+  Future<GitObjectPreview> previewRemoteRemove(
+    RepositoryId repositoryId,
+    String name,
+  ) => throw UnimplementedError();
+
+  Future<GitRemoteActionResult> removeRemote(
+    RepositoryId repositoryId,
+    GitObjectPreview preview,
+  ) => throw UnimplementedError();
+
+  Future<GitObjectPreview> previewRemotePrune(
+    RepositoryId repositoryId,
+    String name,
+  ) => throw UnimplementedError();
+
+  Future<GitRemoteActionResult> pruneRemote(
+    RepositoryId repositoryId,
+    GitObjectPreview preview,
+  ) => throw UnimplementedError();
+
+  Future<GitRemoteOperationResult> pushTag(
+    RepositoryId repositoryId,
+    String remote,
+    String tagName, {
+    GitCancellationToken? cancellationToken,
+  }) => throw UnimplementedError();
+
+  Future<GitUpstreamSnapshot> getUpstream(RepositoryId repositoryId) =>
+      throw UnimplementedError();
+
+  Future<GitUpstreamActionResult> setUpstream(
+    RepositoryId repositoryId,
+    String remote, {
+    String? branch,
+    String? remoteBranch,
+  }) => throw UnimplementedError();
+
+  Future<GitUpstreamActionResult> unsetUpstream(
+    RepositoryId repositoryId, {
+    String? branch,
+  }) => throw UnimplementedError();
+
+  Future<GitUpstreamActionResult> publishBranch(
+    RepositoryId repositoryId,
+    String remote, {
+    String? branch,
   }) => throw UnimplementedError();
 
   Future<GitDiffSnapshot> getDiff(

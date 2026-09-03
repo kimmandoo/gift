@@ -7,8 +7,8 @@
 ## Progress
 
 - **Total Tasks:** 25
-- **Completed:** 21 / 25
-- **Current Active Task:** `22 — Git object management (next)`
+- **Completed:** 22 / 25
+- **Current Active Task:** `23 — Large-repository performance and resilience (next)`
 
 | # | Scope | Dart backend deliverables | Flutter deliverables | Status |
 |---|---|---|---|:---:|
@@ -28,12 +28,12 @@
 | **14** | Packaging & CI | Cross-platform verification scripts | Desktop release artifacts | ✅ |
 | **15** | Hardening, UI & identity | Process safety, connected graph edges, preview revocation | Responsive pixel UI, theme switching, font and release identity | ✅ |
 | **16** | Workspace | Multi-repository sessions and persisted workspace state | Repository tabs, reopen, and keyboard navigation | ✅ |
-| **17** | Partial staging | Hunk and line patch operations with stale-content guards | Interactive diff selection and stage controls | ⬜ |
+| **17** | Partial staging | Hunk and line patch operations with stale-content guards | Interactive diff selection and stage controls | ✅ |
 | **18** | Commit workflow | Amend, templates, sign-off, and identity preflight | Guided commit options and validation | ✅ |
 | **19** | History exploration | Search, filters, commit details, and bounded commit diffs | Searchable graph and changed-file inspector | ✅ |
 | **20** | Advanced branches | Rename, delete, merge, rebase, and cherry-pick safety | Preview-driven branch actions | ✅ |
 | **21** | Conflict resolution | Conflict-state parser and safe resolution mutations | Three-pane merge workflow | ✅ |
-| **22** | Git objects | Stash, tags, remotes, and upstream management | Focused object-management dialogs | ⬜ |
+| **22** | Git objects | Stash, tags, remotes, and upstream management | Focused object-management dialogs | ✅ |
 | **23** | Scale & resilience | File watching, cache invalidation, process supervision | Large-repository responsiveness | ⬜ |
 | **24** | Accessibility & preferences | Versioned settings and locale-ready text contracts | Scaling, remapping, themes, and accessibility | ⬜ |
 | **25** | Public release | Signed packages, provenance, update metadata, and release checks | Installers and first-run diagnostics | ⬜ |
@@ -268,9 +268,28 @@ contract existed.
 - [x] Cover add/add, modify/delete, rename, binary, merge, rebase,
   cherry-pick, and stale-resolution fixtures.
 
-Task 21 is complete. Task 22 is next. The first failing test was the initial compile failure in
+Task 21 is complete. The first failing test was the initial compile failure in
 `test/backend/conflict_resolution_test.dart` before the conflict stage parser
 contract existed.
+
+### Task 22: Git object management
+
+- [x] Parse stable stash and tag object identities, including annotated tag
+  metadata and credential-safe remote records.
+- [x] Implement stash create/apply/pop/drop/branch flows with fresh snapshot
+  checks, conflict states, and identity-bound destructive previews.
+- [x] Implement lightweight and annotated tag creation, inspection, deletion,
+  and explicit single-tag publication.
+- [x] Implement remote add/rename/URL edit/remove/prune and upstream
+  set/unset/publish flows with refreshed status and ahead/behind feedback.
+- [x] Add responsive stash, tag, remote, and upstream controls with
+  confirmation details and credential-safe display.
+- [x] Cover object identity, stale previews, remote configuration, tag push,
+  stash recovery, and compact dialog rendering with isolated fixtures.
+
+Task 22 is complete. Task 23 is next. The first failing test was the initial
+compile failure in `test/backend/object_management_test.dart` before the
+object-management contract existed.
 
 ## Post-MVP backlog
 

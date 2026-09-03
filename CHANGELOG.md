@@ -2,6 +2,8 @@
 
 ## 2026-09-03
 
+- feat(task22): added identity-bound stash, tag, remote, and upstream
+  management workflows with responsive object controls.
 - feat(task21): added fingerprint-guarded conflict inspection, resolution,
   and responsive three-pane recovery workflows.
 - fix(task19): preserved merge topology and peeled annotated history refs for

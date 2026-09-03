@@ -14,6 +14,7 @@ import 'executor.dart';
 import 'history.dart';
 import 'remote.dart';
 import 'status.dart';
+import 'objects.dart';
 
 /// In-memory registry for repository roots and session-local opaque IDs.
 ///
@@ -26,10 +27,12 @@ class AppState {
   final Map<RepositoryId, _MutationQueue> _mutationQueues = {};
   final Map<String, _DiscardPreviewRecord> _discardPreviews = {};
   final Map<String, _BranchPreviewRecord> _branchPreviews = {};
+  final Map<String, _ObjectPreviewRecord> _objectPreviews = {};
   final DateTime Function() _now;
 
   static const discardPreviewLifetime = Duration(minutes: 2);
   static const branchPreviewLifetime = Duration(minutes: 2);
+  static const objectPreviewLifetime = Duration(minutes: 2);
 
   RepositoryOpened register(String root) {
     final repositoryId = RepositoryId(value: _newRepositoryId());
@@ -197,6 +200,71 @@ class AppState {
   void consumeBranchPreview(String token) {
     _branchPreviews.remove(token);
   }
+
+  GitObjectPreview issueObjectPreview({
+    required RepositoryId repositoryId,
+    required GitObjectPreviewAction action,
+    required String objectName,
+    String? objectId,
+    required String fingerprint,
+    List<String> details = const [],
+  }) {
+    _objectPreviews.removeWhere(
+      (_, record) => !record.expiresAt.isAfter(_now()),
+    );
+    final token = _newOpaqueToken();
+    final expiresAt = _now().add(objectPreviewLifetime);
+    _objectPreviews[token] = _ObjectPreviewRecord(
+      repositoryId: repositoryId,
+      action: action,
+      objectName: objectName,
+      objectId: objectId,
+      fingerprint: fingerprint,
+      expiresAt: expiresAt,
+    );
+    return GitObjectPreview(
+      repositoryId: repositoryId,
+      action: action,
+      objectName: objectName,
+      objectId: objectId,
+      fingerprint: fingerprint,
+      details: details,
+      token: token,
+      expiresAt: expiresAt,
+    );
+  }
+
+  void validateObjectPreview({
+    required RepositoryId repositoryId,
+    required GitObjectPreview preview,
+    required String fingerprint,
+    String? objectId,
+  }) {
+    final record = _objectPreviews[preview.token];
+    final matches =
+        record != null &&
+        record.repositoryId == repositoryId &&
+        record.repositoryId == preview.repositoryId &&
+        record.action == preview.action &&
+        record.objectName == preview.objectName &&
+        record.objectId == preview.objectId &&
+        record.objectId == objectId &&
+        record.fingerprint == fingerprint &&
+        record.expiresAt.isAfter(_now());
+    if (!matches) {
+      _objectPreviews.remove(preview.token);
+      throw const GitError(
+        category: GitErrorCategory.staleObject,
+        userMessage: 'This object changed. Review the action again.',
+        diagnostic: 'object preview token or snapshot fingerprint was stale',
+        retryable: true,
+      );
+    }
+  }
+
+  void consumeObjectPreview(String token) {
+    _objectPreviews.remove(token);
+  }
 }
 
 class _DiscardPreviewRecord {
@@ -231,6 +299,24 @@ class _BranchPreviewRecord {
   final String? source;
   final String? target;
   final bool force;
+  final String fingerprint;
+  final DateTime expiresAt;
+}
+
+class _ObjectPreviewRecord {
+  const _ObjectPreviewRecord({
+    required this.repositoryId,
+    required this.action,
+    required this.objectName,
+    required this.objectId,
+    required this.fingerprint,
+    required this.expiresAt,
+  });
+
+  final RepositoryId repositoryId;
+  final GitObjectPreviewAction action;
+  final String objectName;
+  final String? objectId;
   final String fingerprint;
   final DateTime expiresAt;
 }
@@ -1848,6 +1934,871 @@ class RepositoryService {
     cancellationToken: cancellationToken,
   );
 
+  Future<GitStashSnapshot> getStashes(RepositoryId repositoryId) async {
+    final handle = await state.lookup(repositoryId);
+    return _readStashSnapshot(repositoryId, handle);
+  }
+
+  Future<GitStashActionResult> createStash(
+    RepositoryId repositoryId, {
+    String message = '',
+    bool includeUntracked = false,
+  }) async {
+    _validateObjectMessage(message, 'stash message');
+    return state.runMutation(repositoryId, () async {
+      final handle = await state.lookup(repositoryId);
+      final args = <String>[
+        'stash',
+        'push',
+        if (includeUntracked) '--include-untracked',
+        if (message.trim().isNotEmpty) ...['--message=$message'],
+      ];
+      late final ProcessOutput output;
+      try {
+        output = await _runObjectCommand(handle, args);
+      } on GitError catch (error, stackTrace) {
+        Error.throwWithStackTrace(_mapObjectError(error), stackTrace);
+      }
+      return GitStashActionResult(
+        repositoryId: repositoryId,
+        action: GitStashAction.create,
+        state: GitStashActionState.completed,
+        status: await getStatus(repositoryId),
+        snapshot: await _readStashSnapshot(repositoryId, handle),
+        summary: _objectSummary(output, 'The changes were stashed.'),
+      );
+    });
+  }
+
+  Future<GitStashActionResult> applyStash(
+    RepositoryId repositoryId,
+    String stashOid, {
+    required String fingerprint,
+  }) => _runStashAction(
+    repositoryId,
+    stashOid,
+    fingerprint: fingerprint,
+    action: GitStashAction.apply,
+    command: const ['stash', 'apply', '--index'],
+  );
+
+  Future<GitStashActionResult> popStash(
+    RepositoryId repositoryId,
+    String stashOid, {
+    required String fingerprint,
+  }) => _runStashAction(
+    repositoryId,
+    stashOid,
+    fingerprint: fingerprint,
+    action: GitStashAction.pop,
+    command: const ['stash', 'pop', '--index'],
+  );
+
+  Future<GitObjectPreview> previewStashDrop(
+    RepositoryId repositoryId,
+    String stashOid,
+  ) async {
+    _validateObjectOid(stashOid, 'stash');
+    final snapshot = await getStashes(repositoryId);
+    final entry = _findStash(snapshot, stashOid);
+    if (entry == null) throw _objectNotFound('stash', stashOid);
+    return state.issueObjectPreview(
+      repositoryId: repositoryId,
+      action: GitObjectPreviewAction.dropStash,
+      objectName: entry.selector,
+      objectId: entry.oid,
+      fingerprint: snapshot.fingerprint,
+      details: [entry.subject, entry.oid],
+    );
+  }
+
+  Future<GitStashActionResult> dropStash(
+    RepositoryId repositoryId,
+    GitObjectPreview preview,
+  ) async {
+    return state.runMutation(repositoryId, () async {
+      final handle = await state.lookup(repositoryId);
+      final snapshot = await _readStashSnapshot(repositoryId, handle);
+      final stashOid = preview.objectId;
+      if (stashOid == null) throw _objectNotFound('stash', preview.objectName);
+      final entry = _findStash(snapshot, stashOid);
+      if (entry == null) throw _objectNotFound('stash', stashOid);
+      state.validateObjectPreview(
+        repositoryId: repositoryId,
+        preview: preview,
+        fingerprint: snapshot.fingerprint,
+        objectId: entry.oid,
+      );
+      state.consumeObjectPreview(preview.token);
+      late final ProcessOutput output;
+      try {
+        output = await _runObjectCommand(handle, [
+          'stash',
+          'drop',
+          entry.selector,
+        ]);
+      } on GitError catch (error, stackTrace) {
+        Error.throwWithStackTrace(_mapObjectError(error), stackTrace);
+      }
+      return GitStashActionResult(
+        repositoryId: repositoryId,
+        action: GitStashAction.drop,
+        state: GitStashActionState.completed,
+        status: await getStatus(repositoryId),
+        snapshot: await _readStashSnapshot(repositoryId, handle),
+        stashOid: entry.oid,
+        summary: _objectSummary(output, 'The stash was dropped.'),
+      );
+    });
+  }
+
+  Future<GitStashActionResult> branchFromStash(
+    RepositoryId repositoryId,
+    String branchName,
+    String stashOid, {
+    required String fingerprint,
+  }) async {
+    _validateObjectOid(stashOid, 'stash');
+    return state.runMutation(repositoryId, () async {
+      final handle = await state.lookup(repositoryId);
+      await _validateBranchNameWithGit(handle, branchName);
+      final snapshot = await _readStashSnapshot(repositoryId, handle);
+      final entry = _requireFreshStash(snapshot, stashOid, fingerprint);
+      late final ProcessOutput output;
+      try {
+        output = await _runObjectCommand(handle, [
+          'stash',
+          'branch',
+          branchName,
+          entry.selector,
+        ]);
+      } on GitError catch (error, stackTrace) {
+        final status = await getStatus(repositoryId);
+        if (status.conflicts.isNotEmpty) {
+          return GitStashActionResult(
+            repositoryId: repositoryId,
+            action: GitStashAction.branch,
+            state: GitStashActionState.conflicted,
+            status: status,
+            snapshot: await _readStashSnapshot(repositoryId, handle),
+            stashOid: entry.oid,
+            summary: 'The stash branch operation has conflicts to resolve.',
+          );
+        }
+        Error.throwWithStackTrace(_mapObjectError(error), stackTrace);
+      }
+      return GitStashActionResult(
+        repositoryId: repositoryId,
+        action: GitStashAction.branch,
+        state: GitStashActionState.completed,
+        status: await getStatus(repositoryId),
+        snapshot: await _readStashSnapshot(repositoryId, handle),
+        stashOid: entry.oid,
+        summary: _objectSummary(output, 'A branch was created from the stash.'),
+      );
+    });
+  }
+
+  Future<GitTagSnapshot> getTags(RepositoryId repositoryId) async {
+    final handle = await state.lookup(repositoryId);
+    final output = await _runObjectCommand(
+      handle,
+      const [
+        'for-each-ref',
+        '--sort=refname',
+        '--format=%(refname:short)%00%(objectname)%00%(objecttype)%00%(*objectname)%00%(*objecttype)%00%(contents:subject)%00%(creatordate:iso-strict)',
+        'refs/tags/',
+      ],
+      kind: GitOperationKind.read,
+      maxBytes: 2 * 1024 * 1024,
+    );
+    try {
+      return GitTagSnapshot(
+        repositoryId: repositoryId,
+        tags: parseGitTags(output.stdout),
+        fingerprint: hashGitObjectBytes(output.stdout),
+      );
+    } on FormatException catch (error, stackTrace) {
+      Error.throwWithStackTrace(
+        GitError(
+          category: GitErrorCategory.parseFailure,
+          userMessage: 'Git returned an unreadable tag list.',
+          diagnostic: error.message,
+          retryable: false,
+        ),
+        stackTrace,
+      );
+    }
+  }
+
+  Future<GitTagActionResult> createTag(
+    RepositoryId repositoryId,
+    String name, {
+    String? target,
+    bool annotated = false,
+    String message = '',
+  }) async {
+    _validateTagName(name);
+    _validateObjectMessage(message, 'tag message');
+    return state.runMutation(repositoryId, () async {
+      final handle = await state.lookup(repositoryId);
+      await _validateTagNameWithGit(handle, name);
+      final targetOid = await _resolveObjectCommit(handle, target ?? 'HEAD');
+      if (annotated && message.trim().isEmpty) {
+        throw const GitError(
+          category: GitErrorCategory.objectOperationNotAllowed,
+          userMessage: 'An annotated tag needs a message.',
+          diagnostic: 'annotated tag message was empty',
+          retryable: false,
+        );
+      }
+      final args = <String>['tag', if (annotated) '-a', name, targetOid];
+      if (annotated) args.addAll(['--message=$message']);
+      late final ProcessOutput output;
+      try {
+        output = await _runObjectCommand(handle, args);
+      } on GitError catch (error, stackTrace) {
+        Error.throwWithStackTrace(_mapObjectError(error), stackTrace);
+      }
+      final tags = await getTags(repositoryId);
+      return GitTagActionResult(
+        repositoryId: repositoryId,
+        action: GitTagAction.create,
+        status: await getStatus(repositoryId),
+        snapshot: tags,
+        tag: tags.tags.where((tag) => tag.name == name).firstOrNull,
+        summary: _objectSummary(output, 'The tag was created.'),
+      );
+    });
+  }
+
+  Future<GitTag> getTag(RepositoryId repositoryId, String name) async {
+    _validateTagName(name);
+    final snapshot = await getTags(repositoryId);
+    final tag = snapshot.tags.where((value) => value.name == name).firstOrNull;
+    if (tag == null) throw _objectNotFound('tag', name);
+    if (tag.kind != GitTagKind.annotated || tag.tagObjectOid == null) {
+      return tag;
+    }
+    final handle = await state.lookup(repositoryId);
+    final output = await _runObjectCommand(
+      handle,
+      ['cat-file', 'tag', tag.tagObjectOid!],
+      kind: GitOperationKind.read,
+      maxBytes: 256 * 1024,
+    );
+    final raw = utf8.decode(output.stdout, allowMalformed: true);
+    final separator = raw.indexOf('\n\n');
+    final header = separator < 0 ? raw : raw.substring(0, separator);
+    final body = separator < 0 ? '' : raw.substring(separator + 2).trim();
+    final tagger = RegExp(
+      r'^tagger (.+)$',
+      multiLine: true,
+    ).firstMatch(header)?.group(1);
+    return GitTag(
+      name: tag.name,
+      targetOid: tag.targetOid,
+      kind: tag.kind,
+      tagObjectOid: tag.tagObjectOid,
+      subject: tag.subject,
+      message: body,
+      tagger: tagger,
+      createdAt: tag.createdAt,
+    );
+  }
+
+  Future<GitObjectPreview> previewTagDelete(
+    RepositoryId repositoryId,
+    String name,
+  ) async {
+    final tag = await getTag(repositoryId, name);
+    final snapshot = await getTags(repositoryId);
+    return state.issueObjectPreview(
+      repositoryId: repositoryId,
+      action: GitObjectPreviewAction.deleteTag,
+      objectName: tag.name,
+      objectId: _tagIdentity(tag),
+      fingerprint: snapshot.fingerprint,
+      details: [tag.kind.name, tag.targetOid],
+    );
+  }
+
+  Future<GitTagActionResult> deleteTag(
+    RepositoryId repositoryId,
+    GitObjectPreview preview,
+  ) async {
+    return state.runMutation(repositoryId, () async {
+      final handle = await state.lookup(repositoryId);
+      final snapshot = await getTags(repositoryId);
+      final tag = snapshot.tags
+          .where((value) => value.name == preview.objectName)
+          .firstOrNull;
+      if (tag == null) throw _objectNotFound('tag', preview.objectName);
+      state.validateObjectPreview(
+        repositoryId: repositoryId,
+        preview: preview,
+        fingerprint: snapshot.fingerprint,
+        objectId: _tagIdentity(tag),
+      );
+      state.consumeObjectPreview(preview.token);
+      late final ProcessOutput output;
+      try {
+        output = await _runObjectCommand(handle, ['tag', '--delete', tag.name]);
+      } on GitError catch (error, stackTrace) {
+        Error.throwWithStackTrace(_mapObjectError(error), stackTrace);
+      }
+      return GitTagActionResult(
+        repositoryId: repositoryId,
+        action: GitTagAction.delete,
+        status: await getStatus(repositoryId),
+        snapshot: await getTags(repositoryId),
+        summary: _objectSummary(output, 'The tag was deleted.'),
+      );
+    });
+  }
+
+  Future<GitRemoteActionResult> addRemote(
+    RepositoryId repositoryId,
+    String name,
+    String url,
+  ) {
+    _validateRemoteName(name);
+    _validateRemoteUrl(url);
+    return _runRemoteConfigAction(
+      repositoryId,
+      GitRemoteAction.add,
+      name,
+      ['remote', 'add', name, url],
+      preflight: (remotes) {
+        if (remotes.any((remote) => remote.name == name)) {
+          throw _objectAlreadyExists('remote', name);
+        }
+      },
+    );
+  }
+
+  Future<GitRemoteActionResult> renameRemote(
+    RepositoryId repositoryId,
+    String oldName,
+    String newName,
+  ) {
+    _validateRemoteName(oldName);
+    _validateRemoteName(newName);
+    return _runRemoteConfigAction(
+      repositoryId,
+      GitRemoteAction.rename,
+      oldName,
+      ['remote', 'rename', oldName, newName],
+      preflight: (remotes) {
+        if (_findRemote(remotes, oldName) == null) {
+          throw _objectNotFound('remote', oldName);
+        }
+        if (remotes.any((remote) => remote.name == newName)) {
+          throw _objectAlreadyExists('remote', newName);
+        }
+      },
+    );
+  }
+
+  Future<GitRemoteActionResult> setRemoteUrl(
+    RepositoryId repositoryId,
+    String name,
+    String url, {
+    bool push = false,
+  }) {
+    _validateRemoteName(name);
+    _validateRemoteUrl(url);
+    return _runRemoteConfigAction(
+      repositoryId,
+      GitRemoteAction.setUrl,
+      name,
+      ['remote', 'set-url', if (push) '--push', name, url],
+      argsBuilder: push
+          ? (remotes) {
+              final remote = _findRemote(remotes, name)!;
+              return [
+                'remote',
+                'set-url',
+                if (remote.pushUrl == null) '--add',
+                '--push',
+                name,
+                url,
+              ];
+            }
+          : null,
+      preflight: (remotes) {
+        if (_findRemote(remotes, name) == null) {
+          throw _objectNotFound('remote', name);
+        }
+      },
+    );
+  }
+
+  Future<GitObjectPreview> previewRemoteRemove(
+    RepositoryId repositoryId,
+    String name,
+  ) async {
+    _validateRemoteName(name);
+    final remotes = await getRemotes(repositoryId);
+    final remote = _findRemote(remotes, name);
+    if (remote == null) throw _objectNotFound('remote', name);
+    return state.issueObjectPreview(
+      repositoryId: repositoryId,
+      action: GitObjectPreviewAction.removeRemote,
+      objectName: name,
+      objectId: _remoteIdentity(remote),
+      fingerprint: _remoteFingerprint(remotes),
+      details: [
+        if (remote.fetchUrl case final url?) redactRemote(url),
+        if (remote.pushUrl case final url?) redactRemote(url),
+      ],
+    );
+  }
+
+  Future<GitRemoteActionResult> removeRemote(
+    RepositoryId repositoryId,
+    GitObjectPreview preview,
+  ) {
+    return _runRemoteConfigAction(
+      repositoryId,
+      GitRemoteAction.remove,
+      preview.objectName,
+      ['remote', 'remove', preview.objectName],
+      preview: preview,
+      preflight: (remotes) {
+        final remote = _findRemote(remotes, preview.objectName);
+        if (remote == null) throw _objectNotFound('remote', preview.objectName);
+        state.validateObjectPreview(
+          repositoryId: repositoryId,
+          preview: preview,
+          fingerprint: _remoteFingerprint(remotes),
+          objectId: _remoteIdentity(remote),
+        );
+      },
+    );
+  }
+
+  Future<GitObjectPreview> previewRemotePrune(
+    RepositoryId repositoryId,
+    String name,
+  ) async {
+    _validateRemoteName(name);
+    final remotes = await getRemotes(repositoryId);
+    if (_findRemote(remotes, name) == null) {
+      throw _objectNotFound('remote', name);
+    }
+    final handle = await state.lookup(repositoryId);
+    final output = await _runObjectCommand(
+      handle,
+      ['remote', 'prune', '--dry-run', name],
+      kind: GitOperationKind.read,
+      maxBytes: 512 * 1024,
+    );
+    final details = utf8
+        .decode([...output.stdout, ...output.stderr], allowMalformed: true)
+        .split('\n')
+        .map((line) => line.trim())
+        .where((line) => line.isNotEmpty)
+        .toList(growable: false);
+    return state.issueObjectPreview(
+      repositoryId: repositoryId,
+      action: GitObjectPreviewAction.pruneRemote,
+      objectName: name,
+      fingerprint: _remoteFingerprint(remotes),
+      details: details,
+    );
+  }
+
+  Future<GitRemoteActionResult> pruneRemote(
+    RepositoryId repositoryId,
+    GitObjectPreview preview,
+  ) => _runRemoteConfigAction(
+    repositoryId,
+    GitRemoteAction.prune,
+    preview.objectName,
+    ['remote', 'prune', preview.objectName],
+    preview: preview,
+    preflight: (remotes) {
+      if (_findRemote(remotes, preview.objectName) == null) {
+        throw _objectNotFound('remote', preview.objectName);
+      }
+      state.validateObjectPreview(
+        repositoryId: repositoryId,
+        preview: preview,
+        fingerprint: _remoteFingerprint(remotes),
+      );
+    },
+  );
+
+  Future<GitRemoteOperationResult> pushTag(
+    RepositoryId repositoryId,
+    String remote,
+    String tagName, {
+    GitCancellationToken? cancellationToken,
+  }) async {
+    _validateRemoteName(remote);
+    _validateTagName(tagName);
+    return state.runMutation(repositoryId, () async {
+      final handle = await state.lookup(repositoryId);
+      final remotes = await getRemotes(repositoryId);
+      if (_findRemote(remotes, remote) == null) {
+        throw _objectNotFound('remote', remote);
+      }
+      await getTag(repositoryId, tagName);
+      late final ProcessOutput output;
+      try {
+        output = await _runObjectCommand(
+          handle,
+          ['push', remote, 'refs/tags/$tagName'],
+          kind: GitOperationKind.remote,
+          maxBytes: 2 * 1024 * 1024,
+          cancellationToken: cancellationToken,
+        );
+      } on GitError catch (error, stackTrace) {
+        Error.throwWithStackTrace(_mapRemoteError(error), stackTrace);
+      }
+      return GitRemoteOperationResult(
+        repositoryId: repositoryId,
+        remote: remote,
+        operation: GitRemoteOperation.push,
+        target: tagName,
+        status: await getStatus(repositoryId),
+        summary: _objectSummary(output, 'The tag was pushed.'),
+      );
+    });
+  }
+
+  Future<GitUpstreamSnapshot> getUpstream(RepositoryId repositoryId) async {
+    final status = await getStatus(repositoryId);
+    return _upstreamSnapshot(repositoryId, status);
+  }
+
+  Future<GitUpstreamActionResult> setUpstream(
+    RepositoryId repositoryId,
+    String remote, {
+    String? branch,
+    String? remoteBranch,
+  }) => _runUpstreamAction(
+    repositoryId,
+    GitUpstreamAction.set,
+    remote,
+    branch: branch,
+    remoteBranch: remoteBranch,
+  );
+
+  Future<GitUpstreamActionResult> unsetUpstream(
+    RepositoryId repositoryId, {
+    String? branch,
+  }) => _runUpstreamAction(
+    repositoryId,
+    GitUpstreamAction.unset,
+    null,
+    branch: branch,
+  );
+
+  Future<GitUpstreamActionResult> publishBranch(
+    RepositoryId repositoryId,
+    String remote, {
+    String? branch,
+  }) => _runUpstreamAction(
+    repositoryId,
+    GitUpstreamAction.publish,
+    remote,
+    branch: branch,
+  );
+
+  Future<GitStashSnapshot> _readStashSnapshot(
+    RepositoryId repositoryId,
+    RepositoryHandle handle,
+  ) async {
+    final output = await _runObjectCommand(
+      handle,
+      const ['stash', 'list', '--format=%H%x00%gd%x00%gs%x00%aI'],
+      kind: GitOperationKind.read,
+      maxBytes: 2 * 1024 * 1024,
+    );
+    try {
+      return GitStashSnapshot(
+        repositoryId: repositoryId,
+        entries: parseGitStashes(output.stdout),
+        fingerprint: hashGitObjectBytes(output.stdout),
+      );
+    } on FormatException catch (error, stackTrace) {
+      Error.throwWithStackTrace(
+        GitError(
+          category: GitErrorCategory.parseFailure,
+          userMessage: 'Git returned an unreadable stash list.',
+          diagnostic: error.message,
+          retryable: false,
+        ),
+        stackTrace,
+      );
+    }
+  }
+
+  Future<GitStashActionResult> _runStashAction(
+    RepositoryId repositoryId,
+    String stashOid, {
+    required String fingerprint,
+    required GitStashAction action,
+    required List<String> command,
+  }) async {
+    _validateObjectOid(stashOid, 'stash');
+    return state.runMutation(repositoryId, () async {
+      final handle = await state.lookup(repositoryId);
+      final snapshot = await _readStashSnapshot(repositoryId, handle);
+      final entry = _requireFreshStash(snapshot, stashOid, fingerprint);
+      late final ProcessOutput output;
+      try {
+        output = await _runObjectCommand(handle, [...command, entry.selector]);
+      } on GitError catch (error, stackTrace) {
+        final status = await getStatus(repositoryId);
+        if (status.conflicts.isNotEmpty || _looksLikeConflict(error)) {
+          return GitStashActionResult(
+            repositoryId: repositoryId,
+            action: action,
+            state: GitStashActionState.conflicted,
+            status: status,
+            snapshot: await _readStashSnapshot(repositoryId, handle),
+            stashOid: entry.oid,
+            summary: 'The stash operation has conflicts to resolve.',
+          );
+        }
+        Error.throwWithStackTrace(_mapObjectError(error), stackTrace);
+      }
+      return GitStashActionResult(
+        repositoryId: repositoryId,
+        action: action,
+        state: GitStashActionState.completed,
+        status: await getStatus(repositoryId),
+        snapshot: await _readStashSnapshot(repositoryId, handle),
+        stashOid: entry.oid,
+        summary: _objectSummary(
+          output,
+          action == GitStashAction.apply
+              ? 'The stash was applied.'
+              : 'The stash was popped.',
+        ),
+      );
+    });
+  }
+
+  GitStashEntry _requireFreshStash(
+    GitStashSnapshot snapshot,
+    String stashOid,
+    String fingerprint,
+  ) {
+    if (snapshot.fingerprint != fingerprint) {
+      throw const GitError(
+        category: GitErrorCategory.staleObject,
+        userMessage: 'The stash list changed. Review the stash again.',
+        diagnostic: 'stash list fingerprint no longer matched the selection',
+        retryable: true,
+      );
+    }
+    final entry = _findStash(snapshot, stashOid);
+    if (entry == null) throw _objectNotFound('stash', stashOid);
+    return entry;
+  }
+
+  Future<GitRemoteActionResult> _runRemoteConfigAction(
+    RepositoryId repositoryId,
+    GitRemoteAction action,
+    String objectName,
+    List<String> args, {
+    required void Function(List<GitRemote>) preflight,
+    GitObjectPreview? preview,
+    List<String> Function(List<GitRemote> remotes)? argsBuilder,
+  }) async {
+    return state.runMutation(repositoryId, () async {
+      final handle = await state.lookup(repositoryId);
+      final remotes = await getRemotes(repositoryId);
+      preflight(remotes);
+      if (preview != null) state.consumeObjectPreview(preview.token);
+      late final ProcessOutput output;
+      try {
+        output = await _runObjectCommand(
+          handle,
+          argsBuilder?.call(remotes) ?? args,
+        );
+      } on GitError catch (error, stackTrace) {
+        Error.throwWithStackTrace(_mapObjectError(error), stackTrace);
+      }
+      return GitRemoteActionResult(
+        repositoryId: repositoryId,
+        action: action,
+        remotes: await getRemotes(repositoryId),
+        status: await getStatus(repositoryId),
+        remoteName: objectName,
+        summary: _objectSummary(output, 'The remote configuration changed.'),
+      );
+    });
+  }
+
+  Future<GitUpstreamActionResult> _runUpstreamAction(
+    RepositoryId repositoryId,
+    GitUpstreamAction action,
+    String? remote, {
+    String? branch,
+    String? remoteBranch,
+  }) async {
+    if (remote != null) _validateRemoteName(remote);
+    return state.runMutation(repositoryId, () async {
+      final handle = await state.lookup(repositoryId);
+      final before = await getStatus(repositoryId);
+      final selectedBranch = branch ?? before.branch.head;
+      if (selectedBranch == null ||
+          selectedBranch.isEmpty ||
+          before.branch.isDetached) {
+        throw const GitError(
+          category: GitErrorCategory.detachedHead,
+          userMessage: 'Switch to a branch before changing upstream settings.',
+          diagnostic: 'upstream operation requested without an attached branch',
+          retryable: false,
+        );
+      }
+      await _validateBranchNameWithGit(handle, selectedBranch);
+      final remotes = await getRemotes(repositoryId);
+      if (action != GitUpstreamAction.unset &&
+          (remote == null || _findRemote(remotes, remote) == null)) {
+        throw _objectNotFound('remote', remote ?? '');
+      }
+      final args = switch (action) {
+        GitUpstreamAction.set => [
+          'branch',
+          '--set-upstream-to=${remote!}/${remoteBranch ?? selectedBranch}',
+          selectedBranch,
+        ],
+        GitUpstreamAction.unset => [
+          'branch',
+          '--unset-upstream',
+          selectedBranch,
+        ],
+        GitUpstreamAction.publish => [
+          'push',
+          '--set-upstream',
+          remote!,
+          selectedBranch,
+        ],
+      };
+      late final ProcessOutput output;
+      try {
+        output = await _runObjectCommand(
+          handle,
+          args,
+          kind: action == GitUpstreamAction.publish
+              ? GitOperationKind.remote
+              : GitOperationKind.mutation,
+          maxBytes: 2 * 1024 * 1024,
+        );
+      } on GitError catch (error, stackTrace) {
+        Error.throwWithStackTrace(
+          action == GitUpstreamAction.publish
+              ? _mapRemoteError(error)
+              : _mapObjectError(error),
+          stackTrace,
+        );
+      }
+      final status = await getStatus(repositoryId);
+      return GitUpstreamActionResult(
+        repositoryId: repositoryId,
+        action: action,
+        status: status,
+        upstream: _upstreamSnapshot(repositoryId, status),
+        summary: _objectSummary(output, 'Upstream settings were updated.'),
+      );
+    });
+  }
+
+  GitUpstreamSnapshot _upstreamSnapshot(
+    RepositoryId repositoryId,
+    GitStatusSnapshot status,
+  ) {
+    final upstream = status.branch.upstream;
+    String? remote;
+    String? remoteBranch;
+    if (upstream != null && upstream.isNotEmpty) {
+      final slash = upstream.indexOf('/');
+      if (slash > 0) {
+        remote = upstream.substring(0, slash);
+        remoteBranch = upstream.substring(slash + 1);
+      }
+    }
+    return GitUpstreamSnapshot(
+      repositoryId: repositoryId,
+      branch: status.branch.head,
+      remote: remote,
+      remoteBranch: remoteBranch,
+      ahead: status.branch.ahead,
+      behind: status.branch.behind,
+    );
+  }
+
+  Future<ProcessOutput> _runObjectCommand(
+    RepositoryHandle handle,
+    List<String> args, {
+    GitOperationKind kind = GitOperationKind.mutation,
+    int maxBytes = 512 * 1024,
+    GitCancellationToken? cancellationToken,
+  }) => _runner.run(
+    GitInvocation(
+      program: gitPath,
+      args: args,
+      cwd: handle.root,
+      kind: kind,
+      outputPolicy: OutputPolicy.capture(maxBytes: maxBytes),
+      cancellationToken: cancellationToken,
+    ),
+  );
+
+  Future<String> _resolveObjectCommit(
+    RepositoryHandle handle,
+    String revision,
+  ) async {
+    _validateRevisionInput(revision);
+    final resolved = await _tryResolve(handle, '$revision^{commit}');
+    if (resolved == null || !_isObjectOidValue(resolved)) {
+      throw GitError(
+        category: GitErrorCategory.invalidRevision,
+        userMessage: 'That target does not point to a commit.',
+        diagnostic:
+            'object target could not be resolved to a commit: $revision',
+        retryable: false,
+      );
+    }
+    return resolved;
+  }
+
+  Future<void> _validateTagNameWithGit(
+    RepositoryHandle handle,
+    String name,
+  ) async {
+    try {
+      await _runner.run(
+        GitInvocation(
+          program: gitPath,
+          args: ['check-ref-format', 'refs/tags/$name'],
+          cwd: handle.root,
+          kind: GitOperationKind.read,
+          outputPolicy: const OutputPolicy.capture(maxBytes: 16 * 1024),
+        ),
+      );
+    } on GitError catch (error, stackTrace) {
+      if (error.category == GitErrorCategory.processFailed) {
+        Error.throwWithStackTrace(
+          error.copyWith(
+            category: GitErrorCategory.invalidObjectName,
+            userMessage: 'Enter a valid tag name accepted by Git.',
+            diagnostic: 'git check-ref-format rejected the tag name',
+            retryable: false,
+          ),
+          stackTrace,
+        );
+      }
+      rethrow;
+    }
+  }
+
   Future<GitRemoteOperationResult> _runRemote(
     RepositoryId repositoryId,
     String remote,
@@ -3176,6 +4127,114 @@ void _validateRemoteName(String name) {
       retryable: false,
     );
   }
+}
+
+void _validateRemoteUrl(String url) {
+  if (url.isEmpty ||
+      url.length > 4096 ||
+      url.runes.any((rune) => rune < 0x20 || rune == 0x7f)) {
+    throw const GitError(
+      category: GitErrorCategory.parseFailure,
+      userMessage: 'Enter a valid remote URL.',
+      diagnostic: 'remote URL was empty, too long, or contained a control byte',
+      retryable: false,
+    );
+  }
+}
+
+void _validateObjectMessage(String message, String label) {
+  if (message.length > 16 * 1024 ||
+      message.runes.any((rune) => rune == 0 || rune == 0x7f)) {
+    throw GitError(
+      category: GitErrorCategory.parseFailure,
+      userMessage: 'The $label is too long or contains an invalid character.',
+      diagnostic: '$label exceeded the bounded input contract',
+      retryable: false,
+    );
+  }
+}
+
+void _validateObjectOid(String oid, String label) {
+  if (!_isObjectOidValue(oid)) {
+    throw GitError(
+      category: GitErrorCategory.invalidObjectName,
+      userMessage: 'That $label identity is invalid.',
+      diagnostic: '$label action received a non-hex object ID',
+      retryable: false,
+    );
+  }
+}
+
+void _validateTagName(String name) {
+  if (name.isEmpty ||
+      name.startsWith('-') ||
+      name.contains('\u0000') ||
+      name.contains(RegExp(r'[\r\n]'))) {
+    throw const GitError(
+      category: GitErrorCategory.invalidObjectName,
+      userMessage: 'Enter a valid tag name.',
+      diagnostic:
+          'tag name was empty, option-like, or contained a control line',
+      retryable: false,
+    );
+  }
+}
+
+bool _isObjectOidValue(String value) =>
+    RegExp(r'^[0-9a-fA-F]{40,64}$').hasMatch(value);
+
+GitStashEntry? _findStash(GitStashSnapshot snapshot, String oid) =>
+    snapshot.entries.where((entry) => entry.oid == oid).firstOrNull;
+
+GitRemote? _findRemote(List<GitRemote> remotes, String name) =>
+    remotes.where((remote) => remote.name == name).firstOrNull;
+
+String _tagIdentity(GitTag tag) => tag.tagObjectOid ?? tag.targetOid;
+
+String _remoteIdentity(GitRemote remote) =>
+    '${remote.name}|${remote.fetchUrl ?? ''}|${remote.pushUrl ?? ''}';
+
+String _remoteFingerprint(List<GitRemote> remotes) {
+  final values = remotes.map(_remoteIdentity).toList()..sort();
+  return hashGitObjectBytes(utf8.encode(values.join('\u0000')));
+}
+
+GitError _objectNotFound(String kind, String name) => GitError(
+  category: GitErrorCategory.objectNotFound,
+  userMessage: 'That $kind could not be found.',
+  diagnostic: '$kind was not present in the current repository snapshot: $name',
+  retryable: true,
+);
+
+GitError _objectAlreadyExists(String kind, String name) => GitError(
+  category: GitErrorCategory.objectOperationNotAllowed,
+  userMessage: 'That $kind already exists.',
+  diagnostic: 'duplicate $kind name: $name',
+  retryable: false,
+);
+
+bool _looksLikeConflict(GitError error) =>
+    error.category == GitErrorCategory.mergeConflict ||
+    RegExp(
+      r'(conflict|unmerged|could not apply)',
+      caseSensitive: false,
+    ).hasMatch(error.diagnostic);
+
+String _objectSummary(ProcessOutput output, String fallback) {
+  final text = redactBytes([...output.stdout, ...output.stderr]).trim();
+  return text.isEmpty ? fallback : text;
+}
+
+GitError _mapObjectError(GitError error) {
+  if (error.category != GitErrorCategory.processFailed) return error;
+  if (_looksLikeConflict(error)) {
+    return error.copyWith(
+      category: GitErrorCategory.mergeConflict,
+      userMessage: 'Git stopped because conflicts remain.',
+      retryable: true,
+    );
+  }
+  return error;
 }
 
 GitError _mapRemoteError(GitError error) {

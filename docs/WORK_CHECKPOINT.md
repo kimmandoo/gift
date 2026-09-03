@@ -5,25 +5,34 @@ This file is the handoff record for continuing work across query sessions.
 ## Current checkpoint
 
 - Date: 2026-09-03
-- Active task: Task 21 and its history follow-up are complete; Task 22 is next
-  and has not been started.
+- Active task: Task 22, Git object management, is complete; Task 23, large
+  repository performance and resilience, is next.
 - Branch: `main`; no new branch or worktree was created.
 - History cleanup: removed the pull-request merge commit from local and remote
   `main` with a lease-protected force update; the branding commits and Task 18
   content remain in a linear history. The two remaining obsolete branding
   labels in reachable commit messages were also replaced, and the rewrite
   backup ref was removed.
-- Changed files in this session: conflict backend/domain and gateway wiring,
-  conflict controller/UI/tests, history parser/service/controller fixes,
-  history regression tests, and the related task/docs/changelog records.
-- Verification so far: focused conflict backend/UI tests passed; the full
-  Flutter suite passed with 124 tests; focused history parser/exploration
-  tests passed with 10 tests.
-- Next action: begin Task 22 only after activating it with its behavior ledger,
-  implementation plan, and first RED test.
-- First failing signals: the initial conflict parser import failed before the
-  Task 21 contract existed; the history repair tests initially caught false
-  single-lane flattening and missing annotated-tag refs.
+- Changed files in this session: `TASKS.md`, `CHANGELOG.md`,
+  `docs/ARCHITECTURE.md`, `docs/POST_MVP_ROADMAP.md`,
+  `docs/research/jetbrains-git-mvp-behavior.md`,
+  `docs/superpowers/plans/2026-09-02-gift-dart-mvp.md`,
+  `docs/WORK_CHECKPOINT.md`,
+  `lib/src/backend/{dart_git_backend.dart,dart_git_gateway.dart,error.dart,git_gateway.dart,objects.dart,remote.dart,repository_service.dart}`,
+  `lib/src/features/repository/{changes_screen.dart,object_dialog.dart}`,
+  `test/backend/object_management_test.dart`,
+  `test/features/repository/object_dialog_test.dart`, and
+  `test/helpers/git_patch_gateway_stub.dart`.
+- Verification: the focused object-management backend/UI command passed 4
+  tests; `flutter analyze` reported no issues; and
+  `/tmp/codex-flutter/flutter/bin/flutter --suppress-analytics test --no-pub`
+  passed all 128 tests.
+- Next action: begin Task 23 by recording large-repository watching, cache,
+  process-supervision, and responsiveness scenarios, then add its first RED
+  test. Keep Task 22 complete and do not infer Task 23 completion from this
+  commit.
+- First failing signal for this task: the initial object parser test could not
+  import `package:gift/src/backend/objects.dart` before the contract existed.
 - Blockers: none.
 
 ## Previous checkpoint

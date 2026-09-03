@@ -10,6 +10,7 @@ import 'repository_service.dart';
 import 'executor.dart';
 import 'remote.dart';
 import 'status.dart';
+import 'objects.dart';
 
 /// Application-facing entry point for backend operations.
 ///
@@ -278,6 +279,7 @@ class DartGitBackend {
     return RepositoryService(
       gitPath: installation.executablePath,
       state: _state,
+      runner: _runner,
     ).getRemotes(repositoryId);
   }
 
@@ -290,6 +292,7 @@ class DartGitBackend {
     return RepositoryService(
       gitPath: installation.executablePath,
       state: _state,
+      runner: _runner,
     ).fetch(repositoryId, remote, cancellationToken: cancellationToken);
   }
 
@@ -302,6 +305,7 @@ class DartGitBackend {
     return RepositoryService(
       gitPath: installation.executablePath,
       state: _state,
+      runner: _runner,
     ).pull(repositoryId, remote, cancellationToken: cancellationToken);
   }
 
@@ -314,7 +318,326 @@ class DartGitBackend {
     return RepositoryService(
       gitPath: installation.executablePath,
       state: _state,
+      runner: _runner,
     ).push(repositoryId, remote, cancellationToken: cancellationToken);
+  }
+
+  Future<GitStashSnapshot> getStashes(RepositoryId repositoryId) async {
+    final installation = await getGitInstallation();
+    return RepositoryService(
+      gitPath: installation.executablePath,
+      state: _state,
+      runner: _runner,
+    ).getStashes(repositoryId);
+  }
+
+  Future<GitStashActionResult> createStash(
+    RepositoryId repositoryId, {
+    String message = '',
+    bool includeUntracked = false,
+  }) async {
+    final installation = await getGitInstallation();
+    return RepositoryService(
+      gitPath: installation.executablePath,
+      state: _state,
+      runner: _runner,
+    ).createStash(
+      repositoryId,
+      message: message,
+      includeUntracked: includeUntracked,
+    );
+  }
+
+  Future<GitStashActionResult> applyStash(
+    RepositoryId repositoryId,
+    String stashOid, {
+    required String fingerprint,
+  }) async {
+    final installation = await getGitInstallation();
+    return RepositoryService(
+      gitPath: installation.executablePath,
+      state: _state,
+      runner: _runner,
+    ).applyStash(repositoryId, stashOid, fingerprint: fingerprint);
+  }
+
+  Future<GitStashActionResult> popStash(
+    RepositoryId repositoryId,
+    String stashOid, {
+    required String fingerprint,
+  }) async {
+    final installation = await getGitInstallation();
+    return RepositoryService(
+      gitPath: installation.executablePath,
+      state: _state,
+      runner: _runner,
+    ).popStash(repositoryId, stashOid, fingerprint: fingerprint);
+  }
+
+  Future<GitObjectPreview> previewStashDrop(
+    RepositoryId repositoryId,
+    String stashOid,
+  ) async {
+    final installation = await getGitInstallation();
+    return RepositoryService(
+      gitPath: installation.executablePath,
+      state: _state,
+      runner: _runner,
+    ).previewStashDrop(repositoryId, stashOid);
+  }
+
+  Future<GitStashActionResult> dropStash(
+    RepositoryId repositoryId,
+    GitObjectPreview preview,
+  ) async {
+    final installation = await getGitInstallation();
+    return RepositoryService(
+      gitPath: installation.executablePath,
+      state: _state,
+      runner: _runner,
+    ).dropStash(repositoryId, preview);
+  }
+
+  Future<GitStashActionResult> branchFromStash(
+    RepositoryId repositoryId,
+    String branchName,
+    String stashOid, {
+    required String fingerprint,
+  }) async {
+    final installation = await getGitInstallation();
+    return RepositoryService(
+      gitPath: installation.executablePath,
+      state: _state,
+      runner: _runner,
+    ).branchFromStash(
+      repositoryId,
+      branchName,
+      stashOid,
+      fingerprint: fingerprint,
+    );
+  }
+
+  Future<GitTagSnapshot> getTags(RepositoryId repositoryId) async {
+    final installation = await getGitInstallation();
+    return RepositoryService(
+      gitPath: installation.executablePath,
+      state: _state,
+      runner: _runner,
+    ).getTags(repositoryId);
+  }
+
+  Future<GitTagActionResult> createTag(
+    RepositoryId repositoryId,
+    String name, {
+    String? target,
+    bool annotated = false,
+    String message = '',
+  }) async {
+    final installation = await getGitInstallation();
+    return RepositoryService(
+      gitPath: installation.executablePath,
+      state: _state,
+      runner: _runner,
+    ).createTag(
+      repositoryId,
+      name,
+      target: target,
+      annotated: annotated,
+      message: message,
+    );
+  }
+
+  Future<GitTag> getTag(RepositoryId repositoryId, String name) async {
+    final installation = await getGitInstallation();
+    return RepositoryService(
+      gitPath: installation.executablePath,
+      state: _state,
+      runner: _runner,
+    ).getTag(repositoryId, name);
+  }
+
+  Future<GitObjectPreview> previewTagDelete(
+    RepositoryId repositoryId,
+    String name,
+  ) async {
+    final installation = await getGitInstallation();
+    return RepositoryService(
+      gitPath: installation.executablePath,
+      state: _state,
+      runner: _runner,
+    ).previewTagDelete(repositoryId, name);
+  }
+
+  Future<GitTagActionResult> deleteTag(
+    RepositoryId repositoryId,
+    GitObjectPreview preview,
+  ) async {
+    final installation = await getGitInstallation();
+    return RepositoryService(
+      gitPath: installation.executablePath,
+      state: _state,
+      runner: _runner,
+    ).deleteTag(repositoryId, preview);
+  }
+
+  Future<GitRemoteActionResult> addRemote(
+    RepositoryId repositoryId,
+    String name,
+    String url,
+  ) async {
+    final installation = await getGitInstallation();
+    return RepositoryService(
+      gitPath: installation.executablePath,
+      state: _state,
+      runner: _runner,
+    ).addRemote(repositoryId, name, url);
+  }
+
+  Future<GitRemoteActionResult> renameRemote(
+    RepositoryId repositoryId,
+    String oldName,
+    String newName,
+  ) async {
+    final installation = await getGitInstallation();
+    return RepositoryService(
+      gitPath: installation.executablePath,
+      state: _state,
+      runner: _runner,
+    ).renameRemote(repositoryId, oldName, newName);
+  }
+
+  Future<GitRemoteActionResult> setRemoteUrl(
+    RepositoryId repositoryId,
+    String name,
+    String url, {
+    bool push = false,
+  }) async {
+    final installation = await getGitInstallation();
+    return RepositoryService(
+      gitPath: installation.executablePath,
+      state: _state,
+      runner: _runner,
+    ).setRemoteUrl(repositoryId, name, url, push: push);
+  }
+
+  Future<GitObjectPreview> previewRemoteRemove(
+    RepositoryId repositoryId,
+    String name,
+  ) async {
+    final installation = await getGitInstallation();
+    return RepositoryService(
+      gitPath: installation.executablePath,
+      state: _state,
+      runner: _runner,
+    ).previewRemoteRemove(repositoryId, name);
+  }
+
+  Future<GitRemoteActionResult> removeRemote(
+    RepositoryId repositoryId,
+    GitObjectPreview preview,
+  ) async {
+    final installation = await getGitInstallation();
+    return RepositoryService(
+      gitPath: installation.executablePath,
+      state: _state,
+      runner: _runner,
+    ).removeRemote(repositoryId, preview);
+  }
+
+  Future<GitObjectPreview> previewRemotePrune(
+    RepositoryId repositoryId,
+    String name,
+  ) async {
+    final installation = await getGitInstallation();
+    return RepositoryService(
+      gitPath: installation.executablePath,
+      state: _state,
+      runner: _runner,
+    ).previewRemotePrune(repositoryId, name);
+  }
+
+  Future<GitRemoteActionResult> pruneRemote(
+    RepositoryId repositoryId,
+    GitObjectPreview preview,
+  ) async {
+    final installation = await getGitInstallation();
+    return RepositoryService(
+      gitPath: installation.executablePath,
+      state: _state,
+      runner: _runner,
+    ).pruneRemote(repositoryId, preview);
+  }
+
+  Future<GitRemoteOperationResult> pushTag(
+    RepositoryId repositoryId,
+    String remote,
+    String tagName, {
+    GitCancellationToken? cancellationToken,
+  }) async {
+    final installation = await getGitInstallation();
+    return RepositoryService(
+      gitPath: installation.executablePath,
+      state: _state,
+      runner: _runner,
+    ).pushTag(
+      repositoryId,
+      remote,
+      tagName,
+      cancellationToken: cancellationToken,
+    );
+  }
+
+  Future<GitUpstreamSnapshot> getUpstream(RepositoryId repositoryId) async {
+    final installation = await getGitInstallation();
+    return RepositoryService(
+      gitPath: installation.executablePath,
+      state: _state,
+      runner: _runner,
+    ).getUpstream(repositoryId);
+  }
+
+  Future<GitUpstreamActionResult> setUpstream(
+    RepositoryId repositoryId,
+    String remote, {
+    String? branch,
+    String? remoteBranch,
+  }) async {
+    final installation = await getGitInstallation();
+    return RepositoryService(
+      gitPath: installation.executablePath,
+      state: _state,
+      runner: _runner,
+    ).setUpstream(
+      repositoryId,
+      remote,
+      branch: branch,
+      remoteBranch: remoteBranch,
+    );
+  }
+
+  Future<GitUpstreamActionResult> unsetUpstream(
+    RepositoryId repositoryId, {
+    String? branch,
+  }) async {
+    final installation = await getGitInstallation();
+    return RepositoryService(
+      gitPath: installation.executablePath,
+      state: _state,
+      runner: _runner,
+    ).unsetUpstream(repositoryId, branch: branch);
+  }
+
+  Future<GitUpstreamActionResult> publishBranch(
+    RepositoryId repositoryId,
+    String remote, {
+    String? branch,
+  }) async {
+    final installation = await getGitInstallation();
+    return RepositoryService(
+      gitPath: installation.executablePath,
+      state: _state,
+      runner: _runner,
+    ).publishBranch(repositoryId, remote, branch: branch);
   }
 
   Future<GitDiffSnapshot> getDiff(

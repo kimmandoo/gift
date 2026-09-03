@@ -45,6 +45,10 @@ enum GitErrorCategory {
   staleConflict,
   conflictResolutionNotAllowed,
   unresolvedConflicts,
+  staleObject,
+  invalidObjectName,
+  objectNotFound,
+  objectOperationNotAllowed,
 }
 
 /// A backend error has a short user-facing message and a separately redacted

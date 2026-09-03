@@ -3,8 +3,8 @@
 This roadmap turns the MVP into a dependable daily Git client while preserving
 gift's clean-room workflow research and minimal 2D pixel-game interface.
 Task 15 was marked safe done under WSL because the remaining native bundle
-check is CI-only in this environment. Tasks 16 through 21 are complete;
-Task 22 is next.
+check is CI-only in this environment. Tasks 16 through 22 are complete;
+Task 23 is next.
 Do not start a later post-MVP task until its dependencies are complete and its
 visible behavior has been recorded in the behavior ledger without copying
 proprietary implementation details or assets.
@@ -157,6 +157,8 @@ rejected.
 ## Task 22 — Stash, tag, remote, and upstream management
 
 **Depends on:** Task 20.
+
+**Status:** Complete.
 
 **Goal:** Complete the common Git object-management workflows surrounding
 branches.
