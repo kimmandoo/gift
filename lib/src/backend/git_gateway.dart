@@ -1,6 +1,7 @@
 import 'domain.dart';
 import 'branch.dart';
 import 'commit.dart';
+import 'conflict.dart';
 import 'discard.dart';
 import 'diff.dart';
 import 'status.dart';
@@ -20,6 +21,46 @@ abstract interface class GitGateway {
   Future<RepositoryOpened> openRepository(String path);
 
   Future<GitStatusSnapshot> getStatus(RepositoryId repositoryId);
+
+  Future<GitConflictSnapshot> getConflicts(RepositoryId repositoryId);
+
+  Future<GitConflictResolutionResult> acceptConflictOurs(
+    RepositoryId repositoryId,
+    String path, {
+    required String fingerprint,
+  });
+
+  Future<GitConflictResolutionResult> acceptConflictTheirs(
+    RepositoryId repositoryId,
+    String path, {
+    required String fingerprint,
+  });
+
+  Future<GitConflictResolutionResult> editConflictResult(
+    RepositoryId repositoryId,
+    String path,
+    String content, {
+    required String fingerprint,
+  });
+
+  Future<GitConflictResolutionResult> markConflictResolved(
+    RepositoryId repositoryId,
+    String path, {
+    required String fingerprint,
+    bool deleteResult = false,
+  });
+
+  Future<GitConflictOperationResult> continueConflict(
+    RepositoryId repositoryId, {
+    required String fingerprint,
+    GitCancellationToken? cancellationToken,
+  });
+
+  Future<GitConflictOperationResult> abortConflict(
+    RepositoryId repositoryId, {
+    required String fingerprint,
+    GitCancellationToken? cancellationToken,
+  });
 
   Future<GitHistoryPage> getHistory(
     RepositoryId repositoryId, {

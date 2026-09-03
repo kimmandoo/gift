@@ -1,6 +1,7 @@
 import 'domain.dart';
 import 'branch.dart';
 import 'commit.dart';
+import 'conflict.dart';
 import 'discard.dart';
 import 'diff.dart';
 import 'git_installation_service.dart';
@@ -54,6 +55,108 @@ class DartGitBackend {
       state: _state,
       runner: _runner,
     ).getStatus(repositoryId);
+  }
+
+  Future<GitConflictSnapshot> getConflicts(RepositoryId repositoryId) async {
+    final installation = await getGitInstallation();
+    return RepositoryService(
+      gitPath: installation.executablePath,
+      state: _state,
+      runner: _runner,
+    ).getConflicts(repositoryId);
+  }
+
+  Future<GitConflictResolutionResult> acceptConflictOurs(
+    RepositoryId repositoryId,
+    String path, {
+    required String fingerprint,
+  }) async {
+    final installation = await getGitInstallation();
+    return RepositoryService(
+      gitPath: installation.executablePath,
+      state: _state,
+      runner: _runner,
+    ).acceptConflictOurs(repositoryId, path, fingerprint: fingerprint);
+  }
+
+  Future<GitConflictResolutionResult> acceptConflictTheirs(
+    RepositoryId repositoryId,
+    String path, {
+    required String fingerprint,
+  }) async {
+    final installation = await getGitInstallation();
+    return RepositoryService(
+      gitPath: installation.executablePath,
+      state: _state,
+      runner: _runner,
+    ).acceptConflictTheirs(repositoryId, path, fingerprint: fingerprint);
+  }
+
+  Future<GitConflictResolutionResult> editConflictResult(
+    RepositoryId repositoryId,
+    String path,
+    String content, {
+    required String fingerprint,
+  }) async {
+    final installation = await getGitInstallation();
+    return RepositoryService(
+      gitPath: installation.executablePath,
+      state: _state,
+      runner: _runner,
+    ).editConflictResult(repositoryId, path, content, fingerprint: fingerprint);
+  }
+
+  Future<GitConflictResolutionResult> markConflictResolved(
+    RepositoryId repositoryId,
+    String path, {
+    required String fingerprint,
+    bool deleteResult = false,
+  }) async {
+    final installation = await getGitInstallation();
+    return RepositoryService(
+      gitPath: installation.executablePath,
+      state: _state,
+      runner: _runner,
+    ).markConflictResolved(
+      repositoryId,
+      path,
+      fingerprint: fingerprint,
+      deleteResult: deleteResult,
+    );
+  }
+
+  Future<GitConflictOperationResult> continueConflict(
+    RepositoryId repositoryId, {
+    required String fingerprint,
+    GitCancellationToken? cancellationToken,
+  }) async {
+    final installation = await getGitInstallation();
+    return RepositoryService(
+      gitPath: installation.executablePath,
+      state: _state,
+      runner: _runner,
+    ).continueConflict(
+      repositoryId,
+      fingerprint: fingerprint,
+      cancellationToken: cancellationToken,
+    );
+  }
+
+  Future<GitConflictOperationResult> abortConflict(
+    RepositoryId repositoryId, {
+    required String fingerprint,
+    GitCancellationToken? cancellationToken,
+  }) async {
+    final installation = await getGitInstallation();
+    return RepositoryService(
+      gitPath: installation.executablePath,
+      state: _state,
+      runner: _runner,
+    ).abortConflict(
+      repositoryId,
+      fingerprint: fingerprint,
+      cancellationToken: cancellationToken,
+    );
   }
 
   Future<GitHistoryPage> getHistory(

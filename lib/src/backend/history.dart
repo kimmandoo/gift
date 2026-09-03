@@ -246,7 +246,11 @@ GitHistoryPage parseGitHistory(
     if (fields.length != 7 && fields.length != 8 && fields.length != 9) {
       throw FormatException('Invalid Git history record: $record');
     }
-    final oid = fields[0];
+    // Git appends a line ending after the record separator on some versions,
+    // so every record after the first can begin with `\n` (or `\r\n`). The
+    // OID is structural data and must be normalized before matching parents
+    // and refs or assigning graph lanes.
+    final oid = fields[0].trim();
     final authorDate = DateTime.tryParse(fields[4]);
     if (oid.isEmpty || authorDate == null) {
       throw FormatException('Invalid Git history metadata: $record');
@@ -270,6 +274,13 @@ GitHistoryPage parseGitHistory(
 
   final hasMore = parsed.length > limit;
   final pageCommits = hasMore ? parsed.take(limit).toList() : parsed;
+  // A single ref tip is enough to flatten a genuinely linear history, but a
+  // merge commit still needs its second parent lane. Keep the optimization
+  // local to pages that contain no merge topology so old repositories do not
+  // render a misleading one-dimensional graph.
+  final useSingleGraphLane =
+      collapseToSingleLane &&
+      pageCommits.every((commit) => commit.parents.length <= 1);
   final position = cursor?.position ?? offset;
   final nextCursor = hasMore
       ? GitHistoryCursor(
@@ -281,14 +292,14 @@ GitHistoryPage parseGitHistory(
       : null;
   return GitHistoryPage(
     repositoryId: repositoryId,
-    commits: collapseToSingleLane
+    commits: useSingleGraphLane
         ? assignSingleGraphLane(pageCommits)
         : assignGraphLanes(pageCommits),
     offset: offset,
     limit: limit,
     hasMore: hasMore,
     nextCursor: nextCursor,
-    collapseToSingleLane: collapseToSingleLane,
+    collapseToSingleLane: useSingleGraphLane,
   );
 }
 

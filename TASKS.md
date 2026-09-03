@@ -7,8 +7,8 @@
 ## Progress
 
 - **Total Tasks:** 25
-- **Completed:** 20 / 25
-- **Current Active Task:** `21 — Conflict resolution workspace (next; not started)`
+- **Completed:** 21 / 25
+- **Current Active Task:** `22 — Git object management (next)`
 
 | # | Scope | Dart backend deliverables | Flutter deliverables | Status |
 |---|---|---|---|:---:|
@@ -29,10 +29,10 @@
 | **15** | Hardening, UI & identity | Process safety, connected graph edges, preview revocation | Responsive pixel UI, theme switching, font and release identity | ✅ |
 | **16** | Workspace | Multi-repository sessions and persisted workspace state | Repository tabs, reopen, and keyboard navigation | ✅ |
 | **17** | Partial staging | Hunk and line patch operations with stale-content guards | Interactive diff selection and stage controls | ⬜ |
-| **18** | Commit workflow | Amend, templates, sign-off, and identity preflight | Guided commit options and validation | ⬜ |
+| **18** | Commit workflow | Amend, templates, sign-off, and identity preflight | Guided commit options and validation | ✅ |
 | **19** | History exploration | Search, filters, commit details, and bounded commit diffs | Searchable graph and changed-file inspector | ✅ |
-| **20** | Advanced branches | Rename, delete, merge, rebase, and cherry-pick safety | Preview-driven branch actions | ⬜ |
-| **21** | Conflict resolution | Conflict-state parser and safe resolution mutations | Three-pane merge workflow | ⬜ |
+| **20** | Advanced branches | Rename, delete, merge, rebase, and cherry-pick safety | Preview-driven branch actions | ✅ |
+| **21** | Conflict resolution | Conflict-state parser and safe resolution mutations | Three-pane merge workflow | ✅ |
 | **22** | Git objects | Stash, tags, remotes, and upstream management | Focused object-management dialogs | ⬜ |
 | **23** | Scale & resilience | File watching, cache invalidation, process supervision | Large-repository responsiveness | ⬜ |
 | **24** | Accessibility & preferences | Versioned settings and locale-ready text contracts | Scaling, remapping, themes, and accessibility | ⬜ |
@@ -237,7 +237,7 @@ Task 18 is complete.
 - [x] Covered live-ref movement, merge/root commits, deleted paths, and
   unusual UTF-8 metadata.
 
-Task 19 is complete. Task 20 is next.
+Task 19 is complete.
 
 ### Task 20: Safe advanced branch operations
 
@@ -251,8 +251,25 @@ Task 19 is complete. Task 20 is next.
 - [x] Added backend and widget coverage for safe history-changing
   operations and reachable-commit preservation.
 
-Task 20 is complete. Task 21 is next. The first failing test was the initial
+Task 20 is complete. The first failing test was the initial
 compile failure in `test/backend/advanced_branch_test.dart` before the preview
+contract existed.
+
+### Task 21: Conflict resolution workspace
+
+- [x] Parse unmerged index stages and merge/rebase/cherry-pick metadata into a
+  bounded conflict workspace model.
+- [x] Load base, ours, theirs, and working-result content with explicit
+  missing, binary, and bounded-output states.
+- [x] Add fingerprint-guarded accept-ours, accept-theirs, edit-result, mark
+  resolved, continue, and abort mutations.
+- [x] Add responsive three-pane conflict UI with navigation and
+  non-color-dependent status labels.
+- [x] Cover add/add, modify/delete, rename, binary, merge, rebase,
+  cherry-pick, and stale-resolution fixtures.
+
+Task 21 is complete. Task 22 is next. The first failing test was the initial compile failure in
+`test/backend/conflict_resolution_test.dart` before the conflict stage parser
 contract existed.
 
 ## Post-MVP backlog

@@ -2,6 +2,10 @@
 
 ## 2026-09-03
 
+- feat(task21): added fingerprint-guarded conflict inspection, resolution,
+  and responsive three-pane recovery workflows.
+- fix(task19): preserved merge topology and peeled annotated history refs for
+  older repositories.
 - fix(graph): rendered single-branch history as one connected lane of commit nodes.
 - fix(graph): compacted closed history lanes so surviving commit ancestry no longer drifted into parallel columns.
 - fix(graph): clarified branch topology with dotted lanes, stepped transitions, and pixel commit markers.

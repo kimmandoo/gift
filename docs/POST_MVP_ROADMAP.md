@@ -3,8 +3,8 @@
 This roadmap turns the MVP into a dependable daily Git client while preserving
 gift's clean-room workflow research and minimal 2D pixel-game interface.
 Task 15 was marked safe done under WSL because the remaining native bundle
-check is CI-only in this environment. Tasks 16 through 20 are complete;
-Task 21 is next.
+check is CI-only in this environment. Tasks 16 through 21 are complete;
+Task 22 is next.
 Do not start a later post-MVP task until its dependencies are complete and its
 visible behavior has been recorded in the behavior ledger without copying
 proprietary implementation details or assets.
@@ -136,6 +136,8 @@ cancelled, aborted, and stale-preview paths without losing reachable commits.
 ## Task 21 — Conflict resolution workspace
 
 **Depends on:** Task 20.
+
+**Status:** Complete.
 
 **Goal:** Turn merge/rebase/cherry-pick conflicts into a guided resolution flow.
 

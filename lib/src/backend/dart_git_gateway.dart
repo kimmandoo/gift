@@ -1,6 +1,7 @@
 import 'dart_git_backend.dart';
 import 'branch.dart';
 import 'commit.dart';
+import 'conflict.dart';
 import 'domain.dart';
 import 'discard.dart';
 import 'diff.dart';
@@ -33,6 +34,77 @@ class DartGitGateway implements GitGateway, DiscardPreviewCancellationGateway {
   @override
   Future<GitStatusSnapshot> getStatus(RepositoryId repositoryId) =>
       backend.getStatus(repositoryId);
+
+  @override
+  Future<GitConflictSnapshot> getConflicts(RepositoryId repositoryId) =>
+      backend.getConflicts(repositoryId);
+
+  @override
+  Future<GitConflictResolutionResult> acceptConflictOurs(
+    RepositoryId repositoryId,
+    String path, {
+    required String fingerprint,
+  }) =>
+      backend.acceptConflictOurs(repositoryId, path, fingerprint: fingerprint);
+
+  @override
+  Future<GitConflictResolutionResult> acceptConflictTheirs(
+    RepositoryId repositoryId,
+    String path, {
+    required String fingerprint,
+  }) => backend.acceptConflictTheirs(
+    repositoryId,
+    path,
+    fingerprint: fingerprint,
+  );
+
+  @override
+  Future<GitConflictResolutionResult> editConflictResult(
+    RepositoryId repositoryId,
+    String path,
+    String content, {
+    required String fingerprint,
+  }) => backend.editConflictResult(
+    repositoryId,
+    path,
+    content,
+    fingerprint: fingerprint,
+  );
+
+  @override
+  Future<GitConflictResolutionResult> markConflictResolved(
+    RepositoryId repositoryId,
+    String path, {
+    required String fingerprint,
+    bool deleteResult = false,
+  }) => backend.markConflictResolved(
+    repositoryId,
+    path,
+    fingerprint: fingerprint,
+    deleteResult: deleteResult,
+  );
+
+  @override
+  Future<GitConflictOperationResult> continueConflict(
+    RepositoryId repositoryId, {
+    required String fingerprint,
+    GitCancellationToken? cancellationToken,
+  }) => backend.continueConflict(
+    repositoryId,
+    fingerprint: fingerprint,
+    cancellationToken: cancellationToken,
+  );
+
+  @override
+  Future<GitConflictOperationResult> abortConflict(
+    RepositoryId repositoryId, {
+    required String fingerprint,
+    GitCancellationToken? cancellationToken,
+  }) => backend.abortConflict(
+    repositoryId,
+    fingerprint: fingerprint,
+    cancellationToken: cancellationToken,
+  );
 
   @override
   Future<GitHistoryPage> getHistory(

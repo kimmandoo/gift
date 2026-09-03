@@ -256,3 +256,25 @@ system Git 2.35+.
 4. Added responsive branch-operation controls and widget coverage.
 5. Focused backend/UI tests passed; the full suite completed with 109 passing
    and the two documented Windows-platform expectation failures.
+
+## Completed vertical: conflict resolution workspace (Task 21)
+
+1. Recorded conflict inspection, side selection, explicit mark-resolved,
+   operation recovery, stale fingerprints, and add/add, modify/delete,
+   rename-related, and binary scenarios in the behavior ledger.
+2. Added the first failing test for parsing Git's unmerged index stages before
+   introducing the conflict workspace contract.
+3. Implemented a bounded conflict snapshot, explicit operation metadata, and
+   fingerprint-guarded resolution mutations.
+4. Added controller and responsive three-pane UI coverage and verified the
+   full suite. Task 21 is complete; Task 22 is next.
+
+## Follow-up repair: history graph compatibility
+
+1. Added regression coverage for Git's line ending after record separators,
+   merge topology in a single-tip view, and annotated tag refs pointing at
+   historical commits.
+2. Normalized history record OIDs, peeled annotated tags to commit tips, and
+   limited the single-lane optimization to genuinely linear pages.
+3. Passed the focused history parser/exploration tests and retained the full
+   graph lane recomputation across pagination.

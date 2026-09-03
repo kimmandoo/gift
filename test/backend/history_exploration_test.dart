@@ -29,6 +29,14 @@ void main() {
       await File('${directory.path}/side.txt').writeAsString('side\n');
       await git(directory.path, ['add', '--', 'side.txt']);
       await git(directory.path, ['commit', '--quiet', '-m', 'old work']);
+      await git(directory.path, [
+        'tag',
+        '--annotate',
+        'old-side',
+        'old-work',
+        '-m',
+        'old side',
+      ]);
       await git(directory.path, ['switch', '--quiet', mainBranch]);
       await File('${directory.path}/main.txt').writeAsString('main\nnext\n');
       await git(directory.path, ['add', '--', 'main.txt']);
@@ -47,9 +55,15 @@ void main() {
       final opened = await backend.openRepository(directory.path);
       final history = await backend.getHistory(opened.repositoryId);
 
-      expect(history.collapseToSingleLane, isTrue);
-      expect(history.commits.map((commit) => commit.lane).toSet(), {0});
-      expect(history.commits.map((commit) => commit.laneCount).toSet(), {1});
+      expect(history.collapseToSingleLane, isFalse);
+      expect(history.commits.first.laneCount, 2);
+      expect(
+        history.commits
+            .firstWhere((commit) => commit.subject == 'old work')
+            .refs
+            .map((ref) => ref.name),
+        contains('refs/tags/old-side'),
+      );
     },
   );
 

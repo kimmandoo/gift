@@ -42,6 +42,9 @@ enum GitErrorCategory {
   operationInProgress,
   staleBranchPreview,
   branchOperationNotAllowed,
+  staleConflict,
+  conflictResolutionNotAllowed,
+  unresolvedConflicts,
 }
 
 /// A backend error has a short user-facing message and a separately redacted

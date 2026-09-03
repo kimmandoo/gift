@@ -209,19 +209,26 @@ HistoryScreen
        └─ GitGateway.getHistory(limit, offset)
             └─ DartGitBackend
                  └─ RepositoryService.getHistory()
-                      ├─ git log --all --topo-order --max-count/--skip
+                      ├─ git for-each-ref + git rev-parse HEAD (snapshot tips)
+                      ├─ git log --topo-order --max-count/--skip <snapshot tips>
                       └─ parseGitHistory() → GitHistoryPage
                            └─ deterministic parent lanes
 ```
 
-1. 백엔드는 화면이 요청한 크기보다 한 commit을 더 읽어 `hasMore`를
+1. history 원본은 별도 DB가 아니라 저장소의 Git ref입니다. 백엔드는
+   `git for-each-ref`로 local/remote branch, lightweight/annotated tag를
+   읽고 `HEAD`를 더해 commit tip snapshot을 만든 뒤, annotated tag는
+   peeled commit으로 정규화합니다. 이후 그 snapshot tip을 `git log`에
+   명시적으로 전달하므로 page 사이에 ref가 움직여도 cursor가 같은
+   history를 유지합니다.
+2. 백엔드는 화면이 요청한 크기보다 한 commit을 더 읽어 `hasMore`를
    계산합니다. 최대 page size를 제한해 큰 history가 한 번에 메모리를
    점유하지 않도록 합니다.
-2. 각 record는 object ID, parent IDs, author, 날짜, subject, body로
+3. 각 record는 object ID, parent IDs, author, 날짜, subject, body로
    파싱됩니다. 각 행은 commit lane뿐 아니라 위쪽 lane에서 아래쪽 lane으로
    이어지는 segment 목록을 가집니다. merge/fork는 여러 segment로 표현하고,
    pagination 뒤에는 현재까지 읽은 전체 commit의 lane을 다시 계산합니다.
-3. History 화면은 처음 page를 표시하고 Load more를 눌렀을 때 다음 offset을
+4. History 화면은 처음 page를 표시하고 Load more를 눌렀을 때 다음 cursor를
    요청합니다. commit 행을 선택하면 오른쪽 detail pane에서 전체 ID,
    parent, author와 body를 읽을 수 있습니다.
 
@@ -347,6 +354,7 @@ GiftApp
 | `lib/src/backend/git_installation_service.dart` | Git 경로 검색과 버전 검사 |
 | `lib/src/backend/repository_service.dart` | 저장소 확인과 세션용 ID 등록 |
 | `lib/src/backend/status.dart` | Porcelain v2 상태 파싱과 변경 facet/snapshot 타입 |
+| `lib/src/backend/conflict.dart` | unmerged index stage, side content, operation, resolution 타입과 파서 |
 | `lib/src/backend/discard.dart` | 만료 가능한 discard preview token 값 객체 |
 | `lib/src/backend/diff.dart` | unified diff 라인, hunk, rename/binary 파싱과 scope 타입 |
 | `lib/src/backend/dart_git_backend.dart` | 백엔드 서비스들을 연결하는 facade |
@@ -436,10 +444,14 @@ row also exposes its lane and merge status as an accessibility image label.
 When a branch joins or ends, the lane allocator removes every vacated slot and
 shifts surviving ancestry left. Later commits therefore connect to the nearest
 available lane instead of retaining an empty parallel column.
-If the history snapshot contains only one local branch tip, every displayed
-commit is placed on lane zero and connected to the adjacent row. Historical
-merge parents do not create persistent side lanes unless multiple local branch
-tips are actually being displayed.
+If the history snapshot contains only one unique commit tip, a page with no
+merge parent can use the compact single-lane representation. The presence of
+any merge parent switches that page to the parent-lane allocator, even when
+only one local branch remains. Multiple tips from local branches, remote
+tracking refs, or tags also use the full allocator. This keeps old repositories
+with stale side refs and historical merges from being rendered as a false
+straight line; the parser also removes Git's record-terminator line ending
+before matching commit IDs and parent IDs.
 
 ## Safe advanced branch operations (Task 20)
 
@@ -457,3 +469,39 @@ conflicted result with only the valid `continue`, `skip`, and/or `abort`
 phases. Cancellation is reported separately, and the backend never converts a
 generic failure into an inferred recovery command. Rename/delete and all
 history-changing starts run through the same per-repository mutation queue.
+
+## Conflict resolution workspace (Task 21)
+
+```text
+ChangesScreen
+  └─ ConflictWorkspaceScreen
+       ├─ ConflictController → selected conflict + request generation
+       ├─ base reference
+       ├─ ours ─┐
+       ├─ result ├─ three-pane comparison and explicit text-backed statuses
+       └─ theirs ┘
+            ├─ accept ours / accept theirs
+            ├─ edit result → mark resolved
+            └─ continue / abort detected merge, rebase, or cherry-pick
+```
+
+1. `getConflicts` reads `git ls-files -u -z` and groups stage 1, 2, and 3 by
+   path. Missing stages are retained as data rather than replaced with empty
+   strings, which makes add/add, modify/delete, and rename-related conflicts
+   understandable. The working result is loaded separately from the
+   repository root.
+2. Blob and worktree reads are bounded. Text, missing, binary, oversized, and
+   unreadable states are distinct and are shown with words as well as styling;
+   color is never the only conflict signal. The base side is kept as a compact
+   common-ancestor reference while ours, result, and theirs form the primary
+   three-pane comparison.
+3. Each snapshot fingerprint includes the raw unmerged index records and a
+   Git-computed working-tree object ID for every conflicted path. Accept,
+   edit, mark-resolved, continue, and abort mutations compare that fingerprint
+   inside the per-repository mutation queue before invoking Git. Editing does
+   not mark a path resolved implicitly.
+4. Operation metadata comes from `MERGE_HEAD`, `CHERRY_PICK_HEAD`, and the
+   rebase state directories. Recovery commands are selected from that typed
+   metadata, and continue is unavailable while any unmerged path remains.
+   Cancellation and unresolved follow-up failures remain visible states so the
+   UI does not guess whether to continue or abort.

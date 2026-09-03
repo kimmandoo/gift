@@ -187,18 +187,23 @@ class HistoryController extends ChangeNotifier {
         ),
       );
       if (requestId != _historyRequestId) return;
+      final combinedCommits = [...page.commits, ...nextPage.commits];
+      final collapseToSingleLane =
+          page.collapseToSingleLane &&
+          nextPage.collapseToSingleLane &&
+          combinedCommits.every((commit) => commit.parents.length <= 1);
       _setState(
         _state.copyWith(
           page: GitHistoryPage(
             repositoryId: page.repositoryId,
-            commits: page.collapseToSingleLane
-                ? assignSingleGraphLane([...page.commits, ...nextPage.commits])
-                : assignGraphLanes([...page.commits, ...nextPage.commits]),
+            commits: collapseToSingleLane
+                ? assignSingleGraphLane(combinedCommits)
+                : assignGraphLanes(combinedCommits),
             offset: page.offset,
             limit: page.limit,
             hasMore: nextPage.hasMore,
             nextCursor: nextPage.nextCursor,
-            collapseToSingleLane: page.collapseToSingleLane,
+            collapseToSingleLane: collapseToSingleLane,
           ),
           clearError: true,
           isLoadingMore: false,

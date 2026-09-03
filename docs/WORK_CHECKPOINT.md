@@ -5,28 +5,25 @@ This file is the handoff record for continuing work across query sessions.
 ## Current checkpoint
 
 - Date: 2026-09-03
-- Active task: the requested single-branch history graph fix is complete on
-  `main`; Task 20 remains complete and Task 21 has not been activated.
+- Active task: Task 21 and its history follow-up are complete; Task 22 is next
+  and has not been started.
 - Branch: `main`; no new branch or worktree was created.
 - History cleanup: removed the pull-request merge commit from local and remote
   `main` with a lease-protected force update; the branding commits and Task 18
   content remain in a linear history. The two remaining obsolete branding
   labels in reachable commit messages were also replaced, and the rewrite
   backup ref was removed.
-- Changed files: the history model/parser, repository snapshot decision,
-  pagination controller, parser coverage, architecture, changelog, and this
-  checkpoint. A snapshot with one local branch tip now connects every visible
-  commit node on lane zero; multi-tip snapshots retain topology lanes.
-- Verification: the history parser, history screen, and history exploration
-  suites passed all 15 tests, and `flutter analyze` passed with no issues. The
-  full suite completed with 112 passing tests and the same 2 known
-  Windows-platform expectation failures in `dart_git_backend_test.dart`
-  (UTF-8 process output and CRLF newline normalization). Formatting and final
-  `git diff --check` passed.
-- Next action: activate Task21 by recording its behavior scenarios and first
-  RED test in a later requested session.
-- First failing signal: a single-tip merge-history regression could not request
-  single-lane rendering because `parseGitHistory` lacked the mode entirely.
+- Changed files in this session: conflict backend/domain and gateway wiring,
+  conflict controller/UI/tests, history parser/service/controller fixes,
+  history regression tests, and the related task/docs/changelog records.
+- Verification so far: focused conflict backend/UI tests passed; the full
+  Flutter suite passed with 124 tests; focused history parser/exploration
+  tests passed with 10 tests.
+- Next action: begin Task 22 only after activating it with its behavior ledger,
+  implementation plan, and first RED test.
+- First failing signals: the initial conflict parser import failed before the
+  Task 21 contract existed; the history repair tests initially caught false
+  single-lane flattening and missing annotated-tag refs.
 - Blockers: none.
 
 ## Previous checkpoint

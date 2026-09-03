@@ -61,8 +61,12 @@ class GitInvocation {
     required this.outputPolicy,
     this.cancellationToken,
     this.timeout,
+    Map<String, String>? environment,
   }) : args = List.unmodifiable(args),
-       stdin = stdin == null ? null : List<int>.unmodifiable(stdin);
+       stdin = stdin == null ? null : List<int>.unmodifiable(stdin),
+       environment = environment == null
+           ? null
+           : Map<String, String>.unmodifiable(environment);
 
   final String program;
   final List<String> args;
@@ -72,6 +76,7 @@ class GitInvocation {
   final OutputPolicy outputPolicy;
   final GitCancellationToken? cancellationToken;
   final Duration? timeout;
+  final Map<String, String>? environment;
 }
 
 class ProcessOutput {
@@ -104,9 +109,10 @@ class ProcessGitRunner {
         workingDirectory: invocation.cwd,
         runInShell: false,
         includeParentEnvironment: true,
-        environment: const {
+        environment: {
           'GIT_TERMINAL_PROMPT': '0',
           'GCM_INTERACTIVE': 'Never',
+          ...?invocation.environment,
         },
       );
     } on ProcessException catch (error) {

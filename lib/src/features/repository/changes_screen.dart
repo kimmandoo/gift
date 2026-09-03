@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:gift/src/backend/commit.dart';
 import 'package:gift/src/backend/branch.dart';
+import 'package:gift/src/features/repository/conflict_workspace_screen.dart';
 import 'package:gift/src/backend/domain.dart';
 import 'package:gift/src/backend/diff.dart';
 import 'package:gift/src/backend/error.dart';
@@ -224,6 +225,8 @@ class _ChangesScreenBodyState extends ConsumerState<_ChangesScreenBody> {
           children: [
             if (snapshot != null) ...[
               _summary(context, snapshot),
+              if (snapshot.conflicts.isNotEmpty)
+                _conflictWorkspaceBanner(context, snapshot),
               if (state.error case final error?) _errorBanner(context, error),
             ],
             if (state.isLoading) const LinearProgressIndicator(),
@@ -324,6 +327,36 @@ class _ChangesScreenBodyState extends ConsumerState<_ChangesScreenBody> {
             ],
           );
         },
+      ),
+    );
+  }
+
+  Widget _conflictWorkspaceBanner(
+    BuildContext context,
+    GitStatusSnapshot snapshot,
+  ) {
+    return Container(
+      key: const Key('conflict-workspace-banner'),
+      padding: const EdgeInsets.fromLTRB(20, 8, 20, 8),
+      color: Theme.of(context).colorScheme.errorContainer,
+      child: Wrap(
+        crossAxisAlignment: WrapCrossAlignment.center,
+        spacing: 12,
+        runSpacing: 8,
+        children: [
+          Text(
+            '${snapshot.conflicts.length} conflicted path'
+            '${snapshot.conflicts.length == 1 ? '' : 's'}',
+          ),
+          FilledButton.tonalIcon(
+            key: const Key('open-conflict-workspace'),
+            onPressed: _activeController.state.isMutating
+                ? null
+                : () => unawaited(_openConflictWorkspace(context)),
+            icon: const Icon(Icons.merge_type),
+            label: const Text('Resolve conflicts'),
+          ),
+        ],
       ),
     );
   }
@@ -1167,6 +1200,30 @@ class _ChangesScreenBodyState extends ConsumerState<_ChangesScreenBody> {
         ),
       ),
     );
+  }
+
+  Future<void> _openConflictWorkspace(BuildContext context) async {
+    await showDialog<void>(
+      context: context,
+      builder: (_) => Dialog(
+        insetPadding: const EdgeInsets.all(20),
+        child: SizedBox(
+          width: MediaQuery.sizeOf(context).width < 900
+              ? MediaQuery.sizeOf(context).width - 40
+              : 1120,
+          height: MediaQuery.sizeOf(context).height < 720
+              ? MediaQuery.sizeOf(context).height - 40
+              : 680,
+          child: ConflictWorkspaceScreen(
+            gateway: widget.gateway,
+            repository: widget.repository,
+            onClose: () => Navigator.of(context).pop(),
+          ),
+        ),
+      ),
+    );
+    if (!context.mounted) return;
+    await _activeController.refresh();
   }
 
   Future<void> _openBranches(BuildContext context) async {

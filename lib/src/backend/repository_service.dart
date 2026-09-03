@@ -6,6 +6,7 @@ import 'dart:math';
 import 'domain.dart';
 import 'branch.dart';
 import 'commit.dart';
+import 'conflict.dart';
 import 'discard.dart';
 import 'diff.dart';
 import 'error.dart';
@@ -355,6 +356,353 @@ class RepositoryService {
     }
   }
 
+  /// Reads the unmerged index and the in-progress operation as one bounded
+  /// snapshot. The fingerprint is rebuilt before each mutation, so a view
+  /// cannot silently resolve a file that changed while it was open.
+  Future<GitConflictSnapshot> getConflicts(RepositoryId repositoryId) async {
+    final handle = await state.lookup(repositoryId);
+    final status = await getStatus(repositoryId);
+    final output = await _runner.run(
+      GitInvocation(
+        program: gitPath,
+        args: const ['ls-files', '-u', '-z'],
+        cwd: handle.root,
+        kind: GitOperationKind.read,
+        outputPolicy: const OutputPolicy.capture(maxBytes: 2 * 1024 * 1024),
+      ),
+    );
+    late final List<GitConflictEntry> parsed;
+    try {
+      parsed = parseGitUnmergedIndex(output.stdout);
+    } on FormatException catch (error, stackTrace) {
+      Error.throwWithStackTrace(
+        GitError(
+          category: GitErrorCategory.parseFailure,
+          userMessage: 'Git returned an unreadable conflict index.',
+          diagnostic: error.message,
+          retryable: false,
+        ),
+        stackTrace,
+      );
+    }
+
+    final loaded = <GitConflictEntry>[];
+    for (final conflict in parsed) {
+      final statusChange = _findChange(status, conflict.path);
+      loaded.add(
+        conflict.copyWith(
+          originalPath: statusChange?.originalPath,
+          base: await _loadConflictSide(handle, conflict.base),
+          ours: await _loadConflictSide(handle, conflict.ours),
+          theirs: await _loadConflictSide(handle, conflict.theirs),
+          result: await _loadWorkingConflictSide(handle, conflict.path),
+        ),
+      );
+    }
+    final fingerprint = await _readConflictFingerprint(
+      handle,
+      output.stdout,
+      parsed,
+    );
+    return GitConflictSnapshot(
+      repositoryId: repositoryId,
+      conflicts: loaded,
+      fingerprint: fingerprint,
+      operation: await _readConflictOperation(handle),
+    );
+  }
+
+  Future<GitConflictResolutionResult> acceptConflictOurs(
+    RepositoryId repositoryId,
+    String path, {
+    required String fingerprint,
+  }) => _acceptConflictSide(
+    repositoryId,
+    path,
+    fingerprint: fingerprint,
+    ours: true,
+  );
+
+  Future<GitConflictResolutionResult> acceptConflictTheirs(
+    RepositoryId repositoryId,
+    String path, {
+    required String fingerprint,
+  }) => _acceptConflictSide(
+    repositoryId,
+    path,
+    fingerprint: fingerprint,
+    ours: false,
+  );
+
+  Future<GitConflictResolutionResult> _acceptConflictSide(
+    RepositoryId repositoryId,
+    String path, {
+    required String fingerprint,
+    required bool ours,
+  }) {
+    return state.runMutation(repositoryId, () async {
+      final snapshot = await _validateConflictMutation(
+        repositoryId,
+        path,
+        fingerprint,
+      );
+      final conflict = _findConflict(snapshot, path)!;
+      final side = ours ? conflict.ours : conflict.theirs;
+      final handle = await state.lookup(repositoryId);
+      final command = side?.exists == true
+          ? ['checkout', ours ? '--ours' : '--theirs', '--', path]
+          : ['rm', '--force', '--', path];
+      try {
+        await _runner.run(
+          GitInvocation(
+            program: gitPath,
+            args: command,
+            cwd: handle.root,
+            kind: GitOperationKind.mutation,
+            outputPolicy: const OutputPolicy.capture(maxBytes: 128 * 1024),
+          ),
+        );
+        if (side?.exists == true) {
+          await _runner.run(
+            GitInvocation(
+              program: gitPath,
+              args: ['add', '--', path],
+              cwd: handle.root,
+              kind: GitOperationKind.mutation,
+              outputPolicy: const OutputPolicy.capture(maxBytes: 128 * 1024),
+            ),
+          );
+        }
+      } on GitError catch (error, stackTrace) {
+        Error.throwWithStackTrace(_mapConflictError(error), stackTrace);
+      }
+      return GitConflictResolutionResult(
+        repositoryId: repositoryId,
+        path: path,
+        action: ours
+            ? GitConflictResolutionAction.acceptOurs
+            : GitConflictResolutionAction.acceptTheirs,
+        snapshot: await getConflicts(repositoryId),
+        summary: ours
+            ? 'The ours side was selected for this path.'
+            : 'The theirs side was selected for this path.',
+      );
+    });
+  }
+
+  Future<GitConflictResolutionResult> editConflictResult(
+    RepositoryId repositoryId,
+    String path,
+    String content, {
+    required String fingerprint,
+  }) {
+    final bytes = utf8.encode(content);
+    if (bytes.length > _maxConflictTextBytes || content.contains('\u0000')) {
+      throw const GitError(
+        category: GitErrorCategory.outputOverflow,
+        userMessage: 'The editable conflict result is too large or binary.',
+        diagnostic: 'edited conflict result exceeded the text safety bound',
+        retryable: false,
+      );
+    }
+    return state.runMutation(repositoryId, () async {
+      final snapshot = await _validateConflictMutation(
+        repositoryId,
+        path,
+        fingerprint,
+      );
+      final conflict = _findConflict(snapshot, path)!;
+      final resultState = conflict.result?.content.state;
+      if (resultState == GitConflictContentState.binary ||
+          resultState == GitConflictContentState.tooLarge ||
+          resultState == GitConflictContentState.unreadable) {
+        throw const GitError(
+          category: GitErrorCategory.conflictResolutionNotAllowed,
+          userMessage:
+              'Binary conflict results must be resolved outside the editor.',
+          diagnostic:
+              'editable result was requested for a non-text worktree file',
+          retryable: false,
+        );
+      }
+      final handle = await state.lookup(repositoryId);
+      try {
+        await _writeConflictResult(handle, path, bytes);
+      } on FileSystemException catch (error, stackTrace) {
+        Error.throwWithStackTrace(
+          GitError(
+            category: GitErrorCategory.permissionDenied,
+            userMessage: 'The conflict result could not be written.',
+            diagnostic: '$error',
+            retryable: true,
+          ),
+          stackTrace,
+        );
+      }
+      return GitConflictResolutionResult(
+        repositoryId: repositoryId,
+        path: path,
+        action: GitConflictResolutionAction.editResult,
+        snapshot: await getConflicts(repositoryId),
+        summary: 'The working result was updated. Mark it resolved when ready.',
+      );
+    });
+  }
+
+  Future<GitConflictResolutionResult> markConflictResolved(
+    RepositoryId repositoryId,
+    String path, {
+    required String fingerprint,
+    bool deleteResult = false,
+  }) {
+    return state.runMutation(repositoryId, () async {
+      await _validateConflictMutation(repositoryId, path, fingerprint);
+      final handle = await state.lookup(repositoryId);
+      try {
+        if (deleteResult) {
+          await _runner.run(
+            GitInvocation(
+              program: gitPath,
+              args: ['rm', '--force', '--', path],
+              cwd: handle.root,
+              kind: GitOperationKind.mutation,
+              outputPolicy: const OutputPolicy.capture(maxBytes: 128 * 1024),
+            ),
+          );
+        } else {
+          await _runner.run(
+            GitInvocation(
+              program: gitPath,
+              args: ['add', '--', path],
+              cwd: handle.root,
+              kind: GitOperationKind.mutation,
+              outputPolicy: const OutputPolicy.capture(maxBytes: 128 * 1024),
+            ),
+          );
+        }
+      } on GitError catch (error, stackTrace) {
+        Error.throwWithStackTrace(_mapConflictError(error), stackTrace);
+      }
+      return GitConflictResolutionResult(
+        repositoryId: repositoryId,
+        path: path,
+        action: GitConflictResolutionAction.markResolved,
+        snapshot: await getConflicts(repositoryId),
+        summary: deleteResult
+            ? 'The deletion was marked resolved.'
+            : 'The working result was marked resolved.',
+      );
+    });
+  }
+
+  Future<GitConflictOperationResult> continueConflict(
+    RepositoryId repositoryId, {
+    required String fingerprint,
+    GitCancellationToken? cancellationToken,
+  }) => _runConflictOperation(
+    repositoryId,
+    GitConflictOperationAction.continueOperation,
+    fingerprint: fingerprint,
+    cancellationToken: cancellationToken,
+  );
+
+  Future<GitConflictOperationResult> abortConflict(
+    RepositoryId repositoryId, {
+    required String fingerprint,
+    GitCancellationToken? cancellationToken,
+  }) => _runConflictOperation(
+    repositoryId,
+    GitConflictOperationAction.abort,
+    fingerprint: fingerprint,
+    cancellationToken: cancellationToken,
+  );
+
+  Future<GitConflictOperationResult> _runConflictOperation(
+    RepositoryId repositoryId,
+    GitConflictOperationAction action, {
+    required String fingerprint,
+    GitCancellationToken? cancellationToken,
+  }) {
+    return state.runMutation(repositoryId, () async {
+      final before = await _validateConflictSnapshot(repositoryId, fingerprint);
+      final operation = before.operation;
+      if (operation == null) {
+        throw const GitError(
+          category: GitErrorCategory.operationInProgress,
+          userMessage: 'No merge, rebase, or cherry-pick is in progress.',
+          diagnostic:
+              'conflict recovery was requested without operation metadata',
+          retryable: false,
+        );
+      }
+      if (action == GitConflictOperationAction.continueOperation &&
+          before.hasConflicts) {
+        throw const GitError(
+          category: GitErrorCategory.unresolvedConflicts,
+          userMessage: 'Resolve every conflicted path before continuing.',
+          diagnostic:
+              'continue was requested while unmerged index entries remained',
+          retryable: false,
+        );
+      }
+      final args = _conflictOperationArgs(operation.operation, action);
+      try {
+        await _runner.run(
+          GitInvocation(
+            program: gitPath,
+            args: args,
+            cwd: (await state.lookup(repositoryId)).root,
+            kind: GitOperationKind.mutation,
+            outputPolicy: const OutputPolicy.capture(maxBytes: 512 * 1024),
+            cancellationToken: cancellationToken,
+            environment: const {'GIT_EDITOR': ':'},
+          ),
+        );
+      } on GitError catch (error, stackTrace) {
+        final afterFailure = await getConflicts(repositoryId);
+        if (error.category == GitErrorCategory.cancelled) {
+          return GitConflictOperationResult(
+            repositoryId: repositoryId,
+            operation: operation,
+            action: action,
+            state: GitConflictOperationState.cancelled,
+            snapshot: afterFailure,
+            summary: 'The recovery command was cancelled; review the conflict state.',
+          );
+        }
+        if (afterFailure.hasConflicts) {
+          return GitConflictOperationResult(
+            repositoryId: repositoryId,
+            operation: operation,
+            action: action,
+            state: GitConflictOperationState.conflicted,
+            snapshot: afterFailure,
+            summary: 'Git still has conflicts. Resolve them before continuing.',
+          );
+        }
+        Error.throwWithStackTrace(_mapConflictError(error), stackTrace);
+      }
+      final after = await getConflicts(repositoryId);
+      final completed = after.operation == null;
+      return GitConflictOperationResult(
+        repositoryId: repositoryId,
+        operation: operation,
+        action: action,
+        state: action == GitConflictOperationAction.abort
+            ? GitConflictOperationState.aborted
+            : completed
+            ? GitConflictOperationState.completed
+            : GitConflictOperationState.continued,
+        snapshot: after,
+        summary: action == GitConflictOperationAction.abort
+            ? 'The operation was aborted.'
+            : completed
+            ? 'The operation was completed.'
+            : 'The operation continued to its next step.',
+      );
+    });
+  }
+
   Future<GitHistoryPage> getHistory(
     RepositoryId repositoryId, {
     int limit = 50,
@@ -383,14 +731,11 @@ class RepositoryService {
             refs: requestedCursor.snapshotRefs,
           );
     final position = requestedCursor?.position ?? offset;
-    final localBranchTips = snapshot.refs
-        .where((ref) => ref.name.startsWith('refs/heads/'))
-        .map((ref) => ref.targetOid)
-        .toSet();
-    final collapseToSingleLane = filters.ref.isNotEmpty ||
-        (localBranchTips.isNotEmpty
-            ? localBranchTips.length == 1
-            : snapshot.tips.toSet().length == 1);
+    // Flatten only a truly single-tip view. A repository may have one local
+    // branch while stale remote refs or tags still point at another line of
+    // history; using local branch count here hides that topology.
+    final collapseToSingleLane =
+        filters.ref.isNotEmpty || snapshot.tips.toSet().length == 1;
     final pageCursor = GitHistoryCursor(
       snapshotTips: snapshot.tips,
       snapshotRefs: snapshot.refs,
@@ -2041,6 +2386,315 @@ class RepositoryService {
     }
   }
 
+  Future<GitConflictSnapshot> _validateConflictSnapshot(
+    RepositoryId repositoryId,
+    String fingerprint,
+  ) async {
+    final snapshot = await getConflicts(repositoryId);
+    if (snapshot.fingerprint != fingerprint) {
+      throw const GitError(
+        category: GitErrorCategory.staleConflict,
+        userMessage: 'The conflict changed. Refresh it before resolving again.',
+        diagnostic: 'unmerged index or worktree fingerprint no longer matched',
+        retryable: true,
+      );
+    }
+    return snapshot;
+  }
+
+  Future<GitConflictSnapshot> _validateConflictMutation(
+    RepositoryId repositoryId,
+    String path,
+    String fingerprint,
+  ) async {
+    _validatePath(path);
+    final snapshot = await _validateConflictSnapshot(repositoryId, fingerprint);
+    if (_findConflict(snapshot, path) == null) {
+      throw const GitError(
+        category: GitErrorCategory.conflictResolutionNotAllowed,
+        userMessage: 'That path is no longer conflicted.',
+        diagnostic:
+            'conflict mutation path was not in the current unmerged index',
+        retryable: true,
+      );
+    }
+    return snapshot;
+  }
+
+  Future<GitConflictSide?> _loadConflictSide(
+    RepositoryHandle handle,
+    GitConflictSide? side,
+  ) async {
+    if (side == null || side.oid == null) return side;
+    try {
+      final output = await _runner.run(
+        GitInvocation(
+          program: gitPath,
+          args: ['cat-file', 'blob', side.oid!],
+          cwd: handle.root,
+          kind: GitOperationKind.read,
+          outputPolicy: const OutputPolicy.capture(
+            maxBytes: _maxConflictTextBytes,
+          ),
+        ),
+      );
+      return GitConflictSide(
+        stage: side.stage,
+        mode: side.mode,
+        oid: side.oid,
+        content: _conflictContent(output.stdout),
+      );
+    } on GitError catch (error) {
+      if (error.category == GitErrorCategory.outputOverflow) {
+        return GitConflictSide(
+          stage: side.stage,
+          mode: side.mode,
+          oid: side.oid,
+          content: const GitConflictContent(
+            state: GitConflictContentState.tooLarge,
+          ),
+        );
+      }
+      return GitConflictSide(
+        stage: side.stage,
+        mode: side.mode,
+        oid: side.oid,
+        content: const GitConflictContent(
+          state: GitConflictContentState.unreadable,
+        ),
+      );
+    }
+  }
+
+  Future<GitConflictSide> _loadWorkingConflictSide(
+    RepositoryHandle handle,
+    String path,
+  ) async {
+    final file = _repositoryFile(handle.root, path);
+    if (!file.existsSync()) {
+      return const GitConflictSide(
+        stage: 0,
+        content: GitConflictContent.missing(),
+      );
+    }
+    try {
+      final bytes = <int>[];
+      await for (final chunk in file.openRead(0, _maxConflictTextBytes + 1)) {
+        bytes.addAll(chunk);
+      }
+      if (bytes.length > _maxConflictTextBytes) {
+        return const GitConflictSide(
+          stage: 0,
+          content: GitConflictContent(state: GitConflictContentState.tooLarge),
+        );
+      }
+      return GitConflictSide(stage: 0, content: _conflictContent(bytes));
+    } on FileSystemException {
+      return const GitConflictSide(
+        stage: 0,
+        content: GitConflictContent(state: GitConflictContentState.unreadable),
+      );
+    }
+  }
+
+  GitConflictContent _conflictContent(List<int> bytes) {
+    final isBinary = bytes.contains(0);
+    if (isBinary) {
+      return GitConflictContent(
+        state: GitConflictContentState.binary,
+        byteLength: bytes.length,
+      );
+    }
+    try {
+      return GitConflictContent(
+        state: GitConflictContentState.available,
+        text: utf8.decode(bytes),
+        byteLength: bytes.length,
+      );
+    } on FormatException {
+      return GitConflictContent(
+        state: GitConflictContentState.binary,
+        byteLength: bytes.length,
+      );
+    }
+  }
+
+  Future<String> _readConflictFingerprint(
+    RepositoryHandle handle,
+    List<int> indexBytes,
+    List<GitConflictEntry> conflicts,
+  ) async {
+    final bytes = <int>[...indexBytes, 0];
+    final paths = conflicts.map((conflict) => conflict.path).toList()..sort();
+    for (final path in paths) {
+      bytes.addAll(utf8.encode(path));
+      bytes.add(0);
+      bytes.addAll(utf8.encode(await _readWorkingTreeOid(handle, path)));
+      bytes.add(0);
+    }
+    return hashConflictBytes(bytes);
+  }
+
+  Future<String> _readWorkingTreeOid(
+    RepositoryHandle handle,
+    String path,
+  ) async {
+    final file = _repositoryFile(handle.root, path);
+    if (!file.existsSync()) return 'missing';
+    try {
+      final output = await _runner.run(
+        GitInvocation(
+          program: gitPath,
+          args: ['hash-object', '--no-filters', '--', path],
+          cwd: handle.root,
+          kind: GitOperationKind.read,
+          outputPolicy: const OutputPolicy.capture(maxBytes: 128),
+        ),
+      );
+      return utf8.decode(output.stdout, allowMalformed: true).trim();
+    } on GitError catch (error) {
+      if (error.exitCode == 1) return 'missing';
+      rethrow;
+    }
+  }
+
+  Future<GitConflictOperationMetadata?> _readConflictOperation(
+    RepositoryHandle handle,
+  ) async {
+    final mergeHead = await _readGitFile(handle, 'MERGE_HEAD');
+    if (mergeHead != null) {
+      final heads = mergeHead
+          .split(RegExp(r'\s+'))
+          .where((value) => value.isNotEmpty)
+          .toList(growable: false);
+      return GitConflictOperationMetadata(
+        operation: GitConflictOperation.merge,
+        mergeHeads: heads,
+      );
+    }
+    final cherryPickHead = await _readGitFile(handle, 'CHERRY_PICK_HEAD');
+    if (cherryPickHead != null) {
+      return GitConflictOperationMetadata(
+        operation: GitConflictOperation.cherryPick,
+        mergeHeads: cherryPickHead.trim().isEmpty
+            ? const []
+            : [cherryPickHead.trim()],
+      );
+    }
+    final rebaseMerge = await _readGitPath(handle, 'rebase-merge');
+    final rebaseDirectory =
+        rebaseMerge != null && Directory(rebaseMerge).existsSync()
+        ? rebaseMerge
+        : await _readGitPath(handle, 'rebase-apply');
+    if (rebaseDirectory == null || !Directory(rebaseDirectory).existsSync()) {
+      return null;
+    }
+    final headName = await _readFileAt(
+      '$rebaseDirectory${Platform.pathSeparator}head-name',
+    );
+    final onto = await _readFileAt(
+      '$rebaseDirectory${Platform.pathSeparator}onto',
+    );
+    final currentStep = int.tryParse(
+      (await _readFileAt('$rebaseDirectory${Platform.pathSeparator}msgnum'))
+              ?.trim() ??
+          '',
+    );
+    final totalSteps = int.tryParse(
+      (await _readFileAt('$rebaseDirectory${Platform.pathSeparator}end'))
+              ?.trim() ??
+          '',
+    );
+    return GitConflictOperationMetadata(
+      operation: GitConflictOperation.rebase,
+      headName: headName?.trim().replaceFirst('refs/heads/', ''),
+      onto: onto?.trim(),
+      currentStep: currentStep,
+      totalSteps: totalSteps,
+    );
+  }
+
+  Future<String?> _readGitFile(RepositoryHandle handle, String path) async {
+    final resolved = await _readGitPath(handle, path);
+    if (resolved == null) return null;
+    return _readFileAt(resolved);
+  }
+
+  Future<String?> _readGitPath(RepositoryHandle handle, String path) async {
+    try {
+      final output = await _runner.run(
+        GitInvocation(
+          program: gitPath,
+          args: ['rev-parse', '--git-path', path],
+          cwd: handle.root,
+          kind: GitOperationKind.read,
+          outputPolicy: const OutputPolicy.capture(maxBytes: 4 * 1024),
+        ),
+      );
+      final rawPath = utf8.decode(output.stdout, allowMalformed: true).trim();
+      if (rawPath.isEmpty) return null;
+      final pathUri = Uri.file(rawPath);
+      if (pathUri.isAbsolute) return rawPath;
+      return '${handle.root}${Platform.pathSeparator}${rawPath.replaceAll('/', Platform.pathSeparator)}';
+    } on GitError {
+      return null;
+    }
+  }
+
+  Future<String?> _readFileAt(String path) async {
+    final file = File(path);
+    if (!file.existsSync()) return null;
+    try {
+      final bytes = <int>[];
+      await for (final chunk in file.openRead(
+        0,
+        _maxConflictMetadataBytes + 1,
+      )) {
+        bytes.addAll(chunk);
+      }
+      if (bytes.length > _maxConflictMetadataBytes) return null;
+      return utf8.decode(bytes, allowMalformed: true);
+    } on FileSystemException {
+      return null;
+    }
+  }
+
+  Future<void> _writeConflictResult(
+    RepositoryHandle handle,
+    String path,
+    List<int> bytes,
+  ) => _repositoryFile(handle.root, path).writeAsBytes(bytes, flush: true);
+
+  File _repositoryFile(String root, String path) {
+    if (path.startsWith('/') ||
+        path.startsWith('\\') ||
+        path.split('/').any((part) => part == '..')) {
+      throw const GitError(
+        category: GitErrorCategory.conflictResolutionNotAllowed,
+        userMessage: 'Git returned an unsafe conflict path.',
+        diagnostic: 'conflict path escaped the repository root',
+        retryable: false,
+      );
+    }
+    return File(
+      '$root${Platform.pathSeparator}${path.replaceAll('/', Platform.pathSeparator)}',
+    );
+  }
+
+  List<String> _conflictOperationArgs(
+    GitConflictOperation operation,
+    GitConflictOperationAction action,
+  ) {
+    final flag = action == GitConflictOperationAction.abort
+        ? '--abort'
+        : '--continue';
+    return switch (operation) {
+      GitConflictOperation.merge => ['merge', flag],
+      GitConflictOperation.rebase => ['rebase', flag],
+      GitConflictOperation.cherryPick => ['cherry-pick', flag],
+    };
+  }
+
   void _validatePath(String path) {
     if (path.isEmpty || path.contains('\u0000')) {
       throw const GitError(
@@ -2082,7 +2736,7 @@ class RepositoryService {
         args: const [
           'for-each-ref',
           '--sort=refname',
-          '--format=%(refname)%00%(objectname)',
+          '--format=%(refname)%00%(objectname)%00%(objecttype)%00%(*objectname)%00%(*objecttype)',
         ],
         cwd: handle.root,
         kind: GitOperationKind.read,
@@ -2158,9 +2812,13 @@ class RepositoryService {
     final text = utf8.decode(bytes, allowMalformed: true);
     for (final line in text.split('\n')) {
       final fields = line.split('\u0000');
-      if (fields.length < 2) continue;
+      if (fields.length < 4) continue;
       final name = fields[0].trim();
-      final oid = fields[1].trim();
+      final objectType = fields[2].trim();
+      // `%(objectname)` is the tag object for an annotated tag. The `*`
+      // atoms dereference it, so the history model always stores a commit ID
+      // and can attach the tag to the actual commit row.
+      final oid = objectType == 'tag' ? fields[3].trim() : fields[1].trim();
       if (name.isEmpty || !_isCommitOid(oid)) continue;
       refs.add(GitCommitRef(name: name, targetOid: oid));
     }
@@ -2619,3 +3277,28 @@ String _newRepositoryId() {
 }
 
 String _newOpaqueToken() => _newRepositoryId();
+
+const _maxConflictTextBytes = 4 * 1024 * 1024;
+const _maxConflictMetadataBytes = 64 * 1024;
+
+GitConflictEntry? _findConflict(GitConflictSnapshot snapshot, String path) {
+  for (final conflict in snapshot.conflicts) {
+    if (conflict.path == path) return conflict;
+  }
+  return null;
+}
+
+GitError _mapConflictError(GitError error) {
+  if (error.category != GitErrorCategory.processFailed) return error;
+  if (RegExp(
+    r'(unmerged|conflict|resolve|merge conflict|cherry-pick|rebase)',
+    caseSensitive: false,
+  ).hasMatch(error.diagnostic)) {
+    return error.copyWith(
+      category: GitErrorCategory.mergeConflict,
+      userMessage: 'Git could not finish because conflicts remain.',
+      retryable: true,
+    );
+  }
+  return error;
+}

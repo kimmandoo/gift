@@ -51,6 +51,23 @@ void main() {
     expect(page.hasMore, isTrue);
   });
 
+  test('normalizes line endings after Git record separators', () {
+    final page = parseGitHistory(
+      utf8.encode(
+        [
+          historyRecord(oid: 'a' * 40, parents: '', subject: 'one'),
+          historyRecord(oid: 'b' * 40, parents: 'a' * 40, subject: 'two'),
+        ].join('\n'),
+      ),
+      repositoryId: repositoryId,
+      offset: 0,
+      limit: 10,
+    );
+
+    expect(page.commits.map((commit) => commit.oid), ['a' * 40, 'b' * 40]);
+    expect(page.commits[1].parents, ['a' * 40]);
+  });
+
   test('keeps merge parent lanes deterministic', () {
     final merge = 'm' * 40;
     final firstParent = 'p' * 40;
@@ -91,7 +108,7 @@ void main() {
     );
   });
 
-  test('keeps a single-tip history on one connected lane', () {
+  test('keeps merge topology when a single-tip history is requested', () {
     final merge = 'm' * 40;
     final firstParent = 'p' * 40;
     final secondParent = 's' * 40;
@@ -113,19 +130,14 @@ void main() {
       collapseToSingleLane: true,
     );
 
+    expect(page.collapseToSingleLane, isFalse);
     expect(page.commits.map((commit) => commit.lane), [0, 0, 0]);
-    expect(page.commits.map((commit) => commit.laneCount), [1, 1, 1]);
+    expect(page.commits.first.laneCount, 2);
     expect(
-      page.commits.map(
-        (commit) => commit.graphSegments
-            .map((segment) => '${segment.fromLane}->${segment.toLane}')
-            .toList(),
-      ),
-      [
-        ['0->0'],
-        ['0->0'],
-        <String>[],
-      ],
+      page.commits.first.graphSegments
+          .map((segment) => '${segment.fromLane}->${segment.toLane}')
+          .toList(),
+      ['0->0', '0->1'],
     );
   });
 
