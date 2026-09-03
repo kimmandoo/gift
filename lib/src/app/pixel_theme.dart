@@ -289,13 +289,13 @@ ThemeData buildPixelTheme({Brightness brightness = Brightness.dark}) {
       floatingLabelStyle: TextStyle(
         color: primary,
         fontSize: pixelLabelLargeSize,
-        height: 1.35,
+        height: 1.55,
         fontWeight: FontWeight.w600,
       ),
       hintStyle: TextStyle(color: muted),
-      helperStyle: TextStyle(color: muted, height: 1.35),
-      errorStyle: TextStyle(color: scheme.error, height: 1.35),
-      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+      helperStyle: TextStyle(color: muted, height: 1.45),
+      errorStyle: TextStyle(color: scheme.error, height: 1.45),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
     ),
     filledButtonTheme: FilledButtonThemeData(
       style: FilledButton.styleFrom(

@@ -22,13 +22,13 @@ if (-not (Test-Path -LiteralPath $iexpress -PathType Leaf)) {
 $packageDirectory = Join-Path $env:TEMP ('gift-portable-package-' + [guid]::NewGuid().ToString('N'))
 $payloadPath = Join-Path $packageDirectory 'payload.zip'
 $sedPath = Join-Path $packageDirectory 'package.sed'
-$launcherCommand = Join-Path $PSScriptRoot 'windows_portable_launcher.cmd'
+$launcherVbs = Join-Path $PSScriptRoot 'windows_portable_launcher.vbs'
 $launcherScript = Join-Path $PSScriptRoot 'windows_portable_launcher.ps1'
 
 try {
   New-Item -ItemType Directory -Path $packageDirectory -Force | Out-Null
   Compress-Archive -Path (Join-Path $releaseDirectory '*') -DestinationPath $payloadPath -CompressionLevel Optimal
-  Copy-Item -LiteralPath $launcherCommand -Destination $packageDirectory
+  Copy-Item -LiteralPath $launcherVbs -Destination $packageDirectory
   Copy-Item -LiteralPath $launcherScript -Destination $packageDirectory
 
   $targetDirectory = Split-Path -Parent $OutputPath
@@ -68,9 +68,9 @@ DisplayLicense=
 FinishMessage=
 TargetName=$OutputPath
 FriendlyName=GIFT Portable
-AppLaunched=windows_portable_launcher.cmd
+AppLaunched=wscript.exe windows_portable_launcher.vbs
 FILE0="payload.zip"
-FILE1="windows_portable_launcher.cmd"
+FILE1="windows_portable_launcher.vbs"
 FILE2="windows_portable_launcher.ps1"
 
 [SourceFiles]

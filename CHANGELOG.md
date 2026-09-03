@@ -20,6 +20,10 @@
   details.
 - fix(ui): added floating-label line height and input padding so dropdown
   labels remain fully visible at narrow widths and larger text scales.
+- fix(build): hid the portable launcher's PowerShell console by routing the
+  self-extracting entry point through the Windows Script Host.
+- fix(ui): increased shared dropdown floating-label clearance and removed the
+  dense attribute selector layout that could clip labels against field borders.
 
 
 

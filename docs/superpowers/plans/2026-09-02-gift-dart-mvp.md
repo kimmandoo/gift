@@ -668,3 +668,13 @@ system Git 2.35+.
    labels do not clip against dropdown borders.
 2. Added narrow-window, larger-text Push coverage that verifies the Remote
    label remains inside the visible test surface.
+
+## Completed follow-up: portable window and dropdown clipping
+
+1. Replaced the portable package's visible CMD entry point with a Windows
+   Script Host launcher so the PowerShell extraction process does not open a
+   terminal window.
+2. Increased shared floating-label line height and vertical input padding
+   again, and removed the dense attribute dropdown override.
+3. Verified Push, Ignore, Reset, Update Project, and Branch dialog layouts at
+   narrow widths and larger text scales.

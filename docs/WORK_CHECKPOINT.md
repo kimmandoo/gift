@@ -322,6 +322,23 @@ This file is the handoff record for continuing work across query sessions.
   build wrapper completed `flutter build windows --release` and created the
   portable EXE. `flutter analyze`, formatting, `git diff --check`, the focused
   Push test, and the 69-test feature suite passed.
+- Continued the packaging/UI follow-up: replaced the portable package's visible
+  CMD entry point with a Windows Script Host launcher, so extraction and
+  PowerShell execution stay hidden from the user.
+- Increased shared dropdown floating-label height to 1.55 and input vertical
+  padding to 14, and removed the dense attribute-path dropdown override.
+- Changed files in this follow-up: `CHANGELOG.md`,
+  `docs/superpowers/plans/2026-09-02-gift-dart-mvp.md`,
+  `lib/src/app/pixel_theme.dart`,
+  `lib/src/features/repository/ignore_dialog.dart`,
+  `tool/package_windows.ps1`, deleted
+  `tool/windows_portable_launcher.cmd`, and added
+  `tool/windows_portable_launcher.vbs`.
+- Verification: focused Push/Ignore/Reset/Update/Branch tests passed; the
+  complete feature suite passed with 69 tests; `flutter analyze`, formatting,
+  and `git diff --check` passed. The hidden portable package extracted and
+  launched under supervision, and `tool/build_windows.ps1` rebuilt the
+  Windows Release plus `gift-portable.exe` successfully.
 - Next action: activate Task 36 after recording scale/resilience scenarios and
   adding its first failing performance or supervision fixture.
 

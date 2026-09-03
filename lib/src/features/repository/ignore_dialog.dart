@@ -284,7 +284,6 @@ class _IgnoreDialogState extends State<IgnoreDialog>
           decoration: const InputDecoration(
             labelText: 'Path',
             border: OutlineInputBorder(),
-            isDense: true,
           ),
           items: [
             for (final path in paths)
