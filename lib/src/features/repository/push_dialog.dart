@@ -64,7 +64,7 @@ class _PushDialogState extends State<PushDialog> {
         horizontal: compact ? 16 : 40,
         vertical: 24,
       ),
-      title: const Text('Review push'),
+      title: const Text('Push to remote'),
       content: SizedBox(
         width: (size.width - (compact ? 32 : 80)).clamp(280.0, 620.0),
         height: (size.height - 190).clamp(260.0, 520.0),
@@ -72,6 +72,7 @@ class _PushDialogState extends State<PushDialog> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
+              _pushGuidance(),
               _remoteField(),
               const SizedBox(height: 8),
               DropdownButtonFormField<GitPushTarget>(
@@ -196,13 +197,17 @@ class _PushDialogState extends State<PushDialog> {
           OutlinedButton(
             key: const Key('preview-push'),
             onPressed: _remotes == null ? null : _previewPush,
-            child: const Text('Preview'),
+            child: const Text('Review changes'),
           ),
         if (!_busy && preview?.canExecute == true)
           FilledButton(
             key: const Key('execute-push'),
             onPressed: _executePush,
-            child: Text(_forceWithLease ? 'Force push' : 'Push'),
+            child: Text(
+              _forceWithLease
+                  ? 'Force push to ${preview!.remote}'
+                  : 'Push to ${preview!.remote}',
+            ),
           ),
         TextButton(
           onPressed: _busy ? null : () => Navigator.of(context).pop(),
@@ -211,6 +216,41 @@ class _PushDialogState extends State<PushDialog> {
       ],
     );
   }
+
+  Widget _pushGuidance() => Card(
+    key: const Key('push-guidance'),
+    child: Padding(
+      padding: const EdgeInsets.all(12),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(
+            Icons.info_outline,
+            size: 20,
+            color: Theme.of(context).colorScheme.primary,
+          ),
+          const SizedBox(width: 10),
+          const Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Text(
+                  'Nothing is pushed yet',
+                  style: TextStyle(fontWeight: FontWeight.w700),
+                ),
+                SizedBox(height: 4),
+                Text(
+                  'Choose what to publish, then select Review changes. '
+                  'The app checks commits, files, and the remote tip. '
+                  'Only the final Push button sends data.',
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    ),
+  );
 
   Widget _remoteField() {
     final remotes = _remotes;
@@ -244,18 +284,10 @@ class _PushDialogState extends State<PushDialog> {
   }
 
   Widget _previewCard(GitPushPreview preview) {
-    final lines = <String>[
-      '${preview.remote} → ${preview.targetBranch.isEmpty ? 'tags' : preview.targetBranch}',
-      if (preview.request.target != GitPushTarget.allTags)
-        '${preview.commits.length} commit(s), ${preview.changedPaths.length} file(s)',
-      if (preview.request.target == GitPushTarget.allTags)
-        '${preview.tags.length} tag(s): ${preview.tags.map((tag) => tag.name).join(', ')}',
-      if (preview.remoteHead case final remoteHead?)
-        'Remote tip: ${_shortOid(remoteHead)}',
-      'Local target: ${_shortOid(preview.targetOid)}',
-      if (preview.dirtyWorktree)
-        'Working tree has local changes; push does not stage or commit them.',
-    ];
+    final destination = preview.targetBranch.isEmpty
+        ? 'all tags'
+        : '${preview.remote}/${preview.targetBranch}';
+    final canPush = preview.canExecute;
     return Card(
       key: const Key('push-preview'),
       child: Padding(
@@ -263,18 +295,64 @@ class _PushDialogState extends State<PushDialog> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Text('Push review', style: Theme.of(context).textTheme.titleSmall),
-            const SizedBox(height: 4),
-            for (final line in lines)
-              Text(line, overflow: TextOverflow.ellipsis),
-            if (preview.commits.isNotEmpty) ...[
-              const SizedBox(height: 6),
-              Text('Commits', style: Theme.of(context).textTheme.labelLarge),
-              for (final commit in preview.commits.take(8))
-                Text(
-                  '${_shortOid(commit.oid)} ${commit.subject}',
-                  overflow: TextOverflow.ellipsis,
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Icon(
+                  canPush ? Icons.check_circle_outline : Icons.block_outlined,
+                  size: 20,
+                  color: canPush
+                      ? Theme.of(context).colorScheme.primary
+                      : Theme.of(context).colorScheme.error,
                 ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    canPush ? 'Ready to push' : 'Push blocked',
+                    style: Theme.of(context).textTheme.titleSmall,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 4),
+            Text(
+              canPush
+                  ? 'Nothing has been sent yet. Check this review, then '
+                        'choose the Push button.'
+                  : 'Nothing has been sent. Resolve the issue below, then '
+                        'review the push again.',
+            ),
+            const SizedBox(height: 10),
+            Text('Destination: $destination'),
+            if (preview.request.target != GitPushTarget.allTags)
+              Text(
+                'Commits to publish: ${preview.commits.length} commit(s), '
+                '${preview.changedPaths.length} file(s)',
+              ),
+            if (preview.request.target == GitPushTarget.allTags)
+              Text(
+                'Tags to publish: ${preview.tags.length} tag(s): '
+                '${preview.tags.map((tag) => tag.name).join(', ')}',
+              ),
+            if (preview.remoteHead case final remoteHead?)
+              Text('Remote currently at: ${_shortOid(remoteHead)}'),
+            Text('Remote will point to: ${_shortOid(preview.targetOid)}'),
+            if (preview.dirtyWorktree)
+              const Padding(
+                padding: EdgeInsets.only(top: 6),
+                child: Text(
+                  'Working tree has local changes; push does not stage or '
+                  'commit them.',
+                ),
+              ),
+            if (preview.commits.isNotEmpty) ...[
+              const SizedBox(height: 8),
+              Text(
+                'Commits included',
+                style: Theme.of(context).textTheme.labelLarge,
+              ),
+              for (final commit in preview.commits.take(8))
+                Text('${_shortOid(commit.oid)} ${commit.subject}'),
               if (preview.commits.length > 8)
                 Text('+ ${preview.commits.length - 8} more commits'),
             ],
@@ -286,7 +364,7 @@ class _PushDialogState extends State<PushDialog> {
               const Padding(
                 padding: EdgeInsets.only(top: 8),
                 child: Text(
-                  'Review the expected remote tip before confirming.',
+                  'The final Push button confirms this reviewed remote tip.',
                 ),
               ),
           ],

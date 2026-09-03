@@ -33,12 +33,18 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.byKey(const Key('push-remote')), findsOneWidget);
+    expect(find.byKey(const Key('push-guidance')), findsOneWidget);
+    expect(find.text('Nothing is pushed yet'), findsOneWidget);
+    final remoteLabel = tester.getRect(find.text('Remote'));
+    expect(remoteLabel.top, greaterThanOrEqualTo(0));
+    expect(remoteLabel.bottom, lessThanOrEqualTo(640));
     expect(find.byKey(const Key('execute-push')), findsNothing);
     await tester.tap(find.byKey(const Key('preview-push')));
     await tester.pumpAndSettle();
     expect(find.byKey(const Key('push-preview')), findsOneWidget);
+    expect(find.text('Ready to push'), findsOneWidget);
     expect(find.textContaining('1 commit(s), 1 file(s)'), findsOneWidget);
+    expect(find.text('Push to origin'), findsOneWidget);
     expect(find.byKey(const Key('execute-push')), findsOneWidget);
     await tester.tap(find.byKey(const Key('execute-push')));
     await tester.pumpAndSettle();

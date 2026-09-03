@@ -61,7 +61,9 @@ jobs:
           - os: windows-latest
             target: windows
             artifact: gift-windows-x64
-            path: build/windows/x64/runner/Release/
+            path: |
+              build/windows/x64/runner/Release/
+              build/windows/x64/runner/gift-portable.exe
     steps:
       - name: Check out source
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4

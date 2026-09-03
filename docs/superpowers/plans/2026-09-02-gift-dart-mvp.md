@@ -617,8 +617,8 @@ system Git 2.35+.
 1. Replaced the crowded Changes toolbar with one categorized repository
    actions menu, keeping sync/navigation, review/history, and repository tools
    discoverable without a row of competing icons.
-2. Applied the same compact action-menu treatment to History and retained
-   visible refresh controls and keyboard shortcuts for high-frequency work.
+2. Kept History's high-frequency rollback, rebase, hosting, and refresh
+   actions visible while retaining keyboard shortcuts for navigation.
 3. Improved the Welcome screen's primary action hierarchy and recent-repository
    cards so available, missing, and removable entries are easy to scan.
 4. Added shared dialog and popup-menu surface spacing, stronger action padding,
@@ -642,3 +642,29 @@ system Git 2.35+.
    Changes toolbars while retaining the grouped menu below the compact
    breakpoint.
 5. Passed focused Changes, History, and Reset widget tests.
+
+## Completed follow-up: portable Windows packaging
+
+1. Added an IExpress-based self-extracting Windows wrapper that embeds the
+   complete Flutter Release bundle as a ZIP payload.
+2. Added temporary extraction, process waiting, and cleanup so
+   `gift-portable.exe` can be copied and launched as one file.
+3. Kept the normal Release directory available for standard deployment and
+   published both artifacts from the Windows CI job. Git remains a separate
+   system dependency.
+
+## Completed follow-up: Push review clarity
+
+1. Added an upfront explanation that review performs no remote write and that
+   the final Push action is the publishing step.
+2. Reworked the preview card into explicit ready/blocked states with readable
+   destination, commit, file, and remote-tip labels.
+3. Renamed the actions to `Review changes` and `Push to <remote>` and covered
+   the flow with a responsive widget test.
+
+## Completed follow-up: dropdown label readability
+
+1. Increased floating-label line height and shared input vertical padding so
+   labels do not clip against dropdown borders.
+2. Added narrow-window, larger-text Push coverage that verifies the Remote
+   label remains inside the visible test surface.

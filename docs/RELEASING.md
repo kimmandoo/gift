@@ -53,6 +53,13 @@ The helper prints the output location after a successful build:
 - Linux: `build/linux/x64/release/bundle/`
 - macOS: `build/macos/Build/Products/Release/gift.app`
 - Windows: `build/windows/x64/runner/Release/`
+- Windows portable EXE: `build/windows/x64/runner/gift-portable.exe`
+
+The portable Windows executable is a self-extracting wrapper around the
+complete Flutter release bundle. It expands the bundle into a temporary
+directory, runs `gift.exe`, waits for it to close, and removes the temporary
+files. It behaves as one file for copying and launching, but it still requires
+Git to be installed separately because the app uses the system Git executable.
 
 The desktop identity is kept in the checked-in release assets. The canonical
 pixel mascot is `assets/images/gift_icon.png`; Windows uses the derived

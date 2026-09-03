@@ -13,6 +13,13 @@
   clipped at compact widths and larger text scales.
 - fix(ui): exposed primary Changes actions while retaining a categorized menu
   for less frequent repository tools.
+- build(windows): added a self-extracting portable executable beside the
+  standard Windows release bundle.
+- fix(push): explained that review is a safe preflight, labeled the final
+  remote-writing action, and separated destination, commits, and remote-tip
+  details.
+- fix(ui): added floating-label line height and input padding so dropdown
+  labels remain fully visible at narrow widths and larger text scales.
 
 
 

@@ -2,7 +2,7 @@
 setlocal
 cd /d "%~dp0.."
 
-dart run tool\build_desktop.dart windows
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File "%~dp0build_windows.ps1"
 if errorlevel 1 (
     echo Windows build failed.
     pause
