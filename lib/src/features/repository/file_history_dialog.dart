@@ -119,115 +119,128 @@ class _FileHistoryDialogState extends State<FileHistoryDialog> {
       ),
       onSubmitted: (_) => unawaited(_loadHistory()),
     );
-    final loadButton = FilledButton(
+    final loadButton = FilledButton.icon(
       key: const Key('load-file-history'),
       onPressed: _loading ? null : () => unawaited(_loadHistory()),
-      child: const Text('History'),
+      icon: const Icon(Icons.history, size: 18),
+      label: const Text('Load history'),
     );
-    final blameButton = OutlinedButton(
+    final blameButton = OutlinedButton.icon(
       key: const Key('load-file-blame'),
       onPressed: _loading ? null : () => unawaited(_loadBlame()),
-      child: const Text('Blame'),
+      icon: const Icon(Icons.person_search_outlined, size: 18),
+      label: const Text('Load blame'),
     );
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        if (compact)
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [pathField, loadButton, blameButton],
-          )
-        else
-          Row(
-            children: [
-              Expanded(child: pathField),
-              const SizedBox(width: 8),
-              loadButton,
-              const SizedBox(width: 6),
-              blameButton,
-            ],
-          ),
-        Wrap(
-          spacing: 4,
-          runSpacing: 0,
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final stackControls = compact || constraints.maxWidth < 560;
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            FilterChip(
-              key: const Key('file-history-follow'),
-              label: const Text('Follow renames'),
-              selected: _follow && !_directoryMode,
-              onSelected: _directoryMode || _loading
-                  ? null
-                  : (value) => setState(() => _follow = value),
+            if (stackControls)
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  pathField,
+                  const SizedBox(height: 8),
+                  loadButton,
+                  const SizedBox(height: 4),
+                  blameButton,
+                ],
+              )
+            else
+              Row(
+                children: [
+                  Expanded(child: pathField),
+                  const SizedBox(width: 8),
+                  loadButton,
+                  const SizedBox(width: 6),
+                  blameButton,
+                ],
+              ),
+            Wrap(
+              spacing: 4,
+              runSpacing: 0,
+              children: [
+                FilterChip(
+                  key: const Key('file-history-follow'),
+                  label: const Text('Follow renames'),
+                  selected: _follow && !_directoryMode,
+                  onSelected: _directoryMode || _loading
+                      ? null
+                      : (value) => setState(() => _follow = value),
+                ),
+                FilterChip(
+                  key: const Key('file-history-directory'),
+                  label: const Text('Directory'),
+                  selected: _directoryMode,
+                  onSelected: _loading
+                      ? null
+                      : (value) => setState(() => _directoryMode = value),
+                ),
+                if (!_blameMode)
+                  TextButton.icon(
+                    key: const Key('file-history-lines-toggle'),
+                    onPressed: _loading ? null : _showLineRange,
+                    icon: const Icon(Icons.format_list_numbered, size: 18),
+                    label: const Text('Line range'),
+                  ),
+              ],
             ),
-            FilterChip(
-              key: const Key('file-history-directory'),
-              label: const Text('Directory'),
-              selected: _directoryMode,
-              onSelected: _loading
-                  ? null
-                  : (value) => setState(() => _directoryMode = value),
-            ),
-            if (!_blameMode)
-              TextButton.icon(
-                key: const Key('file-history-lines-toggle'),
-                onPressed: _loading ? null : _showLineRange,
-                icon: const Icon(Icons.format_list_numbered, size: 18),
-                label: const Text('Line range'),
+            if (!_blameMode &&
+                (_lineStart.text.isNotEmpty || _lineEnd.text.isNotEmpty))
+              Row(
+                children: [
+                  Expanded(
+                    child: _lineField(
+                      _lineStart,
+                      'Start line',
+                      'file-history-line-start',
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: _lineField(
+                      _lineEnd,
+                      'End line',
+                      'file-history-line-end',
+                    ),
+                  ),
+                ],
+              ),
+            if (_blameMode)
+              Wrap(
+                spacing: 4,
+                children: [
+                  FilterChip(
+                    key: const Key('blame-ignore-whitespace'),
+                    label: const Text('Ignore whitespace'),
+                    selected: _ignoreWhitespace,
+                    onSelected: _loading
+                        ? null
+                        : (value) => setState(() => _ignoreWhitespace = value),
+                  ),
+                  FilterChip(
+                    key: const Key('blame-detect-moves'),
+                    label: const Text('Detect moves'),
+                    selected: _detectMoves,
+                    onSelected: _loading
+                        ? null
+                        : (value) => setState(() => _detectMoves = value),
+                  ),
+                  FilterChip(
+                    key: const Key('blame-detect-copies'),
+                    label: const Text('Detect copies'),
+                    selected: _detectCopies,
+                    onSelected: _loading
+                        ? null
+                        : (value) => setState(() => _detectCopies = value),
+                  ),
+                ],
               ),
           ],
-        ),
-        if (!_blameMode &&
-            (_lineStart.text.isNotEmpty || _lineEnd.text.isNotEmpty))
-          Row(
-            children: [
-              Expanded(
-                child: _lineField(
-                  _lineStart,
-                  'Start line',
-                  'file-history-line-start',
-                ),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: _lineField(
-                  _lineEnd,
-                  'End line',
-                  'file-history-line-end',
-                ),
-              ),
-            ],
-          ),
-        if (_blameMode)
-          Wrap(
-            spacing: 4,
-            children: [
-              FilterChip(
-                key: const Key('blame-ignore-whitespace'),
-                label: const Text('Ignore whitespace'),
-                selected: _ignoreWhitespace,
-                onSelected: _loading
-                    ? null
-                    : (value) => setState(() => _ignoreWhitespace = value),
-              ),
-              FilterChip(
-                key: const Key('blame-detect-moves'),
-                label: const Text('Detect moves'),
-                selected: _detectMoves,
-                onSelected: _loading
-                    ? null
-                    : (value) => setState(() => _detectMoves = value),
-              ),
-              FilterChip(
-                key: const Key('blame-detect-copies'),
-                label: const Text('Detect copies'),
-                selected: _detectCopies,
-                onSelected: _loading
-                    ? null
-                    : (value) => setState(() => _detectCopies = value),
-              ),
-            ],
-          ),
-      ],
+        );
+      },
     );
   }
 
@@ -280,7 +293,7 @@ class _FileHistoryDialogState extends State<FileHistoryDialog> {
     trailing: TextButton(
       key: ValueKey('get-from-revision:${entry.oid}'),
       onPressed: _loading ? null : () => unawaited(_getFromRevision(entry)),
-      child: const Text('Get'),
+      child: const Text('Restore'),
     ),
   );
 

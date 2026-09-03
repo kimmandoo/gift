@@ -30,13 +30,13 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Git objects'), findsOneWidget);
-    expect(find.text('No stashes are configured.'), findsOneWidget);
-    expect(find.text('No tags are configured.'), findsNothing);
+    expect(find.text('No stashes found.'), findsOneWidget);
+    expect(find.text('No tags found.'), findsNothing);
     expect(tester.takeException(), isNull);
 
     await tester.tap(find.text('Tags'));
     await tester.pumpAndSettle();
-    expect(find.text('No tags are configured.'), findsOneWidget);
+    expect(find.text('No tags found.'), findsOneWidget);
 
     await tester.tap(find.text('Remotes'));
     await tester.pumpAndSettle();

@@ -436,7 +436,7 @@ class _ComparisonDialogState extends State<ComparisonDialog> {
         children: [
           Expanded(child: Text(error.userMessage)),
           if (error.retryable)
-            TextButton(onPressed: _compare, child: const Text('Refresh')),
+            TextButton(onPressed: _compare, child: const Text('Retry')),
         ],
       ),
     );

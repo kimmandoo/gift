@@ -40,6 +40,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
   late final TextEditingController _afterController;
   late final TextEditingController _beforeController;
   late final FocusNode _searchFocusNode;
+  final _selectedDiffKey = GlobalKey();
 
   @override
   void initState() {
@@ -185,10 +186,11 @@ class _HistoryScreenState extends State<HistoryScreen> {
             ),
           ),
           const SizedBox(width: 8),
-          OutlinedButton(
+          OutlinedButton.icon(
             key: const Key('history-apply-filters'),
             onPressed: _applyFilters,
-            child: const Text('Apply'),
+            icon: const Icon(Icons.search, size: 18),
+            label: const Text('Search'),
           ),
         ],
       ),
@@ -469,6 +471,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
     }
     final narrow = MediaQuery.sizeOf(context).width < 500;
     return SingleChildScrollView(
+      key: const Key('history-details-scroll'),
       padding: EdgeInsets.fromLTRB(narrow ? 16 : 20, 20, narrow ? 16 : 20, 24),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -541,7 +544,12 @@ class _HistoryScreenState extends State<HistoryScreen> {
             SelectableText(commit.body),
           ],
           const SizedBox(height: 20),
-          Text('Changed files', style: Theme.of(context).textTheme.titleMedium),
+          Text(
+            state.commitFiles == null
+                ? 'Changed files'
+                : 'Changed files (${state.commitFiles!.length})',
+            style: Theme.of(context).textTheme.titleMedium,
+          ),
           if (state.isLoadingCommitFiles)
             const Padding(
               padding: EdgeInsets.symmetric(vertical: 16),
@@ -558,7 +566,10 @@ class _HistoryScreenState extends State<HistoryScreen> {
               _commitFileTile(context, file, state),
               if (state.selectedPath == file.path) ...[
                 const SizedBox(height: 8),
-                _selectedCommitFileDiff(context, state),
+                KeyedSubtree(
+                  key: _selectedDiffKey,
+                  child: _selectedCommitFileDiff(context, state),
+                ),
               ],
             ],
         ],
@@ -590,9 +601,23 @@ class _HistoryScreenState extends State<HistoryScreen> {
           size: 20,
         ),
         selected: selected,
-        onTap: () => _controller.selectFile(file),
+        onTap: () => _selectFile(file),
       ),
     );
+  }
+
+  void _selectFile(GitCommitFileChange file) {
+    _controller.selectFile(file);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final context = _selectedDiffKey.currentContext;
+      if (!mounted || context == null) return;
+      Scrollable.ensureVisible(
+        context,
+        alignment: 0.12,
+        duration: const Duration(milliseconds: 180),
+        curve: Curves.easeOut,
+      );
+    });
   }
 
   Widget _selectedCommitFileDiff(BuildContext context, HistoryState state) {
@@ -670,13 +695,18 @@ class _HistoryScreenState extends State<HistoryScreen> {
                   scheme.errorContainer,
                   scheme.onErrorContainer,
                 ),
-                IconButton(
-                  key: const Key('copy-commit-diff'),
-                  tooltip: 'Copy diff',
-                  visualDensity: VisualDensity.compact,
-                  onPressed: () =>
-                      Clipboard.setData(ClipboardData(text: rawText)),
-                  icon: const Icon(Icons.copy, size: 18),
+                Tooltip(
+                  message: 'Copy diff',
+                  child: TextButton.icon(
+                    key: const Key('copy-commit-diff'),
+                    style: TextButton.styleFrom(
+                      visualDensity: VisualDensity.compact,
+                    ),
+                    onPressed: () =>
+                        Clipboard.setData(ClipboardData(text: rawText)),
+                    icon: const Icon(Icons.copy, size: 18),
+                    label: const Text('Copy diff'),
+                  ),
                 ),
               ],
             ),
@@ -692,27 +722,25 @@ class _HistoryScreenState extends State<HistoryScreen> {
                 ),
               ),
             ),
-          SizedBox(
-            height: 360,
+          ConstrainedBox(
+            constraints: const BoxConstraints(minHeight: 56),
             child: SelectionArea(
               child: Scrollbar(
+                notificationPredicate: (notification) =>
+                    notification.metrics.axis == Axis.horizontal,
                 child: SingleChildScrollView(
                   key: const Key('commit-diff-scroll'),
-                  padding: const EdgeInsets.symmetric(vertical: 8),
-                  child: SingleChildScrollView(
-                    scrollDirection: Axis.horizontal,
-                    padding: const EdgeInsets.symmetric(horizontal: 8),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        for (var index = 0; index < diff.lines.length; index++)
-                          _historicalDiffLine(
-                            context,
-                            diff.lines[index],
-                            index,
-                          ),
-                      ],
-                    ),
+                  scrollDirection: Axis.horizontal,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 8,
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      for (var index = 0; index < diff.lines.length; index++)
+                        _historicalDiffLine(context, diff.lines[index], index),
+                    ],
                   ),
                 ),
               ),

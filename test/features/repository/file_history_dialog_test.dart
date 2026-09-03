@@ -36,6 +36,8 @@ void main() {
 
     await tester.tap(find.byKey(const Key('load-file-history')));
     await tester.pumpAndSettle();
+    expect(find.text('Load history'), findsOneWidget);
+    expect(find.text('Load blame'), findsOneWidget);
     expect(find.byKey(const Key('file-history-list')), findsOneWidget);
     expect(
       find.byKey(const Key('file-history-entry:1234567890abcdef')),
@@ -46,6 +48,7 @@ void main() {
       find.byKey(const Key('get-from-revision:1234567890abcdef')),
     );
     await tester.pumpAndSettle();
+    expect(find.text('Restore'), findsOneWidget);
     expect(find.byKey(const Key('file-history-message')), findsOneWidget);
 
     await tester.tap(find.byKey(const Key('load-file-blame')));

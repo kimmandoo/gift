@@ -247,21 +247,23 @@ class _ResetDialogState extends State<ResetDialog> {
                         : const Icon(Icons.visibility_outlined),
                     label: const Text('Preview effect'),
                   ),
-                  if (_preview?.isDestructive == true &&
-                      _preview?.request.mode == GitResetMode.hard)
-                    FilterChip(
-                      key: const Key('confirm-hard-reset'),
-                      selected: _confirmHardReset,
-                      onSelected: _isBusy
-                          ? null
-                          : (selected) =>
-                                setState(() => _confirmHardReset = selected),
-                      label: const Text(
-                        'I understand hard reset discards content',
-                      ),
-                    ),
                 ],
               ),
+              if (_preview?.isDestructive == true &&
+                  _preview?.request.mode == GitResetMode.hard)
+                CheckboxListTile(
+                  key: const Key('confirm-hard-reset'),
+                  dense: compact,
+                  contentPadding: EdgeInsets.zero,
+                  controlAffinity: ListTileControlAffinity.leading,
+                  value: _confirmHardReset,
+                  onChanged: _isBusy
+                      ? null
+                      : (selected) => setState(
+                          () => _confirmHardReset = selected ?? false,
+                        ),
+                  title: const Text('I understand this will discard content'),
+                ),
               if (_preview case final preview?) ...[
                 const SizedBox(height: 14),
                 _previewCard(context, preview),
@@ -290,7 +292,7 @@ class _ResetDialogState extends State<ResetDialog> {
                 ? () => unawaited(_execute(preview))
                 : null,
             icon: const Icon(Icons.play_arrow),
-            label: const Text('Execute reviewed action'),
+            label: const Text('Run reviewed action'),
           ),
       ],
     );

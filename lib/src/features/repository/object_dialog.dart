@@ -156,7 +156,7 @@ class _ObjectDialogState extends State<ObjectDialog> {
             FilledButton(
               key: const Key('create-stash'),
               onPressed: _busy ? null : _createStash,
-              child: const Text('Save'),
+              child: const Text('Stash changes'),
             ),
           ],
         ),
@@ -173,7 +173,7 @@ class _ObjectDialogState extends State<ObjectDialog> {
         const Divider(),
         Expanded(
           child: stashes.isEmpty
-              ? const Center(child: Text('No stashes are configured.'))
+              ? const Center(child: Text('No stashes found.'))
               : ListView.builder(
                   key: const Key('stash-list'),
                   itemCount: stashes.length,
@@ -295,7 +295,7 @@ class _ObjectDialogState extends State<ObjectDialog> {
         const Divider(),
         Expanded(
           child: tags.isEmpty
-              ? const Center(child: Text('No tags are configured.'))
+              ? const Center(child: Text('No tags found.'))
               : ListView.builder(
                   key: const Key('tag-list'),
                   itemCount: tags.length,
@@ -527,7 +527,7 @@ class _ObjectDialogState extends State<ObjectDialog> {
               onPressed: _busy || _upstream?.hasUpstream != true
                   ? null
                   : _unsetUpstream,
-              child: const Text('Unset'),
+              child: const Text('Unset upstream'),
             ),
           ],
         ),

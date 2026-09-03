@@ -130,7 +130,7 @@ class _ShelfDialogState extends State<ShelfDialog> {
                 size: 18,
               ),
               title: Text(list.name),
-              subtitle: Text('${list.paths.length} assigned path(s)'),
+              subtitle: Text('${_pathCount(list.paths.length)} assigned'),
               onTap: _busy || list.isActive
                   ? null
                   : () => unawaited(_activateChangelist(list.id)),
@@ -253,7 +253,7 @@ class _ShelfDialogState extends State<ShelfDialog> {
     contentPadding: EdgeInsets.zero,
     title: Text(shelf.name),
     subtitle: Text(
-      '${shelf.paths.length} path(s) · ${shelf.imported ? 'imported' : 'tracked'}',
+      '${_pathCount(shelf.paths.length)} · ${shelf.imported ? 'imported' : 'tracked'}',
     ),
     trailing: Wrap(
       spacing: 0,
@@ -479,3 +479,5 @@ class _ShelfDialogState extends State<ShelfDialog> {
     }
   }
 }
+
+String _pathCount(int count) => '$count ${count == 1 ? 'path' : 'paths'}';

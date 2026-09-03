@@ -391,3 +391,12 @@ system Git 2.35+.
 4. Added a recent-commit target picker for rollback, automatically selecting
    the current commit's parent while retaining an Advanced revision escape
    hatch for branches and special expressions.
+
+## Completed follow-up: repository UI polish
+
+1. Unified History detail scrolling so the commit detail pane owns vertical
+   movement and the diff card only scrolls horizontally for long code lines.
+2. Automatically revealed the selected file's diff near the file row and
+   clarified search, restore, stash, empty-state, and status-summary copy.
+3. Hardened compact app-bar and dialog layouts, then passed repository widget
+   tests, analysis, formatting, and the full Flutter suite.

@@ -211,6 +211,15 @@ void main() {
       find.byKey(const Key('commit-file-section:notes.txt')),
       findsOneWidget,
     );
+    expect(find.byKey(const Key('history-details-scroll')), findsOneWidget);
+    expect(
+      tester
+          .widget<SingleChildScrollView>(
+            find.byKey(const Key('commit-diff-scroll')),
+          )
+          .scrollDirection,
+      Axis.horizontal,
+    );
     expect(find.byKey(const Key('commit-diff-scroll')), findsOneWidget);
     expect(find.byKey(const Key('commit-diff-line:0')), findsOneWidget);
     expect(find.text('+1'), findsOneWidget);

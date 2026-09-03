@@ -136,7 +136,10 @@ class _ChangesScreenBodyState extends ConsumerState<_ChangesScreenBody> {
         ref.watch(changesControllerProvider(_providerArgs))!;
     final state = controller.state;
     final snapshot = state.snapshot;
-    final compactAppBar = MediaQuery.sizeOf(context).width < 600;
+    // Ten action icons do not fit beside a repository path on tablet-sized
+    // windows. Keep the app bar predictable by switching to the same menu
+    // before those actions start crowding the title.
+    final compactAppBar = MediaQuery.sizeOf(context).width < 1040;
     final scaffold = Scaffold(
       appBar: AppBar(
         leading: widget.onBack == null
@@ -369,8 +372,10 @@ class _ChangesScreenBodyState extends ConsumerState<_ChangesScreenBody> {
     final compact = MediaQuery.sizeOf(context).width < 480;
     final branch = snapshot.branch.head ?? 'Detached HEAD';
     final sync = snapshot.branch.hasUpstream
-        ? '↑${snapshot.branch.ahead} ↓${snapshot.branch.behind}'
-        : 'no upstream';
+        ? '${snapshot.branch.ahead} ahead · ${snapshot.branch.behind} behind'
+        : 'No upstream';
+    final changeLabel =
+        '${snapshot.changes.length} changed ${snapshot.changes.length == 1 ? 'file' : 'files'}';
     return Container(
       padding: EdgeInsets.symmetric(
         horizontal: compact ? 12 : 20,
@@ -389,8 +394,7 @@ class _ChangesScreenBodyState extends ConsumerState<_ChangesScreenBody> {
                   ?.copyWith(fontWeight: FontWeight.w600),
             ),
             Text(sync),
-            Text('${snapshot.changes.length} changes'),
-            Text('generation ${snapshot.generation}'),
+            Text(changeLabel),
           ];
           if (constraints.maxWidth < 760) {
             return Wrap(
@@ -409,8 +413,6 @@ class _ChangesScreenBodyState extends ConsumerState<_ChangesScreenBody> {
               items[2],
               const Spacer(),
               items[3],
-              const SizedBox(width: 12),
-              items[4],
             ],
           );
         },
