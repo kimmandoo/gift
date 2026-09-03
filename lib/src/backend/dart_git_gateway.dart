@@ -14,6 +14,7 @@ import 'status.dart';
 import 'objects.dart';
 import 'shelf.dart';
 import 'file_history.dart';
+import 'reset.dart';
 
 /// Adapts the UI-facing [GitGateway] contract to the Dart backend facade.
 ///
@@ -576,6 +577,40 @@ class DartGitGateway implements GitGateway, DiscardPreviewCancellationGateway {
     String message, {
     GitCommitOptions options = const GitCommitOptions(),
   }) => backend.commit(repositoryId, message, options: options);
+
+  @override
+  Future<GitHistoryRollbackPreview> previewHistoryRollback(
+    RepositoryId repositoryId,
+    GitHistoryRollbackRequest request,
+  ) => backend.previewHistoryRollback(repositoryId, request);
+
+  @override
+  Future<GitHistoryRollbackResult> executeHistoryRollback(
+    RepositoryId repositoryId,
+    GitHistoryRollbackPreview preview, {
+    GitCancellationToken? cancellationToken,
+  }) => backend.executeHistoryRollback(
+    repositoryId,
+    preview,
+    cancellationToken: cancellationToken,
+  );
+
+  @override
+  Future<GitHistoryRollbackPreview> previewReset(
+    RepositoryId repositoryId,
+    String targetRevision, {
+    GitResetMode mode = GitResetMode.mixed,
+  }) => backend.previewReset(repositoryId, targetRevision, mode: mode);
+
+  @override
+  Future<GitHistoryRollbackPreview> previewUndo(RepositoryId repositoryId) =>
+      backend.previewUndo(repositoryId);
+
+  @override
+  Future<GitHistoryRollbackPreview> previewRevert(
+    RepositoryId repositoryId,
+    Iterable<String> revisions,
+  ) => backend.previewRevert(repositoryId, revisions);
 
   @override
   Future<DiscardPreview> createDiscardPreview(

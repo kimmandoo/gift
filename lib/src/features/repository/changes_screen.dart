@@ -8,6 +8,7 @@ import 'package:gift/src/backend/diff.dart';
 import 'package:gift/src/backend/error.dart';
 import 'package:gift/src/backend/git_gateway.dart';
 import 'package:gift/src/backend/remote.dart';
+import 'package:gift/src/backend/reset.dart';
 import 'package:gift/src/backend/status.dart';
 import 'package:gift/src/features/repository/changes_controller.dart';
 import 'package:gift/src/features/repository/branch_dialog.dart';
@@ -18,6 +19,7 @@ import 'package:gift/src/features/repository/object_dialog.dart';
 import 'package:gift/src/features/repository/comparison_dialog.dart';
 import 'package:gift/src/features/repository/shelf_dialog.dart';
 import 'package:gift/src/features/repository/file_history_dialog.dart';
+import 'package:gift/src/features/repository/reset_dialog.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter/services.dart';
@@ -189,6 +191,9 @@ class _ChangesScreenBodyState extends ConsumerState<_ChangesScreenBody> {
                   case _ChangesMenuAction.fileHistory:
                     unawaited(_openFileHistory(context));
                     break;
+                  case _ChangesMenuAction.historyRollback:
+                    unawaited(_openHistoryRollback(context));
+                    break;
                   case _ChangesMenuAction.refresh:
                     unawaited(controller.refresh());
                     break;
@@ -226,6 +231,10 @@ class _ChangesScreenBodyState extends ConsumerState<_ChangesScreenBody> {
                 const PopupMenuItem(
                   value: _ChangesMenuAction.fileHistory,
                   child: Text('File history & blame'),
+                ),
+                const PopupMenuItem(
+                  value: _ChangesMenuAction.historyRollback,
+                  child: Text('Undo, reset, or revert'),
                 ),
                 PopupMenuItem(
                   value: _ChangesMenuAction.refresh,
@@ -282,6 +291,12 @@ class _ChangesScreenBodyState extends ConsumerState<_ChangesScreenBody> {
               tooltip: 'File history and blame',
               onPressed: () => unawaited(_openFileHistory(context)),
               icon: const Icon(Icons.history_edu_outlined),
+            ),
+            IconButton(
+              key: const Key('open-history-rollback'),
+              tooltip: 'Undo, reset, or revert history',
+              onPressed: () => unawaited(_openHistoryRollback(context)),
+              icon: const Icon(Icons.history_toggle_off),
             ),
             IconButton(
               tooltip: 'Refresh changes',
@@ -1385,6 +1400,19 @@ class _ChangesScreenBodyState extends ConsumerState<_ChangesScreenBody> {
     );
   }
 
+  Future<void> _openHistoryRollback(BuildContext context) async {
+    final result = await showDialog<GitHistoryRollbackResult>(
+      context: context,
+      builder: (_) =>
+          ResetDialog(gateway: widget.gateway, repository: widget.repository),
+    );
+    if (!context.mounted || result == null) return;
+    await _activeController.refresh();
+    if (!context.mounted) return;
+    ScaffoldMessenger.of(context)
+        .showSnackBar(SnackBar(content: Text(result.summary)));
+  }
+
   Widget _scopeSelector(
     BuildContext context,
     GitChange selected,
@@ -1690,5 +1718,6 @@ enum _ChangesMenuAction {
   threeWayComparison,
   shelves,
   fileHistory,
+  historyRollback,
   refresh,
 }

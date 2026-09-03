@@ -536,6 +536,7 @@ class _ConflictWorkspaceScreenState extends State<ConflictWorkspaceScreen> {
     GitConflictOperation.merge => 'Merge',
     GitConflictOperation.rebase => 'Rebase',
     GitConflictOperation.cherryPick => 'Cherry-pick',
+    GitConflictOperation.revert => 'Revert',
   };
 
   String _contentStatus(GitConflictContentState state) => switch (state) {

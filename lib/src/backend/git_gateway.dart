@@ -12,6 +12,7 @@ import 'remote.dart';
 import 'objects.dart';
 import 'shelf.dart';
 import 'file_history.dart';
+import 'reset.dart';
 
 /// The small API that Flutter features depend on.
 ///
@@ -401,6 +402,30 @@ abstract interface class GitGateway {
     String message, {
     GitCommitOptions options = const GitCommitOptions(),
   });
+
+  Future<GitHistoryRollbackPreview> previewHistoryRollback(
+    RepositoryId repositoryId,
+    GitHistoryRollbackRequest request,
+  );
+
+  Future<GitHistoryRollbackResult> executeHistoryRollback(
+    RepositoryId repositoryId,
+    GitHistoryRollbackPreview preview, {
+    GitCancellationToken? cancellationToken,
+  });
+
+  Future<GitHistoryRollbackPreview> previewReset(
+    RepositoryId repositoryId,
+    String targetRevision, {
+    GitResetMode mode = GitResetMode.mixed,
+  });
+
+  Future<GitHistoryRollbackPreview> previewUndo(RepositoryId repositoryId);
+
+  Future<GitHistoryRollbackPreview> previewRevert(
+    RepositoryId repositoryId,
+    Iterable<String> revisions,
+  );
 
   Future<DiscardPreview> createDiscardPreview(
     RepositoryId repositoryId,

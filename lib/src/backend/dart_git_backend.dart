@@ -14,6 +14,7 @@ import 'status.dart';
 import 'objects.dart';
 import 'shelf.dart';
 import 'file_history.dart';
+import 'reset.dart';
 
 /// Application-facing entry point for backend operations.
 ///
@@ -1020,6 +1021,71 @@ class DartGitBackend {
       state: _state,
       runner: _runner,
     ).commit(repositoryId, message, options: options);
+  }
+
+  Future<GitHistoryRollbackPreview> previewHistoryRollback(
+    RepositoryId repositoryId,
+    GitHistoryRollbackRequest request,
+  ) async {
+    final installation = await getGitInstallation();
+    return RepositoryService(
+      gitPath: installation.executablePath,
+      state: _state,
+      runner: _runner,
+    ).previewHistoryRollback(repositoryId, request);
+  }
+
+  Future<GitHistoryRollbackResult> executeHistoryRollback(
+    RepositoryId repositoryId,
+    GitHistoryRollbackPreview preview, {
+    GitCancellationToken? cancellationToken,
+  }) async {
+    final installation = await getGitInstallation();
+    return RepositoryService(
+      gitPath: installation.executablePath,
+      state: _state,
+      runner: _runner,
+    ).executeHistoryRollback(
+      repositoryId,
+      preview,
+      cancellationToken: cancellationToken,
+    );
+  }
+
+  Future<GitHistoryRollbackPreview> previewReset(
+    RepositoryId repositoryId,
+    String targetRevision, {
+    GitResetMode mode = GitResetMode.mixed,
+  }) async {
+    final installation = await getGitInstallation();
+    return RepositoryService(
+      gitPath: installation.executablePath,
+      state: _state,
+      runner: _runner,
+    ).previewReset(repositoryId, targetRevision, mode: mode);
+  }
+
+  Future<GitHistoryRollbackPreview> previewUndo(
+    RepositoryId repositoryId,
+  ) async {
+    final installation = await getGitInstallation();
+    return RepositoryService(
+      gitPath: installation.executablePath,
+      state: _state,
+      runner: _runner,
+    ).previewUndo(repositoryId);
+  }
+
+  Future<GitHistoryRollbackPreview> previewRevert(
+    RepositoryId repositoryId,
+    Iterable<String> revisions,
+  ) async {
+    final installation = await getGitInstallation();
+    return RepositoryService(
+      gitPath: installation.executablePath,
+      state: _state,
+      runner: _runner,
+    ).previewRevert(repositoryId, revisions);
   }
 
   Future<DiscardPreview> createDiscardPreview(

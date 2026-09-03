@@ -5,36 +5,31 @@ This file is the handoff record for continuing work across query sessions.
 ## Current checkpoint
 
 - Date: 2026-09-03
-- Active task: Task 25 and its requested product-identity logo follow-up are
-  complete; no numbered task is active.
+- Active task: Task 26 and its completed History commit-file viewer follow-up;
+  Task 27 remains planned and inactive.
 - Branch: `main`; no new branch or worktree was created.
-- Latest commit before this implementation session: `1190e05
-  feat(task25): add file history and blame`.
-- History cleanup: removed the pull-request merge commit from local and remote
-  `main` with a lease-protected force update; the branding commits and Task 18
-  content remain in a linear history. The two remaining obsolete branding
-  labels in reachable commit messages were also replaced, and the rewrite
-  backup ref was removed.
-- Changed files in this session: the generated transparent chubby Shiba
-  gift-ribbon `assets/images/gift_icon.png`, the deterministic README
-  `assets/images/gift_logo.png`, Windows and macOS release icon derivatives,
-  README/release/architecture branding notes, the dated changelog, the Task
-  25 and logo-follow-up records, and this checkpoint.
-- Verification: `dart format --output=none --set-exit-if-changed lib test
-  integration_test tool` reported 0 changed files, `flutter analyze` reported
-  no issues, the full Flutter suite passed with `144` tests, `git diff --check`
-  passed, the macOS 1024px derivative matched the canonical icon pixels, and
-  the Windows ICO directory contained 16/32/48/64/128/256px entries.
+- Latest commit before this implementation session: `af07eac
+  build(identity): replace gift logo with pixel Shiba ribbon mark`.
+- Implemented typed reset/undo/revert contracts, short-lived stale-bound
+  previews, protected/pushed/dirty/detached/in-progress preflight, all four
+  reset modes, multi-commit revert, and explicit revert conflict recovery.
+- Added the preview-first rollback dialog to Changes and History. Hard reset
+  requires a separate acknowledgement after the impact preview.
+- Replaced the History selected-file diff text with a file-aware card showing
+  path context, change totals, copy, selectable numbered lines, semantic colors,
+  and bounded vertical/horizontal scrolling.
+- Changed files include `lib/src/backend/{reset,repository_service,conflict,
+  error,dart_git_backend,dart_git_gateway,git_gateway}.dart`, repository
+  rollback/history UI files, `test/backend/reset_test.dart`, the rollback and
+  History widget fixtures, and the Task 26 ledger/plan/changelog records.
+- Verification: formatting, `git diff --check`, and `flutter analyze` passed;
+  the final full Flutter suite passed with `151` tests, including the rollback
+  backend/UI fixtures and new History diff-card assertions.
   Native Windows compilation is not available in this Linux workspace.
-- Next action: commit and push this logo refresh. Do not activate Task 26 until
-  its behavior scenarios and first failing test are explicitly recorded.
-- First failing signal for Task 23 remains recorded in the plan. This session's
-  second RED was the missing `GitComparisonTransferAction` and
-  `DartGitBackend.applyComparison` contract. This UI fix first reproduced a
-  32px diff checkbox against the 24px compact target before constraining its
-  selector height. The reported Windows signal was a separate cascade of
-  missing Flutter widget and `ChangeNotifier` types from incremental build
-  output.
+- Next action: when the user requests the next numbered task, activate Task 27
+  only after recording its behavior scenarios and first failing test.
+- Earlier Task 23 and Windows incremental-build diagnostics remain recorded in
+  the plan and prior checkpoints.
 - Blockers: none.
 
 ## Previous checkpoint

@@ -207,6 +207,11 @@ void main() {
     await tester.tap(find.byKey(const Key('commit-file:notes.txt')));
     await tester.pump();
     expect(find.byKey(const Key('commit-diff')), findsOneWidget);
+    expect(find.byKey(const Key('commit-diff-scroll')), findsOneWidget);
+    expect(find.byKey(const Key('commit-diff-line:0')), findsOneWidget);
+    expect(find.text('+1'), findsOneWidget);
+    expect(find.text('-0'), findsOneWidget);
+    expect(find.byKey(const Key('copy-commit-diff')), findsOneWidget);
     expect(find.text('+new'), findsOneWidget);
 
     await tester.tap(find.byIcon(Icons.expand_more));

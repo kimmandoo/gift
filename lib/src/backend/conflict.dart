@@ -3,7 +3,7 @@ import 'dart:convert';
 import 'domain.dart';
 
 /// The Git operation that left an unmerged index behind.
-enum GitConflictOperation { merge, rebase, cherryPick }
+enum GitConflictOperation { merge, rebase, cherryPick, revert }
 
 /// A content state is explicit so the UI never treats unavailable bytes as an
 /// empty file. [notLoaded] is used by the index parser before Git loads a

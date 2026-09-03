@@ -2,6 +2,10 @@
 
 ## 2026-09-03
 
+- feat(task26): added preview-bound reset, undo, and revert safety with
+  protected-state checks and explicit conflict recovery.
+- fix(history): improved selected commit-file diffs with context, line numbers,
+  change counts, copy, semantic colors, and independent scrolling.
 - fix(ui): aligned diff checkboxes with code-line height and removed extra
   bottom spacing.
 - fix(build): cleared generated Flutter desktop caches before release builds

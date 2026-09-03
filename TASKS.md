@@ -7,8 +7,8 @@
 ## Progress
 
 - **Total Tasks:** 38
-- **Completed:** 25 / 38
-- **Current Active Task:** `No numbered task active (Task 25 and the logo follow-up are complete)`
+- **Completed:** 26 / 38
+- **Current Active Task:** `Task 26 follow-up — History commit-file viewer polish`
 
 | # | Scope | Dart backend deliverables | Flutter deliverables | Status |
 |---|---|---|---|:---:|
@@ -361,7 +361,31 @@ Task 25 is complete.
 - [x] Documented that `gift` combines Git and Flutter and that `gitft` was
   shortened to `gift`.
 
-The logo follow-up is complete. Keep Task 26 planned until it is explicitly
+The logo follow-up is complete. Task 26 was activated after its behavior
+scenarios and first failing test were recorded.
+
+### ✅ Task 26: Undo, reset, and revert safety
+
+- [x] Add previews for revert, undo, and soft/mixed/hard/keep reset effects.
+- [x] Protect pushed/protected/detached/dirty/in-progress repository states
+  before history-changing mutations.
+- [x] Return explicit revert conflict recovery and preserve stale-preview
+  protection for destructive reset modes.
+- [x] Cover all rollback modes, multi-commit revert, conflict, undo
+  preservation, protected branches, and stale confirmations.
+
+Task 26 is complete.
+
+### ✅ Task 26 follow-up: History commit-file viewer polish
+
+- [x] Replaced the plain selected-file diff text with a bounded, independently
+  scrollable diff card.
+- [x] Added file context, addition/deletion counts, copy action, line numbers,
+  semantic addition/deletion/hunk colors, and selectable content.
+- [x] Added regression coverage for the diff card, line rows, counts, and copy
+  control without activating Task 27.
+
+The Task 26 follow-up is complete. Keep Task 27 planned until it is explicitly
 activated with its behavior scenarios and first failing test.
 
 ## Post-MVP backlog

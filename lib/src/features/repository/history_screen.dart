@@ -1,10 +1,13 @@
 import 'dart:async';
 
 import 'package:gift/src/backend/domain.dart';
+import 'package:gift/src/backend/diff.dart';
 import 'package:gift/src/backend/error.dart';
 import 'package:gift/src/backend/git_gateway.dart';
 import 'package:gift/src/backend/history.dart';
+import 'package:gift/src/backend/reset.dart';
 import 'package:gift/src/features/repository/history_controller.dart';
+import 'package:gift/src/features/repository/reset_dialog.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:gift/src/app/pixel_theme.dart';
@@ -100,6 +103,12 @@ class _HistoryScreenState extends State<HistoryScreen> {
         ),
         actions: [
           const PixelThemeToggle(),
+          IconButton(
+            key: const Key('history-rollback'),
+            tooltip: 'Undo, reset, or revert history',
+            onPressed: () => unawaited(_openHistoryRollback(context)),
+            icon: const Icon(Icons.history_toggle_off),
+          ),
           IconButton(
             tooltip: 'Refresh history',
             onPressed: state.isLoading ? null : _controller.refresh,
@@ -577,18 +586,220 @@ class _HistoryScreenState extends State<HistoryScreen> {
             else if (state.commitDiff!.isEmpty)
               const Text('No textual diff is available.')
             else
-              Container(
-                key: const Key('commit-diff'),
-                width: double.infinity,
-                color: Theme.of(context).colorScheme.surfaceContainerHighest,
-                padding: const EdgeInsets.all(10),
-                child: SelectableText(
-                  state.commitDiff!.lines.map((line) => line.text).join('\n'),
-                  style: const TextStyle(fontFamily: 'monospace'),
-                ),
-              ),
+              _historicalDiffCard(context, state.commitDiff!),
           ],
         ],
+      ),
+    );
+  }
+
+  Widget _historicalDiffCard(BuildContext context, GitCommitDiff diff) {
+    final scheme = Theme.of(context).colorScheme;
+    final snapshot = diff.snapshot;
+    final rawText = diff.lines.map((line) => line.text).join('\n');
+    return Card(
+      key: const Key('commit-diff'),
+      margin: EdgeInsets.zero,
+      clipBehavior: Clip.antiAlias,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Container(
+            color: scheme.surfaceContainerHighest,
+            padding: const EdgeInsets.fromLTRB(12, 10, 8, 10),
+            child: Wrap(
+              crossAxisAlignment: WrapCrossAlignment.center,
+              spacing: 8,
+              runSpacing: 6,
+              children: [
+                const Icon(Icons.description_outlined, size: 18),
+                ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 360),
+                  child: Text(
+                    snapshot.path,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: Theme.of(context).textTheme.titleSmall,
+                  ),
+                ),
+                if (snapshot.oldPath != null && snapshot.newPath != null)
+                  Text(
+                    '${snapshot.oldPath} → ${snapshot.newPath}',
+                    style: Theme.of(context).textTheme.labelSmall,
+                  ),
+                _diffCountBadge(
+                  context,
+                  '+${diff.additions}',
+                  scheme.tertiaryContainer,
+                  scheme.onTertiaryContainer,
+                ),
+                _diffCountBadge(
+                  context,
+                  '-${diff.deletions}',
+                  scheme.errorContainer,
+                  scheme.onErrorContainer,
+                ),
+                IconButton(
+                  key: const Key('copy-commit-diff'),
+                  tooltip: 'Copy diff',
+                  visualDensity: VisualDensity.compact,
+                  onPressed: () =>
+                      Clipboard.setData(ClipboardData(text: rawText)),
+                  icon: const Icon(Icons.copy, size: 18),
+                ),
+              ],
+            ),
+          ),
+          if (snapshot.patchHeader.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(12, 8, 12, 0),
+              child: Text(
+                snapshot.patchHeader.join('\n'),
+                style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                  fontFamily: 'monospace',
+                  color: scheme.onSurfaceVariant,
+                ),
+              ),
+            ),
+          SizedBox(
+            height: 360,
+            child: SelectionArea(
+              child: Scrollbar(
+                child: SingleChildScrollView(
+                  key: const Key('commit-diff-scroll'),
+                  padding: const EdgeInsets.symmetric(vertical: 8),
+                  child: SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    padding: const EdgeInsets.symmetric(horizontal: 8),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        for (var index = 0; index < diff.lines.length; index++)
+                          _historicalDiffLine(
+                            context,
+                            diff.lines[index],
+                            index,
+                          ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _diffCountBadge(
+    BuildContext context,
+    String label,
+    Color background,
+    Color foreground,
+  ) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+      decoration: BoxDecoration(
+        color: background,
+        borderRadius: BorderRadius.circular(4),
+      ),
+      child: Text(
+        label,
+        style: Theme.of(context).textTheme.labelSmall?.copyWith(
+          color: foreground,
+          fontFamily: 'monospace',
+          fontWeight: FontWeight.w700,
+        ),
+      ),
+    );
+  }
+
+  Widget _historicalDiffLine(
+    BuildContext context,
+    GitDiffLine line,
+    int index,
+  ) {
+    final scheme = Theme.of(context).colorScheme;
+    final background = switch (line.kind) {
+      GitDiffLineKind.addition => scheme.tertiaryContainer.withValues(
+        alpha: 0.55,
+      ),
+      GitDiffLineKind.deletion => scheme.errorContainer.withValues(alpha: 0.65),
+      GitDiffLineKind.hunkHeader => scheme.primaryContainer.withValues(
+        alpha: 0.6,
+      ),
+      GitDiffLineKind.metadata ||
+      GitDiffLineKind.noNewline => scheme.surfaceContainerHighest,
+      GitDiffLineKind.context => Colors.transparent,
+    };
+    final foreground = switch (line.kind) {
+      GitDiffLineKind.addition => scheme.onTertiaryContainer,
+      GitDiffLineKind.deletion => scheme.onErrorContainer,
+      GitDiffLineKind.hunkHeader => scheme.onPrimaryContainer,
+      GitDiffLineKind.metadata ||
+      GitDiffLineKind.noNewline => scheme.onSurfaceVariant,
+      GitDiffLineKind.context => scheme.onSurface,
+    };
+    final marker = switch (line.kind) {
+      GitDiffLineKind.addition => '+',
+      GitDiffLineKind.deletion => '−',
+      GitDiffLineKind.hunkHeader => '·',
+      GitDiffLineKind.metadata => '·',
+      GitDiffLineKind.noNewline => '·',
+      GitDiffLineKind.context => ' ',
+    };
+    return Container(
+      key: Key('commit-diff-line:$index'),
+      color: background,
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(minWidth: 680),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            SizedBox(
+              width: 42,
+              child: Text(
+                line.oldLineNumber?.toString() ?? '',
+                textAlign: TextAlign.right,
+                style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                  fontFamily: 'monospace',
+                  color: scheme.onSurfaceVariant,
+                ),
+              ),
+            ),
+            const SizedBox(width: 8),
+            SizedBox(
+              width: 42,
+              child: Text(
+                line.newLineNumber?.toString() ?? '',
+                textAlign: TextAlign.right,
+                style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                  fontFamily: 'monospace',
+                  color: scheme.onSurfaceVariant,
+                ),
+              ),
+            ),
+            const SizedBox(width: 8),
+            SizedBox(
+              width: 18,
+              child: Text(
+                marker,
+                style: TextStyle(
+                  color: foreground,
+                  fontFamily: 'monospace',
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+            const SizedBox(width: 8),
+            Text(
+              line.text,
+              softWrap: false,
+              style: TextStyle(color: foreground, fontFamily: 'monospace'),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -613,6 +824,19 @@ class _HistoryScreenState extends State<HistoryScreen> {
 
   void _onChanged() {
     if (mounted) setState(() {});
+  }
+
+  Future<void> _openHistoryRollback(BuildContext context) async {
+    final result = await showDialog<GitHistoryRollbackResult>(
+      context: context,
+      builder: (_) =>
+          ResetDialog(gateway: widget.gateway, repository: widget.repository),
+    );
+    if (!context.mounted || result == null) return;
+    await _controller.refresh();
+    if (!context.mounted) return;
+    ScaffoldMessenger.of(context)
+        .showSnackBar(SnackBar(content: Text(result.summary)));
   }
 }
 

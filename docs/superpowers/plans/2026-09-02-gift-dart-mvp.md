@@ -363,3 +363,27 @@ system Git 2.35+.
    regenerated the Windows ICO and macOS AppIcon PNG sizes.
 3. Updated README, release documentation, architecture notes, task records,
    changelog, and this checkpoint to describe the new product identity.
+
+## Completed vertical: Undo, reset, and revert safety (Task 26)
+
+1. Activated Task 26 after recording reset impact, unpushed undo, revert
+   conflict, protected-branch, and stale-confirmation scenarios in the
+   behavior ledger.
+2. Added the first RED reset fixture; it fails until the typed rollback preview
+   and backend gateway contract exist.
+3. Implemented typed reset, undo, and revert models, short-lived stale-bound
+   previews, protected/pushed/dirty/detached/in-progress preflight, and
+   explicit revert conflict recovery.
+4. Added the responsive preview-first rollback dialog to Changes and History;
+   hard reset execution requires a separate acknowledgement after preview.
+5. Added real-Git and widget coverage for all reset modes, multi-commit revert,
+   undo preservation, conflict recovery, safety refusals, stale previews, and
+   the full rollback UI. Passed formatting, analysis, the full Flutter suite,
+   and all 151 tests. Task 26 is complete.
+
+## Completed follow-up: History commit-file viewer polish
+
+1. Replaced the plain selected-file diff text with a file-aware diff card.
+2. Added addition/deletion totals, copyable diff text, old/new line numbers,
+   semantic line colors, selectable content, and bounded independent scrolling.
+3. Added widget regression coverage and passed the focused History tests.

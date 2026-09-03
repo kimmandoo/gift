@@ -14,6 +14,7 @@ import 'error.dart';
 import 'executor.dart';
 import 'history.dart';
 import 'remote.dart';
+import 'reset.dart';
 import 'status.dart';
 import 'objects.dart';
 import 'shelf.dart';
@@ -31,11 +32,13 @@ class AppState {
   final Map<String, _DiscardPreviewRecord> _discardPreviews = {};
   final Map<String, _BranchPreviewRecord> _branchPreviews = {};
   final Map<String, _ObjectPreviewRecord> _objectPreviews = {};
+  final Map<String, _HistoryRollbackPreviewRecord> _rollbackPreviews = {};
   final DateTime Function() _now;
 
   static const discardPreviewLifetime = Duration(minutes: 2);
   static const branchPreviewLifetime = Duration(minutes: 2);
   static const objectPreviewLifetime = Duration(minutes: 2);
+  static const rollbackPreviewLifetime = Duration(minutes: 2);
 
   RepositoryOpened register(String root) {
     final repositoryId = RepositoryId(value: _newRepositoryId());
@@ -268,6 +271,54 @@ class AppState {
   void consumeObjectPreview(String token) {
     _objectPreviews.remove(token);
   }
+
+  GitBranchPreviewToken issueHistoryRollbackPreview({
+    required RepositoryId repositoryId,
+    required GitHistoryRollbackRequest request,
+    required String fingerprint,
+  }) {
+    _rollbackPreviews.removeWhere(
+      (_, record) => !record.expiresAt.isAfter(_now()),
+    );
+    final token = _newOpaqueToken();
+    final expiresAt = _now().add(rollbackPreviewLifetime);
+    _rollbackPreviews[token] = _HistoryRollbackPreviewRecord(
+      repositoryId: repositoryId,
+      requestKey: request.queryKey,
+      fingerprint: fingerprint,
+      expiresAt: expiresAt,
+    );
+    return GitBranchPreviewToken(value: token, expiresAt: expiresAt);
+  }
+
+  void validateHistoryRollbackPreview({
+    required RepositoryId repositoryId,
+    required GitHistoryRollbackPreview preview,
+    required String fingerprint,
+  }) {
+    final token = preview.token;
+    final record = token == null ? null : _rollbackPreviews[token];
+    final matches =
+        record != null &&
+        record.repositoryId == repositoryId &&
+        record.repositoryId == preview.repositoryId &&
+        record.requestKey == preview.request.queryKey &&
+        record.fingerprint == fingerprint &&
+        record.expiresAt.isAfter(_now());
+    if (!matches) {
+      if (token != null) _rollbackPreviews.remove(token);
+      throw const GitError(
+        category: GitErrorCategory.staleRollbackPreview,
+        userMessage: 'This history rollback preview is stale or expired. Review it again.',
+        diagnostic: 'rollback preview token or repository fingerprint was missing, changed, or expired',
+        retryable: true,
+      );
+    }
+  }
+
+  void consumeHistoryRollbackPreview(String token) {
+    _rollbackPreviews.remove(token);
+  }
 }
 
 class _DiscardPreviewRecord {
@@ -320,6 +371,20 @@ class _ObjectPreviewRecord {
   final GitObjectPreviewAction action;
   final String objectName;
   final String? objectId;
+  final String fingerprint;
+  final DateTime expiresAt;
+}
+
+class _HistoryRollbackPreviewRecord {
+  const _HistoryRollbackPreviewRecord({
+    required this.repositoryId,
+    required this.requestKey,
+    required this.fingerprint,
+    required this.expiresAt,
+  });
+
+  final RepositoryId repositoryId;
+  final String requestKey;
   final String fingerprint;
   final DateTime expiresAt;
 }
@@ -794,6 +859,525 @@ class RepositoryService {
       );
     });
   }
+
+  /// Captures all state needed to explain and authorize one history rollback.
+  /// The preview does not mutate refs or the index; execution repeats this
+  /// inspection and rejects the token if any reviewed fact changed.
+  Future<GitHistoryRollbackPreview> previewHistoryRollback(
+    RepositoryId repositoryId,
+    GitHistoryRollbackRequest request,
+  ) async {
+    final handle = await state.lookup(repositoryId);
+    final inspection = await _inspectHistoryRollback(
+      repositoryId,
+      handle,
+      request,
+    );
+    GitBranchPreviewToken? token;
+    if (inspection.blockingMessage == null) {
+      token = state.issueHistoryRollbackPreview(
+        repositoryId: repositoryId,
+        request: request,
+        fingerprint: inspection.fingerprint,
+      );
+    }
+    return GitHistoryRollbackPreview(
+      repositoryId: repositoryId,
+      request: request,
+      currentBranch: inspection.currentBranch,
+      currentHead: inspection.currentHead,
+      targetHead: inspection.targetHead,
+      upstreamHead: inspection.upstreamHead,
+      branchProtected: inspection.branchProtected,
+      pushedCommits: inspection.pushedCommits,
+      detachedHead: inspection.detachedHead,
+      dirtyWorktree: inspection.dirtyWorktree,
+      operationInProgress: inspection.operationInProgress,
+      impact: inspection.impact,
+      fingerprint: inspection.fingerprint,
+      requiresConfirmation: true,
+      token: token?.value,
+      expiresAt: token?.expiresAt,
+      blockingMessage: inspection.blockingMessage,
+      revisions: inspection.revisionOids,
+    );
+  }
+
+  Future<GitHistoryRollbackResult> executeHistoryRollback(
+    RepositoryId repositoryId,
+    GitHistoryRollbackPreview preview, {
+    GitCancellationToken? cancellationToken,
+  }) async {
+    return state.runMutation(repositoryId, () async {
+      final handle = await state.lookup(repositoryId);
+      final inspection = await _inspectHistoryRollback(
+        repositoryId,
+        handle,
+        preview.request,
+      );
+      _throwIfHistoryRollbackBlocked(inspection);
+      state.validateHistoryRollbackPreview(
+        repositoryId: repositoryId,
+        preview: preview,
+        fingerprint: inspection.fingerprint,
+      );
+      if (preview.token case final token?) {
+        state.consumeHistoryRollbackPreview(token);
+      }
+
+      final args = switch (preview.request.action) {
+        GitHistoryRollbackAction.reset || GitHistoryRollbackAction.undo => [
+          'reset',
+          '--${preview.request.mode.gitValue}',
+          inspection.targetHead,
+        ],
+        GitHistoryRollbackAction.revert => [
+          'revert',
+          '--no-edit',
+          ...inspection.revisionOids,
+        ],
+      };
+      try {
+        await _runner.run(
+          GitInvocation(
+            program: gitPath,
+            args: args,
+            cwd: handle.root,
+            kind: GitOperationKind.mutation,
+            outputPolicy: const OutputPolicy.capture(maxBytes: 512 * 1024),
+            cancellationToken: cancellationToken,
+            environment:
+                preview.request.action == GitHistoryRollbackAction.revert
+                ? const {'GIT_EDITOR': ':'}
+                : null,
+          ),
+        );
+      } on GitError catch (error, stackTrace) {
+        final afterFailure = await _inspectHistoryRollbackState(
+          repositoryId,
+          handle,
+          preview.request,
+        );
+        final revertConflict =
+            preview.request.action == GitHistoryRollbackAction.revert &&
+            afterFailure.operationInProgress;
+        if (error.category == GitErrorCategory.cancelled) {
+          return _historyRollbackResult(
+            repositoryId,
+            preview.request,
+            GitHistoryRollbackState.cancelled,
+            await getStatus(repositoryId),
+            inspection.currentHead,
+            await _readHeadOid(handle) ?? inspection.currentHead,
+            'The rollback was cancelled. Review the repository state before retrying.',
+            inspection.revisionOids,
+            revertConflict,
+          );
+        }
+        if (revertConflict) {
+          return _historyRollbackResult(
+            repositoryId,
+            preview.request,
+            GitHistoryRollbackState.conflicted,
+            await getStatus(repositoryId),
+            inspection.currentHead,
+            await _readHeadOid(handle) ?? inspection.currentHead,
+            'Git stopped while reverting. Resolve the conflicts, then continue or abort the revert.',
+            inspection.revisionOids,
+            true,
+          );
+        }
+        Error.throwWithStackTrace(_mapHistoryRollbackError(error), stackTrace);
+      }
+
+      final status = await getStatus(repositoryId);
+      final resultingHead = await _readHeadOid(handle) ?? inspection.targetHead;
+      return _historyRollbackResult(
+        repositoryId,
+        preview.request,
+        GitHistoryRollbackState.completed,
+        status,
+        inspection.currentHead,
+        resultingHead,
+        preview.request.action == GitHistoryRollbackAction.revert
+            ? 'The selected commit(s) were reverted into new commit(s).'
+            : preview.request.action == GitHistoryRollbackAction.undo
+            ? 'The latest unpushed commit was undone and its changes were preserved.'
+            : '${preview.request.mode.label} reset completed.',
+        inspection.revisionOids,
+        false,
+      );
+    });
+  }
+
+  Future<GitHistoryRollbackPreview> previewReset(
+    RepositoryId repositoryId,
+    String targetRevision, {
+    GitResetMode mode = GitResetMode.mixed,
+  }) => previewHistoryRollback(
+    repositoryId,
+    GitHistoryRollbackRequest(
+      action: GitHistoryRollbackAction.reset,
+      targetRevision: targetRevision,
+      mode: mode,
+    ),
+  );
+
+  Future<GitHistoryRollbackPreview> previewUndo(RepositoryId repositoryId) =>
+      previewHistoryRollback(
+        repositoryId,
+        const GitHistoryRollbackRequest(action: GitHistoryRollbackAction.undo),
+      );
+
+  Future<GitHistoryRollbackPreview> previewRevert(
+    RepositoryId repositoryId,
+    Iterable<String> revisions,
+  ) => previewHistoryRollback(
+    repositoryId,
+    GitHistoryRollbackRequest(
+      action: GitHistoryRollbackAction.revert,
+      revisions: revisions.toList(growable: false),
+    ),
+  );
+
+  Future<_HistoryRollbackInspection> _inspectHistoryRollback(
+    RepositoryId repositoryId,
+    RepositoryHandle handle,
+    GitHistoryRollbackRequest request,
+  ) async {
+    _validateHistoryRollbackRequest(request);
+    final state = await _inspectHistoryRollbackState(
+      repositoryId,
+      handle,
+      request,
+    );
+    var targetHead = state.currentHead;
+    var revisionOids = <String>[];
+    if (request.action == GitHistoryRollbackAction.reset) {
+      _validateRevisionInput(request.targetRevision!);
+      targetHead = await _resolveCommit(handle, request.targetRevision!);
+    } else if (request.action == GitHistoryRollbackAction.undo) {
+      targetHead = await _resolveCommit(handle, 'HEAD^');
+    } else {
+      revisionOids = [
+        for (final revision in request.revisions)
+          await _resolveCommit(handle, revision),
+      ];
+    }
+
+    final commitsMoved = request.action == GitHistoryRollbackAction.revert
+        ? revisionOids.length
+        : await _readCommitCount(handle, targetHead, state.currentHead);
+    final pushed = request.action == GitHistoryRollbackAction.revert
+        ? false
+        : await _hasPushedCommits(
+            handle,
+            targetHead,
+            state.currentHead,
+            state.upstreamHead,
+            upstreamConfigured: state.upstreamConfigured,
+          );
+    final statusPaths = state.trackedStatusPaths;
+    final commitPaths = request.action == GitHistoryRollbackAction.revert
+        ? const <String>[]
+        : await _readChangedPaths(handle, targetHead, state.currentHead);
+    final preservedPaths = <String>{
+      if (request.action == GitHistoryRollbackAction.revert)
+        ...const <String>[],
+      if (request.action != GitHistoryRollbackAction.revert &&
+          (request.mode == GitResetMode.soft ||
+              request.mode == GitResetMode.mixed))
+        ...commitPaths,
+      if (request.mode != GitResetMode.hard ||
+          request.action == GitHistoryRollbackAction.revert)
+        ...state.unstagedPaths,
+    }.toList()..sort();
+    final discardedPaths = <String>[];
+    if (request.action == GitHistoryRollbackAction.reset &&
+        request.mode == GitResetMode.hard) {
+      discardedPaths.addAll({...commitPaths, ...statusPaths});
+      discardedPaths.sort();
+    }
+    final indexEffect = request.action == GitHistoryRollbackAction.revert
+        ? GitRollbackTreeEffect.unchanged
+        : request.mode == GitResetMode.soft
+        ? GitRollbackTreeEffect.preserved
+        : GitRollbackTreeEffect.resetToTarget;
+    final worktreeEffect =
+        request.action == GitHistoryRollbackAction.revert ||
+            request.mode == GitResetMode.soft ||
+            request.mode == GitResetMode.mixed
+        ? GitRollbackTreeEffect.preserved
+        : GitRollbackTreeEffect.resetToTarget;
+    final impact = GitRollbackImpact(
+      headBefore: state.currentHead,
+      headAfter: request.action == GitHistoryRollbackAction.revert
+          ? state.currentHead
+          : targetHead,
+      indexEffect: indexEffect,
+      worktreeEffect: worktreeEffect,
+      stagedPathsBefore: state.stagedPaths,
+      unstagedPathsBefore: state.unstagedPaths,
+      potentiallyDiscardedPaths: discardedPaths,
+      preservedPaths: preservedPaths,
+      commitsMoved: commitsMoved,
+    );
+    final fingerprint = hashGitObjectBytes(
+      utf8.encode(
+        [
+          state.status.contentHash,
+          state.currentHead,
+          targetHead,
+          state.upstreamHead ?? '',
+          state.currentBranch ?? '',
+          state.operationInProgress ? 'operation' : 'idle',
+          request.queryKey,
+          ...revisionOids,
+        ].join('\u0000'),
+      ),
+    );
+    String? blockingMessage;
+    if (state.operationInProgress) {
+      blockingMessage = 'Finish or abort the in-progress Git operation first.';
+    } else if (state.detachedHead) {
+      blockingMessage = 'Switch to a branch before changing its history.';
+    } else if (request.action != GitHistoryRollbackAction.revert &&
+        state.branchProtected) {
+      blockingMessage =
+          'Reset and undo are blocked on protected branches such as main.';
+    } else if (request.action != GitHistoryRollbackAction.revert && pushed) {
+      blockingMessage =
+          'This rollback would remove commits that are already pushed.';
+    } else if (state.dirtyWorktree &&
+        (request.action == GitHistoryRollbackAction.revert ||
+            request.action == GitHistoryRollbackAction.undo ||
+            request.mode != GitResetMode.soft)) {
+      blockingMessage =
+          'Commit or stash local changes before this history rollback.';
+    } else if (request.action != GitHistoryRollbackAction.revert &&
+        targetHead == state.currentHead) {
+      blockingMessage = 'The selected target is already the current HEAD.';
+    }
+    return _HistoryRollbackInspection(
+      currentBranch: state.currentBranch,
+      currentHead: state.currentHead,
+      targetHead: targetHead,
+      upstreamHead: state.upstreamHead,
+      branchProtected: state.branchProtected,
+      pushedCommits: pushed,
+      detachedHead: state.detachedHead,
+      dirtyWorktree: state.dirtyWorktree,
+      operationInProgress: state.operationInProgress,
+      impact: impact,
+      fingerprint: fingerprint,
+      blockingMessage: blockingMessage,
+      revisionOids: revisionOids,
+    );
+  }
+
+  Future<_HistoryRollbackState> _inspectHistoryRollbackState(
+    RepositoryId repositoryId,
+    RepositoryHandle handle,
+    GitHistoryRollbackRequest request,
+  ) async {
+    final status = await getStatus(repositoryId);
+    final currentHead = await _readHeadOid(handle);
+    if (currentHead == null || currentHead.isEmpty) {
+      throw const GitError(
+        category: GitErrorCategory.unbornBranch,
+        userMessage: 'There is no commit to roll back yet.',
+        diagnostic: 'history rollback requested on an unborn HEAD',
+        retryable: false,
+      );
+    }
+    final operation = await _readConflictOperation(handle);
+    final upstreamHead = status.branch.upstream == null
+        ? null
+        : await _tryResolve(handle, '@{upstream}');
+    final trackedChanges = status.changes
+        .where((change) => !change.isUntracked)
+        .toList(growable: false);
+    final branch = status.branch.head;
+    return _HistoryRollbackState(
+      status: status,
+      currentBranch: branch,
+      currentHead: currentHead,
+      upstreamHead: upstreamHead,
+      upstreamConfigured: status.branch.upstream != null,
+      branchProtected: _protectedRollbackBranches.contains(branch),
+      pushedCommits: false,
+      detachedHead: status.branch.isDetached,
+      dirtyWorktree: !status.isClean,
+      operationInProgress: operation != null,
+      stagedPaths: trackedChanges
+          .where((change) => change.isStaged)
+          .map((change) => change.path)
+          .toList(growable: false),
+      unstagedPaths: trackedChanges
+          .where((change) => change.isUnstaged)
+          .map((change) => change.path)
+          .toList(growable: false),
+      trackedStatusPaths: trackedChanges
+          .map((change) => change.path)
+          .toList(growable: false),
+    );
+  }
+
+  Future<bool> _hasPushedCommits(
+    RepositoryHandle handle,
+    String targetHead,
+    String currentHead,
+    String? upstreamHead, {
+    required bool upstreamConfigured,
+  }) async {
+    if (!upstreamConfigured) return false;
+    if (upstreamHead == null) return true;
+    final total = await _readCommitCount(handle, targetHead, currentHead);
+    if (total == 0) return false;
+    final unpushed = await _readCommitCountExcluding(
+      handle,
+      targetHead,
+      currentHead,
+      upstreamHead,
+    );
+    return unpushed < total;
+  }
+
+  Future<int> _readCommitCountExcluding(
+    RepositoryHandle handle,
+    String targetHead,
+    String currentHead,
+    String excludedHead,
+  ) async {
+    final output = await _runner.run(
+      GitInvocation(
+        program: gitPath,
+        args: [
+          'rev-list',
+          '--count',
+          '$targetHead..$currentHead',
+          '--not',
+          excludedHead,
+        ],
+        cwd: handle.root,
+        kind: GitOperationKind.read,
+        outputPolicy: const OutputPolicy.capture(maxBytes: 4 * 1024),
+      ),
+    );
+    return int.tryParse(utf8.decode(output.stdout).trim()) ?? 0;
+  }
+
+  Future<List<String>> _readChangedPaths(
+    RepositoryHandle handle,
+    String olderHead,
+    String newerHead,
+  ) async {
+    final output = await _runner.run(
+      GitInvocation(
+        program: gitPath,
+        args: ['diff', '--name-only', '-z', olderHead, newerHead, '--'],
+        cwd: handle.root,
+        kind: GitOperationKind.read,
+        outputPolicy: const OutputPolicy.capture(maxBytes: 512 * 1024),
+      ),
+    );
+    return _splitNulBytes(output.stdout)
+        .where((bytes) => bytes.isNotEmpty)
+        .map((bytes) => utf8.decode(bytes, allowMalformed: true))
+        .toList(growable: false);
+  }
+
+  void _validateHistoryRollbackRequest(GitHistoryRollbackRequest request) {
+    if (request.action == GitHistoryRollbackAction.reset &&
+        (request.targetRevision == null || request.targetRevision!.isEmpty)) {
+      throw const GitError(
+        category: GitErrorCategory.invalidRevision,
+        userMessage: 'Choose a commit to reset to.',
+        diagnostic: 'reset request did not contain a target revision',
+        retryable: false,
+      );
+    }
+    if (request.action == GitHistoryRollbackAction.undo &&
+        request.targetRevision != null) {
+      throw const GitError(
+        category: GitErrorCategory.invalidRevision,
+        userMessage: 'Undo chooses the latest commit automatically.',
+        diagnostic: 'undo request unexpectedly contained a target revision',
+        retryable: false,
+      );
+    }
+    if (request.action == GitHistoryRollbackAction.revert) {
+      if (request.revisions.isEmpty || request.revisions.length > 32) {
+        throw const GitError(
+          category: GitErrorCategory.invalidRevision,
+          userMessage: 'Choose between one and 32 commits to revert.',
+          diagnostic: 'revert request exceeded the bounded commit selection',
+          retryable: false,
+        );
+      }
+      final seen = <String>{};
+      for (final revision in request.revisions) {
+        _validateRevisionInput(revision);
+        if (!seen.add(revision)) {
+          throw const GitError(
+            category: GitErrorCategory.invalidRevision,
+            userMessage: 'Do not select the same commit more than once.',
+            diagnostic: 'revert request contained a duplicate revision',
+            retryable: false,
+          );
+        }
+      }
+    }
+  }
+
+  void _throwIfHistoryRollbackBlocked(_HistoryRollbackInspection inspection) {
+    final message = inspection.blockingMessage;
+    if (message == null) return;
+    final category = inspection.operationInProgress
+        ? GitErrorCategory.operationInProgress
+        : inspection.detachedHead
+        ? GitErrorCategory.detachedHead
+        : inspection.branchProtected
+        ? GitErrorCategory.protectedBranch
+        : inspection.pushedCommits
+        ? GitErrorCategory.pushedHistory
+        : inspection.dirtyWorktree
+        ? GitErrorCategory.dirtyWorktree
+        : GitErrorCategory.historyRollbackNotAllowed;
+    throw GitError(
+      category: category,
+      userMessage: message,
+      diagnostic: 'history rollback preflight rejected the request',
+      retryable: false,
+    );
+  }
+
+  GitHistoryRollbackResult _historyRollbackResult(
+    RepositoryId repositoryId,
+    GitHistoryRollbackRequest request,
+    GitHistoryRollbackState state,
+    GitStatusSnapshot status,
+    String previousHead,
+    String resultingHead,
+    String summary,
+    List<String> revisions,
+    bool conflicted,
+  ) => GitHistoryRollbackResult(
+    repositoryId: repositoryId,
+    request: request,
+    state: state,
+    status: status,
+    previousHead: previousHead,
+    resultingHead: resultingHead,
+    summary: summary,
+    revertedCommitOids: revisions,
+    recoveryActions: conflicted
+        ? const [
+            GitHistoryRollbackRecoveryAction.continueRevert,
+            GitHistoryRollbackRecoveryAction.abortRevert,
+          ]
+        : const [],
+  );
 
   Future<GitHistoryPage> getHistory(
     RepositoryId repositoryId, {
@@ -5349,6 +5933,13 @@ class RepositoryService {
             : [cherryPickHead.trim()],
       );
     }
+    final revertHead = await _readGitFile(handle, 'REVERT_HEAD');
+    if (revertHead != null) {
+      return GitConflictOperationMetadata(
+        operation: GitConflictOperation.revert,
+        mergeHeads: revertHead.trim().isEmpty ? const [] : [revertHead.trim()],
+      );
+    }
     final rebaseMerge = await _readGitPath(handle, 'rebase-merge');
     final rebaseDirectory =
         rebaseMerge != null && Directory(rebaseMerge).existsSync()
@@ -5460,6 +6051,7 @@ class RepositoryService {
       GitConflictOperation.merge => ['merge', flag],
       GitConflictOperation.rebase => ['rebase', flag],
       GitConflictOperation.cherryPick => ['cherry-pick', flag],
+      GitConflictOperation.revert => ['revert', flag],
     };
   }
 
@@ -5740,6 +6332,70 @@ class _BranchOperationInspection {
   final String? blockingMessage;
 }
 
+class _HistoryRollbackState {
+  const _HistoryRollbackState({
+    required this.status,
+    required this.currentBranch,
+    required this.currentHead,
+    required this.upstreamHead,
+    required this.upstreamConfigured,
+    required this.branchProtected,
+    required this.pushedCommits,
+    required this.detachedHead,
+    required this.dirtyWorktree,
+    required this.operationInProgress,
+    required this.stagedPaths,
+    required this.unstagedPaths,
+    required this.trackedStatusPaths,
+  });
+
+  final GitStatusSnapshot status;
+  final String? currentBranch;
+  final String currentHead;
+  final String? upstreamHead;
+  final bool upstreamConfigured;
+  final bool branchProtected;
+  final bool pushedCommits;
+  final bool detachedHead;
+  final bool dirtyWorktree;
+  final bool operationInProgress;
+  final List<String> stagedPaths;
+  final List<String> unstagedPaths;
+  final List<String> trackedStatusPaths;
+}
+
+class _HistoryRollbackInspection {
+  const _HistoryRollbackInspection({
+    required this.currentBranch,
+    required this.currentHead,
+    required this.targetHead,
+    required this.upstreamHead,
+    required this.branchProtected,
+    required this.pushedCommits,
+    required this.detachedHead,
+    required this.dirtyWorktree,
+    required this.operationInProgress,
+    required this.impact,
+    required this.fingerprint,
+    required this.blockingMessage,
+    required this.revisionOids,
+  });
+
+  final String? currentBranch;
+  final String currentHead;
+  final String targetHead;
+  final String? upstreamHead;
+  final bool branchProtected;
+  final bool pushedCommits;
+  final bool detachedHead;
+  final bool dirtyWorktree;
+  final bool operationInProgress;
+  final GitRollbackImpact impact;
+  final String fingerprint;
+  final String? blockingMessage;
+  final List<String> revisionOids;
+}
+
 GitError _historyFailure({
   required GitErrorCategory category,
   required String userMessage,
@@ -5761,6 +6417,8 @@ class _RepositoryRecord {
 }
 
 const _maxCommitTemplateBytes = 512 * 1024;
+
+const _protectedRollbackBranches = {'main', 'master'};
 
 String _resolveTemplatePath(String root, String configuredPath) {
   var path = configuredPath.trim();
@@ -6054,6 +6712,19 @@ GitError _mapObjectError(GitError error) {
   return error;
 }
 
+GitError _mapHistoryRollbackError(GitError error) {
+  if (error.category != GitErrorCategory.processFailed) return error;
+  if (_looksLikeConflict(error)) {
+    return error.copyWith(
+      category: GitErrorCategory.mergeConflict,
+      userMessage:
+          'Git could not complete the rollback because conflicts remain.',
+      retryable: true,
+    );
+  }
+  return error;
+}
+
 GitError _mapRemoteError(GitError error) {
   if (error.category != GitErrorCategory.processFailed) return error;
   final diagnostic = error.diagnostic;
@@ -6153,6 +6824,18 @@ String _newRepositoryId() {
 }
 
 String _newOpaqueToken() => _newRepositoryId();
+
+List<List<int>> _splitNulBytes(List<int> bytes) {
+  final records = <List<int>>[];
+  var start = 0;
+  for (var index = 0; index < bytes.length; index++) {
+    if (bytes[index] != 0) continue;
+    records.add(bytes.sublist(start, index));
+    start = index + 1;
+  }
+  if (start < bytes.length) records.add(bytes.sublist(start));
+  return records;
+}
 
 const _maxConflictTextBytes = 4 * 1024 * 1024;
 const _maxConflictMetadataBytes = 64 * 1024;

@@ -12,6 +12,7 @@ import 'package:gift/src/backend/status.dart';
 import 'package:gift/src/backend/objects.dart';
 import 'package:gift/src/backend/shelf.dart';
 import 'package:gift/src/backend/file_history.dart';
+import 'package:gift/src/backend/reset.dart';
 
 /// Existing feature fakes do not need partial-patch behavior unless a test is
 /// specifically about it. This keeps those focused fakes small as the
@@ -255,6 +256,31 @@ mixin GitPatchGatewayStub {
   Future<DiscardPreview> createDiscardPreview(
     RepositoryId repositoryId,
     String path,
+  ) => throw UnimplementedError();
+
+  Future<GitHistoryRollbackPreview> previewHistoryRollback(
+    RepositoryId repositoryId,
+    GitHistoryRollbackRequest request,
+  ) => throw UnimplementedError();
+
+  Future<GitHistoryRollbackResult> executeHistoryRollback(
+    RepositoryId repositoryId,
+    GitHistoryRollbackPreview preview, {
+    GitCancellationToken? cancellationToken,
+  }) => throw UnimplementedError();
+
+  Future<GitHistoryRollbackPreview> previewReset(
+    RepositoryId repositoryId,
+    String targetRevision, {
+    GitResetMode mode = GitResetMode.mixed,
+  }) => throw UnimplementedError();
+
+  Future<GitHistoryRollbackPreview> previewUndo(RepositoryId repositoryId) =>
+      throw UnimplementedError();
+
+  Future<GitHistoryRollbackPreview> previewRevert(
+    RepositoryId repositoryId,
+    Iterable<String> revisions,
   ) => throw UnimplementedError();
 
   Future<GitChangelistSnapshot> getChangelists(RepositoryId repositoryId) =>
