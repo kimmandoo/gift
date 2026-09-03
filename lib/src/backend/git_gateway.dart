@@ -11,6 +11,7 @@ import 'executor.dart';
 import 'remote.dart';
 import 'objects.dart';
 import 'shelf.dart';
+import 'file_history.dart';
 
 /// The small API that Flutter features depend on.
 ///
@@ -356,6 +357,23 @@ abstract interface class GitGateway {
   });
 
   Future<List<int>> exportShelf(RepositoryId repositoryId, String shelfId);
+
+  Future<GitFileHistorySnapshot> getFileHistory(
+    RepositoryId repositoryId,
+    GitFileHistoryQuery query,
+  );
+
+  Future<GitBlameSnapshot> getBlame(
+    RepositoryId repositoryId,
+    String path, {
+    GitBlameOptions options = const GitBlameOptions(),
+  });
+
+  Future<GitRevisionGetResult> getFileFromRevision(
+    RepositoryId repositoryId,
+    GitFileHistorySnapshot history,
+    String revision,
+  );
 
   Future<GitStatusSnapshot> stage(RepositoryId repositoryId, String path);
 

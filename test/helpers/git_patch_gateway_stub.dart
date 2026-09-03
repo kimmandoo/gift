@@ -11,6 +11,7 @@ import 'package:gift/src/backend/remote.dart';
 import 'package:gift/src/backend/status.dart';
 import 'package:gift/src/backend/objects.dart';
 import 'package:gift/src/backend/shelf.dart';
+import 'package:gift/src/backend/file_history.dart';
 
 /// Existing feature fakes do not need partial-patch behavior unless a test is
 /// specifically about it. This keeps those focused fakes small as the
@@ -319,6 +320,23 @@ mixin GitPatchGatewayStub {
 
   Future<List<int>> exportShelf(RepositoryId repositoryId, String shelfId) =>
       throw UnimplementedError();
+
+  Future<GitFileHistorySnapshot> getFileHistory(
+    RepositoryId repositoryId,
+    GitFileHistoryQuery query,
+  ) => throw UnimplementedError();
+
+  Future<GitBlameSnapshot> getBlame(
+    RepositoryId repositoryId,
+    String path, {
+    GitBlameOptions options = const GitBlameOptions(),
+  }) => throw UnimplementedError();
+
+  Future<GitRevisionGetResult> getFileFromRevision(
+    RepositoryId repositoryId,
+    GitFileHistorySnapshot history,
+    String revision,
+  ) => throw UnimplementedError();
 
   Future<GitStatusSnapshot> discard(
     RepositoryId repositoryId,

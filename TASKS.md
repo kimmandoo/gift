@@ -7,8 +7,8 @@
 ## Progress
 
 - **Total Tasks:** 38
-- **Completed:** 24 / 38
-- **Current Active Task:** `25 — File history, blame, and revision recovery (active)`
+- **Completed:** 25 / 38
+- **Current Active Task:** `25 — File history, blame, and revision recovery (complete; logo follow-up)`
 
 | # | Scope | Dart backend deliverables | Flutter deliverables | Status |
 |---|---|---|---|:---:|
@@ -36,7 +36,7 @@
 | **22** | Git objects | Stash, tags, remotes, and upstream management | Focused object-management dialogs | ✅ |
 | **23** | Diff & compare | Revision, branch, folder, clipboard, and 3-way comparisons | Diff workbench and apply/revert actions | ✅ |
 | **24** | Shelf & changelists | Shelf storage, changelist grouping, and patch import/export | Shelf/changelist workflow | ✅ |
-| **25** | File history & blame | File/directory/selection history and blame metadata | History and annotation views | 🔄 |
+| **25** | File history & blame | File/directory/selection history and blame metadata | History and annotation views | ✅ |
 | **26** | Undo & reset | Revert commit, undo commit, and safe reset modes | Destructive history controls | ⬜ |
 | **27** | Interactive rebase | Reorder, reword, edit, squash, fixup, drop, and recovery | Rebase plan and conflict flow | ⬜ |
 | **28** | Remote branches & update | Remote branch checkout, compare, update, and tracking | Incoming/update information | ⬜ |
@@ -340,16 +340,19 @@ first RED were recorded in the implementation plan.
 Task 24 is complete. Task 25 is active. Its first RED will be recorded in the
 implementation plan before the file-history/blame contract is introduced.
 
-### 🔄 Task 25: File history, blame, and revision recovery (active)
+### ✅ Task 25: File history, blame, and revision recovery
 
-- [ ] Add bounded file, directory, and selected-line history queries with
+- [x] Add bounded file, directory, and selected-line history queries with
   follow/rename metadata and revision navigation.
-- [ ] Add blame annotations with author/date/OID, movement options, and
+- [x] Add blame annotations with author/date/OID, movement options, and
   copyable line ownership without allowing arbitrary Git arguments.
-- [ ] Add responsive history and annotation views with empty, binary, missing,
+- [x] Add responsive history and annotation views with empty, binary, missing,
   and stale selection states.
-- [ ] Cover root/rename/delete/binary files, path and line ranges, bounded
+- [x] Cover root/rename/delete/binary files, path and line ranges, bounded
   output, and refresh races in backend and widget fixtures.
+
+Task 25 is complete. A product-identity logo refresh is the requested
+follow-up before the next numbered task.
 
 ## Post-MVP backlog
 

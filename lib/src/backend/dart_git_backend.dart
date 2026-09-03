@@ -13,6 +13,7 @@ import 'remote.dart';
 import 'status.dart';
 import 'objects.dart';
 import 'shelf.dart';
+import 'file_history.dart';
 
 /// Application-facing entry point for backend operations.
 ///
@@ -898,6 +899,47 @@ class DartGitBackend {
       runner: _runner,
       shelfStore: _shelfStore,
     ).exportShelf(repositoryId, shelfId);
+  }
+
+  Future<GitFileHistorySnapshot> getFileHistory(
+    RepositoryId repositoryId,
+    GitFileHistoryQuery query,
+  ) async {
+    final installation = await getGitInstallation();
+    return RepositoryService(
+      gitPath: installation.executablePath,
+      state: _state,
+      runner: _runner,
+      shelfStore: _shelfStore,
+    ).getFileHistory(repositoryId, query);
+  }
+
+  Future<GitBlameSnapshot> getBlame(
+    RepositoryId repositoryId,
+    String path, {
+    GitBlameOptions options = const GitBlameOptions(),
+  }) async {
+    final installation = await getGitInstallation();
+    return RepositoryService(
+      gitPath: installation.executablePath,
+      state: _state,
+      runner: _runner,
+      shelfStore: _shelfStore,
+    ).getBlame(repositoryId, path, options: options);
+  }
+
+  Future<GitRevisionGetResult> getFileFromRevision(
+    RepositoryId repositoryId,
+    GitFileHistorySnapshot history,
+    String revision,
+  ) async {
+    final installation = await getGitInstallation();
+    return RepositoryService(
+      gitPath: installation.executablePath,
+      state: _state,
+      runner: _runner,
+      shelfStore: _shelfStore,
+    ).getFileFromRevision(repositoryId, history, revision);
   }
 
   Future<GitStatusSnapshot> stage(

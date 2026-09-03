@@ -13,6 +13,7 @@ import 'remote.dart';
 import 'status.dart';
 import 'objects.dart';
 import 'shelf.dart';
+import 'file_history.dart';
 
 /// Adapts the UI-facing [GitGateway] contract to the Dart backend facade.
 ///
@@ -518,6 +519,26 @@ class DartGitGateway implements GitGateway, DiscardPreviewCancellationGateway {
   @override
   Future<List<int>> exportShelf(RepositoryId repositoryId, String shelfId) =>
       backend.exportShelf(repositoryId, shelfId);
+
+  @override
+  Future<GitFileHistorySnapshot> getFileHistory(
+    RepositoryId repositoryId,
+    GitFileHistoryQuery query,
+  ) => backend.getFileHistory(repositoryId, query);
+
+  @override
+  Future<GitBlameSnapshot> getBlame(
+    RepositoryId repositoryId,
+    String path, {
+    GitBlameOptions options = const GitBlameOptions(),
+  }) => backend.getBlame(repositoryId, path, options: options);
+
+  @override
+  Future<GitRevisionGetResult> getFileFromRevision(
+    RepositoryId repositoryId,
+    GitFileHistorySnapshot history,
+    String revision,
+  ) => backend.getFileFromRevision(repositoryId, history, revision);
 
   @override
   Future<GitStatusSnapshot> stage(RepositoryId repositoryId, String path) =>

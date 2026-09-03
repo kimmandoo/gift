@@ -15,6 +15,8 @@
   navigation comparison flows with explicit content states.
 - feat(task24): added persistent app-local changelists, reusable shelves, and
   bounded patch import/export without mutating Git stash.
+- feat(task25): added bounded file history, rename-following blame, and
+  fingerprint-guarded Get-from-Revision workflows.
 - feat(task22): added identity-bound stash, tag, remote, and upstream
   management workflows with responsive object controls.
 - feat(task21): added fingerprint-guarded conflict inspection, resolution,

@@ -17,6 +17,7 @@ import 'package:gift/src/features/repository/remote_dialog.dart';
 import 'package:gift/src/features/repository/object_dialog.dart';
 import 'package:gift/src/features/repository/comparison_dialog.dart';
 import 'package:gift/src/features/repository/shelf_dialog.dart';
+import 'package:gift/src/features/repository/file_history_dialog.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter/services.dart';
@@ -185,6 +186,9 @@ class _ChangesScreenBodyState extends ConsumerState<_ChangesScreenBody> {
                   case _ChangesMenuAction.shelves:
                     unawaited(_openShelves(context));
                     break;
+                  case _ChangesMenuAction.fileHistory:
+                    unawaited(_openFileHistory(context));
+                    break;
                   case _ChangesMenuAction.refresh:
                     unawaited(controller.refresh());
                     break;
@@ -218,6 +222,10 @@ class _ChangesScreenBodyState extends ConsumerState<_ChangesScreenBody> {
                 const PopupMenuItem(
                   value: _ChangesMenuAction.shelves,
                   child: Text('Shelves & changelists'),
+                ),
+                const PopupMenuItem(
+                  value: _ChangesMenuAction.fileHistory,
+                  child: Text('File history & blame'),
                 ),
                 PopupMenuItem(
                   value: _ChangesMenuAction.refresh,
@@ -268,6 +276,12 @@ class _ChangesScreenBodyState extends ConsumerState<_ChangesScreenBody> {
               tooltip: 'Shelves and changelists',
               onPressed: () => unawaited(_openShelves(context)),
               icon: const Icon(Icons.archive_outlined),
+            ),
+            IconButton(
+              key: const Key('open-file-history'),
+              tooltip: 'File history and blame',
+              onPressed: () => unawaited(_openFileHistory(context)),
+              icon: const Icon(Icons.history_edu_outlined),
             ),
             IconButton(
               tooltip: 'Refresh changes',
@@ -1360,6 +1374,17 @@ class _ChangesScreenBodyState extends ConsumerState<_ChangesScreenBody> {
     await _activeController.refresh();
   }
 
+  Future<void> _openFileHistory(BuildContext context) async {
+    await showDialog<void>(
+      context: context,
+      builder: (_) => FileHistoryDialog(
+        gateway: widget.gateway,
+        repository: widget.repository,
+        initialPath: _activeController.state.selectedPath ?? '',
+      ),
+    );
+  }
+
   Widget _scopeSelector(
     BuildContext context,
     GitChange selected,
@@ -1664,5 +1689,6 @@ enum _ChangesMenuAction {
   comparison,
   threeWayComparison,
   shelves,
+  fileHistory,
   refresh,
 }

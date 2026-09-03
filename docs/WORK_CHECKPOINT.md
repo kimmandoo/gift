@@ -5,8 +5,8 @@ This file is the handoff record for continuing work across query sessions.
 ## Current checkpoint
 
 - Date: 2026-09-03
-- Active task: Task 25, file history, blame, and revision recovery, is active;
-  Tasks 23 and 24 are complete and their scenarios are covered.
+- Active task: Task 25 is complete; the requested follow-up is replacing the
+  product icon and README/release logo assets with the new gift identity.
 - Branch: `main`; no new branch or worktree was created.
 - Latest commit before this implementation session: `03b369c
   fix(ui): align diff checkboxes with code lines`.
@@ -16,14 +16,16 @@ This file is the handoff record for continuing work across query sessions.
   labels in reachable commit messages were also replaced, and the rewrite
   backup ref was removed.
 - Changed files in this session: Task 24 shelf/changelist models, persistence,
-  backend/gateway methods, responsive Shelf dialog and Changes entry point,
-  shelf backend/UI fixtures, and Task 24/25 roadmap, architecture, changelog,
-  plan, and task records.
-- Verification: shelf backend/UI fixtures, `flutter analyze`, the full Flutter
-  suite (`140` tests), formatting, and `git diff --check` passed. Native
-  Windows compilation is not available in this Linux workspace.
-- Next action: commit and push Task 24, then record and run the first Task 25
-  RED file-history/blame contract before introducing its models.
+  gateway methods, responsive Shelf dialog and fixtures; Task 25
+  file-history/blame models, backend/gateway methods, responsive history/blame
+  dialog and Changes entry point, fixtures, and Task 25/identity roadmap,
+  architecture, changelog, plan, and task records.
+- Verification: file-history backend/UI fixtures, shelf fixtures, `flutter
+  analyze`, the full Flutter suite (`144` tests), formatting, and `git diff
+  --check` passed.
+  Native Windows compilation is not available in this Linux workspace.
+- Next action: commit and push Task 25, then generate and replace the original
+  2D pixel Shiba Inu gift-ribbon icon and all README/release logo assets.
 - First failing signal for Task 23 remains recorded in the plan. This session's
   second RED was the missing `GitComparisonTransferAction` and
   `DartGitBackend.applyComparison` contract. This UI fix first reproduced a

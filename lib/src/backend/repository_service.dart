@@ -17,6 +17,7 @@ import 'remote.dart';
 import 'status.dart';
 import 'objects.dart';
 import 'shelf.dart';
+import 'file_history.dart';
 
 /// In-memory registry for repository roots and session-local opaque IDs.
 ///
@@ -4347,6 +4348,372 @@ class RepositoryService {
     diagnostic: '$kind identity was not found in shelf metadata: $id',
     retryable: true,
   );
+
+  Future<GitFileHistorySnapshot> getFileHistory(
+    RepositoryId repositoryId,
+    GitFileHistoryQuery query,
+  ) async {
+    _validateFileHistoryQuery(query);
+    final handle = await state.lookup(repositoryId);
+    final args = <String>[
+      'log',
+      '--no-color',
+      '--no-decorate',
+      '--date=iso-strict',
+      '--topo-order',
+      '--format=%H%x00%P%x00%an%x00%ae%x00%aI%x00%s%x00%b%x00%x1e',
+      '--max-count=${query.limit + 1}',
+      '--skip=${query.offset}',
+      if (query.follow) '--follow',
+      '--',
+      query.path,
+    ];
+    final output = await _runner.run(
+      GitInvocation(
+        program: gitPath,
+        args: args,
+        cwd: handle.root,
+        kind: GitOperationKind.read,
+        outputPolicy: const OutputPolicy.capture(maxBytes: 8 * 1024 * 1024),
+      ),
+    );
+    late final GitHistoryPage page;
+    try {
+      page = parseGitHistory(
+        output.stdout,
+        repositoryId: repositoryId,
+        offset: query.offset,
+        limit: query.limit,
+        queryKey: query.queryKey,
+      );
+    } on FormatException catch (error, stackTrace) {
+      Error.throwWithStackTrace(
+        GitError(
+          category: GitErrorCategory.parseFailure,
+          userMessage: 'Git returned an unreadable file history.',
+          diagnostic: error.message,
+          retryable: false,
+        ),
+        stackTrace,
+      );
+    }
+    final entries = <GitFileHistoryEntry>[];
+    for (final commit in page.commits) {
+      final changes = await getCommitFiles(repositoryId, commit.oid);
+      final matching = changes.where((change) {
+        if (query.scope == GitFileHistoryScope.directory) {
+          return _pathInHistoryDirectory(change.path, query.path) ||
+              (change.oldPath != null &&
+                  _pathInHistoryDirectory(change.oldPath!, query.path));
+        }
+        return change.path == query.path || change.oldPath == query.path;
+      }).firstOrNull;
+      final originalPath =
+          matching?.oldPath ??
+          (matching != null && matching.path != query.path
+              ? matching.path
+              : null);
+      entries.add(
+        GitFileHistoryEntry(
+          commit: commit,
+          path: query.path,
+          originalPath: originalPath,
+        ),
+      );
+    }
+    return GitFileHistorySnapshot(
+      repositoryId: repositoryId,
+      query: query,
+      entries: entries,
+      fingerprint: hashGitObjectBytes([
+        ...output.stdout,
+        ...utf8.encode(query.queryKey),
+      ]),
+      workingTreeFingerprint: await _workingFileFingerprint(handle, query.path),
+      hasMore: page.hasMore,
+    );
+  }
+
+  Future<GitBlameSnapshot> getBlame(
+    RepositoryId repositoryId,
+    String path, {
+    GitBlameOptions options = const GitBlameOptions(),
+  }) async {
+    _validateHistoryPath(path);
+    final handle = await state.lookup(repositoryId);
+    final output = await _runner.run(
+      GitInvocation(
+        program: gitPath,
+        args: [
+          'blame',
+          '--line-porcelain',
+          if (options.ignoreWhitespace) '-w',
+          if (options.detectMoves) '-M',
+          if (options.detectCopies) '-C',
+          '--',
+          path,
+        ],
+        cwd: handle.root,
+        kind: GitOperationKind.read,
+        outputPolicy: const OutputPolicy.capture(maxBytes: 8 * 1024 * 1024),
+      ),
+    );
+    try {
+      final lines = _parseBlameLines(output.stdout, path);
+      return GitBlameSnapshot(
+        repositoryId: repositoryId,
+        path: path,
+        lines: lines,
+        options: options,
+        fingerprint: hashGitObjectBytes(output.stdout),
+      );
+    } on FormatException catch (error, stackTrace) {
+      Error.throwWithStackTrace(
+        GitError(
+          category: GitErrorCategory.parseFailure,
+          userMessage: 'Git returned unreadable blame annotations.',
+          diagnostic: error.message,
+          retryable: false,
+        ),
+        stackTrace,
+      );
+    }
+  }
+
+  Future<GitRevisionGetResult> getFileFromRevision(
+    RepositoryId repositoryId,
+    GitFileHistorySnapshot history,
+    String revision,
+  ) => state.runMutation(repositoryId, () async {
+    if (history.repositoryId != repositoryId) {
+      throw const GitError(
+        category: GitErrorCategory.staleComparison,
+        userMessage: 'This file history belongs to another repository.',
+        diagnostic: 'file history repository ID did not match the mutation',
+        retryable: false,
+      );
+    }
+    _validateFileHistoryQuery(history.query);
+    _validateRevisionInput(revision);
+    final handle = await state.lookup(repositoryId);
+    final currentFingerprint = await _workingFileFingerprint(
+      handle,
+      history.query.path,
+    );
+    if (currentFingerprint != history.workingTreeFingerprint) {
+      throw const GitError(
+        category: GitErrorCategory.staleComparison,
+        userMessage:
+            'The file changed. Refresh its history before restoring it.',
+        diagnostic: 'get-from-revision working-tree fingerprint was stale',
+        retryable: true,
+      );
+    }
+    final content = await _loadComparisonContent(
+      handle,
+      GitComparisonSource.revision(revision),
+      history.query.path,
+    );
+    final status = await getStatus(repositoryId);
+    if (content.isMissing) {
+      return GitRevisionGetResult(
+        repositoryId: repositoryId,
+        path: history.query.path,
+        revision: revision,
+        outcome: GitRevisionGetOutcome.missing,
+        status: status,
+        summary: 'The selected revision does not contain this file.',
+      );
+    }
+    if (content.isBinary) {
+      return GitRevisionGetResult(
+        repositoryId: repositoryId,
+        path: history.query.path,
+        revision: revision,
+        outcome: GitRevisionGetOutcome.binary,
+        status: status,
+        summary: 'Binary file restoration requires an external review.',
+      );
+    }
+    if (content.isOversized) {
+      return GitRevisionGetResult(
+        repositoryId: repositoryId,
+        path: history.query.path,
+        revision: revision,
+        outcome: GitRevisionGetOutcome.oversized,
+        status: status,
+        summary: 'The selected file is too large to restore safely.',
+      );
+    }
+    try {
+      await _writeRepositoryBytes(
+        handle,
+        history.query.path,
+        utf8.encode(content.text ?? ''),
+      );
+    } on FileSystemException catch (error, stackTrace) {
+      Error.throwWithStackTrace(
+        GitError(
+          category: GitErrorCategory.permissionDenied,
+          userMessage: 'The selected revision could not be written.',
+          diagnostic: error.message,
+          retryable: true,
+        ),
+        stackTrace,
+      );
+    }
+    return GitRevisionGetResult(
+      repositoryId: repositoryId,
+      path: history.query.path,
+      revision: revision,
+      outcome: GitRevisionGetOutcome.restored,
+      status: await getStatus(repositoryId),
+      summary: 'Restored the selected file from $revision.',
+    );
+  });
+
+  void _validateFileHistoryQuery(GitFileHistoryQuery query) {
+    _validateHistoryPath(query.path);
+    if (query.limit < 1 || query.limit > 100 || query.offset < 0) {
+      throw const GitError(
+        category: GitErrorCategory.parseFailure,
+        userMessage: 'The file history page size is invalid.',
+        diagnostic: 'file history limit must be 1..100 and offset non-negative',
+        retryable: false,
+      );
+    }
+    if (query.follow && query.scope != GitFileHistoryScope.file) {
+      throw const GitError(
+        category: GitErrorCategory.parseFailure,
+        userMessage: 'Rename following is available for one file at a time.',
+        diagnostic: 'git log --follow was requested for a directory or range',
+        retryable: false,
+      );
+    }
+    final start = query.lineStart;
+    final end = query.lineEnd;
+    if ((start == null) != (end == null) ||
+        (start != null && (start < 1 || end! < start))) {
+      throw const GitError(
+        category: GitErrorCategory.parseFailure,
+        userMessage: 'The selected line range is invalid.',
+        diagnostic: 'file history line range was incomplete or reversed',
+        retryable: false,
+      );
+    }
+  }
+
+  void _validateHistoryPath(String path) {
+    _validateComparisonPath(path);
+    if (path == '.') {
+      throw const GitError(
+        category: GitErrorCategory.parseFailure,
+        userMessage: 'Choose a file or directory path.',
+        diagnostic: 'file history path was the repository root marker',
+        retryable: false,
+      );
+    }
+  }
+
+  bool _pathInHistoryDirectory(String path, String directory) {
+    final normalized = directory.endsWith('/')
+        ? directory.substring(0, directory.length - 1)
+        : directory;
+    return path == normalized || path.startsWith('$normalized/');
+  }
+
+  List<GitBlameLine> _parseBlameLines(List<int> bytes, String path) {
+    final text = utf8.decode(bytes);
+    final result = <GitBlameLine>[];
+    String? oid;
+    String? author;
+    DateTime? authoredAt;
+    var originalLine = 0;
+    var finalLine = 0;
+    var originalPath = path;
+    for (final line in text.split('\n')) {
+      final header = RegExp(r'^([0-9a-fA-F]{40,64}) (\d+) (\d+)(?: (\d+))?$')
+          .firstMatch(line);
+      if (header != null) {
+        oid = header.group(1);
+        originalLine = int.parse(header.group(2)!);
+        finalLine = int.parse(header.group(3)!);
+        author = null;
+        authoredAt = null;
+        originalPath = path;
+        continue;
+      }
+      if (line.startsWith('author ')) {
+        author = line.substring('author '.length);
+        continue;
+      }
+      if (line.startsWith('author-time ')) {
+        final seconds = int.tryParse(line.substring('author-time '.length));
+        if (seconds != null) {
+          authoredAt = DateTime.fromMillisecondsSinceEpoch(
+            seconds * 1000,
+            isUtc: true,
+          );
+        }
+        continue;
+      }
+      if (line.startsWith('filename ')) {
+        originalPath = line.substring('filename '.length);
+        continue;
+      }
+      if (line.startsWith('\t') && oid != null) {
+        result.add(
+          GitBlameLine(
+            lineNumber: finalLine,
+            text: line.substring(1),
+            commitOid: oid,
+            authorName: author ?? 'Unknown author',
+            authoredAt: authoredAt,
+            originalLineNumber: originalLine,
+            originalPath: originalPath,
+          ),
+        );
+        finalLine++;
+        originalLine++;
+      }
+    }
+    if (result.isEmpty && text.isNotEmpty) {
+      throw const FormatException('blame output contained no annotated lines');
+    }
+    return result;
+  }
+
+  Future<String> _workingFileFingerprint(
+    RepositoryHandle handle,
+    String path,
+  ) async {
+    final file = _repositoryFile(handle.root, path);
+    if (!await file.exists()) return 'missing';
+    try {
+      final bytes = <int>[];
+      await for (final chunk in file.openRead(0, maxComparisonTextBytes + 1)) {
+        bytes.addAll(chunk);
+      }
+      if (bytes.length > maxComparisonTextBytes) {
+        return 'oversized:${bytes.length}';
+      }
+      return hashGitObjectBytes(bytes);
+    } on FileSystemException catch (error) {
+      return 'unreadable:${error.osError?.errorCode ?? error.message}';
+    }
+  }
+
+  Future<void> _writeRepositoryBytes(
+    RepositoryHandle handle,
+    String path,
+    List<int> bytes,
+  ) async {
+    final file = _repositoryFile(handle.root, path);
+    await file.parent.create(recursive: true);
+    final temporary = File('${file.path}.gift-revision.tmp');
+    await temporary.writeAsBytes(bytes, flush: true);
+    await temporary.rename(file.path);
+  }
 
   Future<GitStatusSnapshot> stage(RepositoryId repositoryId, String path) =>
       _mutatePath(repositoryId, const ['add'], path);

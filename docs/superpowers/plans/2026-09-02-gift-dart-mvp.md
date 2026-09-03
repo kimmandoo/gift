@@ -346,3 +346,17 @@ system Git 2.35+.
    binary, and stale-selection scenarios in the behavior ledger.
 2. Add the first RED file-history/blame contract test before introducing the
    bounded history and annotation models.
+3. Added the first RED fixture; it failed because the file-history model and
+   gateway methods did not exist. Implemented bounded file/directory/selection
+   history, rename metadata, line-porcelain blame parsing, and typed blame
+   movement options.
+4. Added compact history/blame controls and a fingerprint-guarded
+   Get-from-Revision action with explicit missing, binary, oversized, and stale
+   outcomes. Passed the focused backend/UI tests, formatting, analysis, and
+   the full Flutter suite. Task 25 is complete.
+
+## Follow-up: gift product-identity logo refresh
+
+1. Replace the current icon and README/release logo assets with an original
+   2D pixel-art chubby Shiba Inu face wearing a gift ribbon, preserving the
+   `gift` identity formed from Git + Flutter.

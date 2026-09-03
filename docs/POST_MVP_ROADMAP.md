@@ -4,8 +4,8 @@ This roadmap turns the MVP into a dependable daily Git client while preserving
 gift's clean-room workflow research and minimal 2D pixel-game interface.
 Task 15 was marked safe done under WSL because the remaining native bundle
 check is CI-only in this environment. Tasks 16 through 22 are complete;
-Tasks 23 and 24 are complete, Task 25 is active, and Tasks 26 through 35
-remain planned Git workflow coverage.
+Tasks 23 through 25 are complete, and Tasks 26 through 35 remain planned Git
+workflow coverage.
 Do not start a later post-MVP task until its dependencies are complete and its
 visible behavior has been recorded in the behavior ledger without copying
 proprietary implementation details or assets.
@@ -265,7 +265,8 @@ of Git stash entries.
 
 **Depends on:** Tasks 19 and 23.
 
-**Status:** In progress — implementation has been activated after Task 24.
+**Status:** Complete — path history, rename following, blame, and guarded
+Get-from-Revision flows are covered.
 
 **Goal:** Let users explain and recover a file change without browsing only the
 global commit graph.

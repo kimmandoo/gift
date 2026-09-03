@@ -1,0 +1,141 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:gift/src/app/pixel_theme.dart';
+import 'package:gift/src/backend/domain.dart';
+import 'package:gift/src/backend/file_history.dart';
+import 'package:gift/src/backend/git_gateway.dart';
+import 'package:gift/src/backend/history.dart';
+import 'package:gift/src/backend/status.dart';
+import 'package:gift/src/features/repository/file_history_dialog.dart';
+
+import '../../helpers/git_patch_gateway_stub.dart';
+
+void main() {
+  testWidgets('switches between compact file history and blame views', (
+    tester,
+  ) async {
+    final repository = const RepositoryOpened(
+      repositoryId: RepositoryId(value: 'file-history-ui-repository'),
+      root: '/workspace/project',
+    );
+    final gateway = _FileHistoryGateway(repository.repositoryId);
+    await tester.binding.setSurfaceSize(const Size(420, 760));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: buildPixelTheme(),
+        home: FileHistoryDialog(
+          gateway: gateway,
+          repository: repository,
+          initialPath: 'notes.txt',
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byKey(const Key('load-file-history')));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('file-history-list')), findsOneWidget);
+    expect(
+      find.byKey(const Key('file-history-entry:1234567890abcdef')),
+      findsOneWidget,
+    );
+
+    await tester.tap(
+      find.byKey(const Key('get-from-revision:1234567890abcdef')),
+    );
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('file-history-message')), findsOneWidget);
+
+    await tester.tap(find.byKey(const Key('load-file-blame')));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('blame-list')), findsOneWidget);
+    expect(find.byKey(const Key('blame-line:1')), findsOneWidget);
+    expect(gateway.blameCalls, 1);
+  });
+}
+
+class _FileHistoryGateway with GitPatchGatewayStub implements GitGateway {
+  _FileHistoryGateway(this.repositoryId);
+
+  final RepositoryId repositoryId;
+  var blameCalls = 0;
+  var getCalls = 0;
+
+  @override
+  Future<GitFileHistorySnapshot> getFileHistory(
+    RepositoryId id,
+    GitFileHistoryQuery query,
+  ) async => GitFileHistorySnapshot(
+    repositoryId: id,
+    query: query,
+    entries: [
+      GitFileHistoryEntry(
+        commit: GitCommit(
+          oid: '1234567890abcdef',
+          parents: const [],
+          authorName: 'History Tester',
+          authorEmail: 'history@test',
+          authoredAt: DateTime.utc(2026, 1, 1),
+          subject: 'Add notes',
+          body: '',
+        ),
+        path: query.path,
+      ),
+    ],
+    fingerprint: 'history',
+    workingTreeFingerprint: 'worktree',
+    hasMore: false,
+  );
+
+  @override
+  Future<GitBlameSnapshot> getBlame(
+    RepositoryId id,
+    String path, {
+    GitBlameOptions options = const GitBlameOptions(),
+  }) async {
+    blameCalls++;
+    return GitBlameSnapshot(
+      repositoryId: id,
+      path: path,
+      options: options,
+      fingerprint: 'blame',
+      lines: [
+        GitBlameLine(
+          lineNumber: 1,
+          text: 'first',
+          commitOid: '1234567890abcdef',
+          authorName: 'History Tester',
+          authoredAt: DateTime.utc(2026, 1, 1),
+          originalLineNumber: 1,
+          originalPath: path,
+        ),
+      ],
+    );
+  }
+
+  @override
+  Future<GitRevisionGetResult> getFileFromRevision(
+    RepositoryId id,
+    GitFileHistorySnapshot history,
+    String revision,
+  ) async {
+    getCalls++;
+    return GitRevisionGetResult(
+      repositoryId: id,
+      path: history.query.path,
+      revision: revision,
+      outcome: GitRevisionGetOutcome.restored,
+      status: GitStatusSnapshot(
+        repositoryId: id,
+        root: '/workspace/project',
+        branch: const GitBranchStatus(head: 'main'),
+        changes: const [],
+        contentHash: 'status',
+        generation: 1,
+      ),
+      summary: 'Restored from $revision.',
+    );
+  }
+}
