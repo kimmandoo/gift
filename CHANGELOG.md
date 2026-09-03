@@ -14,6 +14,8 @@
 - fix(ui): restored the legible UI font and standardized filled, outlined,
   text, and icon button geometry without changing their action hierarchy.
 - docs(roadmap): added cross-platform visual regression QA as Task 39.
+- docs(roadmap): added Tasks 40–47 for contextual Git actions, direct
+  cherry-pick discovery, workspace menus, and browse-assisted path selection.
 - feat(windows): added a per-user gift setup executable with Start Menu and
   uninstall registration alongside the release bundle and portable launcher.
 

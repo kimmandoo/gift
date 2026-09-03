@@ -5,11 +5,11 @@ This file is the handoff record for continuing work across query sessions.
 ## Current checkpoint
 
 - Date: 2026-09-04
-- Active task: Button typography and geometry normalization are complete;
-  Task 36 remains next.
+- Active task: None. Task 40 — Contextual action foundation is prioritized
+  next.
 - Branch: `main`; no new branch or worktree was created.
-- Latest completed implementation commit: `28a103e` (`fix(ui): separate push
-  controls and style primary actions`).
+- Latest completed implementation commit: `74abba6` (`fix(ui): unify button
+  typography and sizing`).
 - Completed Task 28 after recording REMOTE-BRANCH-01/02 and UPDATE-01/02,
   adding the first RED fixture, and proving the real-Git implementation GREEN.
 - Added immutable remote ref snapshots with grouped remotes, local tracking,
@@ -447,6 +447,35 @@ This file is the handoff record for continuing work across query sessions.
 - Blockers: none.
 - Next action after this session commit: activate Task 36 after recording its
   scale/resilience scenarios and first failing fixture.
+
+## Current session: contextual actions and path-selection roadmap
+
+- Date: 2026-09-04.
+- Changed files: `CHANGELOG.md`, `TASKS.md`, `docs/POST_MVP_ROADMAP.md`,
+  `docs/superpowers/plans/2026-09-02-gift-dart-mvp.md`, and this checkpoint.
+- Audit result: cherry-pick already exists in the typed backend, Advanced
+  branch dialog, real-Git tests, and conflict recovery flow. Its only primary
+  UI entry is the generic Advanced branch form, so discoverability—not the
+  single-commit engine—is the immediate gap.
+- Roadmap change: added Tasks 40–47 for a shared right-click/keyboard action
+  contract; direct commit cherry-pick and other History actions; ordered
+  multi-commit operations; change/file, branch/remote, and workspace/root
+  context menus; editable native absolute-folder fields; and searchable
+  repository-relative path navigation.
+- Safety decision: context menus route to existing previews and confirmations;
+  secondary click never executes Git. Actions bind to stable OIDs, refs, paths,
+  canonical roots, repository IDs, and freshness fingerprints rather than
+  visible list indices.
+- UX decision: absolute destinations retain direct text entry plus a native
+  Browse flow and purpose-specific recent directory. Repository-relative
+  fields retain direct typing plus bounded tracked-path search and explicit
+  file/directory modes.
+- Verification: documentation structure, task dependencies, cross-references,
+  acceptance criteria, and diff integrity were reviewed. No implementation or
+  runtime behavior changed, so no Flutter test or backtest was required.
+- Blockers: none.
+- Next action: activate Task 40, add the context-action behavior-ledger
+  scenarios, and record the first failing shared menu-contract widget test.
 
 ## Resume procedure
 

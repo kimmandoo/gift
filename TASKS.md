@@ -6,9 +6,10 @@
 
 ## Progress
 
-- **Total Tasks:** 39
-- **Completed:** 35 / 39
-- **Current Active Task:** None. Task 36 — Scale & resilience is next.
+- **Total Tasks:** 47
+- **Completed:** 35 / 47
+- **Current Active Task:** None. Task 40 — Contextual action foundation is
+  prioritized next.
 
 | # | Scope | Dart backend deliverables | Flutter deliverables | Status |
 |---|---|---|---|:---:|
@@ -51,6 +52,14 @@
 | **37** | Accessibility & preferences | Versioned settings and locale-ready text contracts | Scaling, remapping, themes, and accessibility | ⬜ |
 | **38** | Public release | Signed packages, provenance, update metadata, and release checks | Installers and first-run diagnostics | ⬜ |
 | **39** | Visual regression QA | Deterministic fixture states and platform font checks | Golden matrix, overflow guards, and interaction snapshots | ⬜ |
+| **40** | Contextual action foundation | Typed action availability and preview routing | Mouse, keyboard, and overflow-menu parity | ⬜ |
+| **41** | Commit context actions | OID-bound cherry-pick and existing history mutations | History-row action menu and prefilled previews | ⬜ |
+| **42** | Multi-commit operations | Ordered batch cherry-pick/revert state machine | Multi-select history actions and conflict progress | ⬜ |
+| **43** | Change and file actions | Selection-safe path operations and reveal contracts | Changes/diff/history-file context menus | ⬜ |
+| **44** | Branch and remote actions | Ref-bound operation routing and freshness checks | Local/remote branch context menus | ⬜ |
+| **45** | Workspace context actions | Root-bound tab and recent-repository operations | Tab/recent/nested-root context menus | ⬜ |
+| **46** | Native folder chooser UX | Purpose-scoped path validation and recent locations | Browse-assisted editable absolute-path fields | ⬜ |
+| **47** | Repository path navigation | Bounded tracked-path queries and path validation | Searchable file/folder pickers with manual entry | ⬜ |
 
 ## Completed foundations
 
@@ -567,12 +576,14 @@ Task 35 is complete. GitHub/GitLab SSH and HTTPS remotes now produce
 credential-safe repository, commit, file, and blame links. Copy/open actions
 and an explicitly optional review-handoff capability are available without
 coupling local Git operations to hosting authentication. The full Flutter
-verification suite passed with 206 tests. Task 36 is next.
+verification suite passed with 206 tests. Task 40 is now prioritized next for
+the requested desktop interaction and action-discoverability work.
 
 ## Post-MVP backlog
 
-Tasks 16–39 are specified in
-[`docs/POST_MVP_ROADMAP.md`](docs/POST_MVP_ROADMAP.md). Start them in numeric
-order unless a task explicitly lists no dependency. Before implementation,
-move exactly one task to active, add its behavior-ledger scenarios, and record
+Tasks 16–47 are specified in
+[`docs/POST_MVP_ROADMAP.md`](docs/POST_MVP_ROADMAP.md). Start them in dependency
+order. Tasks 40–47 do not depend on Tasks 36–39 and are explicitly prioritized
+before resuming product-readiness work. Before implementation, move exactly
+one task to active, add its behavior-ledger scenarios, and record
 the first failing test in the checkpoint.

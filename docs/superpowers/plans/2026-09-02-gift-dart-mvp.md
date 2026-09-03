@@ -710,3 +710,16 @@ system Git 2.35+.
    with hidden PowerShell/VBScript install and uninstall launchers.
 3. Published `gift-setup.exe` alongside the Release bundle and portable
    executable in the Windows CI artifact, and documented the install flow.
+
+## Planned follow-up: contextual actions and path selection
+
+1. Prioritized a shared mouse/keyboard context-action foundation, direct
+   History cherry-pick entry, ordered multi-commit operations, and complete
+   file, branch, remote, workspace, worktree, and nested-root menus.
+2. Preserved every existing preview, confirmation, stale-state, and conflict
+   workflow instead of adding direct menu mutations.
+3. Planned editable native folder fields for absolute paths and bounded,
+   searchable repository-relative path navigation for file/folder inputs.
+4. Split the work into Tasks 40–47 so action routing, object-specific menus,
+   batch history operations, and the two path-selection models can be verified
+   independently.

@@ -4,8 +4,10 @@ This roadmap turns the MVP into a dependable daily Git client while preserving
 gift's clean-room workflow research and minimal 2D pixel-game interface.
 Task 15 was marked safe done under WSL because the remaining native bundle
 check is CI-only in this environment. Tasks 16 through 35 are complete;
-Tasks 36 through 39 remain planned product-readiness and visual-regression
-work.
+Tasks 36 through 39 remain planned product-readiness work, and Tasks 40
+through 47 cover the requested desktop context-action and path-selection UX.
+Tasks 40 through 47 may run before Tasks 36 through 39 because their listed
+dependencies are already complete; Task 40 is the current priority.
 Do not start a later post-MVP task until its dependencies are complete and its
 visible behavior has been recorded in the behavior ledger without copying
 proprietary implementation details or assets.
@@ -20,6 +22,7 @@ proprietary implementation details or assets.
 | Remote & repository topology | 28–34 | Remote branches, update/push safety, worktrees, ignore rules, submodules, recovery, and setup |
 | Optional integrations | 35 | GitHub/GitLab links and review handoff without coupling the core backend to a host API |
 | Product readiness | 36–39 | Large-repository resilience, accessibility, preferences, signed releases, and visual-regression QA |
+| Desktop interaction UX | 40–47 | Discoverable context actions, direct cherry-pick entry points, and browse-assisted path selection |
 
 Every task must include backend tests with isolated Git fixtures, controller
 tests for async state changes, responsive widget tests, beginner-oriented
@@ -565,3 +568,228 @@ window sizes, themes, text scales, and platform font rendering.
 **Done when:** CI rejects unreviewed layout or theme drift on every supported
 platform and the release checklist covers the representative interaction-state
 matrix.
+
+## Task 40 — Contextual action foundation
+
+**Depends on:** Tasks 16–35. It does not depend on Tasks 36–39.
+
+**Goal:** Make existing Git operations discoverable where the selected object
+already appears, without creating a second mutation path beside the reviewed
+workflows.
+
+- Define one typed action descriptor and availability result shared by
+  right-click menus, existing overflow menus, keyboard invocation, and future
+  command search. The selected repository, object identity, enabled state, and
+  disabled reason must come from the same immutable snapshot.
+- Add a shared Flutter context-menu presenter with secondary-click placement,
+  `Shift+F10`/Menu-key invocation, arrow-key navigation, Escape dismissal,
+  focus restoration, semantics, and compact-window edge clamping.
+- Route every mutating action into its existing preview/confirmation dialog;
+  opening or dismissing a menu must never run Git, refresh selection, or create
+  a confirmation token.
+- Keep destructive actions grouped and labeled independently of color. Omit
+  actions that do not apply to an object; show a reason for temporarily
+  disabled actions such as dirty state or an operation already in progress.
+- Add shared widget-contract tests for pointer position, keyboard parity,
+  disabled reasons, stale selection, focus restoration, and menu dismissal
+  while the underlying list refreshes.
+
+**Done when:** A fixture action produces the same label, enabled state, target,
+preview route, and telemetry-free outcome from right click, keyboard, and the
+existing overflow button, with no duplicate mutation implementation.
+
+## Task 41 — Commit context actions and direct cherry-pick
+
+**Depends on:** Tasks 20, 26, 33, and 40. It does not depend on Tasks 36–39.
+
+**Goal:** Expose commit-scoped operations directly from History so users do not
+have to discover cherry-pick inside the generic Advanced branch form.
+
+- Add a History commit-row context menu for Cherry-pick onto current branch,
+  Revert commit, Create branch here, Create tag here, Compare, Reset current
+  branch to here, Copy full hash, and Copy short hash.
+- Bind actions to the selected full commit OID rather than visible row index,
+  abbreviation, subject, or the selection after an asynchronous refresh.
+- Deep-link Cherry-pick into the existing `GitBranchOperation.cherryPick`
+  preview with source OID and current target prefilled. Retain dirty-worktree,
+  detached-HEAD, stale-token, cancellation, conflict, continue, skip, and abort
+  behavior already implemented by Tasks 20 and 21.
+- Deep-link revert/reset/tag/branch/compare into their existing reviewed
+  dialogs. Destructive choices must remain preview-first and separated from
+  copy/inspect choices.
+- Keep the Advanced branch form as a manual fallback, but label its
+  commit-or-ref input and provide a visible History shortcut so the feature no
+  longer appears absent.
+
+**Done when:** Right-clicking a History commit can preview and execute a
+single-OID cherry-pick onto the current branch, conflicts enter the existing
+resolution workspace, and every other menu item targets that same OID after a
+list refresh.
+
+## Task 42 — Ordered multi-commit operations
+
+**Depends on:** Task 41. It does not depend on Tasks 36–39.
+
+**Goal:** Support deliberate batch cherry-pick and revert without hiding commit
+order or turning a partial failure into ambiguous repository state.
+
+- Add keyboard-accessible, non-contiguous History selection while preserving
+  the single-selection details workflow and providing an explicit Clear
+  selection action.
+- Preview the exact full OID sequence, execution direction, target branch,
+  combined file impact, duplicates, already-contained commits, merge commits,
+  dirty state, and in-progress operation before mutation.
+- Execute one reviewed OID at a time in the displayed order, report completed,
+  current, and remaining commits, and stop at cancellation, conflict, or typed
+  failure without silently skipping work.
+- Resume, skip, or abort only the current Git operation. After recovery,
+  require an explicit choice to continue the remaining reviewed sequence and
+  reject it if refs or selection fingerprints became stale.
+- Cover reverse-visible history order, merge-commit mainline requirements,
+  duplicate OIDs, mid-sequence conflicts, cancellation, stale previews, and
+  recovery in isolated real-Git fixtures.
+
+**Done when:** A reviewed multi-selection yields a deterministic cherry-pick or
+revert sequence whose partial progress and remaining work survive conflict
+resolution without replaying completed commits.
+
+## Task 43 — Change and file context actions
+
+**Depends on:** Tasks 17, 23–25, 31, and 40. It does not depend on Tasks 36–39.
+
+**Goal:** Put path-scoped workflows beside changed files, diffs, and commit-file
+rows while keeping staging and destructive operations selection-safe.
+
+- Add Changes-row actions for Stage, Unstage, Stage selected lines/hunks,
+  Discard working changes, Move to changelist, Shelve, Ignore locally, Ignore
+  in repository, File history, Blame, Compare, Copy relative path, Copy
+  absolute path, and Reveal in file manager.
+- Add History changed-file and comparison-file actions for File history,
+  Blame at revision where supported, Compare revisions, Copy path, and Reveal
+  the current working-tree file only when it exists.
+- Bind mutation requests to repository ID, path/original path, diff scope, and
+  current fingerprint. Rename, deleted, conflicted, partially staged, ignored,
+  missing, binary, and nested-root paths must expose only valid actions.
+- Define a small platform boundary for reveal-in-file-manager rather than
+  spawning a shell command; unsupported or missing paths remain explicit and
+  copy actions still work.
+- Reuse existing discard, shelf, ignore, history, blame, and comparison
+  previews instead of duplicating backend commands in menu handlers.
+
+**Done when:** Pointer and keyboard context menus on each path surface expose
+the same valid operations, stale path selections cannot mutate another file,
+and destructive items always enter their existing reviewed flow.
+
+## Task 44 — Branch and remote context actions
+
+**Depends on:** Tasks 20, 22, 28–30, and 40. It does not depend on Tasks 36–39.
+
+**Goal:** Replace the limited trailing branch menus with complete,
+selection-aware local and remote ref actions.
+
+- Add local-branch actions for Checkout, Merge into current, Rebase current
+  onto this branch, Compare with current, Rename, Delete, Push, Set/change
+  upstream, Copy branch name, and Copy full ref.
+- Add remote-branch actions for Checkout as local, Compare with current,
+  Cherry-pick a selected commit through History rather than guessing a branch
+  tip, Delete remote branch, Copy name/ref, and open host links when supported.
+- Present the same descriptors from right click and the existing trailing
+  popup. Current branch, symbolic remote HEAD, protected branch, detached
+  state, dirty state, missing upstream, and active operations must have correct
+  availability and explanations.
+- Prefill the existing branch, comparison, push, remote, and hosting dialogs
+  with full ref identities; revalidate refs and preview fingerprints before
+  every mutation.
+- Keep branch switching on primary click. Secondary click must select for
+  context without checking out or otherwise mutating the branch.
+
+**Done when:** Local and remote refs have complete right-click and keyboard
+menus, every mutation is previewed against a fresh full ref, and ordinary
+selection never switches branches accidentally.
+
+## Task 45 — Workspace and repository context actions
+
+**Depends on:** Tasks 16, 30, 32, 34, and 40. It does not depend on Tasks
+36–39.
+
+**Goal:** Make repository tabs, recent repositories, worktrees, submodules, and
+nested roots manageable from the object the user is already viewing.
+
+- Add workspace-tab actions for Select, Close, Close others, Close tabs to the
+  right, Copy root path, Reveal root, Refresh, and Replace missing root.
+- Add recent-repository actions for Open, Open in new tab, Remove from recent,
+  Copy path, Reveal, and Choose replacement when the saved path is missing.
+- Add worktree/nested-root/submodule actions for Open as tab, Copy path,
+  Reveal, Refresh, and the already supported reviewed remove/lock/deinit flows
+  where valid.
+- Preserve active-tab and focus invariants when closing or replacing multiple
+  tabs. Canonical roots and opaque repository IDs, not display names or list
+  indices, identify actions across refreshes.
+- Keep one-click primary behavior unchanged and make secondary-click selection
+  non-destructive. Destructive menu items must retain their current
+  confirmations and dirty-state checks.
+
+**Done when:** Every repository-like row has a consistent pointer/keyboard
+context menu and a refresh, reorder, disappearance, or duplicate canonical
+root cannot redirect an action to another workspace.
+
+## Task 46 — Browse-assisted absolute folder fields
+
+**Depends on:** Tasks 16, 30, and 34. It does not depend on Tasks 36–39 or 40.
+
+**Goal:** Keep paths editable for expert workflows while making normal folder
+selection a native, remembered, validation-guided interaction.
+
+- Introduce one editable folder-field control with a Browse button, paste,
+  clear, keyboard submission, full-path tooltip, inline validation, and native
+  directory picker injection for tests.
+- Apply it to clone destination, local clone source, repository initialization,
+  nested-root scan, worktree destination, missing-root replacement, and any
+  other absolute directory input. URL clone sources keep URL entry and offer a
+  local-folder chooser only when local source mode is selected.
+- For clone and worktree destinations that may not exist, choose an existing
+  parent folder and show an editable proposed child name before creation.
+  Never imply that the native picker can select a nonexistent directory.
+- Remember the last successful directory per purpose, seed from the active or
+  recent repository where appropriate, and avoid leaking one repository's
+  destination into an unrelated destructive flow.
+- Normalize separators only after acceptance, preserve valid platform roots
+  and UNC paths, expand no shell syntax, and distinguish missing, inaccessible,
+  non-directory, non-empty, nested-repository, and already-open errors inline.
+- Cover Windows drive/UNC paths, macOS/Linux roots, cancellation, permission
+  failure, nonexistent child creation, manual typing, and narrow layouts.
+
+**Done when:** Every absolute folder workflow supports both native browsing and
+direct editing, reopens at a relevant safe location, and explains invalid
+paths before the user reaches a backend error.
+
+## Task 47 — Repository-relative path navigation
+
+**Depends on:** Tasks 19, 23, 25, 31, and 35. It does not depend on Tasks
+36–40 or 46.
+
+**Goal:** Replace error-prone repository-relative path typing with bounded
+search and browsing while preserving direct entry.
+
+- Add a searchable repository path field that can query tracked files,
+  directories, changed paths, and known deleted/renamed paths without scanning
+  outside the canonical repository root.
+- Support explicit file, directory, or either modes and apply them to History
+  path filters, File History/Blame, folder comparison, three-way file paths,
+  hosting file links, ignore/attribute inspection, and other relative-path
+  inputs.
+- Keep the text field editable with paste, separator normalization, exact
+  keyboard submission, clear, recent in-repository selections, and a Browse
+  affordance. Suggestions must show enough parent context to disambiguate
+  duplicate filenames.
+- Debounce and cancel queries, cap results, expose truncation, preserve input
+  during refresh, and derive suggestions from bounded Git output rather than
+  recursive UI-thread filesystem walks.
+- Validate repository containment and path kind before action dispatch;
+  handle spaces, Unicode, case-sensitive/case-insensitive collisions,
+  submodules, nested roots, renames, deletions, ignored paths, and empty
+  repositories explicitly.
+
+**Done when:** Each repository-relative path flow can be completed by browsing
+or typing, keyboard-only selection is equivalent to pointer selection, and no
+suggestion or stale result can address a path outside the active repository.
