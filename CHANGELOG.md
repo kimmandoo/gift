@@ -2,6 +2,7 @@
 
 ## 2026-09-03
 
+- docs(roadmap): expanded the JetBrains Git workflow backlog with Tasks 23–35.
 - feat(task22): added identity-bound stash, tag, remote, and upstream
   management workflows with responsive object controls.
 - feat(task21): added fingerprint-guarded conflict inspection, resolution,

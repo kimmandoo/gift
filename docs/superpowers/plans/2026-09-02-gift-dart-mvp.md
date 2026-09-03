@@ -291,4 +291,16 @@ system Git 2.35+.
 4. Added focused object-management dialogs and upstream feedback, including
    credential-safe remote display and stateful remote selection.
 5. Passed focused backend/UI tests, formatting, analysis, and the full suite.
-   Task 22 is complete; Task 23 is next.
+   Task 22 is complete.
+
+## Planned backlog expansion: JetBrains Git workflow gaps (Tasks 23–35)
+
+1. Audited the public IntelliJ IDEA Git workflow documentation against the
+   completed Tasks 1–22 and recorded the missing comparison, shelf, history,
+   reset, rebase, remote-branch, worktree, metadata, recovery, setup, and
+   optional hosting scenarios in the behavior ledger.
+2. Added Tasks 23–35 to the post-MVP roadmap in dependency order, then moved
+   the existing scale, accessibility, and release work to Tasks 36–38.
+3. Task 23, the diff and comparison workbench, is next. Its first RED test
+   must be recorded before implementation starts; no later task should be
+   activated until its dependency and behavior notes are complete.

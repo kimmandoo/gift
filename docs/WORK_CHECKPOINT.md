@@ -5,9 +5,11 @@ This file is the handoff record for continuing work across query sessions.
 ## Current checkpoint
 
 - Date: 2026-09-03
-- Active task: Task 22, Git object management, is complete; Task 23, large
-  repository performance and resilience, is next.
+- Active task: no implementation task is active; Task 22 is complete and
+  Task 23, the diff and comparison workbench, is next after the backlog audit.
 - Branch: `main`; no new branch or worktree was created.
+- Latest commit before this planning session: `a31d3a5
+  feat(objects): add stash tag remote and upstream workflows`.
 - History cleanup: removed the pull-request merge commit from local and remote
   `main` with a lease-protected force update; the branding commits and Task 18
   content remain in a linear history. The two remaining obsolete branding
@@ -16,23 +18,16 @@ This file is the handoff record for continuing work across query sessions.
 - Changed files in this session: `TASKS.md`, `CHANGELOG.md`,
   `docs/ARCHITECTURE.md`, `docs/POST_MVP_ROADMAP.md`,
   `docs/research/jetbrains-git-mvp-behavior.md`,
-  `docs/superpowers/plans/2026-09-02-gift-dart-mvp.md`,
-  `docs/WORK_CHECKPOINT.md`,
-  `lib/src/backend/{dart_git_backend.dart,dart_git_gateway.dart,error.dart,git_gateway.dart,objects.dart,remote.dart,repository_service.dart}`,
-  `lib/src/features/repository/{changes_screen.dart,object_dialog.dart}`,
-  `test/backend/object_management_test.dart`,
-  `test/features/repository/object_dialog_test.dart`, and
-  `test/helpers/git_patch_gateway_stub.dart`.
-- Verification: the focused object-management backend/UI command passed 4
-  tests; `flutter analyze` reported no issues; and
-  `/tmp/codex-flutter/flutter/bin/flutter --suppress-analytics test --no-pub`
-  passed all 128 tests.
-- Next action: begin Task 23 by recording large-repository watching, cache,
-  process-supervision, and responsiveness scenarios, then add its first RED
-  test. Keep Task 22 complete and do not infer Task 23 completion from this
-  commit.
-- First failing signal for this task: the initial object parser test could not
-  import `package:gift/src/backend/objects.dart` before the contract existed.
+  `docs/superpowers/plans/2026-09-02-gift-dart-mvp.md`, and
+  `docs/WORK_CHECKPOINT.md`.
+- Verification: the planning audit passed `git diff --check`; the previous
+  Task 22 commit passed `flutter analyze` and the full Flutter suite with 128
+  tests.
+- Next action: activate Task 23 by adding its first failing diff contract test
+  for revision/branch/folder comparison and record the RED result before
+  changing implementation. Keep Tasks 24–35 planned until their dependencies
+  are implemented.
+- First failing signal for the next task: none yet; Task 23 has not started.
 - Blockers: none.
 
 ## Previous checkpoint
@@ -97,7 +92,7 @@ This file is the handoff record for continuing work across query sessions.
 - Local build note: `./tool/build_linux.sh` reached native compilation but the
   host lacks `libgtk-3-dev`; installing it requires a sudo password unavailable
   to this session. CI already installs this dependency before Linux builds.
-- Added Tasks 16–25 as an ordered post-MVP backlog in
+- Added Tasks 16–38 as an ordered post-MVP backlog in
   `docs/POST_MVP_ROADMAP.md`. The roadmap covers multi-repository workspaces,
   partial staging, commit and history depth, advanced branches, conflicts,
   Git object management, scale, accessibility, and signed public releases.

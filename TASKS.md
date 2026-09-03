@@ -6,9 +6,9 @@
 
 ## Progress
 
-- **Total Tasks:** 25
-- **Completed:** 22 / 25
-- **Current Active Task:** `23 — Large-repository performance and resilience (next)`
+- **Total Tasks:** 38
+- **Completed:** 22 / 38
+- **Current Active Task:** `23 — Diff and comparison workbench (next)`
 
 | # | Scope | Dart backend deliverables | Flutter deliverables | Status |
 |---|---|---|---|:---:|
@@ -34,9 +34,22 @@
 | **20** | Advanced branches | Rename, delete, merge, rebase, and cherry-pick safety | Preview-driven branch actions | ✅ |
 | **21** | Conflict resolution | Conflict-state parser and safe resolution mutations | Three-pane merge workflow | ✅ |
 | **22** | Git objects | Stash, tags, remotes, and upstream management | Focused object-management dialogs | ✅ |
-| **23** | Scale & resilience | File watching, cache invalidation, process supervision | Large-repository responsiveness | ⬜ |
-| **24** | Accessibility & preferences | Versioned settings and locale-ready text contracts | Scaling, remapping, themes, and accessibility | ⬜ |
-| **25** | Public release | Signed packages, provenance, update metadata, and release checks | Installers and first-run diagnostics | ⬜ |
+| **23** | Diff & compare | Revision, branch, folder, clipboard, and 3-way comparisons | Diff workbench and apply/revert actions | ⬜ |
+| **24** | Shelf & changelists | Shelf storage, changelist grouping, and patch import/export | Shelf/changelist workflow | ⬜ |
+| **25** | File history & blame | File/directory/selection history and blame metadata | History and annotation views | ⬜ |
+| **26** | Undo & reset | Revert commit, undo commit, and safe reset modes | Destructive history controls | ⬜ |
+| **27** | Interactive rebase | Reorder, reword, edit, squash, fixup, drop, and recovery | Rebase plan and conflict flow | ⬜ |
+| **28** | Remote branches & update | Remote branch checkout, compare, update, and tracking | Incoming/update information | ⬜ |
+| **29** | Push safety | Push review, force-with-lease, tags, and protected branches | Push review and rejection recovery | ⬜ |
+| **30** | Worktrees | Worktree list, create, open, remove, lock, and prune | Worktree manager | ⬜ |
+| **31** | Ignore & metadata | `.gitignore`, `.git/info/exclude`, ignored files, and attributes | Ignore/metadata actions | ⬜ |
+| **32** | Submodules & nested roots | Submodule status, sync, update, and nested repository mapping | Nested-root workspace | ⬜ |
+| **33** | Recovery diagnostics | Reflog browsing, recovery refs, and Git operation console | Recovery and command diagnostics | ⬜ |
+| **34** | Repository setup | Clone, init, publish, shallow/unshallow, and root mapping | Repository setup flows | ⬜ |
+| **35** | Hosting integration | Optional GitHub/GitLab links and review handoff contracts | Hosting links and review entry points | ⬜ |
+| **36** | Scale & resilience | File watching, cache invalidation, process supervision | Large-repository responsiveness | ⬜ |
+| **37** | Accessibility & preferences | Versioned settings and locale-ready text contracts | Scaling, remapping, themes, and accessibility | ⬜ |
+| **38** | Public release | Signed packages, provenance, update metadata, and release checks | Installers and first-run diagnostics | ⬜ |
 
 ## Completed foundations
 
@@ -293,7 +306,7 @@ object-management contract existed.
 
 ## Post-MVP backlog
 
-Tasks 16–25 are specified in
+Tasks 16–38 are specified in
 [`docs/POST_MVP_ROADMAP.md`](docs/POST_MVP_ROADMAP.md). Start them in numeric
 order unless a task explicitly lists no dependency. Before implementation,
 move exactly one task to active, add its behavior-ledger scenarios, and record

@@ -539,3 +539,25 @@ ChangesScreen
    branch, and ahead/behind counts, so the UI does not infer tracking state
    from command text. The object dialog remains bounded on compact windows and
    keeps remote selection state when more than one remote is configured.
+
+## Planned Git workflow coverage (Tasks 23–35)
+
+The next implementation wave fills the gaps around the current repository and
+object flows in this order:
+
+```text
+Diff workbench → Shelves/changelists → File history/blame
+       ↓                    ↓                   ↓
+  Reset/revert       Interactive rebase    Remote branches/update
+       ↓                    ↓                   ↓
+ Push safety → Worktrees → Ignore/attributes → Submodules
+       ↓                                      ↓
+ Reflog/console → Clone/init/root mapping → Optional hosting adapters
+```
+
+These tasks preserve the existing boundaries: Git mutations remain shell-free,
+serialized per repository, bounded, and typed; UI-originated paths, revisions,
+patches, and remote tips require validation or a current fingerprint. Shelf,
+worktree, and submodule roots are related to a workspace but retain separate
+working-tree and mutation identities. Hosting links are an adapter capability,
+not a dependency of local Git operations.
