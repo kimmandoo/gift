@@ -7,8 +7,8 @@ This file is the handoff record for continuing work across query sessions.
 - Date: 2026-09-03
 - Active task: Post-Task-35 UI/UX audit is complete; Task 36 is next.
 - Branch: `main`; no new branch or worktree was created.
-- Latest completed implementation commit: `0118905` (`feat(windows): add
-  portable single-file launcher`).
+- Latest completed implementation commit: `26a2235` (`fix(windows): hide
+  portable launcher and unclip labels`).
 - Completed Task 28 after recording REMOTE-BRANCH-01/02 and UPDATE-01/02,
   adding the first RED fixture, and proving the real-Git implementation GREEN.
 - Added immutable remote ref snapshots with grouped remotes, local tracking,
