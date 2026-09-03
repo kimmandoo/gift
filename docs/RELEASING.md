@@ -40,10 +40,13 @@ does not promise that a Linux host can produce a macOS or Windows desktop
 bundle. Windows users can double-click `tool\\build_windows.bat` or run
 `tool\\build_windows.ps1` from PowerShell.
 
-The scripts select the repository root, enable the matching Flutter desktop
-target, install Dart packages, and call the release build. The Linux and macOS
-scripts require Bash; the Windows `.bat` and `.ps1` wrappers are provided for
-native Windows use.
+The scripts select the repository root, clear generated Flutter build caches,
+enable the matching Flutter desktop target, install Dart packages, and call
+the release build. Clearing the cache keeps a changed Dart source file or
+Flutter SDK from being misreported by an incremental `flutter_assemble`
+project, which is particularly useful after updating a Windows checkout. The
+Linux and macOS scripts require Bash; the Windows `.bat` and `.ps1` wrappers
+are provided for native Windows use.
 
 The helper prints the output location after a successful build:
 

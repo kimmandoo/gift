@@ -227,6 +227,17 @@ the Windows SDK, then run from PowerShell:
 ```powershell
 flutter config --enable-windows-desktop
 reg add "HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\AppModelUnlock" /t REG_DWORD /f /v "AllowDevelopmentWithoutDevLicense" /d "1"
+flutter clean
+flutter pub get
+flutter build windows --release
+```
+
+If the compiler reports unrelated Flutter types such as `BuildContext` or
+`ChangeNotifier` as missing after switching commits, clear the generated
+frontend state and restore packages before retrying:
+
+```powershell
+flutter clean
 flutter pub get
 flutter build windows --release
 ```

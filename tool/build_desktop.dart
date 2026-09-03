@@ -14,6 +14,11 @@ Future<void> main(List<String> arguments) async {
 
   final target = arguments.single;
   final flutter = Platform.isWindows ? 'flutter.bat' : 'flutter';
+  // A release build must not reuse a stale frontend kernel after source files
+  // or the Flutter SDK changed. This is especially important on Windows,
+  // where flutter_assemble.vcxproj can otherwise preserve misleading Dart
+  // type errors from an older incremental build.
+  await runCommand(flutter, ['clean']);
   await runCommand(flutter, ['config', '--enable-$target-desktop']);
   await runCommand(flutter, ['pub', 'get']);
   await runCommand(flutter, [

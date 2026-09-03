@@ -2,6 +2,8 @@
 
 ## 2026-09-03
 
+- fix(build): cleared generated Flutter desktop caches before release builds
+  to prevent stale frontend errors after Windows source updates.
 - docs(roadmap): expanded the JetBrains Git workflow backlog with Tasks 23–35.
 - feat(task23): added a fingerprint-guarded revision and folder comparison
   workbench with lazy selected-file diffs and responsive entry points.
