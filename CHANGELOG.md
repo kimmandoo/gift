@@ -14,6 +14,10 @@
   branch creation.
 - feat(recovery): added a redacted process-local Git operation console that
   omitted stdin and bounded diagnostic output.
+- feat(task34): added validated clone, initialize, shallow recovery, and
+  bounded nested-root discovery flows.
+- feat(setup): added responsive repository setup and reviewed publish controls
+  from Welcome and repository actions.
 - feat(task30): added typed worktree listing, isolated creation/opening, and
   preview-bound remove, lock, unlock, and prune actions.
 - feat(workspace): opened linked worktrees as independent repository tabs and

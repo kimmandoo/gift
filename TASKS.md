@@ -7,8 +7,8 @@
 ## Progress
 
 - **Total Tasks:** 38
-- **Completed:** 33 / 38
-- **Current Active Task:** None. Task 34 — Repository setup is next.
+- **Completed:** 34 / 38
+- **Current Active Task:** Task 35 — Hosting integration (active).
 
 | # | Scope | Dart backend deliverables | Flutter deliverables | Status |
 |---|---|---|---|:---:|
@@ -45,8 +45,8 @@
 | **31** | Ignore & metadata | `.gitignore`, `.git/info/exclude`, ignored files, and attributes | Ignore/metadata actions | ✅ |
 | **32** | Submodules & nested roots | Submodule status, sync, update, and nested repository mapping | Nested-root workspace | ✅ |
 | **33** | Recovery diagnostics | Reflog browsing, recovery refs, and Git operation console | Recovery and command diagnostics | ✅ |
-| **34** | Repository setup | Clone, init, publish, shallow/unshallow, and root mapping | Repository setup flows | ⬜ |
-| **35** | Hosting integration | Optional GitHub/GitLab links and review handoff contracts | Hosting links and review entry points | ⬜ |
+| **34** | Repository setup | Clone, init, publish, shallow/unshallow, and root mapping | Repository setup flows | ✅ |
+| **35** | Hosting integration | Optional GitHub/GitLab links and review handoff contracts | Hosting links and review entry points | 🔄 |
 | **36** | Scale & resilience | File watching, cache invalidation, process supervision | Large-repository responsiveness | ⬜ |
 | **37** | Accessibility & preferences | Versioned settings and locale-ready text contracts | Scaling, remapping, themes, and accessibility | ⬜ |
 | **38** | Public release | Signed packages, provenance, update metadata, and release checks | Installers and first-run diagnostics | ⬜ |
@@ -536,7 +536,31 @@ full Flutter verification suite. Task 33 is next.
   and secret redaction.
 
 Task 33 is complete. The reflog recovery and redacted operation console passed
-the full Flutter verification suite. Task 34 is next.
+the full Flutter verification suite.
+
+### ✅ Task 34: Repository setup
+
+- [x] Record clone, init, publish/unshallow, shallow depth, destination
+  validation, and nested root discovery scenarios.
+- [x] Add the first RED real-Git setup fixture.
+- [x] Implement validated clone/init/unshallow actions and bounded root scan.
+- [x] Add responsive setup controls from Welcome and repository actions.
+- [x] Verify local/URL clone, empty-folder init, safe paths, cancellation
+  plumbing, and root mapping.
+
+Task 34 is complete. Repository setup now covers local/URL clone, empty-folder
+initialization, shallow recovery, bounded nested-root discovery, and reviewed
+publish entry points. The full Flutter verification suite passed with 203 tests.
+
+### 🔄 Task 35: Hosting integration
+
+- [ ] Record GitHub/GitLab URL, credential redaction, link, and review-handoff
+  scenarios.
+- [ ] Add the first RED real-Git hosting fixture.
+- [ ] Implement provider adapters and optional review-handoff contracts.
+- [ ] Add responsive hosting links and review entry points.
+- [ ] Verify unsupported hosts, SSH/HTTPS remotes, encoded paths, copy/open
+  actions, and local-flow fallback.
 
 ## Post-MVP backlog
 

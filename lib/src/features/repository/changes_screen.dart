@@ -28,6 +28,7 @@ import 'package:gift/src/features/repository/worktree_dialog.dart';
 import 'package:gift/src/features/repository/ignore_dialog.dart';
 import 'package:gift/src/features/repository/submodule_dialog.dart';
 import 'package:gift/src/features/repository/recovery_dialog.dart';
+import 'package:gift/src/features/repository/repository_setup_dialog.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter/services.dart';
@@ -228,6 +229,9 @@ class _ChangesScreenBodyState extends ConsumerState<_ChangesScreenBody> {
                   case _ChangesMenuAction.recovery:
                     unawaited(_openRecovery(context));
                     break;
+                  case _ChangesMenuAction.setup:
+                    unawaited(_openRepositorySetup(context));
+                    break;
                   case _ChangesMenuAction.refresh:
                     unawaited(controller.refresh());
                     break;
@@ -293,6 +297,10 @@ class _ChangesScreenBodyState extends ConsumerState<_ChangesScreenBody> {
                 const PopupMenuItem(
                   value: _ChangesMenuAction.recovery,
                   child: Text('Recovery diagnostics'),
+                ),
+                const PopupMenuItem(
+                  value: _ChangesMenuAction.setup,
+                  child: Text('Setup, roots, or full history'),
                 ),
                 PopupMenuItem(
                   value: _ChangesMenuAction.refresh,
@@ -391,6 +399,12 @@ class _ChangesScreenBodyState extends ConsumerState<_ChangesScreenBody> {
               tooltip: 'Open recovery diagnostics',
               onPressed: () => unawaited(_openRecovery(context)),
               icon: const Icon(Icons.restore),
+            ),
+            IconButton(
+              key: const Key('open-repository-setup'),
+              tooltip: 'Open repository setup',
+              onPressed: () => unawaited(_openRepositorySetup(context)),
+              icon: const Icon(Icons.settings_system_daydream_outlined),
             ),
             IconButton(
               tooltip: 'Refresh changes',
@@ -1604,6 +1618,18 @@ class _ChangesScreenBodyState extends ConsumerState<_ChangesScreenBody> {
     await _activeController.refresh();
   }
 
+  Future<void> _openRepositorySetup(BuildContext context) async {
+    await showDialog<RepositoryOpened>(
+      context: context,
+      builder: (_) => RepositorySetupDialog(
+        gateway: widget.gateway,
+        repository: widget.repository,
+      ),
+    );
+    if (!context.mounted) return;
+    await _activeController.refresh();
+  }
+
   Widget _scopeSelector(
     BuildContext context,
     GitChange selected,
@@ -1916,5 +1942,6 @@ enum _ChangesMenuAction {
   ignoreMetadata,
   submodules,
   recovery,
+  setup,
   refresh,
 }

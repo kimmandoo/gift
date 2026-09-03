@@ -5,7 +5,9 @@ import 'package:gift/src/features/settings/git_settings_controller.dart';
 import 'package:gift/src/features/settings/git_settings_dialog.dart';
 import 'package:gift/src/features/repository/workspace_controller.dart';
 import 'package:gift/src/features/repository/workspace_screen.dart';
+import 'package:gift/src/features/repository/repository_setup_dialog.dart';
 import 'package:gift/src/backend/git_gateway.dart';
+import 'package:gift/src/backend/domain.dart';
 import 'package:file_selector/file_selector.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -147,6 +149,14 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
                         : null,
                     child: const Text('Open Repository'),
                   ),
+                  const SizedBox(height: 8),
+                  OutlinedButton(
+                    key: const Key('setup-repository'),
+                    onPressed: state.gitInstallation == null || state.isLoading
+                        ? null
+                        : _showRepositorySetup,
+                    child: const Text('Clone or initialize'),
+                  ),
                   if (state.isLoading) ...[
                     const SizedBox(height: 12),
                     const LinearProgressIndicator(),
@@ -243,6 +253,15 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
       ),
     );
     _repositoryController.applyGitSettings(controller.state);
+  }
+
+  Future<void> _showRepositorySetup() async {
+    final repository = await showDialog<RepositoryOpened>(
+      context: context,
+      builder: (_) => RepositorySetupDialog(gateway: widget.gateway),
+    );
+    if (!mounted || repository == null) return;
+    await _openPath(repository.root);
   }
 
   void _onChanged() {

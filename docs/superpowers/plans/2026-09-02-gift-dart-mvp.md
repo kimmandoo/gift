@@ -584,3 +584,23 @@ system Git 2.35+.
    output bounds, secret redaction, and compact 360x640/1.2x rendering.
    Verification passed formatting, analysis, and the full Flutter suite with
    200 tests. Task 33 is complete; Task 34 is next.
+
+## Completed vertical: Repository setup (Task 34)
+
+1. Activated Task 34 after recording clone/init, destination safety, shallow
+   recovery, cancellation, and nested-root discovery scenarios as SETUP-02/03.
+2. The first RED fixture failed before implementation because the typed setup
+   and root-discovery contracts did not exist.
+3. Implemented validated local/URL clone, empty-folder initialization,
+   shallow-repository detection and unshallow recovery, bounded non-symlink
+   nested-root discovery, and responsive Welcome/repository setup controls.
+4. Verification passed formatting, analysis, and the full Flutter suite with
+   203 tests. Task 34 is complete; Task 35 is now active.
+
+## Active vertical: Hosting integration (Task 35)
+
+1. Activated Task 35 after recording provider parsing, credential redaction,
+   hosted links, and optional review-handoff scenarios as HOST-02/03.
+2. First RED test: `/home/mgkim/.local/flutter/bin/flutter test
+   test/backend/hosting_test.dart` is expected to fail because the typed
+   hosting adapter and link contracts do not exist yet.

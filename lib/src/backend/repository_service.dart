@@ -26,6 +26,7 @@ import 'worktree.dart';
 import 'ignore.dart';
 import 'submodule.dart';
 import 'recovery.dart';
+import 'setup.dart';
 
 /// In-memory registry for repository roots and session-local opaque IDs.
 ///
@@ -862,6 +863,259 @@ class RepositoryService {
       moved: true,
     );
     return state.register(canonicalRoot);
+  }
+
+  Future<GitRepositorySetupResult> cloneRepository(
+    GitCloneRequest request, {
+    GitCancellationToken? cancellationToken,
+  }) async {
+    final source = _validateSetupSource(request.source);
+    final destination = _validateSetupAbsolutePath(
+      request.destination,
+      label: 'clone destination',
+    );
+    final directory = Directory(destination);
+    if (await directory.exists()) {
+      var hasEntries = false;
+      await for (final _ in directory.list().take(1)) {
+        hasEntries = true;
+      }
+      if (hasEntries) {
+        throw setupInputError(
+          'Choose an empty clone destination.',
+          'clone destination already contained files',
+        );
+      }
+    } else if (!await directory.parent.exists()) {
+      throw setupInputError(
+        'Choose a destination whose parent folder exists.',
+        'clone destination parent folder did not exist',
+      );
+    }
+    if (request.branch case final branch?) {
+      _validateBranchName(branch);
+    }
+    final depth = request.depth;
+    if (depth != null && (depth < 1 || depth > 1_000_000)) {
+      throw setupInputError(
+        'Choose a clone depth between 1 and 1,000,000.',
+        'clone depth was outside the safe bound',
+      );
+    }
+    final args = <String>['clone'];
+    if (request.branch case final branch?) {
+      args.addAll(['--branch', branch]);
+    }
+    if (depth case final value?) args.addAll(['--depth', '$value']);
+    if (request.recursive) args.add('--recurse-submodules');
+    args.addAll([source, destination]);
+    await _runner.run(
+      GitInvocation(
+        program: gitPath,
+        args: args,
+        cwd: directory.parent.path,
+        kind: GitOperationKind.remote,
+        outputPolicy: const OutputPolicy.capture(maxBytes: 4 * 1024 * 1024),
+        cancellationToken: cancellationToken,
+      ),
+    );
+    return GitRepositorySetupResult(
+      repository: await openRepository(destination),
+      summary: 'Cloned repository into $destination.',
+    );
+  }
+
+  Future<GitRepositorySetupResult> initRepository(
+    GitInitRequest request, {
+    GitCancellationToken? cancellationToken,
+  }) async {
+    final destination = _validateSetupAbsolutePath(
+      request.path,
+      label: 'repository folder',
+    );
+    final directory = Directory(destination);
+    if (File(destination).existsSync()) {
+      throw setupInputError(
+        'Choose a folder, not a file, for the repository.',
+        'init destination was an existing file',
+      );
+    }
+    await directory.create(recursive: true);
+    if (request.initialBranch case final branch?) {
+      _validateBranchName(branch);
+    }
+    final args = <String>['init'];
+    if (request.initialBranch case final branch?) {
+      args.addAll(['--initial-branch', branch]);
+    }
+    await _runner.run(
+      GitInvocation(
+        program: gitPath,
+        args: args,
+        cwd: destination,
+        kind: GitOperationKind.mutation,
+        outputPolicy: const OutputPolicy.capture(maxBytes: 256 * 1024),
+        cancellationToken: cancellationToken,
+      ),
+    );
+    return GitRepositorySetupResult(
+      repository: await openRepository(destination),
+      summary: 'Initialized a Git repository in $destination.',
+    );
+  }
+
+  Future<GitUnshallowResult> unshallowRepository(
+    RepositoryId repositoryId, {
+    GitCancellationToken? cancellationToken,
+  }) => state.runMutation(repositoryId, () async {
+    final handle = await state.lookup(repositoryId);
+    final output = await _runner.run(
+      GitInvocation(
+        program: gitPath,
+        args: const ['rev-parse', '--is-shallow-repository'],
+        cwd: handle.root,
+        kind: GitOperationKind.read,
+        outputPolicy: const OutputPolicy.capture(maxBytes: 4 * 1024),
+      ),
+    );
+    final shallow = utf8.decode(output.stdout, allowMalformed: true).trim();
+    if (shallow != 'true' && shallow != 'false') {
+      throw const GitError(
+        category: GitErrorCategory.parseFailure,
+        userMessage: 'Git returned an unrecognized shallow state.',
+        diagnostic: 'is-shallow-repository did not return true or false',
+        retryable: true,
+      );
+    }
+    final wasShallow = shallow == 'true';
+    if (wasShallow) {
+      await _runner.run(
+        GitInvocation(
+          program: gitPath,
+          args: const ['fetch', '--unshallow'],
+          cwd: handle.root,
+          kind: GitOperationKind.remote,
+          outputPolicy: const OutputPolicy.capture(maxBytes: 4 * 1024 * 1024),
+          cancellationToken: cancellationToken,
+        ),
+      );
+    }
+    final status = await getStatus(repositoryId);
+    return GitUnshallowResult(
+      repositoryId: repositoryId,
+      status: status,
+      wasShallow: wasShallow,
+      isShallow: false,
+      summary: wasShallow
+          ? 'Fetched the complete repository history.'
+          : 'Repository history was already complete.',
+    );
+  });
+
+  Future<GitRootDiscoverySnapshot> discoverRepositoryRoots(String path) async {
+    final root = await _canonicalizeDirectory(path);
+    final roots = <GitDiscoveredRoot>[];
+    final queue = <({Directory directory, String relativePath, int depth})>[
+      (directory: Directory(root), relativePath: '', depth: 0),
+    ];
+    final visited = <String>{};
+    var inspectedEntries = 0;
+    var truncated = false;
+    while (queue.isNotEmpty) {
+      final current = queue.removeAt(0);
+      final canonical = current.directory.absolute.path;
+      if (!visited.add(canonical)) continue;
+      final marker = File(
+        '${current.directory.path}${Platform.pathSeparator}.git',
+      );
+      final markerDirectory = Directory(marker.path);
+      if (marker.existsSync() || markerDirectory.existsSync()) {
+        roots.add(
+          GitDiscoveredRoot(
+            path: current.directory.path,
+            relativePath: current.relativePath,
+          ),
+        );
+      }
+      if (current.depth >= 5) continue;
+      try {
+        await for (final entity in current.directory.list(followLinks: false)) {
+          inspectedEntries++;
+          if (inspectedEntries > 2_000) {
+            truncated = true;
+            break;
+          }
+          if (await FileSystemEntity.type(entity.path, followLinks: false) !=
+              FileSystemEntityType.directory) {
+            continue;
+          }
+          final name = _lastSetupPathSegment(entity.path);
+          if (name == '.git') continue;
+          final relative = current.relativePath.isEmpty
+              ? name
+              : '${current.relativePath}/$name';
+          queue.add((
+            directory: Directory(entity.path),
+            relativePath: relative,
+            depth: current.depth + 1,
+          ));
+        }
+      } on FileSystemException {
+        // A directory can disappear while it is being mapped. The remaining
+        // roots are still useful and can be refreshed by the caller.
+      }
+      if (truncated) break;
+    }
+    roots.sort((left, right) => left.path.compareTo(right.path));
+    return GitRootDiscoverySnapshot(
+      path: root,
+      roots: roots,
+      isTruncated: truncated,
+      fingerprint: hashGitObjectBytes(
+        utf8.encode(roots.map((candidate) => candidate.path).join('\n')),
+      ),
+    );
+  }
+
+  String _validateSetupSource(String value) {
+    final source = value.trim();
+    if (source.isEmpty ||
+        source.startsWith('-') ||
+        source.contains('\u0000') ||
+        source.runes.any((rune) => rune < 0x20)) {
+      throw setupInputError(
+        'Enter a Git URL or local repository path.',
+        'clone source was empty, option-like, or contained control bytes',
+      );
+    }
+    return source;
+  }
+
+  String _validateSetupAbsolutePath(String value, {required String label}) {
+    final path = value.trim();
+    final isAbsolute =
+        path.startsWith('/') ||
+        path.startsWith('\\') ||
+        RegExp(r'^[A-Za-z]:[\\/]').hasMatch(path);
+    if (path.isEmpty ||
+        !isAbsolute ||
+        path.startsWith('-') ||
+        path.contains('\u0000') ||
+        path.runes.any((rune) => rune < 0x20)) {
+      throw setupInputError(
+        'Choose an absolute path for the $label.',
+        'setup path was empty, relative, option-like, or contained control bytes',
+      );
+    }
+    return path;
+  }
+
+  String _lastSetupPathSegment(String path) {
+    final normalized = path
+        .replaceAll('\\', '/')
+        .replaceFirst(RegExp(r'/$'), '');
+    final slash = normalized.lastIndexOf('/');
+    return slash == -1 ? normalized : normalized.substring(slash + 1);
   }
 
   Future<GitStatusSnapshot> getStatus(RepositoryId repositoryId) async {

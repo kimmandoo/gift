@@ -22,6 +22,7 @@ import 'worktree.dart';
 import 'ignore.dart';
 import 'submodule.dart';
 import 'recovery.dart';
+import 'setup.dart';
 
 /// Application-facing entry point for backend operations.
 ///
@@ -618,6 +619,51 @@ class DartGitBackend {
   }) async {
     final handle = await _state.lookup(repositoryId);
     return GitOperationHistory.shared.records(cwd: handle.root, limit: limit);
+  }
+
+  Future<GitRepositorySetupResult> cloneRepository(
+    GitCloneRequest request, {
+    GitCancellationToken? cancellationToken,
+  }) async {
+    final installation = await getGitInstallation();
+    return RepositoryService(
+      gitPath: installation.executablePath,
+      state: _state,
+      runner: _runner,
+    ).cloneRepository(request, cancellationToken: cancellationToken);
+  }
+
+  Future<GitRepositorySetupResult> initRepository(
+    GitInitRequest request, {
+    GitCancellationToken? cancellationToken,
+  }) async {
+    final installation = await getGitInstallation();
+    return RepositoryService(
+      gitPath: installation.executablePath,
+      state: _state,
+      runner: _runner,
+    ).initRepository(request, cancellationToken: cancellationToken);
+  }
+
+  Future<GitUnshallowResult> unshallowRepository(
+    RepositoryId repositoryId, {
+    GitCancellationToken? cancellationToken,
+  }) async {
+    final installation = await getGitInstallation();
+    return RepositoryService(
+      gitPath: installation.executablePath,
+      state: _state,
+      runner: _runner,
+    ).unshallowRepository(repositoryId, cancellationToken: cancellationToken);
+  }
+
+  Future<GitRootDiscoverySnapshot> discoverRepositoryRoots(String path) async {
+    final installation = await getGitInstallation();
+    return RepositoryService(
+      gitPath: installation.executablePath,
+      state: _state,
+      runner: _runner,
+    ).discoverRepositoryRoots(path);
   }
 
   Future<GitStashSnapshot> getStashes(RepositoryId repositoryId) async {

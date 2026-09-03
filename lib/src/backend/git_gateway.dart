@@ -20,6 +20,7 @@ import 'worktree.dart';
 import 'ignore.dart';
 import 'submodule.dart';
 import 'recovery.dart';
+import 'setup.dart';
 
 /// The small API that Flutter features depend on.
 ///
@@ -245,6 +246,23 @@ abstract interface class GitGateway {
     RepositoryId repositoryId, {
     int limit = 100,
   });
+
+  Future<GitRepositorySetupResult> cloneRepository(
+    GitCloneRequest request, {
+    GitCancellationToken? cancellationToken,
+  });
+
+  Future<GitRepositorySetupResult> initRepository(
+    GitInitRequest request, {
+    GitCancellationToken? cancellationToken,
+  });
+
+  Future<GitUnshallowResult> unshallowRepository(
+    RepositoryId repositoryId, {
+    GitCancellationToken? cancellationToken,
+  });
+
+  Future<GitRootDiscoverySnapshot> discoverRepositoryRoots(String path);
 
   Future<GitStashSnapshot> getStashes(RepositoryId repositoryId);
 

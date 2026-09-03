@@ -5,10 +5,9 @@ This file is the handoff record for continuing work across query sessions.
 ## Current checkpoint
 
 - Date: 2026-09-03
-- Active task: None. Task 33 — Recovery diagnostics is complete; Task 34
-  Repository setup is next.
+- Active task: Task 35 — Hosting integration.
 - Branch: `main`; no new branch or worktree was created.
-- Latest completed implementation commit before this task: `47b7cf3`.
+- Latest completed implementation commit before this task: `fe6fb4c`.
 - Completed Task 28 after recording REMOTE-BRANCH-01/02 and UPDATE-01/02,
   adding the first RED fixture, and proving the real-Git implementation GREEN.
 - Added immutable remote ref snapshots with grouped remotes, local tracking,
@@ -248,8 +247,26 @@ This file is the handoff record for continuing work across query sessions.
 - Verification: `PATH=/home/mgkim/.local/flutter/bin:$PATH dart run
   tool/verify.dart` passed formatting, analysis, and all 200 Flutter tests;
   `git diff --check` passed.
-- Next action: activate Task 34, record SETUP scenarios, and add its first
-  failing clone/init/unshallow/root-mapping fixture before implementation.
+- Task 34 activation recorded SETUP-02/03 in the behavior ledger. The first
+  RED command is `/home/mgkim/.local/flutter/bin/flutter test
+  test/backend/setup_test.dart` and is expected to fail until the typed setup
+  and root-discovery contracts exist.
+- Task 34 is complete. It added validated clone/init/unshallow operations,
+  bounded nested-root discovery, reviewed publish entry points, and responsive
+  Welcome/repository setup controls.
+- Changed Task 34 files: `TASKS.md`, `CHANGELOG.md`,
+  `docs/research/jetbrains-git-mvp-behavior.md`,
+  `docs/superpowers/plans/2026-09-02-gift-dart-mvp.md`, this checkpoint,
+  `lib/src/backend/{setup,git_gateway,dart_git_backend,dart_git_gateway,repository_service}.dart`,
+  `lib/src/features/repository/{repository_setup_dialog,changes_screen,welcome_screen}.dart`,
+  and the related test/stub files.
+- Verification: `PATH=/home/mgkim/.local/flutter/bin:$PATH dart run
+  tool/verify.dart` passed formatting, analysis, and all 203 Flutter tests;
+  `git diff --check` passed.
+- Task 35 activation recorded HOST-02/03 in the behavior ledger. The first
+  RED command is `/home/mgkim/.local/flutter/bin/flutter test
+  test/backend/hosting_test.dart` and is expected to fail until the provider
+  adapters and hosting link contracts exist.
 
 ## Resume procedure
 

@@ -22,6 +22,7 @@ import 'worktree.dart';
 import 'ignore.dart';
 import 'submodule.dart';
 import 'recovery.dart';
+import 'setup.dart';
 
 /// Adapts the UI-facing [GitGateway] contract to the Dart backend facade.
 ///
@@ -366,6 +367,31 @@ class DartGitGateway implements GitGateway, DiscardPreviewCancellationGateway {
     RepositoryId repositoryId, {
     int limit = 100,
   }) => backend.getOperationRecords(repositoryId, limit: limit);
+
+  @override
+  Future<GitRepositorySetupResult> cloneRepository(
+    GitCloneRequest request, {
+    GitCancellationToken? cancellationToken,
+  }) => backend.cloneRepository(request, cancellationToken: cancellationToken);
+
+  @override
+  Future<GitRepositorySetupResult> initRepository(
+    GitInitRequest request, {
+    GitCancellationToken? cancellationToken,
+  }) => backend.initRepository(request, cancellationToken: cancellationToken);
+
+  @override
+  Future<GitUnshallowResult> unshallowRepository(
+    RepositoryId repositoryId, {
+    GitCancellationToken? cancellationToken,
+  }) => backend.unshallowRepository(
+    repositoryId,
+    cancellationToken: cancellationToken,
+  );
+
+  @override
+  Future<GitRootDiscoverySnapshot> discoverRepositoryRoots(String path) =>
+      backend.discoverRepositoryRoots(path);
 
   @override
   Future<GitStashSnapshot> getStashes(RepositoryId repositoryId) =>
