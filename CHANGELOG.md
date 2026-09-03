@@ -18,6 +18,8 @@
   cherry-pick discovery, workspace menus, and browse-assisted path selection.
 - feat(windows): added a per-user gift setup executable with Start Menu and
   uninstall registration alongside the release bundle and portable launcher.
+- fix(push): added a visible in-dialog transfer card with an indeterminate
+  progress bar, destination label, and safe Cancel push action while Git runs.
 
 ## 2026-09-03
 - fix(ui): grouped repository actions into a categorized menu and reduced

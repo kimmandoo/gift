@@ -74,9 +74,12 @@ class _PushDialogState extends State<PushDialog> {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               _pushGuidance(),
+              if (_busy && _cancellation != null) ...[
+                const SizedBox(height: 12),
+                _pushProgressCard(),
+              ],
               const SizedBox(height: 14),
               _remoteField(),
-              const SizedBox(height: 8),
               DropdownButtonFormField<GitPushTarget>(
                 key: const Key('push-target'),
                 initialValue: _target,
@@ -192,7 +195,7 @@ class _PushDialogState extends State<PushDialog> {
           TextButton(
             key: const Key('cancel-push'),
             onPressed: _cancellation?.cancel,
-            child: const Text('Cancel'),
+            child: const Text('Cancel push'),
           ),
         if (!_busy && preview?.canExecute != true)
           OutlinedButton(
@@ -252,6 +255,50 @@ class _PushDialogState extends State<PushDialog> {
       ),
     ),
   );
+
+  Widget _pushProgressCard() {
+    final preview = _preview;
+    final destination = preview == null
+        ? (_remote ?? 'remote')
+        : preview.targetBranch.isEmpty
+        ? '${preview.remote}/all tags'
+        : '${preview.remote}/${preview.targetBranch}';
+    return Card(
+      key: const Key('push-progress'),
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Icon(
+                  Icons.cloud_upload_outlined,
+                  size: 20,
+                  color: Theme.of(context).colorScheme.primary,
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    'Pushing to $destination…',
+                    style: Theme.of(context).textTheme.titleSmall,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            const LinearProgressIndicator(),
+            const SizedBox(height: 8),
+            const Text(
+              'Sending the reviewed changes to the remote. '
+              'You can cancel safely while Git is running.',
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 
   Widget _remoteField() {
     final remotes = _remotes;

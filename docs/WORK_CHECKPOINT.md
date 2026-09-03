@@ -5,11 +5,11 @@ This file is the handoff record for continuing work across query sessions.
 ## Current checkpoint
 
 - Date: 2026-09-04
-- Active task: None. Task 40 — Contextual action foundation is prioritized
-  next.
+- Active task: Visible push progress feedback is implemented and verified;
+  no follow-up implementation task is active.
 - Branch: `main`; no new branch or worktree was created.
-- Latest completed implementation commit: `74abba6` (`fix(ui): unify button
-  typography and sizing`).
+- Latest completed implementation commit: `c0dd286` (`docs(roadmap): add
+  contextual action and path ux tasks`).
 - Completed Task 28 after recording REMOTE-BRANCH-01/02 and UPDATE-01/02,
   adding the first RED fixture, and proving the real-Git implementation GREEN.
 - Added immutable remote ref snapshots with grouped remotes, local tracking,
@@ -476,6 +476,31 @@ This file is the handoff record for continuing work across query sessions.
 - Blockers: none.
 - Next action: activate Task 40, add the context-action behavior-ledger
   scenarios, and record the first failing shared menu-contract widget test.
+
+## Current session: visible push progress
+
+- Date: 2026-09-04.
+- Changed files: `CHANGELOG.md`, this checkpoint,
+  `docs/superpowers/plans/2026-09-02-gift-dart-mvp.md`,
+  `lib/src/features/repository/push_dialog.dart`, and
+  `test/features/repository/push_dialog_test.dart`.
+- UX change: when the reviewed Push action starts, the dialog keeps its
+  familiar pixel-card language and shows a cloud-upload icon, destination
+  (`remote/branch` or all tags), an indeterminate progress bar, an explanation,
+  and an explicit `Cancel push` action. Controls remain disabled while Git is
+  running; successful pushes still close the dialog and rejected/cancelled
+  pushes still render their result/recovery state.
+- Design constraint: the gateway exposes cooperative cancellation but no
+  byte-level transfer events, so an indeterminate indicator is used instead of
+  inventing a percentage.
+- Verification: `flutter analyze` passed; the focused Push dialog suite passed
+  with 3 tests; the complete responsive feature suite passed with 72 tests;
+  `flutter build windows --release` rebuilt `gift.exe`; and the rebuilt
+  executable stayed running with `Responding=True` during the Windows smoke
+  check.
+- Blockers: none.
+- Next action after this session commit: activate Task 40 or another
+  dependency-ready roadmap task.
 
 ## Resume procedure
 

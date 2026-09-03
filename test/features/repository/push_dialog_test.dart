@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:gift/src/backend/domain.dart';
@@ -56,6 +58,46 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+  testWidgets('keeps push progress visible until the remote operation ends', (
+    tester,
+  ) async {
+    addTearDown(tester.view.reset);
+    tester.view.physicalSize = const Size(360, 640);
+    tester.view.devicePixelRatio = 1;
+    final repository = const RepositoryOpened(
+      repositoryId: RepositoryId(value: 'push-progress-repository'),
+      root: '/workspace/project',
+    );
+    final gateway = _PushGateway(repository)..executionGate = Completer<void>();
+
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: buildPixelTheme(),
+        home: PushDialog(gateway: gateway, repository: repository),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('preview-push')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('execute-push')));
+    await tester.pump();
+
+    expect(find.byKey(const Key('push-progress')), findsOneWidget);
+    expect(find.text('Pushing to origin/main…'), findsOneWidget);
+    expect(find.byType(LinearProgressIndicator), findsOneWidget);
+    expect(find.widgetWithText(TextButton, 'Cancel push'), findsOneWidget);
+    expect(gateway.executedRequest, isNotNull);
+
+    await tester.tap(find.widgetWithText(TextButton, 'Cancel push'));
+    expect(gateway.executionCancellationToken?.isCancelled, isTrue);
+    gateway.executionGate!.complete();
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const Key('push-progress')), findsNothing);
+    expect(find.byKey(const Key('push-result')), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('bounds every push dropdown option to one line', (tester) async {
     addTearDown(tester.view.reset);
     tester.view.physicalSize = const Size(320, 640);
@@ -103,6 +145,8 @@ class _PushGateway with GitPatchGatewayStub implements GitGateway {
 
   final RepositoryOpened repository;
   GitPushRequest? executedRequest;
+  Completer<void>? executionGate;
+  GitCancellationToken? executionCancellationToken;
 
   @override
   Future<List<GitRemote>> getRemotes(RepositoryId repositoryId) async => const [
@@ -175,12 +219,18 @@ class _PushGateway with GitPatchGatewayStub implements GitGateway {
     GitCancellationToken? cancellationToken,
   }) async {
     executedRequest = request;
+    executionCancellationToken = cancellationToken;
+    await executionGate?.future;
+    final cancelled = cancellationToken?.isCancelled ?? false;
     return GitPushResult(
       repositoryId: repositoryId,
       request: request,
-      state: GitPushState.completed,
+      state: cancelled ? GitPushState.cancelled : GitPushState.completed,
       status: await getStatus(repositoryId),
-      summary: 'Pushed',
+      summary: cancelled ? 'The push was cancelled.' : 'Pushed',
+      recoveryActions: cancelled
+          ? const [GitPushRecoveryAction.retry]
+          : const [],
     );
   }
 }

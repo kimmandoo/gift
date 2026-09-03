@@ -723,3 +723,13 @@ system Git 2.35+.
 4. Split the work into Tasks 40–47 so action routing, object-specific menus,
    batch history operations, and the two path-selection models can be verified
    independently.
+
+## Completed follow-up: visible push progress
+
+1. Added a pixel-themed transfer card that appears as soon as the reviewed push
+   starts and names the exact remote destination.
+2. Kept the indeterminate progress bar honest because the current Git gateway
+   exposes cancellation but not byte-level transfer progress.
+3. Added an explicit `Cancel push` action that remains available until the
+   gateway operation returns, with regression coverage for cancellation and
+   result rendering.
