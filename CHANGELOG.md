@@ -2,6 +2,8 @@
 
 ## 2026-09-03
 
+- fix(ui): prevented interactive controls from clipping text and normalized
+  compact button, checkbox, and input spacing across repository workflows.
 - fix(history): unified diff row background widths across short and long lines.
 - feat(task27): added immutable interactive-rebase plan and action validation
   contracts.

@@ -179,30 +179,44 @@ class _HistoryScreenState extends State<HistoryScreen> {
     return ExpansionTile(
       key: const Key('history-filters-toggle'),
       initiallyExpanded: false,
-      title: Row(
-        children: [
-          Expanded(
-            child: TextField(
-              key: const Key('history-search'),
-              controller: _searchController,
-              focusNode: _searchFocusNode,
-              textInputAction: TextInputAction.search,
-              onSubmitted: (_) => _applyFilters(),
-              decoration: const InputDecoration(
-                labelText: 'Search commits',
-                hintText: 'Subject or body',
-                isDense: true,
-              ),
+      title: LayoutBuilder(
+        builder: (context, constraints) {
+          final searchField = TextField(
+            key: const Key('history-search'),
+            controller: _searchController,
+            focusNode: _searchFocusNode,
+            textInputAction: TextInputAction.search,
+            onSubmitted: (_) => _applyFilters(),
+            decoration: const InputDecoration(
+              labelText: 'Search commits',
+              hintText: 'Subject or body',
+              isDense: true,
             ),
-          ),
-          const SizedBox(width: 8),
-          OutlinedButton.icon(
+          );
+          final searchButton = OutlinedButton.icon(
             key: const Key('history-apply-filters'),
             onPressed: _applyFilters,
             icon: const Icon(Icons.search, size: 18),
             label: const Text('Search'),
-          ),
-        ],
+          );
+          if (constraints.maxWidth < 360) {
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                searchField,
+                const SizedBox(height: 8),
+                Align(alignment: Alignment.centerRight, child: searchButton),
+              ],
+            );
+          }
+          return Row(
+            children: [
+              Expanded(child: searchField),
+              const SizedBox(width: 8),
+              searchButton,
+            ],
+          );
+        },
       ),
       children: [
         Padding(

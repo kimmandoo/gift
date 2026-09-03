@@ -426,6 +426,19 @@ The repository UI polish follow-up is complete. Task 27 is now active.
 
 Task 27 is complete. Task 28 is the next task and has not been activated.
 
+### ✅ Task 27 follow-up: interactive UI layout audit
+
+- [x] Stacked History search and stash controls when button labels would
+  compress their neighboring input text.
+- [x] Kept comparison source actions clear of the dialog title at compact
+  widths and large text scales.
+- [x] Made rebase revision choices fit their available width and grouped move
+  controls vertically on compact plan rows.
+- [x] Tightened the conflict deletion checkbox without reducing its labeled
+  interaction target and added compact, scaled-text regression coverage.
+
+The interactive UI layout audit is complete. Task 28 remains pending.
+
 ## Post-MVP backlog
 
 Tasks 16–38 are specified in

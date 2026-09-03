@@ -139,26 +139,40 @@ class _ObjectDialogState extends State<ObjectDialog> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Row(
-          children: [
-            Expanded(
-              child: TextField(
-                key: const Key('stash-message'),
-                controller: _stashMessage,
-                enabled: !_busy,
-                decoration: const InputDecoration(
-                  labelText: 'Stash message',
-                  isDense: true,
-                ),
+        LayoutBuilder(
+          builder: (context, constraints) {
+            final messageField = TextField(
+              key: const Key('stash-message'),
+              controller: _stashMessage,
+              enabled: !_busy,
+              decoration: const InputDecoration(
+                labelText: 'Stash message',
+                isDense: true,
               ),
-            ),
-            const SizedBox(width: 8),
-            FilledButton(
+            );
+            final stashButton = FilledButton(
               key: const Key('create-stash'),
               onPressed: _busy ? null : _createStash,
               child: const Text('Stash changes'),
-            ),
-          ],
+            );
+            if (constraints.maxWidth < 420) {
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  messageField,
+                  const SizedBox(height: 8),
+                  Align(alignment: Alignment.centerRight, child: stashButton),
+                ],
+              );
+            }
+            return Row(
+              children: [
+                Expanded(child: messageField),
+                const SizedBox(width: 8),
+                stashButton,
+              ],
+            );
+          },
         ),
         CheckboxListTile(
           key: const Key('stash-include-untracked'),

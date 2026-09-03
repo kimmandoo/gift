@@ -154,6 +154,7 @@ class _InteractiveRebaseDialogState extends State<InteractiveRebaseDialog> {
         DropdownButtonFormField<int>(
           key: const Key('rebase-upstream'),
           initialValue: _root ? null : _upstreamIndex,
+          isExpanded: true,
           decoration: const InputDecoration(
             labelText: 'Rebase commits after',
             helperText: 'The selected commit stays as the upstream base.',
@@ -270,7 +271,7 @@ class _InteractiveRebaseDialogState extends State<InteractiveRebaseDialog> {
       child: Row(
         children: [
           SizedBox(
-            width: 24,
+            width: compact ? 20 : 24,
             child: Text('${index + 1}', textAlign: TextAlign.right),
           ),
           const SizedBox(width: 6),
@@ -347,28 +348,43 @@ class _InteractiveRebaseDialogState extends State<InteractiveRebaseDialog> {
                 overflow: TextOverflow.ellipsis,
               ),
             ),
-          IconButton(
-            key: ValueKey('rebase-up:${entry.originalOid}'),
-            tooltip: 'Move up',
-            visualDensity: VisualDensity.compact,
-            onPressed: _isMutating || index == 0
-                ? null
-                : () => _moveEntry(index, index - 1),
-            icon: const Icon(Icons.arrow_upward, size: 17),
-          ),
-          IconButton(
-            key: ValueKey('rebase-down:${entry.originalOid}'),
-            tooltip: 'Move down',
-            visualDensity: VisualDensity.compact,
-            onPressed: _isMutating || index == _entries.length - 1
-                ? null
-                : () => _moveEntry(index, index + 1),
-            icon: const Icon(Icons.arrow_downward, size: 17),
-          ),
+          if (compact)
+            Column(
+              children: [
+                _moveUpButton(index, entry),
+                _moveDownButton(index, entry),
+              ],
+            )
+          else ...[
+            _moveUpButton(index, entry),
+            _moveDownButton(index, entry),
+          ],
         ],
       ),
     );
   }
+
+  Widget _moveUpButton(int index, GitInteractiveRebaseEntry entry) =>
+      IconButton(
+        key: ValueKey('rebase-up:${entry.originalOid}'),
+        tooltip: 'Move up',
+        visualDensity: VisualDensity.compact,
+        onPressed: _isMutating || index == 0
+            ? null
+            : () => _moveEntry(index, index - 1),
+        icon: const Icon(Icons.arrow_upward, size: 17),
+      );
+
+  Widget _moveDownButton(int index, GitInteractiveRebaseEntry entry) =>
+      IconButton(
+        key: ValueKey('rebase-down:${entry.originalOid}'),
+        tooltip: 'Move down',
+        visualDensity: VisualDensity.compact,
+        onPressed: _isMutating || index == _entries.length - 1
+            ? null
+            : () => _moveEntry(index, index + 1),
+        icon: const Icon(Icons.arrow_downward, size: 17),
+      );
 
   Widget _actionButtons(BuildContext context) {
     final preview = _preview;

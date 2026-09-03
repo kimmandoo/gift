@@ -431,3 +431,16 @@ system Git 2.35+.
 10. Added reviewed reword subjects and pause-reason reporting for edit,
     conflict, hook, and cancellation states. Passed the full Flutter suite;
     Task 27 is complete. Task 28 remains pending activation.
+
+## Completed follow-up: interactive UI layout audit
+
+1. Audited repository workflow controls at compact desktop widths and enlarged
+   text scales, focusing on input/action rows, dialog-title actions, dense
+   checkboxes, and rebase plan rows.
+2. Stacked History search and stash actions below their fields when space is
+   constrained, and replaced the compact comparison mode label with a
+   tooltip-backed icon action so it cannot cover the title.
+3. Expanded the rebase upstream selector to constrain long commit labels and
+   stacked move buttons in compact rows to preserve subject width.
+4. Tightened conflict deletion control spacing and added widget assertions for
+   non-overlapping and overflow-free layouts. Task 28 remains pending.

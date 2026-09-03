@@ -67,12 +67,18 @@ class _ComparisonDialogState extends State<ComparisonDialog> {
       title: Row(
         children: [
           const Expanded(child: Text('Compare revisions')),
-          TextButton(
-            key: const Key('comparison-source-mode'),
-            onPressed: _busy ? null : _toggleExternalMode,
-            child: Text(_externalMode ? 'External' : 'Revisions'),
-          ),
-          if (_externalMode)
+          if (compact)
+            IconButton(
+              key: const Key('comparison-source-mode'),
+              tooltip: _externalMode
+                  ? 'Compare revisions'
+                  : 'Compare external text',
+              onPressed: _busy ? null : _toggleExternalMode,
+              icon: Icon(_externalMode ? Icons.commit : Icons.content_paste_go),
+            )
+          else
+            _sourceModeControls(),
+          if (compact && _externalMode)
             IconButton(
               key: const Key('comparison-paste-clipboard'),
               tooltip: 'Paste clipboard',
@@ -130,6 +136,24 @@ class _ComparisonDialogState extends State<ComparisonDialog> {
       ],
     );
   }
+
+  Widget _sourceModeControls() => Row(
+    mainAxisSize: MainAxisSize.min,
+    children: [
+      TextButton(
+        key: const Key('comparison-source-mode'),
+        onPressed: _busy ? null : _toggleExternalMode,
+        child: Text(_externalMode ? 'External' : 'Revisions'),
+      ),
+      if (_externalMode)
+        IconButton(
+          key: const Key('comparison-paste-clipboard'),
+          tooltip: 'Paste clipboard',
+          onPressed: _busy ? null : _pasteClipboard,
+          icon: const Icon(Icons.content_paste),
+        ),
+    ],
+  );
 
   Widget _comparisonControls(BuildContext context) {
     return LayoutBuilder(

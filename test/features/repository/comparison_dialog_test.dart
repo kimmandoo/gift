@@ -15,6 +15,7 @@ void main() {
     addTearDown(tester.view.reset);
     tester.view.physicalSize = const Size(380, 640);
     tester.view.devicePixelRatio = 1;
+    addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
     const repository = RepositoryOpened(
       repositoryId: RepositoryId(value: 'comparison-repository'),
       root: '/workspace/project',
@@ -35,7 +36,14 @@ void main() {
     expect(find.byKey(const Key('comparison-right')), findsOneWidget);
     expect(find.text('src/notes.txt'), findsOneWidget);
     expect(find.text('+after'), findsOneWidget);
+    tester.platformDispatcher.textScaleFactorTestValue = 1.3;
+    await tester.pump();
     expect(tester.takeException(), isNull);
+    final titleRect = tester.getRect(find.text('Compare revisions'));
+    final modeRect = tester.getRect(
+      find.byKey(const Key('comparison-source-mode')),
+    );
+    expect(titleRect.overlaps(modeRect), isFalse);
   });
 
   testWidgets('compares a revision with pasted external text', (tester) async {

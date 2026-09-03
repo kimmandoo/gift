@@ -16,6 +16,8 @@ void main() {
     addTearDown(tester.view.reset);
     tester.view.physicalSize = const Size(380, 640);
     tester.view.devicePixelRatio = 1;
+    tester.platformDispatcher.textScaleFactorTestValue = 1.3;
+    addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
     const repository = RepositoryOpened(
       repositoryId: RepositoryId(value: 'objects-repository'),
       root: '/workspace/project',
@@ -33,6 +35,10 @@ void main() {
     expect(find.text('No stashes found.'), findsOneWidget);
     expect(find.text('No tags found.'), findsNothing);
     expect(tester.takeException(), isNull);
+    expect(
+      tester.getTopLeft(find.byKey(const Key('create-stash'))).dy,
+      greaterThan(tester.getTopLeft(find.byKey(const Key('stash-message'))).dy),
+    );
 
     await tester.tap(find.text('Tags'));
     await tester.pumpAndSettle();

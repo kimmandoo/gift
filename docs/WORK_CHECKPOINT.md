@@ -10,6 +10,13 @@ This file is the handoff record for continuing work across query sessions.
 - Branch: `main`; no new branch or worktree was created.
 - Latest completed implementation commit: `fff2f12
   feat(task27): complete interactive rebase flow`.
+- Completed the post-Task-27 interactive UI audit: History search and stash
+  actions now stack before labels compress their fields; compact comparison
+  source actions no longer crowd the dialog title; rebase selectors and move
+  controls fit 320px windows with enlarged text; and the conflict deletion
+  checkbox uses balanced dense spacing.
+- Added compact scaled-text geometry and overflow regression assertions across
+  History, object management, comparison, conflict, and interactive rebase UI.
 - Implemented typed reset/undo/revert contracts, short-lived stale-bound
   previews, protected/pushed/dirty/detached/in-progress preflight, all four
   reset modes, multi-commit revert, and explicit revert conflict recovery.
@@ -76,12 +83,21 @@ This file is the handoff record for continuing work across query sessions.
   shelf_dialog,interactive_rebase_dialog}.dart`, and
   `test/features/repository/{file_history_dialog,history_screen,
   object_dialog,interactive_rebase_dialog}_test.dart`.
+- Current UI-audit files: `lib/src/features/repository/{comparison_dialog,
+  conflict_workspace_screen,history_screen,interactive_rebase_dialog,
+  object_dialog}.dart` and `test/features/repository/{comparison_dialog,
+  history_screen,interactive_rebase_dialog,object_dialog}_test.dart`.
 - Verification: the initial RED run failed because the preview contract and
   backend method did not exist; after implementation, focused interactive
   rebase execution tests passed with `5` tests; the interactive-rebase dialog
   tests passed with `3` tests; `dart format`, `flutter analyze`, `git diff
   --check`, and the full Flutter suite passed with `168` tests. Native Windows
   compilation is not available in this Linux workspace.
+- Current UI-audit verification: the enlarged-text RED run exposed a 100px
+  upstream-selector overflow and a compact rebase-row overflow; after the
+  responsive fixes, formatting and `flutter analyze` passed, the focused
+  repository UI suite passed with 17 tests, the full Flutter suite passed with
+  168 tests, and `git diff --check` passed.
 - Next action: activate Task 28, record its behavior-ledger scenarios, and add
   its first failing remote-branch/update-project fixture.
 - Earlier Task 23 and Windows incremental-build diagnostics remain recorded in

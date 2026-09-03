@@ -424,14 +424,21 @@ class _ConflictWorkspaceScreenState extends State<ConflictWorkspaceScreen> {
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Checkbox(
-                    key: const Key('conflict-delete-result'),
-                    value: _deleteResult,
-                    onChanged: state.isMutating
-                        ? null
-                        : (value) =>
-                              setState(() => _deleteResult = value ?? false),
+                  SizedBox(
+                    width: 32,
+                    height: 32,
+                    child: Checkbox(
+                      key: const Key('conflict-delete-result'),
+                      value: _deleteResult,
+                      visualDensity: VisualDensity.compact,
+                      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      onChanged: state.isMutating
+                          ? null
+                          : (value) =>
+                                setState(() => _deleteResult = value ?? false),
+                    ),
                   ),
+                  const SizedBox(width: 4),
                   const Text('Resolve as deleted'),
                 ],
               ),

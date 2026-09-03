@@ -14,6 +14,11 @@ import '../../helpers/git_patch_gateway_stub.dart';
 
 void main() {
   testWidgets('builds and previews the selected History range', (tester) async {
+    addTearDown(tester.view.reset);
+    tester.view.physicalSize = const Size(320, 640);
+    tester.view.devicePixelRatio = 1;
+    tester.platformDispatcher.textScaleFactorTestValue = 1.3;
+    addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
     final gateway = _InteractiveRebaseGateway();
     final repository = RepositoryOpened(
       repositoryId: const RepositoryId(value: 'repo-1'),
@@ -35,6 +40,7 @@ void main() {
       findsOneWidget,
     );
     expect(find.text('Plan (1 commit)'), findsOneWidget);
+    expect(tester.takeException(), isNull);
 
     await tester.tap(find.byKey(const Key('preview-interactive-rebase')));
     await tester.pumpAndSettle();

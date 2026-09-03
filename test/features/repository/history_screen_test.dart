@@ -130,6 +130,12 @@ void main() {
     expect(tester.takeException(), isNull);
     expect(find.text('Narrow history'), findsOneWidget);
     expect(find.byKey(const Key('history-status-strip')), findsOneWidget);
+    expect(
+      tester.getTopLeft(find.byKey(const Key('history-apply-filters'))).dy,
+      greaterThan(
+        tester.getTopLeft(find.byKey(const Key('history-search'))).dy,
+      ),
+    );
     controller.dispose();
   });
 
