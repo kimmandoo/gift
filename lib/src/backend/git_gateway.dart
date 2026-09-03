@@ -267,6 +267,21 @@ abstract interface class GitGateway {
     String? path,
   });
 
+  Future<GitComparisonSnapshot> compareSources(
+    RepositoryId repositoryId,
+    GitComparisonSource left,
+    GitComparisonSource right, {
+    String? path,
+  });
+
+  Future<GitThreeWayComparisonSnapshot> compareThreeWay(
+    RepositoryId repositoryId,
+    GitComparisonSource base,
+    GitComparisonSource left,
+    GitComparisonSource right, {
+    required String path,
+  });
+
   Future<GitDiffSnapshot> getComparisonDiff(
     RepositoryId repositoryId,
     GitComparisonSnapshot comparison,

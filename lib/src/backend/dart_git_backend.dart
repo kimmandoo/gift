@@ -668,6 +668,35 @@ class DartGitBackend {
     ).compareRevisions(repositoryId, left, right, path: path);
   }
 
+  Future<GitComparisonSnapshot> compareSources(
+    RepositoryId repositoryId,
+    GitComparisonSource left,
+    GitComparisonSource right, {
+    String? path,
+  }) async {
+    final installation = await getGitInstallation();
+    return RepositoryService(
+      gitPath: installation.executablePath,
+      state: _state,
+      runner: _runner,
+    ).compareSources(repositoryId, left, right, path: path);
+  }
+
+  Future<GitThreeWayComparisonSnapshot> compareThreeWay(
+    RepositoryId repositoryId,
+    GitComparisonSource base,
+    GitComparisonSource left,
+    GitComparisonSource right, {
+    required String path,
+  }) async {
+    final installation = await getGitInstallation();
+    return RepositoryService(
+      gitPath: installation.executablePath,
+      state: _state,
+      runner: _runner,
+    ).compareThreeWay(repositoryId, base, left, right, path: path);
+  }
+
   Future<GitDiffSnapshot> getComparisonDiff(
     RepositoryId repositoryId,
     GitComparisonSnapshot comparison,

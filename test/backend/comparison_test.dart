@@ -119,6 +119,97 @@ void main() {
       'before\n',
     );
   });
+
+  test('compares a revision with bounded external text', () async {
+    final directory = await Directory.systemTemp.createTemp('gift-text-');
+    addTearDown(() => directory.delete(recursive: true));
+    await git(directory.path, ['init', '--quiet']);
+    await git(directory.path, ['config', 'user.name', 'Compare Tester']);
+    await git(directory.path, ['config', 'user.email', 'compare@test']);
+    await File('${directory.path}/notes.txt').writeAsString('before\n');
+    await git(directory.path, ['add', '--', 'notes.txt']);
+    await git(directory.path, ['commit', '--quiet', '-m', 'before']);
+
+    final backend = DartGitBackend();
+    final opened = await backend.openRepository(directory.path);
+    final comparison = await backend.compareSources(
+      opened.repositoryId,
+      const GitComparisonSource.revision('HEAD'),
+      const GitComparisonSource.clipboard('from clipboard\n'),
+      path: 'notes.txt',
+    );
+
+    expect(comparison.request.right.kind, GitComparisonSourceKind.clipboard);
+    expect(comparison.request.right.displayName, 'Clipboard');
+    expect(comparison.files.single.status, GitComparisonFileStatus.modified);
+
+    final diff = await backend.getComparisonDiff(
+      opened.repositoryId,
+      comparison,
+      'notes.txt',
+    );
+    expect(diff.lines.any((line) => line.text == '-before'), isTrue);
+    expect(diff.lines.any((line) => line.text == '+from clipboard'), isTrue);
+
+    await expectLater(
+      backend.applyComparison(opened.repositoryId, comparison, 'notes.txt'),
+      throwsA(
+        isA<GitError>().having(
+          (error) => error.category,
+          'category',
+          GitErrorCategory.patchRejected,
+        ),
+      ),
+    );
+
+    final oversized = 'x' * (maxComparisonTextBytes + 1);
+    await expectLater(
+      backend.compareSources(
+        opened.repositoryId,
+        const GitComparisonSource.revision('HEAD'),
+        GitComparisonSource.text(oversized),
+        path: 'notes.txt',
+      ),
+      throwsA(
+        isA<GitError>().having(
+          (error) => error.category,
+          'category',
+          GitErrorCategory.outputOverflow,
+        ),
+      ),
+    );
+  });
+
+  test('loads a three-way comparison from three revisions', () async {
+    final directory = await Directory.systemTemp.createTemp('gift-three-way-');
+    addTearDown(() => directory.delete(recursive: true));
+    await git(directory.path, ['init', '--quiet']);
+    await git(directory.path, ['config', 'user.name', 'Compare Tester']);
+    await git(directory.path, ['config', 'user.email', 'compare@test']);
+    await File('${directory.path}/notes.txt').writeAsString('base\n');
+    await git(directory.path, ['add', '--', 'notes.txt']);
+    await git(directory.path, ['commit', '--quiet', '-m', 'base']);
+    await File('${directory.path}/notes.txt').writeAsString('ours\n');
+    await git(directory.path, ['commit', '--quiet', '-am', 'ours']);
+    await File('${directory.path}/notes.txt').writeAsString('theirs\n');
+    await git(directory.path, ['commit', '--quiet', '-am', 'theirs']);
+
+    final backend = DartGitBackend();
+    final opened = await backend.openRepository(directory.path);
+    final comparison = await backend.compareThreeWay(
+      opened.repositoryId,
+      const GitComparisonSource.revision('HEAD~2'),
+      const GitComparisonSource.revision('HEAD~1'),
+      const GitComparisonSource.revision('HEAD'),
+      path: 'notes.txt',
+    );
+
+    expect(comparison.base.text, 'base\n');
+    expect(comparison.left.text, 'ours\n');
+    expect(comparison.right.text, 'theirs\n');
+    expect(comparison.hasConflict, isTrue);
+    expect(comparison.fingerprint, isNotEmpty);
+  });
 }
 
 Future<void> git(String directory, List<String> args) async {

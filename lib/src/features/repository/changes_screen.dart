@@ -178,6 +178,9 @@ class _ChangesScreenBodyState extends ConsumerState<_ChangesScreenBody> {
                   case _ChangesMenuAction.comparison:
                     unawaited(_openComparison(context));
                     break;
+                  case _ChangesMenuAction.threeWayComparison:
+                    unawaited(_openThreeWayComparison(context));
+                    break;
                   case _ChangesMenuAction.refresh:
                     unawaited(controller.refresh());
                     break;
@@ -203,6 +206,10 @@ class _ChangesScreenBodyState extends ConsumerState<_ChangesScreenBody> {
                 const PopupMenuItem(
                   value: _ChangesMenuAction.comparison,
                   child: Text('Compare revisions'),
+                ),
+                const PopupMenuItem(
+                  value: _ChangesMenuAction.threeWayComparison,
+                  child: Text('Three-way compare'),
                 ),
                 PopupMenuItem(
                   value: _ChangesMenuAction.refresh,
@@ -241,6 +248,12 @@ class _ChangesScreenBodyState extends ConsumerState<_ChangesScreenBody> {
               tooltip: 'Compare revisions',
               onPressed: () => unawaited(_openComparison(context)),
               icon: const Icon(Icons.compare_arrows),
+            ),
+            IconButton(
+              key: const Key('open-three-way-comparison'),
+              tooltip: 'Three-way comparison',
+              onPressed: () => unawaited(_openThreeWayComparison(context)),
+              icon: const Icon(Icons.call_split),
             ),
             IconButton(
               tooltip: 'Refresh changes',
@@ -1309,6 +1322,17 @@ class _ChangesScreenBodyState extends ConsumerState<_ChangesScreenBody> {
     );
   }
 
+  Future<void> _openThreeWayComparison(BuildContext context) async {
+    await showDialog<void>(
+      context: context,
+      builder: (_) => ThreeWayComparisonDialog(
+        gateway: widget.gateway,
+        repository: widget.repository,
+        initialPath: _activeController.state.selectedPath,
+      ),
+    );
+  }
+
   Widget _scopeSelector(
     BuildContext context,
     GitChange selected,
@@ -1611,5 +1635,6 @@ enum _ChangesMenuAction {
   history,
   objects,
   comparison,
+  threeWayComparison,
   refresh,
 }

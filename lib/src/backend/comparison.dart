@@ -22,11 +22,44 @@ class GitComparisonSource {
     this.label,
   });
 
+  const GitComparisonSource.revision(this.value, {this.label})
+    : kind = GitComparisonSourceKind.revision;
+
+  const GitComparisonSource.branch(this.value, {this.label})
+    : kind = GitComparisonSourceKind.branch;
+
+  const GitComparisonSource.tag(this.value, {this.label})
+    : kind = GitComparisonSourceKind.tag;
+
+  const GitComparisonSource.workingTree({this.label})
+    : kind = GitComparisonSourceKind.workingTree,
+      value = '';
+
+  const GitComparisonSource.clipboard(this.value, {this.label = 'Clipboard'})
+    : kind = GitComparisonSourceKind.clipboard;
+
+  const GitComparisonSource.text(this.value, {this.label = 'External text'})
+    : kind = GitComparisonSourceKind.text;
+
   final GitComparisonSourceKind kind;
   final String value;
   final String? label;
 
-  String get displayName => label ?? value;
+  String get displayName =>
+      label ??
+      switch (kind) {
+        GitComparisonSourceKind.workingTree => 'Working tree',
+        GitComparisonSourceKind.clipboard => 'Clipboard',
+        GitComparisonSourceKind.text => 'External text',
+        _ => value,
+      };
+
+  bool get isText =>
+      kind == GitComparisonSourceKind.clipboard ||
+      kind == GitComparisonSourceKind.text;
+
+  String get identityValue =>
+      isText ? hashGitObjectBytes(utf8.encode(value)) : value;
 }
 
 class GitComparisonRequest {
@@ -44,11 +77,106 @@ class GitComparisonRequest {
 
   String get queryKey => [
     left.kind.name,
-    left.value,
+    left.identityValue,
     right.kind.name,
-    right.value,
+    right.identityValue,
     path ?? '',
   ].join('\u001f');
+}
+
+enum GitComparisonContentState {
+  available,
+  missing,
+  binary,
+  oversized,
+  unreadable,
+}
+
+class GitComparisonContent {
+  const GitComparisonContent({
+    required this.state,
+    this.text,
+    this.byteLength = 0,
+    this.contentHash = '',
+  });
+
+  const GitComparisonContent.available(String text, {int? byteLength})
+    : this(
+        state: GitComparisonContentState.available,
+        text: text,
+        byteLength: byteLength ?? 0,
+      );
+
+  const GitComparisonContent.missing()
+    : this(state: GitComparisonContentState.missing);
+
+  const GitComparisonContent.binary({int byteLength = 0})
+    : this(state: GitComparisonContentState.binary, byteLength: byteLength);
+
+  const GitComparisonContent.oversized({int byteLength = 0})
+    : this(state: GitComparisonContentState.oversized, byteLength: byteLength);
+
+  const GitComparisonContent.unreadable()
+    : this(state: GitComparisonContentState.unreadable);
+
+  final GitComparisonContentState state;
+  final String? text;
+  final int byteLength;
+  final String contentHash;
+
+  bool get isAvailable => state == GitComparisonContentState.available;
+  bool get isBinary => state == GitComparisonContentState.binary;
+  bool get isMissing => state == GitComparisonContentState.missing;
+  bool get isOversized => state == GitComparisonContentState.oversized;
+}
+
+class GitThreeWayComparisonRequest {
+  const GitThreeWayComparisonRequest({
+    required this.repositoryId,
+    required this.base,
+    required this.left,
+    required this.right,
+    required this.path,
+  });
+
+  final RepositoryId repositoryId;
+  final GitComparisonSource base;
+  final GitComparisonSource left;
+  final GitComparisonSource right;
+  final String path;
+
+  String get queryKey => [
+    base.kind.name,
+    base.identityValue,
+    left.kind.name,
+    left.identityValue,
+    right.kind.name,
+    right.identityValue,
+    path,
+  ].join('\u001f');
+}
+
+class GitThreeWayComparisonSnapshot {
+  const GitThreeWayComparisonSnapshot({
+    required this.request,
+    required this.base,
+    required this.left,
+    required this.right,
+    required this.fingerprint,
+  });
+
+  final GitThreeWayComparisonRequest request;
+  final GitComparisonContent base;
+  final GitComparisonContent left;
+  final GitComparisonContent right;
+  final String fingerprint;
+
+  bool get hasConflict =>
+      left.isAvailable &&
+      right.isAvailable &&
+      left.text != right.text &&
+      base.text != left.text &&
+      base.text != right.text;
 }
 
 enum GitComparisonFileStatus {
@@ -70,6 +198,7 @@ class GitComparisonFile {
     this.additions = 0,
     this.deletions = 0,
     this.isBinary = false,
+    this.isOversized = false,
   });
 
   final String path;
@@ -78,6 +207,7 @@ class GitComparisonFile {
   final int additions;
   final int deletions;
   final bool isBinary;
+  final bool isOversized;
 
   String get statusLabel => switch (status) {
     GitComparisonFileStatus.added => 'A',
@@ -175,6 +305,8 @@ GitDiffScope comparisonDiffScope(GitComparisonRequest request) =>
     request.right.kind == GitComparisonSourceKind.workingTree
     ? GitDiffScope.workingTree
     : GitDiffScope.commit;
+
+const maxComparisonTextBytes = 4 * 1024 * 1024;
 
 String comparisonFingerprint(
   GitComparisonRequest request,

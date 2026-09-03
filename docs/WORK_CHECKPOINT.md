@@ -5,26 +5,27 @@ This file is the handoff record for continuing work across query sessions.
 ## Current checkpoint
 
 - Date: 2026-09-03
-- Active task: Task 23, the diff and comparison workbench, is active; Task 22
-  is complete and its comparison scenarios are already in the behavior ledger.
+- Active task: Task 24, shelves, changelists, and patch exchange, is active;
+  Task 23 is complete and its comparison scenarios are covered.
 - Branch: `main`; no new branch or worktree was created.
-- Latest commit before this implementation session: `2cb7077
-  docs(checkpoint): record comparison transfer verification`.
+- Latest commit before this implementation session: `03b369c
+  fix(ui): align diff checkboxes with code lines`.
 - History cleanup: removed the pull-request merge commit from local and remote
   `main` with a lease-protected force update; the branding commits and Task 18
   content remain in a linear history. The two remaining obsolete branding
   labels in reachable commit messages were also replaced, and the rewrite
   backup ref was removed.
-- Changed files in this session: `lib/src/features/repository/changes_screen.dart`,
-  `test/features/repository/changes_screen_test.dart`, `CHANGELOG.md`, and
-  `docs/WORK_CHECKPOINT.md`.
-- Verification: focused diff UI test, the complete changes-screen test file,
-  `flutter analyze`, the full Flutter suite (`132` tests), and
-  `git diff --check` passed. Native Windows compilation was not available in
-  this Linux workspace.
-- Next action: continue Task 23 with bounded clipboard/external-text and
-  three-way source contracts and fixtures. Keep Task 24 planned until those
-  remaining comparison flows pass.
+- Changed files in this session: comparison source/backend contracts and
+  service implementation, comparison and Changes UI, comparison backend/UI
+  fixtures, and Task 23/24 roadmap, architecture, changelog, plan, and task
+  records.
+- Verification so far: focused comparison backend tests and comparison dialog
+  widget tests passed; formatting, analysis, and the full suite remain part of
+  the pre-commit gate. Native Windows compilation is not available in this
+  Linux workspace.
+- Next action: run the complete Task 23 verification, commit and push it,
+  then record and run the first Task 24 RED shelf/changelist contract before
+  introducing its model and gateway methods.
 - First failing signal for Task 23 remains recorded in the plan. This session's
   second RED was the missing `GitComparisonTransferAction` and
   `DartGitBackend.applyComparison` contract. This UI fix first reproduced a

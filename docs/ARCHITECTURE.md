@@ -540,14 +540,15 @@ ChangesScreen
    from command text. The object dialog remains bounded on compact windows and
    keeps remote selection state when more than one remote is configured.
 
-## Diff and comparison workbench (Task 23, active)
+## Diff and comparison workbench (Task 23, complete)
 
 ```text
 ChangesScreen
   └─ ComparisonDialog
-       ├─ revision + optional folder inputs
+       ├─ typed revision/branch/tag/working-tree/text sources
        ├─ bounded NUL-delimited changed-file list
-       └─ lazy selected-file unified diff
+       ├─ lazy selected-file unified diff and navigation
+       └─ compact three-way content panes
             └─ GitGateway → RepositoryService → serialized Git argv (read)
 ```
 
@@ -567,10 +568,20 @@ ChangesScreen
    rebuild a full patch from parsed hunks, run `git apply --check`, then run
    the serialized mutation and return fresh status.
 4. The workbench uses a stacked compact layout and a split desktop layout. It
-   keeps revision fields, changed-file selection, binary/empty states, and
-   copyable diff text usable without depending on color or a fixed window
-   width. Clipboard/text sources and three-way views remain active for the
-   next Task 23 slice.
+   keeps revision fields, changed-file selection, binary/empty/oversized and
+   missing states, copyable diff text, bounded external text, and file
+   navigation usable without depending on color or a fixed window width.
+   Three-way content is loaded independently for base, left, and right and
+   reports conflicts without exposing an unreviewed transfer action.
+
+## Shelves and changelists (Task 24, active)
+
+Task 24 will keep app-local changelist and shelf metadata separate from Git's
+stash refs. Shelf patches will be bounded, repository-relative, and tied to a
+base revision/content fingerprint so repeated unshelving and apply conflicts
+remain reviewable. The UI will state that unversioned files are not included
+in tracked-path shelves unless explicitly handled by a later repository
+workflow.
 
 ## Remaining Git workflow coverage (Tasks 23–35)
 

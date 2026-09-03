@@ -405,6 +405,23 @@ class DartGitGateway implements GitGateway, DiscardPreviewCancellationGateway {
   }) => backend.compareRevisions(repositoryId, left, right, path: path);
 
   @override
+  Future<GitComparisonSnapshot> compareSources(
+    RepositoryId repositoryId,
+    GitComparisonSource left,
+    GitComparisonSource right, {
+    String? path,
+  }) => backend.compareSources(repositoryId, left, right, path: path);
+
+  @override
+  Future<GitThreeWayComparisonSnapshot> compareThreeWay(
+    RepositoryId repositoryId,
+    GitComparisonSource base,
+    GitComparisonSource left,
+    GitComparisonSource right, {
+    required String path,
+  }) => backend.compareThreeWay(repositoryId, base, left, right, path: path);
+
+  @override
   Future<GitDiffSnapshot> getComparisonDiff(
     RepositoryId repositoryId,
     GitComparisonSnapshot comparison,

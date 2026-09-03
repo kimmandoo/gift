@@ -113,6 +113,8 @@ class GitDiffSnapshot {
     this.newPath,
     this.isBinary = false,
     this.isRename = false,
+    this.isOversized = false,
+    this.isMissing = false,
     List<String> patchHeader = const <String>[],
     List<GitDiffHunk> hunks = const <GitDiffHunk>[],
   }) : lines = List.unmodifiable(lines),
@@ -128,6 +130,8 @@ class GitDiffSnapshot {
   final String? newPath;
   final bool isBinary;
   final bool isRename;
+  final bool isOversized;
+  final bool isMissing;
   final List<String> patchHeader;
   final List<GitDiffHunk> hunks;
 
@@ -150,6 +154,8 @@ class GitDiffSnapshot {
       newPath: newPath,
       isBinary: isBinary,
       isRename: isRename,
+      isOversized: isOversized,
+      isMissing: isMissing,
       patchHeader: patchHeader,
       hunks: hunks,
     );

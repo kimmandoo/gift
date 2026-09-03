@@ -1870,9 +1870,11 @@ class RepositoryService {
     if (path.isEmpty ||
         path.startsWith('-') ||
         path.startsWith('/') ||
+        path.startsWith('\\') ||
         path.contains('\u0000') ||
         path.contains('\n') ||
-        path.contains('\r')) {
+        path.contains('\r') ||
+        path.split(RegExp(r'[/\\]')).any((part) => part == '..')) {
       throw const GitError(
         category: GitErrorCategory.parseFailure,
         userMessage: 'Git could not inspect that comparison path.',
@@ -2931,33 +2933,62 @@ class RepositoryService {
     String left,
     String right, {
     String? path,
+  }) => compareSources(
+    repositoryId,
+    GitComparisonSource.revision(left),
+    GitComparisonSource.revision(right),
+    path: path,
+  );
+
+  Future<GitComparisonSnapshot> compareSources(
+    RepositoryId repositoryId,
+    GitComparisonSource left,
+    GitComparisonSource right, {
+    String? path,
   }) async {
-    _validateRevisionInput(left);
-    _validateRevisionInput(right);
+    _validateComparisonSource(left);
+    _validateComparisonSource(right);
     _validateComparisonPath(path);
+    if ((left.isText || right.isText) && (path == null || path.isEmpty)) {
+      throw const GitError(
+        category: GitErrorCategory.parseFailure,
+        userMessage: 'Choose a file path when comparing external text.',
+        diagnostic: 'external comparison source was missing a file path',
+        retryable: false,
+      );
+    }
 
+    final request = GitComparisonRequest(
+      repositoryId: repositoryId,
+      left: left,
+      right: right,
+      path: path,
+    );
     final handle = await state.lookup(repositoryId);
-    // Resolve both endpoints before building the diff. This gives branch,
-    // tag, and commit expressions the same typed invalid-revision behavior.
-    final leftOid = await _resolveCommit(handle, left);
-    final rightOid = await _resolveCommit(handle, right);
+    if (left.isText || right.isText) {
+      final contents = await Future.wait([
+        _loadComparisonContent(handle, left, path!),
+        _loadComparisonContent(handle, right, path),
+      ]);
+      return _comparisonFromContents(request, contents[0], contents[1]);
+    }
 
+    if (left.kind == GitComparisonSourceKind.workingTree &&
+        right.kind == GitComparisonSourceKind.workingTree) {
+      throw const GitError(
+        category: GitErrorCategory.parseFailure,
+        userMessage: 'Choose one repository revision and one working tree.',
+        diagnostic: 'comparison requested two working-tree endpoints',
+        retryable: false,
+      );
+    }
+    final leftOid = await _comparisonSourceOid(handle, left);
+    final rightOid = await _comparisonSourceOid(handle, right);
+    final args = _comparisonNameStatusArgs(left, right, path);
     final output = await _runner.run(
       GitInvocation(
         program: gitPath,
-        args: [
-          'diff',
-          '--no-color',
-          '--no-ext-diff',
-          '--find-renames',
-          '--find-copies',
-          '--name-status',
-          '-z',
-          left,
-          right,
-          '--',
-          ...?path == null ? null : [path],
-        ],
+        args: args,
         cwd: handle.root,
         kind: GitOperationKind.read,
         outputPolicy: const OutputPolicy.capture(maxBytes: 2 * 1024 * 1024),
@@ -2975,28 +3006,461 @@ class RepositoryService {
         retryable: false,
       );
     }
-    final request = GitComparisonRequest(
-      repositoryId: repositoryId,
-      left: GitComparisonSource(
-        kind: GitComparisonSourceKind.revision,
-        value: left,
-      ),
-      right: GitComparisonSource(
-        kind: GitComparisonSourceKind.revision,
-        value: right,
-      ),
-      path: path,
-    );
+    var fingerprintBytes = <int>[...output.stdout];
+    if (left.kind == GitComparisonSourceKind.workingTree ||
+        right.kind == GitComparisonSourceKind.workingTree) {
+      final rawOutput = await _runner.run(
+        GitInvocation(
+          program: gitPath,
+          args: _comparisonRawArgs(left, right, path),
+          cwd: handle.root,
+          kind: GitOperationKind.read,
+          outputPolicy: const OutputPolicy.capture(maxBytes: 2 * 1024 * 1024),
+        ),
+      );
+      fingerprintBytes = [...fingerprintBytes, ...rawOutput.stdout];
+    }
     return GitComparisonSnapshot(
       request: request,
       files: files,
       fingerprint: comparisonFingerprint(
         request,
-        output.stdout,
+        fingerprintBytes,
         leftOid: leftOid,
         rightOid: rightOid,
       ),
     );
+  }
+
+  Future<GitThreeWayComparisonSnapshot> compareThreeWay(
+    RepositoryId repositoryId,
+    GitComparisonSource base,
+    GitComparisonSource left,
+    GitComparisonSource right, {
+    required String path,
+  }) async {
+    _validateComparisonSource(base);
+    _validateComparisonSource(left);
+    _validateComparisonSource(right);
+    _validateComparisonPath(path);
+    if (path.isEmpty) {
+      throw const GitError(
+        category: GitErrorCategory.parseFailure,
+        userMessage: 'Choose a file for the three-way comparison.',
+        diagnostic: 'three-way comparison path was empty',
+        retryable: false,
+      );
+    }
+    final handle = await state.lookup(repositoryId);
+    final request = GitThreeWayComparisonRequest(
+      repositoryId: repositoryId,
+      base: base,
+      left: left,
+      right: right,
+      path: path,
+    );
+    final contents = await Future.wait([
+      _loadComparisonContent(handle, base, path),
+      _loadComparisonContent(handle, left, path),
+      _loadComparisonContent(handle, right, path),
+    ]);
+    return GitThreeWayComparisonSnapshot(
+      request: request,
+      base: contents[0],
+      left: contents[1],
+      right: contents[2],
+      fingerprint: hashGitObjectBytes(
+        utf8.encode(
+          '${request.queryKey}\u0000${contents.map((content) => content.contentHash).join('\u0000')}',
+        ),
+      ),
+    );
+  }
+
+  void _validateComparisonSource(GitComparisonSource source) {
+    switch (source.kind) {
+      case GitComparisonSourceKind.revision ||
+          GitComparisonSourceKind.branch ||
+          GitComparisonSourceKind.tag:
+        _validateRevisionInput(source.value);
+      case GitComparisonSourceKind.workingTree:
+        break;
+      case GitComparisonSourceKind.clipboard || GitComparisonSourceKind.text:
+        final bytes = utf8.encode(source.value);
+        if (bytes.length > maxComparisonTextBytes) {
+          throw const GitError(
+            category: GitErrorCategory.outputOverflow,
+            userMessage: 'The external comparison text is too large.',
+            diagnostic:
+                'clipboard or external comparison text exceeded the '
+                'bounded source size',
+            retryable: false,
+          );
+        }
+        if (bytes.contains(0)) {
+          throw const GitError(
+            category: GitErrorCategory.parseFailure,
+            userMessage: 'The external comparison text contains binary data.',
+            diagnostic: 'clipboard or external comparison text contained NUL',
+            retryable: false,
+          );
+        }
+    }
+  }
+
+  Future<String?> _comparisonSourceOid(
+    RepositoryHandle handle,
+    GitComparisonSource source,
+  ) => source.kind == GitComparisonSourceKind.workingTree
+      ? Future<String?>.value()
+      : _resolveCommit(handle, source.value);
+
+  List<String> _comparisonNameStatusArgs(
+    GitComparisonSource left,
+    GitComparisonSource right,
+    String? path,
+  ) => [
+    'diff',
+    '--no-color',
+    '--no-ext-diff',
+    '--find-renames',
+    '--find-copies',
+    '--name-status',
+    '-z',
+    ..._comparisonGitEndpoints(left, right),
+    '--',
+    ...?path == null ? null : [path],
+  ];
+
+  List<String> _comparisonRawArgs(
+    GitComparisonSource left,
+    GitComparisonSource right,
+    String? path,
+  ) => [
+    'diff',
+    '--no-color',
+    '--no-ext-diff',
+    '--find-renames',
+    '--find-copies',
+    '--raw',
+    '-z',
+    ..._comparisonGitEndpoints(left, right),
+    '--',
+    ...?path == null ? null : [path],
+  ];
+
+  List<String> _comparisonPatchArgs(
+    GitComparisonSource left,
+    GitComparisonSource right,
+    String path,
+  ) => [
+    'diff',
+    '--no-color',
+    '--no-ext-diff',
+    '--find-renames',
+    '--unified=3',
+    ..._comparisonGitEndpoints(left, right),
+    '--',
+    path,
+  ];
+
+  List<String> _comparisonGitEndpoints(
+    GitComparisonSource left,
+    GitComparisonSource right,
+  ) {
+    if (left.kind == GitComparisonSourceKind.workingTree) {
+      return [right.value];
+    }
+    if (right.kind == GitComparisonSourceKind.workingTree) {
+      return [left.value];
+    }
+    return [left.value, right.value];
+  }
+
+  Future<GitComparisonContent> _loadComparisonContent(
+    RepositoryHandle handle,
+    GitComparisonSource source,
+    String path,
+  ) async {
+    if (source.isText) {
+      final bytes = utf8.encode(source.value);
+      return _comparisonContentFromBytes(bytes);
+    }
+    if (source.kind == GitComparisonSourceKind.workingTree) {
+      final file = _repositoryFile(handle.root, path);
+      if (!file.existsSync()) return const GitComparisonContent.missing();
+      try {
+        final bytes = <int>[];
+        await for (final chunk in file.openRead(
+          0,
+          maxComparisonTextBytes + 1,
+        )) {
+          bytes.addAll(chunk);
+        }
+        if (bytes.length > maxComparisonTextBytes) {
+          return GitComparisonContent.oversized(byteLength: bytes.length);
+        }
+        return _comparisonContentFromBytes(bytes);
+      } on FileSystemException {
+        return const GitComparisonContent.unreadable();
+      }
+    }
+
+    // Resolve the ref before reading its path. This keeps invalid revisions
+    // distinguishable from a valid revision that does not contain the file.
+    final oid = await _resolveCommit(handle, source.value);
+    try {
+      final output = await _runner.run(
+        GitInvocation(
+          program: gitPath,
+          args: ['show', '--format=', '$oid:$path'],
+          cwd: handle.root,
+          kind: GitOperationKind.read,
+          outputPolicy: const OutputPolicy.capture(
+            maxBytes: maxComparisonTextBytes,
+          ),
+        ),
+      );
+      return _comparisonContentFromBytes(output.stdout);
+    } on GitError catch (error) {
+      if (error.category == GitErrorCategory.outputOverflow) {
+        return const GitComparisonContent.oversized();
+      }
+      if (error.category == GitErrorCategory.processFailed) {
+        return const GitComparisonContent.missing();
+      }
+      rethrow;
+    }
+  }
+
+  GitComparisonContent _comparisonContentFromBytes(List<int> bytes) {
+    final contentHash = hashGitObjectBytes(bytes);
+    if (bytes.contains(0)) {
+      return GitComparisonContent(
+        state: GitComparisonContentState.binary,
+        byteLength: bytes.length,
+        contentHash: contentHash,
+      );
+    }
+    try {
+      return GitComparisonContent(
+        state: GitComparisonContentState.available,
+        text: utf8.decode(bytes),
+        byteLength: bytes.length,
+        contentHash: contentHash,
+      );
+    } on FormatException {
+      return GitComparisonContent(
+        state: GitComparisonContentState.binary,
+        byteLength: bytes.length,
+        contentHash: contentHash,
+      );
+    }
+  }
+
+  GitComparisonSnapshot _comparisonFromContents(
+    GitComparisonRequest request,
+    GitComparisonContent left,
+    GitComparisonContent right,
+  ) {
+    final diff = _comparisonDiffFromContents(
+      request.repositoryId,
+      request.path!,
+      left,
+      right,
+    );
+    if (left.contentHash == right.contentHash && left.state == right.state) {
+      return GitComparisonSnapshot(
+        request: request,
+        files: const [],
+        fingerprint: _comparisonContentsFingerprint(request, left, right),
+      );
+    }
+    final status = left.state == GitComparisonContentState.missing
+        ? GitComparisonFileStatus.added
+        : right.state == GitComparisonContentState.missing
+        ? GitComparisonFileStatus.deleted
+        : GitComparisonFileStatus.modified;
+    return GitComparisonSnapshot(
+      request: request,
+      files: [
+        GitComparisonFile(
+          path: request.path!,
+          status: status,
+          additions: diff.additions,
+          deletions: diff.deletions,
+          isBinary: diff.isBinary,
+          isOversized: diff.isOversized,
+        ),
+      ],
+      fingerprint: _comparisonContentsFingerprint(request, left, right),
+    );
+  }
+
+  String _comparisonContentsFingerprint(
+    GitComparisonRequest request,
+    GitComparisonContent left,
+    GitComparisonContent right,
+  ) => comparisonFingerprint(
+    request,
+    utf8.encode(
+      '${left.state.name}\u0000${left.contentHash}\u0000'
+      '${right.state.name}\u0000${right.contentHash}',
+    ),
+  );
+
+  GitDiffSnapshot _comparisonDiffFromContents(
+    RepositoryId repositoryId,
+    String path,
+    GitComparisonContent left,
+    GitComparisonContent right,
+  ) {
+    final contentHash = hashGitObjectBytes(
+      utf8.encode(
+        '${left.state.name}\u0000${left.contentHash}\u0000'
+        '${right.state.name}\u0000${right.contentHash}',
+      ),
+    );
+    if (left.isOversized || right.isOversized) {
+      return GitDiffSnapshot(
+        repositoryId: repositoryId,
+        path: path,
+        scope: GitDiffScope.commit,
+        lines: const [],
+        contentHash: contentHash,
+        isOversized: true,
+      );
+    }
+    final unavailable =
+        (!left.isAvailable && !left.isMissing) ||
+        (!right.isAvailable && !right.isMissing);
+    if (left.isBinary || right.isBinary || unavailable) {
+      return GitDiffSnapshot(
+        repositoryId: repositoryId,
+        path: path,
+        scope: GitDiffScope.commit,
+        lines: const [],
+        contentHash: contentHash,
+        isBinary: left.isBinary || right.isBinary,
+        isMissing: unavailable || (left.isMissing && right.isMissing),
+      );
+    }
+    final oldLines = _comparisonTextLines(left.text);
+    final newLines = _comparisonTextLines(right.text);
+    var prefix = 0;
+    while (prefix < oldLines.length &&
+        prefix < newLines.length &&
+        oldLines[prefix] == newLines[prefix]) {
+      prefix++;
+    }
+    var suffix = 0;
+    while (suffix < oldLines.length - prefix &&
+        suffix < newLines.length - prefix &&
+        oldLines[oldLines.length - suffix - 1] ==
+            newLines[newLines.length - suffix - 1]) {
+      suffix++;
+    }
+    if (prefix == oldLines.length && prefix == newLines.length) {
+      return GitDiffSnapshot(
+        repositoryId: repositoryId,
+        path: path,
+        scope: GitDiffScope.commit,
+        lines: const [],
+        contentHash: contentHash,
+      );
+    }
+
+    const contextLines = 3;
+    final beforeStart = prefix > contextLines ? prefix - contextLines : 0;
+    final trailing = suffix > contextLines ? contextLines : suffix;
+    final oldChangeEnd = oldLines.length - suffix;
+    final newChangeEnd = newLines.length - suffix;
+    final oldStart = oldLines.isEmpty ? 0 : beforeStart + 1;
+    final newStart = newLines.isEmpty ? 0 : beforeStart + 1;
+    final oldCount = prefix - beforeStart + (oldChangeEnd - prefix) + trailing;
+    final newCount = prefix - beforeStart + (newChangeEnd - prefix) + trailing;
+    final hunkLines = <GitDiffLine>[];
+    for (var index = beforeStart; index < prefix; index++) {
+      hunkLines.add(
+        GitDiffLine(
+          kind: GitDiffLineKind.context,
+          text: ' ${oldLines[index]}',
+          oldLineNumber: index + 1,
+          newLineNumber: index + 1,
+          hunkIndex: 0,
+        ),
+      );
+    }
+    for (var index = prefix; index < oldChangeEnd; index++) {
+      hunkLines.add(
+        GitDiffLine(
+          kind: GitDiffLineKind.deletion,
+          text: '-${oldLines[index]}',
+          oldLineNumber: index + 1,
+          hunkIndex: 0,
+        ),
+      );
+    }
+    for (var index = prefix; index < newChangeEnd; index++) {
+      hunkLines.add(
+        GitDiffLine(
+          kind: GitDiffLineKind.addition,
+          text: '+${newLines[index]}',
+          newLineNumber: index + 1,
+          hunkIndex: 0,
+        ),
+      );
+    }
+    for (var index = 0; index < trailing; index++) {
+      final oldIndex = oldLines.length - suffix + index;
+      final newIndex = newLines.length - suffix + index;
+      hunkLines.add(
+        GitDiffLine(
+          kind: GitDiffLineKind.context,
+          text: ' ${oldLines[oldIndex]}',
+          oldLineNumber: oldIndex + 1,
+          newLineNumber: newIndex + 1,
+          hunkIndex: 0,
+        ),
+      );
+    }
+    final hunk = GitDiffHunk(
+      index: 0,
+      oldStart: oldStart,
+      oldCount: oldCount,
+      newStart: newStart,
+      newCount: newCount,
+      section: '',
+      lines: hunkLines,
+    );
+    final header = hunk.header(oldCount: oldCount, newCount: newCount);
+    return GitDiffSnapshot(
+      repositoryId: repositoryId,
+      path: path,
+      scope: GitDiffScope.commit,
+      lines: [
+        GitDiffLine(kind: GitDiffLineKind.metadata, text: '--- a/$path'),
+        GitDiffLine(kind: GitDiffLineKind.metadata, text: '+++ b/$path'),
+        GitDiffLine(
+          kind: GitDiffLineKind.hunkHeader,
+          text: header,
+          hunkIndex: 0,
+        ),
+        ...hunkLines,
+      ],
+      contentHash: contentHash,
+      oldPath: path,
+      newPath: path,
+      patchHeader: ['--- a/$path', '+++ b/$path'],
+      hunks: [hunk],
+    );
+  }
+
+  List<String> _comparisonTextLines(String? text) {
+    if (text == null || text.isEmpty) return const [];
+    final lines = text.split('\n');
+    if (lines.last.isEmpty) lines.removeLast();
+    return lines;
   }
 
   Future<GitDiffSnapshot> getComparisonDiff(
@@ -3012,19 +3476,19 @@ class RepositoryService {
         retryable: false,
       );
     }
-    if (comparison.request.left.kind != GitComparisonSourceKind.revision ||
-        comparison.request.right.kind != GitComparisonSourceKind.revision) {
-      throw const GitError(
-        category: GitErrorCategory.staleComparison,
-        userMessage: 'Refresh this comparison before opening a file diff.',
-        diagnostic: 'unsupported comparison source kind for historical diff',
-        retryable: false,
-      );
-    }
-    _validateRevisionInput(comparison.request.left.value);
-    _validateRevisionInput(comparison.request.right.value);
+    _validateComparisonSource(comparison.request.left);
+    _validateComparisonSource(comparison.request.right);
     _validateComparisonPath(comparison.request.path);
     _validateComparisonPath(path);
+    if ((comparison.request.left.isText || comparison.request.right.isText) &&
+        comparison.request.path == null) {
+      throw const GitError(
+        category: GitErrorCategory.staleComparison,
+        userMessage: 'Refresh this comparison with a file path.',
+        diagnostic: 'external comparison no longer contained a file path',
+        retryable: true,
+      );
+    }
     if (!_isPathWithinComparisonScope(path, comparison.request.path)) {
       throw const GitError(
         category: GitErrorCategory.comparisonFileNotFound,
@@ -3034,10 +3498,10 @@ class RepositoryService {
       );
     }
 
-    final fresh = await compareRevisions(
+    final fresh = await compareSources(
       repositoryId,
-      comparison.request.left.value,
-      comparison.request.right.value,
+      comparison.request.left,
+      comparison.request.right,
       path: comparison.request.path,
     );
     if (fresh.fingerprint != comparison.fingerprint) {
@@ -3065,20 +3529,26 @@ class RepositoryService {
     }
 
     final handle = await state.lookup(repositoryId);
+    if (comparison.request.left.isText || comparison.request.right.isText) {
+      final contents = await Future.wait([
+        _loadComparisonContent(handle, comparison.request.left, path),
+        _loadComparisonContent(handle, comparison.request.right, path),
+      ]);
+      return _comparisonDiffFromContents(
+        repositoryId,
+        path,
+        contents[0],
+        contents[1],
+      );
+    }
     final output = await _runner.run(
       GitInvocation(
         program: gitPath,
-        args: [
-          'diff',
-          '--no-color',
-          '--no-ext-diff',
-          '--find-renames',
-          '--unified=3',
-          comparison.request.left.value,
-          comparison.request.right.value,
-          '--',
+        args: _comparisonPatchArgs(
+          comparison.request.left,
+          comparison.request.right,
           path,
-        ],
+        ),
         cwd: handle.root,
         kind: GitOperationKind.read,
         outputPolicy: const OutputPolicy.capture(maxBytes: 4 * 1024 * 1024),
@@ -3097,6 +3567,17 @@ class RepositoryService {
     String path, {
     GitComparisonTransferAction action = GitComparisonTransferAction.apply,
   }) async {
+    if (!_isHistoricalComparisonSource(comparison.request.left) ||
+        !_isHistoricalComparisonSource(comparison.request.right)) {
+      throw const GitError(
+        category: GitErrorCategory.patchRejected,
+        userMessage: 'Only repository revisions can be transferred.',
+        diagnostic:
+            'comparison transfer refused a working-tree or external-text '
+            'source',
+        retryable: false,
+      );
+    }
     return state.runMutation(repositoryId, () async {
       final diff = await getComparisonDiff(repositoryId, comparison, path);
       final patch = buildSelectedPatch(
@@ -3162,6 +3643,11 @@ class RepositoryService {
       );
     });
   }
+
+  bool _isHistoricalComparisonSource(GitComparisonSource source) =>
+      source.kind == GitComparisonSourceKind.revision ||
+      source.kind == GitComparisonSourceKind.branch ||
+      source.kind == GitComparisonSourceKind.tag;
 
   Future<GitStatusSnapshot> stage(RepositoryId repositoryId, String path) =>
       _mutatePath(repositoryId, const ['add'], path);

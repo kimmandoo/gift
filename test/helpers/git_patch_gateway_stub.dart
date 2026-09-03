@@ -210,6 +210,21 @@ mixin GitPatchGatewayStub {
     String? path,
   }) => throw UnimplementedError();
 
+  Future<GitComparisonSnapshot> compareSources(
+    RepositoryId repositoryId,
+    GitComparisonSource left,
+    GitComparisonSource right, {
+    String? path,
+  }) => throw UnimplementedError();
+
+  Future<GitThreeWayComparisonSnapshot> compareThreeWay(
+    RepositoryId repositoryId,
+    GitComparisonSource base,
+    GitComparisonSource left,
+    GitComparisonSource right, {
+    required String path,
+  }) => throw UnimplementedError();
+
   Future<GitDiffSnapshot> getComparisonDiff(
     RepositoryId repositoryId,
     GitComparisonSnapshot comparison,

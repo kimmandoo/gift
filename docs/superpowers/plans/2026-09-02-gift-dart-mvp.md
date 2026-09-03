@@ -315,3 +315,19 @@ system Git 2.35+.
    checked the patch before mutation, refreshed status, and passed the focused
    transfer and compact dialog tests. Continue with clipboard/external-text
    and three-way sources.
+8. Added bounded clipboard/external-text source contracts, hashed external
+   content identities, synthetic text diffs, and three-way base/left/right
+   content snapshots with explicit binary, missing, unreadable, and oversized
+   states.
+9. Added compact external-source entry, clipboard paste, three-way panes,
+   conflict indication, and keyboard-friendly changed-file navigation. Added
+   backend and widget fixtures for external text, three-way conflict content,
+   repeated file navigation, and rejection of non-historical transfers.
+10. Passed the focused comparison backend/UI tests, formatting, analysis, and
+    the full Flutter suite. Task 23 is complete.
+
+## Active vertical: Shelves, changelists, and patch exchange (Task 24)
+
+1. Activated Task 24 after recording the changelist, shelf, repeated
+   unshelving, external patch, base-loss, and no-stash-mutation scenarios in
+   the behavior ledger.
