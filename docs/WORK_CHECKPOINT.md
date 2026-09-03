@@ -20,7 +20,7 @@ This file is the handoff record for continuing work across query sessions.
   `docs/POST_MVP_ROADMAP.md`, `docs/ARCHITECTURE.md`,
   `docs/WORK_CHECKPOINT.md`, and the implementation plan.
 - Verification: focused comparison backend/UI tests, `flutter analyze`, the
-  full Flutter suite (`131` tests), and `git diff --check` passed. Native
+  full Flutter suite (`132` tests), and `git diff --check` passed. Native
   Windows compilation was not available in this Linux workspace.
 - Next action: continue Task 23 with bounded clipboard/external-text and
   three-way source contracts and fixtures. Keep Task 24 planned until those
