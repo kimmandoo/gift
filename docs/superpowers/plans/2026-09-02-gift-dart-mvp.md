@@ -383,7 +383,11 @@ system Git 2.35+.
 
 ## Completed follow-up: History commit-file viewer polish
 
-1. Replaced the plain selected-file diff text with a file-aware diff card.
+1. Replaced the plain selected-file diff text with a file-aware diff card
+   rendered directly below the selected file row.
 2. Added addition/deletion totals, copyable diff text, old/new line numbers,
    semantic line colors, selectable content, and bounded independent scrolling.
 3. Added widget regression coverage and passed the focused History tests.
+4. Added a recent-commit target picker for rollback, automatically selecting
+   the current commit's parent while retaining an Advanced revision escape
+   hatch for branches and special expressions.

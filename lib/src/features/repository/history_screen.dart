@@ -554,43 +554,74 @@ class _HistoryScreenState extends State<HistoryScreen> {
           else if (state.commitFiles!.isEmpty)
             const Text('No changed files.')
           else
-            for (final file in state.commitFiles!)
-              ListTile(
-                key: Key('commit-file:${file.path}'),
-                dense: true,
-                contentPadding: EdgeInsets.zero,
-                leading: Text(file.statusLabel),
-                title: Text(file.path),
-                subtitle: file.oldPath == null
-                    ? null
-                    : Text('from ${file.oldPath}'),
-                onTap: () => _controller.selectFile(file),
-              ),
-          if (state.selectedPath != null) ...[
-            const SizedBox(height: 12),
-            Text(
-              'Diff: ${state.selectedPath}',
-              style: Theme.of(context).textTheme.titleMedium,
-            ),
-            if (state.isLoadingCommitDiff)
-              const Padding(
-                padding: EdgeInsets.symmetric(vertical: 16),
-                child: LinearProgressIndicator(),
-              )
-            else if (state.commitDiffError case final error?)
-              Text(error.userMessage, key: const Key('commit-diff-error'))
-            else if (state.commitDiff?.isBinary == true)
-              const Text('Binary file changed; no text diff is available.')
-            else if (state.commitDiff == null)
-              const Text('Select a file to load its diff.')
-            else if (state.commitDiff!.isEmpty)
-              const Text('No textual diff is available.')
-            else
-              _historicalDiffCard(context, state.commitDiff!),
-          ],
+            for (final file in state.commitFiles!) ...[
+              _commitFileTile(context, file, state),
+              if (state.selectedPath == file.path) ...[
+                const SizedBox(height: 8),
+                _selectedCommitFileDiff(context, state),
+              ],
+            ],
         ],
       ),
     );
+  }
+
+  Widget _commitFileTile(
+    BuildContext context,
+    GitCommitFileChange file,
+    HistoryState state,
+  ) {
+    final selected = state.selectedPath == file.path;
+    return Card(
+      key: Key('commit-file-section:${file.path}'),
+      margin: EdgeInsets.zero,
+      color: selected
+          ? Theme.of(context).colorScheme.surfaceContainerHighest
+          : null,
+      child: ListTile(
+        key: Key('commit-file:${file.path}'),
+        dense: true,
+        contentPadding: const EdgeInsets.symmetric(horizontal: 10),
+        leading: Text(file.statusLabel),
+        title: Text(file.path),
+        subtitle: file.oldPath == null ? null : Text('from ${file.oldPath}'),
+        trailing: Icon(
+          selected ? Icons.keyboard_arrow_up : Icons.keyboard_arrow_down,
+          size: 20,
+        ),
+        selected: selected,
+        onTap: () => _controller.selectFile(file),
+      ),
+    );
+  }
+
+  Widget _selectedCommitFileDiff(BuildContext context, HistoryState state) {
+    if (state.isLoadingCommitDiff) {
+      return const Padding(
+        key: Key('commit-diff-loading'),
+        padding: EdgeInsets.symmetric(vertical: 16),
+        child: LinearProgressIndicator(),
+      );
+    }
+    if (state.commitDiffError case final error?) {
+      return Text(error.userMessage, key: const Key('commit-diff-error'));
+    }
+    if (state.commitDiff?.isBinary == true) {
+      return const Text(
+        'Binary file changed; no text diff is available.',
+        key: Key('commit-diff-binary'),
+      );
+    }
+    if (state.commitDiff == null) {
+      return const Text('Select a file to load its diff.');
+    }
+    if (state.commitDiff!.isEmpty) {
+      return const Text(
+        'No textual diff is available.',
+        key: Key('commit-diff-empty'),
+      );
+    }
+    return _historicalDiffCard(context, state.commitDiff!);
   }
 
   Widget _historicalDiffCard(BuildContext context, GitCommitDiff diff) {

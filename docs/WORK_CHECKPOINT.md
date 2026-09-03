@@ -17,14 +17,18 @@ This file is the handoff record for continuing work across query sessions.
   requires a separate acknowledgement after the impact preview.
 - Replaced the History selected-file diff text with a file-aware card showing
   path context, change totals, copy, selectable numbered lines, semantic colors,
-  and bounded vertical/horizontal scrolling.
+  and bounded vertical/horizontal scrolling. The card now expands directly
+  below the selected file row instead of at the bottom of commit details.
+- Added a recent-commit target picker to the rollback dialog. The current
+  commit's parent is selected automatically; HEAD^/HEAD~1 and other special
+  expressions remain available under Advanced revision.
 - Changed files include `lib/src/backend/{reset,repository_service,conflict,
   error,dart_git_backend,dart_git_gateway,git_gateway}.dart`, repository
   rollback/history UI files, `test/backend/reset_test.dart`, the rollback and
   History widget fixtures, and the Task 26 ledger/plan/changelog records.
 - Verification: formatting, `git diff --check`, and `flutter analyze` passed;
-  the final full Flutter suite passed with `151` tests, including the rollback
-  backend/UI fixtures and new History diff-card assertions.
+  the full Flutter suite passed with `151` tests, including the automatic
+  parent target assertion in the rollback UI suite.
   Native Windows compilation is not available in this Linux workspace.
 - Next action: when the user requests the next numbered task, activate Task 27
   only after recording its behavior scenarios and first failing test.

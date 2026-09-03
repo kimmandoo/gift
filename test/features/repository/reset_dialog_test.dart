@@ -4,6 +4,7 @@ import 'package:gift/src/app/pixel_theme.dart';
 import 'package:gift/src/backend/domain.dart';
 import 'package:gift/src/backend/executor.dart';
 import 'package:gift/src/backend/git_gateway.dart';
+import 'package:gift/src/backend/history.dart';
 import 'package:gift/src/backend/reset.dart';
 import 'package:gift/src/backend/status.dart';
 import 'package:gift/src/features/repository/reset_dialog.dart';
@@ -33,6 +34,15 @@ void main() {
       );
       await tester.pumpAndSettle();
 
+      expect(find.byKey(const Key('rollback-target-commit')), findsOneWidget);
+      expect(
+        tester
+            .widget<DropdownButtonFormField<String>>(
+              find.byKey(const Key('rollback-target-commit')),
+            )
+            .initialValue,
+        'b' * 40,
+      );
       await tester.ensureVisible(find.byKey(const Key('rollback-reset-mode')));
       await tester.tap(find.byKey(const Key('rollback-reset-mode')));
       await tester.pumpAndSettle();
@@ -73,6 +83,40 @@ class _RollbackGateway with GitPatchGatewayStub implements GitGateway {
 
   final RepositoryId repositoryId;
   var executed = false;
+
+  @override
+  Future<GitHistoryPage> getHistory(
+    RepositoryId id, {
+    int limit = 50,
+    int offset = 0,
+    GitHistoryQuery? query,
+  }) async {
+    final head = GitCommit(
+      oid: 'a' * 40,
+      parents: ['b' * 40],
+      authorName: 'Gift',
+      authorEmail: 'gift@example.test',
+      authoredAt: DateTime(2030),
+      subject: 'Current commit',
+      body: '',
+    );
+    final parent = GitCommit(
+      oid: 'b' * 40,
+      parents: const [],
+      authorName: 'Gift',
+      authorEmail: 'gift@example.test',
+      authoredAt: DateTime(2029),
+      subject: 'Parent commit',
+      body: '',
+    );
+    return GitHistoryPage(
+      repositoryId: repositoryId,
+      commits: [head, parent],
+      offset: 0,
+      limit: limit,
+      hasMore: false,
+    );
+  }
 
   @override
   Future<GitHistoryRollbackPreview> previewHistoryRollback(

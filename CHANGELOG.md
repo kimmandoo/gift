@@ -2,6 +2,10 @@
 
 ## 2026-09-03
 
+- fix(history): added a recent-commit target picker so reset no longer
+  requires manually entering HEAD^ or HEAD~1 for common cases.
+- fix(history): rendered the selected file diff directly below its file row
+  instead of at the bottom of commit details.
 - feat(task26): added preview-bound reset, undo, and revert safety with
   protected-state checks and explicit conflict recovery.
 - fix(history): improved selected commit-file diffs with context, line numbers,

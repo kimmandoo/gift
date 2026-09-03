@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:gift/src/backend/error.dart';
 import 'package:gift/src/backend/git_gateway.dart';
+import 'package:gift/src/backend/history.dart';
 import 'package:gift/src/backend/reset.dart';
 import 'package:gift/src/backend/domain.dart';
 
@@ -24,6 +25,12 @@ class ResetDialog extends StatefulWidget {
 class _ResetDialogState extends State<ResetDialog> {
   late final TextEditingController _targetController;
   late final TextEditingController _revisionsController;
+  var _targetHistoryLoading = false;
+  var _targetHistoryError = false;
+  var _targetEditedByUser = false;
+  var _advancedTargetExpanded = false;
+  String? _selectedTarget;
+  List<GitCommit> _recentTargetCommits = const [];
   var _action = GitHistoryRollbackAction.reset;
   var _mode = GitResetMode.mixed;
   var _confirmHardReset = false;
@@ -37,6 +44,7 @@ class _ResetDialogState extends State<ResetDialog> {
     super.initState();
     _targetController = TextEditingController(text: 'HEAD^');
     _revisionsController = TextEditingController();
+    unawaited(_loadRecentTargetCommits());
   }
 
   @override
@@ -101,16 +109,82 @@ class _ResetDialogState extends State<ResetDialog> {
               ),
               const SizedBox(height: 12),
               if (_action == GitHistoryRollbackAction.reset) ...[
-                TextField(
-                  key: const Key('rollback-target-revision'),
-                  controller: _targetController,
-                  enabled: !_isBusy,
-                  decoration: const InputDecoration(
-                    labelText: 'Target revision',
-                    hintText: 'HEAD^, branch name, or commit ID',
-                    border: OutlineInputBorder(),
+                if (_targetHistoryLoading)
+                  const Padding(
+                    key: Key('rollback-target-history-loading'),
+                    padding: EdgeInsets.only(bottom: 8),
+                    child: LinearProgressIndicator(),
                   ),
-                  onChanged: (_) => _clearReview(),
+                if (_recentTargetCommits.isNotEmpty)
+                  DropdownButtonFormField<String>(
+                    key: const Key('rollback-target-commit'),
+                    initialValue: _selectedTarget,
+                    decoration: const InputDecoration(
+                      labelText: 'Target commit',
+                      helperText:
+                          'Choose a recent commit instead of typing HEAD^.',
+                    ),
+                    items: [
+                      for (final commit in _recentTargetCommits)
+                        DropdownMenuItem(
+                          value: commit.oid,
+                          child: Text(
+                            '${commit.shortOid} · ${commit.subject.isEmpty ? '(no subject)' : commit.subject}',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                    ],
+                    onChanged: _isBusy
+                        ? null
+                        : (value) {
+                            if (value == null) return;
+                            setState(() {
+                              _selectedTarget = value;
+                              _targetController.text = value;
+                              _targetEditedByUser = true;
+                              _preview = null;
+                              _result = null;
+                              _error = null;
+                              _confirmHardReset = false;
+                            });
+                          },
+                  ),
+                if (_targetHistoryError)
+                  const Text(
+                    'Recent commits could not be loaded. Enter a revision below.',
+                    key: Key('rollback-target-history-error'),
+                  ),
+                const SizedBox(height: 8),
+                ExpansionTile(
+                  key: const Key('rollback-advanced-target'),
+                  initiallyExpanded: _advancedTargetExpanded,
+                  tilePadding: EdgeInsets.zero,
+                  childrenPadding: EdgeInsets.zero,
+                  title: const Text('Advanced revision'),
+                  subtitle: const Text(
+                    'Use HEAD^, HEAD~1, a branch, or a full commit ID',
+                  ),
+                  onExpansionChanged: (expanded) {
+                    setState(() => _advancedTargetExpanded = expanded);
+                  },
+                  children: [
+                    TextField(
+                      key: const Key('rollback-target-revision'),
+                      controller: _targetController,
+                      enabled: !_isBusy,
+                      decoration: const InputDecoration(
+                        labelText: 'Revision expression',
+                        hintText: 'Only needed for an advanced target',
+                        border: OutlineInputBorder(),
+                      ),
+                      onChanged: (_) {
+                        _selectedTarget = null;
+                        _targetEditedByUser = true;
+                        _clearReview();
+                      },
+                    ),
+                  ],
                 ),
                 const SizedBox(height: 12),
                 DropdownButtonFormField<GitResetMode>(
@@ -283,6 +357,40 @@ class _ResetDialogState extends State<ResetDialog> {
       if (mounted) setState(() => _error = error);
     } finally {
       if (mounted) setState(() => _isBusy = false);
+    }
+  }
+
+  Future<void> _loadRecentTargetCommits() async {
+    if (mounted) setState(() => _targetHistoryLoading = true);
+    try {
+      final page = await widget.gateway.getHistory(
+        widget.repository.repositoryId,
+        query: const GitHistoryQuery(limit: 30),
+      );
+      if (!mounted) return;
+      final current = page.commits.isEmpty ? null : page.commits.first;
+      final commits = current == null
+          ? page.commits
+          : page.commits.where((commit) => commit.oid != current.oid).toList();
+      final preferred = current?.parents.firstWhere(
+        (parent) => commits.any((commit) => commit.oid == parent),
+        orElse: () => commits.isEmpty ? '' : commits.first.oid,
+      );
+      setState(() {
+        _recentTargetCommits = commits;
+        _targetHistoryError = false;
+        if (commits.isEmpty && !_targetEditedByUser) {
+          _advancedTargetExpanded = true;
+        }
+        if (!_targetEditedByUser && preferred != null && preferred.isNotEmpty) {
+          _selectedTarget = preferred;
+          _targetController.text = preferred;
+        }
+      });
+    } on GitError {
+      if (mounted) setState(() => _targetHistoryError = true);
+    } finally {
+      if (mounted) setState(() => _targetHistoryLoading = false);
     }
   }
 

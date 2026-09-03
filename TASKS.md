@@ -379,11 +379,13 @@ Task 26 is complete.
 ### ✅ Task 26 follow-up: History commit-file viewer polish
 
 - [x] Replaced the plain selected-file diff text with a bounded, independently
-  scrollable diff card.
+  scrollable diff card rendered directly below the selected file row.
 - [x] Added file context, addition/deletion counts, copy action, line numbers,
   semantic addition/deletion/hunk colors, and selectable content.
 - [x] Added regression coverage for the diff card, line rows, counts, and copy
   control without activating Task 27.
+- [x] Added a recent-commit target picker with automatic parent selection and
+  kept special revision expressions available under Advanced revision.
 
 The Task 26 follow-up is complete. Keep Task 27 planned until it is explicitly
 activated with its behavior scenarios and first failing test.
