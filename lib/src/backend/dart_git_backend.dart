@@ -20,6 +20,7 @@ import 'reset.dart';
 import 'push.dart';
 import 'worktree.dart';
 import 'ignore.dart';
+import 'submodule.dart';
 
 /// Application-facing entry point for backend operations.
 ///
@@ -534,6 +535,43 @@ class DartGitBackend {
       runner: _runner,
       shelfStore: _shelfStore,
     ).getAttributes(repositoryId, paths: paths);
+  }
+
+  Future<GitSubmoduleSnapshot> getSubmodules(RepositoryId repositoryId) async {
+    final installation = await getGitInstallation();
+    return RepositoryService(
+      gitPath: installation.executablePath,
+      state: _state,
+      runner: _runner,
+    ).getSubmodules(repositoryId);
+  }
+
+  Future<GitSubmoduleActionResult> executeSubmoduleAction(
+    RepositoryId repositoryId,
+    GitSubmoduleActionRequest request, {
+    GitCancellationToken? cancellationToken,
+  }) async {
+    final installation = await getGitInstallation();
+    return RepositoryService(
+      gitPath: installation.executablePath,
+      state: _state,
+      runner: _runner,
+    ).executeSubmoduleAction(
+      repositoryId,
+      request,
+      cancellationToken: cancellationToken,
+    );
+  }
+
+  Future<GitNestedRootSnapshot> getNestedRoots(
+    RepositoryId repositoryId,
+  ) async {
+    final installation = await getGitInstallation();
+    return RepositoryService(
+      gitPath: installation.executablePath,
+      state: _state,
+      runner: _runner,
+    ).getNestedRoots(repositoryId);
   }
 
   Future<GitStashSnapshot> getStashes(RepositoryId repositoryId) async {

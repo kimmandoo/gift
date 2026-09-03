@@ -18,6 +18,7 @@ import 'reset.dart';
 import 'push.dart';
 import 'worktree.dart';
 import 'ignore.dart';
+import 'submodule.dart';
 
 /// The small API that Flutter features depend on.
 ///
@@ -212,6 +213,16 @@ abstract interface class GitGateway {
     RepositoryId repositoryId, {
     List<String> paths = const [],
   });
+
+  Future<GitSubmoduleSnapshot> getSubmodules(RepositoryId repositoryId);
+
+  Future<GitSubmoduleActionResult> executeSubmoduleAction(
+    RepositoryId repositoryId,
+    GitSubmoduleActionRequest request, {
+    GitCancellationToken? cancellationToken,
+  });
+
+  Future<GitNestedRootSnapshot> getNestedRoots(RepositoryId repositoryId);
 
   Future<GitStashSnapshot> getStashes(RepositoryId repositoryId);
 

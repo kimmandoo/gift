@@ -20,6 +20,7 @@ import 'reset.dart';
 import 'push.dart';
 import 'worktree.dart';
 import 'ignore.dart';
+import 'submodule.dart';
 
 /// Adapts the UI-facing [GitGateway] contract to the Dart backend facade.
 ///
@@ -320,6 +321,25 @@ class DartGitGateway implements GitGateway, DiscardPreviewCancellationGateway {
     RepositoryId repositoryId, {
     List<String> paths = const [],
   }) => backend.getAttributes(repositoryId, paths: paths);
+
+  @override
+  Future<GitSubmoduleSnapshot> getSubmodules(RepositoryId repositoryId) =>
+      backend.getSubmodules(repositoryId);
+
+  @override
+  Future<GitSubmoduleActionResult> executeSubmoduleAction(
+    RepositoryId repositoryId,
+    GitSubmoduleActionRequest request, {
+    GitCancellationToken? cancellationToken,
+  }) => backend.executeSubmoduleAction(
+    repositoryId,
+    request,
+    cancellationToken: cancellationToken,
+  );
+
+  @override
+  Future<GitNestedRootSnapshot> getNestedRoots(RepositoryId repositoryId) =>
+      backend.getNestedRoots(repositoryId);
 
   @override
   Future<GitStashSnapshot> getStashes(RepositoryId repositoryId) =>

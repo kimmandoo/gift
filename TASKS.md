@@ -7,8 +7,8 @@
 ## Progress
 
 - **Total Tasks:** 38
-- **Completed:** 31 / 38
-- **Current Active Task:** None. Task 32 — Submodules and nested roots is next.
+- **Completed:** 32 / 38
+- **Current Active Task:** None. Task 33 — Recovery diagnostics is next.
 
 | # | Scope | Dart backend deliverables | Flutter deliverables | Status |
 |---|---|---|---|:---:|
@@ -42,8 +42,8 @@
 | **28** | Remote branches & update | Remote branch checkout, compare, update, and tracking | Incoming/update information | ✅ |
 | **29** | Push safety | Push review, force-with-lease, tags, and protected branches | Push review and rejection recovery | ✅ |
 | **30** | Worktrees | Worktree list, create, open, remove, lock, and prune | Worktree manager | ✅ |
-| **31** | Ignore & metadata | `.gitignore`, `.git/info/exclude`, ignored files, and attributes | Ignore/metadata actions | 🔄 |
-| **32** | Submodules & nested roots | Submodule status, sync, update, and nested repository mapping | Nested-root workspace | ⬜ |
+| **31** | Ignore & metadata | `.gitignore`, `.git/info/exclude`, ignored files, and attributes | Ignore/metadata actions | ✅ |
+| **32** | Submodules & nested roots | Submodule status, sync, update, and nested repository mapping | Nested-root workspace | ✅ |
 | **33** | Recovery diagnostics | Reflog browsing, recovery refs, and Git operation console | Recovery and command diagnostics | ⬜ |
 | **34** | Repository setup | Clone, init, publish, shallow/unshallow, and root mapping | Repository setup flows | ⬜ |
 | **35** | Hosting integration | Optional GitHub/GitLab links and review handoff contracts | Hosting links and review entry points | ⬜ |
@@ -508,6 +508,21 @@ passed focused and full Flutter verification. Task 31 is next.
 
 Task 31 is complete. The backend and compact metadata dialog passed the full
 Flutter verification suite. Task 32 is next.
+
+### ✅ Task 32: Submodules and nested roots
+
+- [x] Record initialized, uninitialized, dirty, detached, changed-gitlink,
+  recursive scope, and nested-root mapping scenarios.
+- [x] Add the first RED real-Git submodule fixture.
+- [x] Implement bounded `.gitmodules`/submodule status inspection and
+  explicit init, sync, update, and deinit actions.
+- [x] Add a responsive submodule manager with parent/child root mapping and
+  independent workspace opening.
+- [x] Verify child status isolation, gitlink changes, lifecycle actions, safe
+  module-path validation, and compact rendering.
+
+Task 32 is complete. The backend and compact submodule manager passed the
+full Flutter verification suite. Task 33 is next.
 
 ## Post-MVP backlog
 

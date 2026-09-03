@@ -24,6 +24,7 @@ import 'file_history.dart';
 import 'push.dart';
 import 'worktree.dart';
 import 'ignore.dart';
+import 'submodule.dart';
 
 /// In-memory registry for repository roots and session-local opaque IDs.
 ///
@@ -994,6 +995,320 @@ class RepositoryService {
       fingerprint: fingerprint,
     );
   }
+
+  Future<GitSubmoduleSnapshot> getSubmodules(RepositoryId repositoryId) async {
+    final handle = await state.lookup(repositoryId);
+    final gitmodules = File(
+      '${handle.root}${Platform.pathSeparator}.gitmodules',
+    );
+    if (!gitmodules.existsSync()) {
+      return GitSubmoduleSnapshot(
+        repositoryId: repositoryId,
+        root: handle.root,
+        modules: const [],
+        fingerprint: hashGitObjectBytes(const []),
+      );
+    }
+
+    final configOutput = await _runner.run(
+      GitInvocation(
+        program: gitPath,
+        args: const ['config', '--null', '--file', '.gitmodules', '--list'],
+        cwd: handle.root,
+        kind: GitOperationKind.read,
+        outputPolicy: const OutputPolicy.capture(maxBytes: 256 * 1024),
+      ),
+    );
+    late final List<GitSubmoduleConfig> configs;
+    try {
+      configs = parseGitmodules(configOutput.stdout).modules;
+    } on GitSubmoduleParseException catch (error, stackTrace) {
+      Error.throwWithStackTrace(
+        GitError(
+          category: GitErrorCategory.parseFailure,
+          userMessage: 'Git returned unreadable submodule metadata.',
+          diagnostic: error.message,
+          retryable: true,
+        ),
+        stackTrace,
+      );
+    }
+    if (configs.isEmpty) {
+      return GitSubmoduleSnapshot(
+        repositoryId: repositoryId,
+        root: handle.root,
+        modules: const [],
+        fingerprint: hashGitObjectBytes(configOutput.stdout),
+      );
+    }
+
+    final statusOutput = await _runner.run(
+      GitInvocation(
+        program: gitPath,
+        args: const ['submodule', 'status', '--recursive'],
+        cwd: handle.root,
+        kind: GitOperationKind.read,
+        outputPolicy: const OutputPolicy.capture(maxBytes: 2 * 1024 * 1024),
+      ),
+    );
+    late final List<GitSubmoduleStatusRecord> statusRecords;
+    try {
+      statusRecords = parseGitSubmoduleStatus(statusOutput.stdout);
+    } on GitSubmoduleParseException catch (error, stackTrace) {
+      Error.throwWithStackTrace(
+        GitError(
+          category: GitErrorCategory.parseFailure,
+          userMessage: 'Git returned unreadable submodule status.',
+          diagnostic: error.message,
+          retryable: true,
+        ),
+        stackTrace,
+      );
+    }
+    final byPath = {for (final record in statusRecords) record.path: record};
+    final modules = <GitSubmodule>[];
+    for (final config in configs) {
+      final record = byPath[config.path];
+      final child = _repositoryFile(handle.root, config.path);
+      final exists = Directory(child.path).existsSync();
+      final marker = record?.marker;
+      final states = <GitSubmoduleState>[];
+      final dirtyPaths = <String>[];
+      final expectedOid = await _readGitlinkOid(handle.root, config.path);
+      final isInitialized = marker != '-' && exists && record != null;
+      if (!exists && marker != '-') {
+        states.add(GitSubmoduleState.missing);
+      }
+      if (marker == '-') {
+        states.add(GitSubmoduleState.uninitialized);
+      } else if (marker == 'U') {
+        states.add(GitSubmoduleState.conflicted);
+      } else if (marker == '+') {
+        states.add(GitSubmoduleState.changedCommit);
+      }
+      if (isInitialized) {
+        states.add(GitSubmoduleState.initialized);
+        final childStatus = await _readSubmoduleStatus(child.path);
+        dirtyPaths.addAll(childStatus);
+        if (dirtyPaths.isNotEmpty) states.add(GitSubmoduleState.dirty);
+        if (await _isDetached(child.path)) {
+          states.add(GitSubmoduleState.detached);
+        }
+      }
+      if (states.isEmpty) states.add(GitSubmoduleState.missing);
+      modules.add(
+        GitSubmodule(
+          name: config.name,
+          path: config.path,
+          url: config.url,
+          branch: config.branch,
+          expectedOid: expectedOid,
+          currentOid: record?.currentOid,
+          description: record?.description,
+          states: states,
+          dirtyPaths: dirtyPaths,
+        ),
+      );
+    }
+    final fingerprint = hashGitObjectBytes(
+      utf8.encode(
+        modules
+            .map(
+              (module) => [
+                module.name,
+                module.path,
+                module.url,
+                module.branch ?? '',
+                module.expectedOid ?? '',
+                module.currentOid ?? '',
+                ...module.states.map((state) => state.name),
+                ...module.dirtyPaths,
+              ].join('|'),
+            )
+            .join('\n'),
+      ),
+    );
+    return GitSubmoduleSnapshot(
+      repositoryId: repositoryId,
+      root: handle.root,
+      modules: modules,
+      fingerprint: fingerprint,
+    );
+  }
+
+  Future<GitSubmoduleActionResult> executeSubmoduleAction(
+    RepositoryId repositoryId,
+    GitSubmoduleActionRequest request, {
+    GitCancellationToken? cancellationToken,
+  }) => state.runMutation(repositoryId, () async {
+    final handle = await state.lookup(repositoryId);
+    final before = await getSubmodules(repositoryId);
+    final paths = _validateSubmodulePaths(before, request.paths);
+    final subcommand = request.action == GitSubmoduleAction.init
+        ? 'update'
+        : request.action.name;
+    final args = <String>['submodule', subcommand];
+    if (request.recursive) args.add('--recursive');
+    if (request.action == GitSubmoduleAction.init ||
+        request.action == GitSubmoduleAction.update) {
+      args.add('--init');
+    }
+    if (request.action == GitSubmoduleAction.deinit && request.force) {
+      args.add('--force');
+    }
+    if (paths.isNotEmpty) args.addAll(['--', ...paths]);
+    await _runner.run(
+      GitInvocation(
+        program: gitPath,
+        args: args,
+        cwd: handle.root,
+        kind: GitOperationKind.mutation,
+        outputPolicy: const OutputPolicy.capture(maxBytes: 2 * 1024 * 1024),
+        cancellationToken: cancellationToken,
+      ),
+    );
+    return GitSubmoduleActionResult(
+      repositoryId: repositoryId,
+      request: request,
+      status: await getStatus(repositoryId),
+      snapshot: await getSubmodules(repositoryId),
+      summary: '${_submoduleActionLabel(request.action)} completed.',
+    );
+  });
+
+  Future<GitNestedRootSnapshot> getNestedRoots(
+    RepositoryId repositoryId,
+  ) async {
+    final submodules = await getSubmodules(repositoryId);
+    final roots = <GitNestedRoot>[
+      GitNestedRoot(
+        path: submodules.root,
+        relativePath: '',
+        kind: GitNestedRootKind.superproject,
+      ),
+    ];
+    for (final module in submodules.modules) {
+      final path = _repositoryFile(submodules.root, module.path).path;
+      if (!module.isInitialized || module.isMissing) continue;
+      roots.add(
+        GitNestedRoot(
+          path: path,
+          relativePath: module.path,
+          kind: GitNestedRootKind.submodule,
+          submodulePath: module.path,
+        ),
+      );
+    }
+    return GitNestedRootSnapshot(
+      repositoryId: repositoryId,
+      roots: roots,
+      fingerprint: hashGitObjectBytes(
+        utf8.encode(
+          roots.map((root) => '${root.kind.name}|${root.path}').join('\n'),
+        ),
+      ),
+    );
+  }
+
+  Future<String?> _readGitlinkOid(String root, String path) async {
+    try {
+      final output = await _runner.run(
+        GitInvocation(
+          program: gitPath,
+          args: ['ls-tree', '-z', 'HEAD', '--', path],
+          cwd: root,
+          kind: GitOperationKind.read,
+          outputPolicy: const OutputPolicy.capture(maxBytes: 16 * 1024),
+        ),
+      );
+      final text = utf8.decode(output.stdout, allowMalformed: true);
+      final tab = text.indexOf('\t');
+      if (tab < 0) return null;
+      final fields = text.substring(0, tab).split(' ');
+      return fields.length >= 3 ? fields[2] : null;
+    } on GitError catch (error) {
+      if (error.exitCode == 128) return null;
+      rethrow;
+    }
+  }
+
+  Future<List<String>> _readSubmoduleStatus(String path) async {
+    try {
+      final output = await _runner.run(
+        GitInvocation(
+          program: gitPath,
+          args: const [
+            'status',
+            '--porcelain=v2',
+            '--untracked-files=all',
+            '-z',
+            '--ignore-submodules=none',
+          ],
+          cwd: path,
+          kind: GitOperationKind.read,
+          outputPolicy: const OutputPolicy.capture(maxBytes: 512 * 1024),
+        ),
+      );
+      final parsed = parseGitStatus(output.stdout);
+      return parsed.changes
+          .map((change) => change.path)
+          .toList(growable: false);
+    } on GitError catch (error) {
+      if (error.exitCode == 128) return const [];
+      rethrow;
+    }
+  }
+
+  Future<bool> _isDetached(String path) async {
+    try {
+      await _runner.run(
+        GitInvocation(
+          program: gitPath,
+          args: const ['symbolic-ref', '--quiet', '--short', 'HEAD'],
+          cwd: path,
+          kind: GitOperationKind.read,
+          outputPolicy: const OutputPolicy.capture(maxBytes: 4 * 1024),
+        ),
+      );
+      return false;
+    } on GitError catch (error) {
+      if (error.exitCode == 1) return true;
+      if (error.exitCode == 128) return false;
+      rethrow;
+    }
+  }
+
+  List<String> _validateSubmodulePaths(
+    GitSubmoduleSnapshot snapshot,
+    List<String> requested,
+  ) {
+    final allowed = snapshot.modules.map((module) => module.path).toSet();
+    final paths = requested.map((path) => path.trim().replaceAll('\\', '/'));
+    for (final path in paths) {
+      if (path.isEmpty ||
+          path.startsWith('-') ||
+          path.startsWith('/') ||
+          RegExp(r'^[A-Za-z]:/').hasMatch(path) ||
+          path.contains('\u0000') ||
+          path
+              .split('/')
+              .any((part) => part.isEmpty || part == '.' || part == '..') ||
+          !allowed.contains(path)) {
+        throw submoduleInputError(
+          'Choose a declared submodule path.',
+          'submodule action path was not an exact declared module path: $path',
+        );
+      }
+    }
+    return paths.toSet().toList(growable: false);
+  }
+
+  String _submoduleActionLabel(GitSubmoduleAction action) => switch (action) {
+    GitSubmoduleAction.init => 'Submodule initialization',
+    GitSubmoduleAction.sync => 'Submodule URL synchronization',
+    GitSubmoduleAction.update => 'Submodule update',
+    GitSubmoduleAction.deinit => 'Submodule deinitialization',
+  };
 
   Future<Map<String, GitIgnoreRule>> _readIgnoreRules(
     String root,

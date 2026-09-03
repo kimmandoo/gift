@@ -18,6 +18,7 @@ import 'package:gift/src/backend/reset.dart';
 import 'package:gift/src/backend/push.dart';
 import 'package:gift/src/backend/worktree.dart';
 import 'package:gift/src/backend/ignore.dart';
+import 'package:gift/src/backend/submodule.dart';
 
 /// Existing feature fakes do not need partial-patch behavior unless a test is
 /// specifically about it. This keeps those focused fakes small as the
@@ -153,6 +154,18 @@ mixin GitPatchGatewayStub {
     RepositoryId repositoryId, {
     List<String> paths = const [],
   }) => throw UnimplementedError();
+
+  Future<GitSubmoduleSnapshot> getSubmodules(RepositoryId repositoryId) =>
+      throw UnimplementedError();
+
+  Future<GitSubmoduleActionResult> executeSubmoduleAction(
+    RepositoryId repositoryId,
+    GitSubmoduleActionRequest request, {
+    GitCancellationToken? cancellationToken,
+  }) => throw UnimplementedError();
+
+  Future<GitNestedRootSnapshot> getNestedRoots(RepositoryId repositoryId) =>
+      throw UnimplementedError();
 
   Future<GitStashSnapshot> getStashes(RepositoryId repositoryId) =>
       throw UnimplementedError();

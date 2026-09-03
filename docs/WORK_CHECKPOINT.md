@@ -5,8 +5,8 @@ This file is the handoff record for continuing work across query sessions.
 ## Current checkpoint
 
 - Date: 2026-09-03
-- Active task: None. Task 31 Ignore and metadata is complete; Task 32
-  Submodules and nested roots is next.
+- Active task: None. Task 32 — Submodules and nested roots is complete; Task 33
+  Recovery diagnostics is next.
 - Branch: `main`; no new branch or worktree was created.
 - Latest completed implementation commit before this task: `76f36e3`.
 - Completed Task 28 after recording REMOTE-BRANCH-01/02 and UPDATE-01/02,
@@ -68,8 +68,24 @@ This file is the handoff record for continuing work across query sessions.
 - Verification: `PATH=/home/mgkim/.local/flutter/bin:$PATH dart run
   tool/verify.dart` passed formatting, analysis, and all 195 Flutter tests;
   `git diff --check` passed.
-- Next action: activate Task 32, record SUBMODULE scenarios, and add its first
-  failing real-Git fixture before implementing submodule/nested-root support.
+- Task 32 activation recorded SUBMODULE-02/03/04 in the behavior ledger. Its
+  first RED command failed because the typed contract did not exist; the
+  real-Git fixture then passed after implementation.
+- Task 32 added bounded `.gitmodules` and recursive `git submodule status`
+  inspection, independent child dirty/detached checks, safe scoped lifecycle
+  actions, and nested-root mapping. The compact manager distinguishes the
+  superproject from child roots and routes opening through the workspace.
+- Changed Task 32 files: `TASKS.md`, `CHANGELOG.md`,
+  `docs/research/jetbrains-git-mvp-behavior.md`,
+  `docs/superpowers/plans/2026-09-02-gift-dart-mvp.md`, this checkpoint,
+  `lib/src/backend/{submodule,git_gateway,dart_git_backend,dart_git_gateway,repository_service}.dart`,
+  `lib/src/features/repository/{submodule_dialog,changes_screen}.dart`, and
+  the related backend/widget test and gateway-stub files.
+- Verification: `PATH=/home/mgkim/.local/flutter/bin:$PATH dart run
+  tool/verify.dart` passed formatting, analysis, and all 197 Flutter tests;
+  `git diff --check` passed.
+- Next action: activate Task 33, record RECOVERY scenarios, and add its first
+  failing reflog/operation-console fixture before implementation.
 - Earlier Task 23 and Windows incremental-build diagnostics remain recorded in
   the plan and prior checkpoints.
 - Blockers: none.

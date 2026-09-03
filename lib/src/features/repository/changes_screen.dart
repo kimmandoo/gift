@@ -26,6 +26,7 @@ import 'package:gift/src/features/repository/reset_dialog.dart';
 import 'package:gift/src/features/repository/push_dialog.dart';
 import 'package:gift/src/features/repository/worktree_dialog.dart';
 import 'package:gift/src/features/repository/ignore_dialog.dart';
+import 'package:gift/src/features/repository/submodule_dialog.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter/services.dart';
@@ -220,6 +221,9 @@ class _ChangesScreenBodyState extends ConsumerState<_ChangesScreenBody> {
                   case _ChangesMenuAction.ignoreMetadata:
                     unawaited(_openIgnoreMetadata(context));
                     break;
+                  case _ChangesMenuAction.submodules:
+                    unawaited(_openSubmodules(context));
+                    break;
                   case _ChangesMenuAction.refresh:
                     unawaited(controller.refresh());
                     break;
@@ -277,6 +281,10 @@ class _ChangesScreenBodyState extends ConsumerState<_ChangesScreenBody> {
                 const PopupMenuItem(
                   value: _ChangesMenuAction.ignoreMetadata,
                   child: Text('Ignore & metadata'),
+                ),
+                const PopupMenuItem(
+                  value: _ChangesMenuAction.submodules,
+                  child: Text('Submodules & nested roots'),
                 ),
                 PopupMenuItem(
                   value: _ChangesMenuAction.refresh,
@@ -363,6 +371,12 @@ class _ChangesScreenBodyState extends ConsumerState<_ChangesScreenBody> {
               tooltip: 'Inspect ignore and metadata',
               onPressed: () => unawaited(_openIgnoreMetadata(context)),
               icon: const Icon(Icons.rule_folder_outlined),
+            ),
+            IconButton(
+              key: const Key('open-submodules'),
+              tooltip: 'Manage submodules and nested roots',
+              onPressed: () => unawaited(_openSubmodules(context)),
+              icon: const Icon(Icons.account_tree_outlined),
             ),
             IconButton(
               tooltip: 'Refresh changes',
@@ -1543,6 +1557,27 @@ class _ChangesScreenBodyState extends ConsumerState<_ChangesScreenBody> {
     await _activeController.refresh();
   }
 
+  Future<void> _openSubmodules(BuildContext context) async {
+    final opened = await showDialog<RepositoryOpened>(
+      context: context,
+      builder: (_) => SubmoduleDialog(
+        gateway: widget.gateway,
+        repository: widget.repository,
+        onOpenRepository: (repository) async {
+          if (context.mounted) Navigator.of(context).pop(repository);
+        },
+      ),
+    );
+    if (!context.mounted || opened == null) return;
+    final onOpenRepository = widget.onOpenRepository;
+    if (onOpenRepository != null) {
+      await onOpenRepository(opened);
+      return;
+    }
+    ScaffoldMessenger.of(context)
+        .showSnackBar(SnackBar(content: Text('Opened ${opened.root}.')));
+  }
+
   Widget _scopeSelector(
     BuildContext context,
     GitChange selected,
@@ -1853,5 +1888,6 @@ enum _ChangesMenuAction {
   historyRollback,
   worktrees,
   ignoreMetadata,
+  submodules,
   refresh,
 }

@@ -545,3 +545,23 @@ system Git 2.35+.
    narrow status-label overflow discovered by that test.
 5. Verification passed formatting, analysis, focused backend/UI tests, and the
    full Flutter suite with 195 tests. Task 31 is complete; Task 32 is next.
+
+## Completed vertical: Submodules and nested roots (Task 32)
+
+1. Activated Task 32 after recording initialized/uninitialized, dirty,
+   detached, changed-gitlink, recursive scope, and nested-root mapping
+   scenarios as SUBMODULE-02/03/04.
+2. First RED test: `/home/mgkim/.local/flutter/bin/flutter test
+   test/backend/submodule_test.dart` failed because the typed submodule and
+   nested-root contracts had not been added yet.
+3. Implemented bounded `.gitmodules` parsing, recursive submodule status with
+   initialized/uninitialized, dirty, detached, changed-gitlink, conflict, and
+   missing states, plus explicit init, sync, update, and deinit actions.
+4. Added independent nested-root mapping and a compact scaled-text manager
+   with explicit all-versus-selected scope, lifecycle controls, and child-root
+   opening through the workspace.
+5. Added real-Git and widget coverage for child status isolation, changed
+   gitlinks, detached and uninitialized states, lifecycle refresh, safe scope
+   validation, and 360x640/1.2x rendering. Verification passed formatting,
+   analysis, and the full Flutter suite with 197 tests. Task 32 is complete;
+   Task 33 is next.
