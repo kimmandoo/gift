@@ -5,11 +5,11 @@ This file is the handoff record for continuing work across query sessions.
 ## Current checkpoint
 
 - Date: 2026-09-04
-- Active task: Visible push progress feedback is implemented and verified;
+- Active task: Push field spacing correction is verified and ready to commit;
   no follow-up implementation task is active.
 - Branch: `main`; no new branch or worktree was created.
-- Latest completed implementation commit: `c0dd286` (`docs(roadmap): add
-  contextual action and path ux tasks`).
+- Latest completed implementation commit: `2383204` (`fix(push): show remote
+  transfer progress`).
 - Completed Task 28 after recording REMOTE-BRANCH-01/02 and UPDATE-01/02,
   adding the first RED fixture, and proving the real-Git implementation GREEN.
 - Added immutable remote ref snapshots with grouped remotes, local tracking,
@@ -498,6 +498,24 @@ This file is the handoff record for continuing work across query sessions.
   `flutter build windows --release` rebuilt `gift.exe`; and the rebuilt
   executable stayed running with `Responding=True` during the Windows smoke
   check.
+- Blockers: none.
+- Next action after this session commit: activate Task 40 or another
+  dependency-ready roadmap task.
+
+## Current session: push field spacing correction
+
+- Date: 2026-09-04.
+- Changed files: `CHANGELOG.md`, this checkpoint,
+  `lib/src/features/repository/push_dialog.dart`, and
+  `test/features/repository/push_dialog_test.dart`.
+- Bug: the Remote field and Publish scope field had no vertical spacer after
+  the progress-card edit, allowing their outlined labels to visually collide.
+- Fix: restored the shared 8-pixel field gap and added a compact 360×640
+  regression assertion that checks Remote-to-scope separation without requiring
+  the scrollable scope field to remain fully inside the viewport.
+- Verification so far: `flutter analyze` passed; the focused Push dialog suite
+  passed with 3 tests; and the complete responsive feature suite passed with
+  72 tests.
 - Blockers: none.
 - Next action after this session commit: activate Task 40 or another
   dependency-ready roadmap task.

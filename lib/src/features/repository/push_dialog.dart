@@ -80,6 +80,7 @@ class _PushDialogState extends State<PushDialog> {
               ],
               const SizedBox(height: 14),
               _remoteField(),
+              const SizedBox(height: 8),
               DropdownButtonFormField<GitPushTarget>(
                 key: const Key('push-target'),
                 initialValue: _target,

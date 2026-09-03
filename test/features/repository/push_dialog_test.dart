@@ -40,9 +40,11 @@ void main() {
     expect(find.byKey(const Key('push-guidance')), findsOneWidget);
     expect(find.text('Nothing is pushed yet'), findsOneWidget);
     final guidance = tester.getRect(find.byKey(const Key('push-guidance')));
-    final remoteLabel = tester.getRect(find.text('Remote'));
-    expect(remoteLabel.top, greaterThanOrEqualTo(guidance.bottom + 8));
-    expect(remoteLabel.bottom, lessThanOrEqualTo(640));
+    final remote = tester.getRect(find.byKey(const Key('push-remote')));
+    final scope = tester.getRect(find.byKey(const Key('push-target')));
+    expect(remote.top, greaterThanOrEqualTo(guidance.bottom + 8));
+    expect(scope.top, greaterThanOrEqualTo(remote.bottom + 8));
+    expect(remote.bottom, lessThanOrEqualTo(640));
     expect(find.byKey(const Key('execute-push')), findsNothing);
     await tester.tap(find.byKey(const Key('preview-push')));
     await tester.pumpAndSettle();
