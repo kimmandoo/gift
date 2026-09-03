@@ -7,8 +7,8 @@ This file is the handoff record for continuing work across query sessions.
 - Date: 2026-09-03
 - Active task: Task 27 — interactive rebase and history rewriting.
 - Branch: `main`; no new branch or worktree was created.
-- Latest completed implementation commit: `491ab50
-  feat(task27): add interactive rebase plan model`.
+- Latest completed implementation commit: `253160e
+  feat(task27): add interactive rebase preflight`.
 - Implemented typed reset/undo/revert contracts, short-lived stale-bound
   previews, protected/pushed/dirty/detached/in-progress preflight, all four
   reset modes, multi-commit revert, and explicit revert conflict recovery.
