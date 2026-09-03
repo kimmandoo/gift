@@ -400,3 +400,5 @@ system Git 2.35+.
    clarified search, restore, stash, empty-state, and status-summary copy.
 3. Hardened compact app-bar and dialog layouts, then passed repository widget
    tests, analysis, formatting, and the full Flutter suite.
+4. Unified historical diff row backgrounds to the widest rendered line and
+   covered the short-line/long-line width invariant in a widget test.

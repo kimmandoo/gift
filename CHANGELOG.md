@@ -2,6 +2,7 @@
 
 ## 2026-09-03
 
+- fix(history): unified diff row background widths across short and long lines.
 - fix(ui): unified History detail scrolling, clarified repository action labels,
   and hardened compact menu layouts.
 - fix(history): added a recent-commit target picker so reset no longer

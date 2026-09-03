@@ -735,12 +735,18 @@ class _HistoryScreenState extends State<HistoryScreen> {
                     horizontal: 8,
                     vertical: 8,
                   ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      for (var index = 0; index < diff.lines.length; index++)
-                        _historicalDiffLine(context, diff.lines[index], index),
-                    ],
+                  child: IntrinsicWidth(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        for (var index = 0; index < diff.lines.length; index++)
+                          _historicalDiffLine(
+                            context,
+                            diff.lines[index],
+                            index,
+                          ),
+                      ],
+                    ),
                   ),
                 ),
               ),

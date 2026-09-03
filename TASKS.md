@@ -399,6 +399,8 @@ activated with its behavior scenarios and first failing test.
   compact file-history controls.
 - [x] Hardened responsive app-bar and dialog layouts against narrow-width
   button overflow and added widget coverage for the updated controls.
+- [x] Unified historical diff row backgrounds to the widest rendered line and
+  added regression coverage for long-line coloring.
 
 The repository UI polish follow-up is complete. Keep Task 27 planned until it
 is explicitly activated with its behavior scenarios and first failing test.

@@ -25,6 +25,9 @@ This file is the handoff record for continuing work across query sessions.
 - Unified History detail scrolling so the detail pane owns vertical movement;
   the diff card now keeps only a horizontal scroller for long code lines and
   reveals the selected diff near its file row.
+- Unified every historical diff row's background to the widest rendered line,
+  so a long line no longer creates a colored protrusion beyond neighboring
+  rows.
 - Clarified repository menu labels and empty states, made the Changes app bar
   collapse to a menu before actions crowd the repository title, and fixed
   narrow file-history controls using their actual available width.

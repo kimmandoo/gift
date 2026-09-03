@@ -160,8 +160,9 @@ void main() {
       snapshot: GitDiffSnapshot(
         path: 'notes.txt',
         scope: GitDiffScope.commit,
-        lines: const [
-          GitDiffLine(kind: GitDiffLineKind.addition, text: '+new'),
+        lines: [
+          const GitDiffLine(kind: GitDiffLineKind.addition, text: '+new'),
+          GitDiffLine(kind: GitDiffLineKind.context, text: ' ${'x' * 120}'),
         ],
         contentHash: 'commit-diff',
       ),
@@ -222,6 +223,15 @@ void main() {
     );
     expect(find.byKey(const Key('commit-diff-scroll')), findsOneWidget);
     expect(find.byKey(const Key('commit-diff-line:0')), findsOneWidget);
+    expect(find.byKey(const Key('commit-diff-line:1')), findsOneWidget);
+    expect(
+      tester.getSize(find.byKey(const Key('commit-diff-line:0'))).width,
+      tester.getSize(find.byKey(const Key('commit-diff-line:1'))).width,
+    );
+    expect(
+      tester.getSize(find.byKey(const Key('commit-diff-line:0'))).width,
+      greaterThan(680),
+    );
     expect(find.text('+1'), findsOneWidget);
     expect(find.text('-0'), findsOneWidget);
     expect(find.byKey(const Key('copy-commit-diff')), findsOneWidget);
