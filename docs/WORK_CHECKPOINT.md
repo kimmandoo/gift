@@ -7,7 +7,7 @@ This file is the handoff record for continuing work across query sessions.
 - Date: 2026-09-03
 - Active task: Post-Task-35 UI/UX audit is complete; Task 36 is next.
 - Branch: `main`; no new branch or worktree was created.
-- Latest completed implementation commit: `8843063` (`fix(ui): expose actions
+- Latest completed implementation commit: `67683e5` (`fix(ui): expose actions
   and protect expandable text`).
 - Completed Task 28 after recording REMOTE-BRANCH-01/02 and UPDATE-01/02,
   adding the first RED fixture, and proving the real-Git implementation GREEN.
