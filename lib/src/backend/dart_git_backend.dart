@@ -7,6 +7,7 @@ import 'diff.dart';
 import 'comparison.dart';
 import 'git_installation_service.dart';
 import 'history.dart';
+import 'interactive_rebase.dart';
 import 'repository_service.dart';
 import 'executor.dart';
 import 'remote.dart';
@@ -1050,6 +1051,18 @@ class DartGitBackend {
       preview,
       cancellationToken: cancellationToken,
     );
+  }
+
+  Future<GitInteractiveRebasePreview> previewInteractiveRebase(
+    RepositoryId repositoryId,
+    GitInteractiveRebasePlan plan,
+  ) async {
+    final installation = await getGitInstallation();
+    return RepositoryService(
+      gitPath: installation.executablePath,
+      state: _state,
+      runner: _runner,
+    ).previewInteractiveRebase(repositoryId, plan);
   }
 
   Future<GitHistoryRollbackPreview> previewReset(

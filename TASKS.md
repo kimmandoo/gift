@@ -412,13 +412,14 @@ The repository UI polish follow-up is complete. Task 27 is now active.
   original commit identities and supports reorder/action edits.
 - [x] Implement the typed plan model with pick, reword, edit, squash, fixup,
   drop, autosquash, root, update-refs, and preflight validation contracts.
+- [x] Add a real-Git preview that captures the linear range and rejects dirty,
+  detached, protected, pushed, and in-progress repository states.
 - [ ] Add repository-state preflight and machine-owned interactive todo
   execution with explicit continue, skip, and abort recovery.
 - [ ] Report original OIDs, rewritten OIDs, and reflog recovery references.
 
-Task 27 is active. The next vertical is a real-Git preview fixture that loads
-the selected linear history and rejects dirty, detached, protected, pushed,
-and in-progress states before execution.
+Task 27 is active. The next vertical is machine-owned interactive todo
+execution with stale-preview revalidation and explicit recovery states.
 
 ## Post-MVP backlog
 

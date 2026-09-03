@@ -35,6 +35,13 @@ This file is the handoff record for continuing work across query sessions.
   pick/reword/edit/squash/fixup/drop actions, autosquash/root/update-refs
   option arguments, and validation for OIDs, duplicate identities,
   squash/fixup targets, and root/upstream combinations.
+- Added `GitInteractiveRebasePreview` and a real-Git preflight that captures
+  the selected linear range, counts merge commits, detects the tracking ref,
+  and issues a short-lived token only when dirty, detached, protected,
+  pushed, in-progress, and stale-range blockers are absent.
+- Exposed the preview through `DartGitBackend` and `GitGateway`; the acceptance
+  fixture covers clean, dirty, detached, protected, pushed, in-progress, and
+  mismatched-plan states.
 - Clarified repository menu labels and empty states, made the Changes app bar
   collapse to a menu before actions crowd the repository title, and fixed
   narrow file-history controls using their actual available width.
@@ -42,23 +49,26 @@ This file is the handoff record for continuing work across query sessions.
   `docs/WORK_CHECKPOINT.md`,
   `docs/research/jetbrains-git-mvp-behavior.md`,
   `docs/superpowers/plans/2026-09-02-gift-dart-mvp.md`,
-  `lib/src/backend/interactive_rebase.dart`,
+  `lib/src/backend/{dart_git_backend,dart_git_gateway,git_gateway,
+  interactive_rebase,repository_service}.dart`,
   `test/backend/interactive_rebase_test.dart`,
+  `test/backend/interactive_rebase_preview_test.dart`,
+  `test/helpers/git_patch_gateway_stub.dart`,
   `lib/src/features/repository/{changes_screen,comparison_dialog,
   file_history_dialog,history_screen,object_dialog,reset_dialog,
   shelf_dialog}.dart`, and
   `test/features/repository/{file_history_dialog,history_screen,
   object_dialog}_test.dart`.
-- Verification: the initial RED run failed because the new plan contract did
-  not exist; after implementation, focused interactive-rebase tests passed.
-  `flutter analyze`, `git diff --check`, and the full Flutter suite passed
-  with `154` tests.
+- Verification: the initial RED run failed because the preview contract and
+  backend method did not exist; after implementation, focused interactive
+  rebase preview tests, `flutter analyze`, `git diff --check`, and the full
+  Flutter suite passed with `156` tests.
   the repository widget tests passed with `47` tests and the full Flutter suite
   passed with `151` tests. Native Windows compilation is not available in this
   Linux workspace.
-- Next action: add a real-Git linear-history fixture and first preview contract
-  test; reject dirty, detached, protected, pushed, and in-progress states
-  before wiring interactive todo execution.
+- Next action: add the first machine-owned interactive todo execution fixture,
+  revalidate the preview token against current refs/worktree state, and expose
+  explicit continue, skip, and abort recovery.
 - Earlier Task 23 and Windows incremental-build diagnostics remain recorded in
   the plan and prior checkpoints.
 - Blockers: none.

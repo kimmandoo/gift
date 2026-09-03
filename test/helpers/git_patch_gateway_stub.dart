@@ -6,6 +6,7 @@ import 'package:gift/src/backend/comparison.dart';
 import 'package:gift/src/backend/domain.dart';
 import 'package:gift/src/backend/discard.dart';
 import 'package:gift/src/backend/history.dart';
+import 'package:gift/src/backend/interactive_rebase.dart';
 import 'package:gift/src/backend/executor.dart';
 import 'package:gift/src/backend/remote.dart';
 import 'package:gift/src/backend/status.dart';
@@ -268,6 +269,11 @@ mixin GitPatchGatewayStub {
     GitHistoryRollbackPreview preview, {
     GitCancellationToken? cancellationToken,
   }) => throw UnimplementedError();
+
+  Future<GitInteractiveRebasePreview> previewInteractiveRebase(
+    RepositoryId repositoryId,
+    GitInteractiveRebasePlan plan,
+  ) => throw UnimplementedError();
 
   Future<GitHistoryRollbackPreview> previewReset(
     RepositoryId repositoryId,

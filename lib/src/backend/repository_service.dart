@@ -13,6 +13,7 @@ import 'diff.dart';
 import 'error.dart';
 import 'executor.dart';
 import 'history.dart';
+import 'interactive_rebase.dart';
 import 'remote.dart';
 import 'reset.dart';
 import 'status.dart';
@@ -33,6 +34,8 @@ class AppState {
   final Map<String, _BranchPreviewRecord> _branchPreviews = {};
   final Map<String, _ObjectPreviewRecord> _objectPreviews = {};
   final Map<String, _HistoryRollbackPreviewRecord> _rollbackPreviews = {};
+  final Map<String, _InteractiveRebasePreviewRecord>
+  _interactiveRebasePreviews = {};
   final DateTime Function() _now;
 
   static const discardPreviewLifetime = Duration(minutes: 2);
@@ -319,6 +322,55 @@ class AppState {
   void consumeHistoryRollbackPreview(String token) {
     _rollbackPreviews.remove(token);
   }
+
+  GitBranchPreviewToken issueInteractiveRebasePreview({
+    required RepositoryId repositoryId,
+    required GitInteractiveRebasePlan plan,
+    required String fingerprint,
+  }) {
+    _interactiveRebasePreviews.removeWhere(
+      (_, record) => !record.expiresAt.isAfter(_now()),
+    );
+    final token = _newOpaqueToken();
+    final expiresAt = _now().add(rollbackPreviewLifetime);
+    _interactiveRebasePreviews[token] = _InteractiveRebasePreviewRecord(
+      repositoryId: repositoryId,
+      planKey: plan.queryKey,
+      fingerprint: fingerprint,
+      expiresAt: expiresAt,
+    );
+    return GitBranchPreviewToken(value: token, expiresAt: expiresAt);
+  }
+
+  void validateInteractiveRebasePreview({
+    required RepositoryId repositoryId,
+    required GitInteractiveRebasePreview preview,
+    required String fingerprint,
+  }) {
+    final token = preview.token;
+    final record = token == null ? null : _interactiveRebasePreviews[token];
+    final matches =
+        record != null &&
+        record.repositoryId == repositoryId &&
+        record.repositoryId == preview.repositoryId &&
+        record.planKey == preview.plan.queryKey &&
+        record.fingerprint == fingerprint &&
+        record.expiresAt.isAfter(_now());
+    if (!matches) {
+      if (token != null) _interactiveRebasePreviews.remove(token);
+      throw const GitError(
+        category: GitErrorCategory.staleRollbackPreview,
+        userMessage:
+            'This rebase preview is stale or expired. Review the plan again.',
+        diagnostic: 'interactive rebase preview token or repository fingerprint was missing, changed, or expired',
+        retryable: true,
+      );
+    }
+  }
+
+  void consumeInteractiveRebasePreview(String token) {
+    _interactiveRebasePreviews.remove(token);
+  }
 }
 
 class _DiscardPreviewRecord {
@@ -385,6 +437,20 @@ class _HistoryRollbackPreviewRecord {
 
   final RepositoryId repositoryId;
   final String requestKey;
+  final String fingerprint;
+  final DateTime expiresAt;
+}
+
+class _InteractiveRebasePreviewRecord {
+  const _InteractiveRebasePreviewRecord({
+    required this.repositoryId,
+    required this.planKey,
+    required this.fingerprint,
+    required this.expiresAt,
+  });
+
+  final RepositoryId repositoryId;
+  final String planKey;
   final String fingerprint;
   final DateTime expiresAt;
 }
@@ -1022,6 +1088,333 @@ class RepositoryService {
       mode: mode,
     ),
   );
+
+  /// Captures the exact commit range and repository state before an
+  /// interactive history rewrite. This preview never starts Git rebase.
+  Future<GitInteractiveRebasePreview> previewInteractiveRebase(
+    RepositoryId repositoryId,
+    GitInteractiveRebasePlan plan,
+  ) async {
+    if (plan.repositoryId != repositoryId) {
+      throw const GitError(
+        category: GitErrorCategory.invalidOpaqueId,
+        userMessage: 'This rebase plan belongs to another repository.',
+        diagnostic:
+            'interactive rebase plan repository ID did not match the request',
+        retryable: false,
+      );
+    }
+    final handle = await state.lookup(repositoryId);
+    final inspection = await _inspectInteractiveRebase(
+      repositoryId,
+      handle,
+      plan,
+    );
+    GitBranchPreviewToken? token;
+    if (inspection.blockingMessage == null && plan.isValid) {
+      token = state.issueInteractiveRebasePreview(
+        repositoryId: repositoryId,
+        plan: plan,
+        fingerprint: inspection.fingerprint,
+      );
+    }
+    return GitInteractiveRebasePreview(
+      repositoryId: repositoryId,
+      plan: plan,
+      currentBranch: inspection.currentBranch,
+      currentHead: inspection.currentHead,
+      upstreamHead: inspection.upstreamHead,
+      selectedCommitCount: plan.entries.length,
+      mergeCommitCount: inspection.mergeCommitCount,
+      branchProtected: inspection.branchProtected,
+      pushedCommits: inspection.pushedCommits,
+      detachedHead: inspection.detachedHead,
+      dirtyWorktree: inspection.dirtyWorktree,
+      operationInProgress: inspection.operationInProgress,
+      fingerprint: inspection.fingerprint,
+      requiresConfirmation: true,
+      token: token?.value,
+      expiresAt: token?.expiresAt,
+      blockingMessage: inspection.blockingMessage,
+      planIssues: plan.validationIssues,
+    );
+  }
+
+  Future<_InteractiveRebaseInspection> _inspectInteractiveRebase(
+    RepositoryId repositoryId,
+    RepositoryHandle handle,
+    GitInteractiveRebasePlan plan,
+  ) async {
+    final status = await getStatus(repositoryId);
+    final currentHead = await _readHeadOid(handle);
+    if (currentHead == null || currentHead.isEmpty) {
+      throw const GitError(
+        category: GitErrorCategory.unbornBranch,
+        userMessage: 'There is no commit to rebase yet.',
+        diagnostic: 'interactive rebase was requested on an unborn HEAD',
+        retryable: false,
+      );
+    }
+
+    final planIssues = plan.validationIssues;
+    String? upstreamHead;
+    if (!plan.options.root &&
+        plan.upstreamRevision != null &&
+        planIssues.every(
+          (issue) =>
+              issue.kind != GitInteractiveRebaseIssueKind.upstreamRequired &&
+              issue.kind != GitInteractiveRebaseIssueKind.rootHasUpstream &&
+              issue.kind != GitInteractiveRebaseIssueKind.invalidUpstream,
+        )) {
+      upstreamHead = await _resolveCommit(handle, plan.upstreamRevision!);
+    }
+
+    final expectedCommitOids = upstreamHead == null && !plan.options.root
+        ? const <String>[]
+        : await _readInteractiveRebaseRange(
+            handle,
+            currentHead,
+            upstreamHead,
+            root: plan.options.root,
+          );
+    final commitsToInspect = expectedCommitOids.isNotEmpty
+        ? expectedCommitOids
+        : plan.entries
+              .map((entry) => entry.originalOid)
+              .where(_isCommitOid)
+              .toList(growable: false);
+    final mergeCommitCount = commitsToInspect.isEmpty
+        ? 0
+        : await _readMergeCommitCount(handle, commitsToInspect);
+
+    final planOids = plan.entries.map((entry) => entry.originalOid).toSet();
+    final expectedOids = expectedCommitOids.toSet();
+    final matchesCapturedRange =
+        plan.isValid &&
+        expectedCommitOids.length == plan.entries.length &&
+        planOids.length == expectedOids.length &&
+        planOids.containsAll(expectedOids);
+    final upstreamIsAncestor =
+        plan.options.root ||
+        (upstreamHead != null &&
+            await _isAncestor(handle, upstreamHead, currentHead));
+    final operation = await _readConflictOperation(handle);
+    final trackingHead = status.branch.upstream == null
+        ? null
+        : await _tryResolve(handle, '@{upstream}');
+    final pushedCommits = await _hasPushedInteractiveRebaseCommits(
+      handle,
+      currentHead,
+      upstreamHead,
+      trackingHead,
+      expectedCommitOids.length,
+      root: plan.options.root,
+    );
+    final branch = status.branch.head;
+    final fingerprint = hashGitObjectBytes(
+      utf8.encode(
+        [
+          status.contentHash,
+          currentHead,
+          upstreamHead ?? '',
+          trackingHead ?? '',
+          branch ?? '',
+          operation?.operation.name ?? 'idle',
+          expectedCommitOids.join(','),
+          plan.queryKey,
+        ].join('\u0000'),
+      ),
+    );
+
+    String? blockingMessage;
+    if (planIssues.isNotEmpty) {
+      blockingMessage = planIssues.first.message;
+    } else if (operation != null) {
+      blockingMessage =
+          'Finish or abort the in-progress ${operation.operation.name} operation first.';
+    } else if (status.branch.isDetached) {
+      blockingMessage = 'Switch to a branch before rewriting its history.';
+    } else if (_protectedRollbackBranches.contains(branch)) {
+      blockingMessage =
+          'Interactive rebase is blocked on protected branches such as main.';
+    } else if (pushedCommits) {
+      blockingMessage =
+          'This rebase would rewrite commits that are already pushed.';
+    } else if (!status.isClean) {
+      blockingMessage =
+          'Commit or stash local changes before rewriting history.';
+    } else if (mergeCommitCount > 0) {
+      blockingMessage = 'Interactive rebase is limited to a linear commit range; merge commits are not supported yet.';
+    } else if (!upstreamIsAncestor) {
+      blockingMessage =
+          'The selected upstream is not an ancestor of the current branch.';
+    } else if (expectedCommitOids.isEmpty) {
+      blockingMessage =
+          'The selected range does not contain any commits to rebase.';
+    } else if (!matchesCapturedRange) {
+      blockingMessage =
+          'The rebase plan does not match the current linear commit range.';
+    }
+
+    return _InteractiveRebaseInspection(
+      currentBranch: branch,
+      currentHead: currentHead,
+      upstreamHead: upstreamHead,
+      mergeCommitCount: mergeCommitCount,
+      branchProtected: _protectedRollbackBranches.contains(branch),
+      pushedCommits: pushedCommits,
+      detachedHead: status.branch.isDetached,
+      dirtyWorktree: !status.isClean,
+      operationInProgress: operation?.operation,
+      fingerprint: fingerprint,
+      blockingMessage: blockingMessage,
+    );
+  }
+
+  Future<List<String>> _readInteractiveRebaseRange(
+    RepositoryHandle handle,
+    String currentHead,
+    String? upstreamHead, {
+    required bool root,
+  }) async {
+    final range = root ? currentHead : '$upstreamHead..$currentHead';
+    final output = await _runner.run(
+      GitInvocation(
+        program: gitPath,
+        args: ['rev-list', '--reverse', range],
+        cwd: handle.root,
+        kind: GitOperationKind.read,
+        outputPolicy: const OutputPolicy.capture(maxBytes: 2 * 1024 * 1024),
+      ),
+    );
+    final oids = utf8
+        .decode(output.stdout, allowMalformed: true)
+        .split('\n')
+        .map((oid) => oid.trim())
+        .where((oid) => oid.isNotEmpty)
+        .toList(growable: false);
+    if (oids.any((oid) => !_isCommitOid(oid))) {
+      throw const GitError(
+        category: GitErrorCategory.parseFailure,
+        userMessage: 'Git returned an unreadable rebase commit range.',
+        diagnostic:
+            'rev-list returned a non-object ID in the interactive range',
+        retryable: false,
+      );
+    }
+    return oids;
+  }
+
+  Future<int> _readMergeCommitCount(
+    RepositoryHandle handle,
+    Iterable<String> commitOids,
+  ) async {
+    final oids = commitOids.toList(growable: false);
+    if (oids.isEmpty) return 0;
+    final output = await _runner.run(
+      GitInvocation(
+        program: gitPath,
+        args: ['rev-list', '--parents', '--no-walk=unsorted', ...oids],
+        cwd: handle.root,
+        kind: GitOperationKind.read,
+        outputPolicy: const OutputPolicy.capture(maxBytes: 512 * 1024),
+      ),
+    );
+    var mergeCount = 0;
+    for (final line in utf8.decode(output.stdout).split('\n')) {
+      if (line.trim().isEmpty) continue;
+      if (line.trim().split(RegExp(r'\s+')).length > 2) mergeCount++;
+    }
+    return mergeCount;
+  }
+
+  Future<bool> _isAncestor(
+    RepositoryHandle handle,
+    String ancestor,
+    String descendant,
+  ) async {
+    try {
+      await _runner.run(
+        GitInvocation(
+          program: gitPath,
+          args: ['merge-base', '--is-ancestor', ancestor, descendant],
+          cwd: handle.root,
+          kind: GitOperationKind.read,
+          outputPolicy: const OutputPolicy.capture(maxBytes: 128),
+        ),
+      );
+      return true;
+    } on GitError catch (error) {
+      if (error.category == GitErrorCategory.processFailed &&
+          error.exitCode == 1) {
+        return false;
+      }
+      rethrow;
+    }
+  }
+
+  Future<bool> _hasPushedInteractiveRebaseCommits(
+    RepositoryHandle handle,
+    String currentHead,
+    String? upstreamHead,
+    String? trackingHead,
+    int selectedCommitCount, {
+    required bool root,
+  }) async {
+    if (trackingHead == null || selectedCommitCount == 0) return false;
+    final total = root
+        ? await _readReachableCommitCount(handle, currentHead)
+        : selectedCommitCount;
+    if (total == 0) return false;
+    final unpushed = root
+        ? await _readReachableCommitCountExcluding(
+            handle,
+            currentHead,
+            trackingHead,
+          )
+        : upstreamHead == null
+        ? 0
+        : await _readCommitCountExcluding(
+            handle,
+            upstreamHead,
+            currentHead,
+            trackingHead,
+          );
+    return unpushed < total;
+  }
+
+  Future<int> _readReachableCommitCount(
+    RepositoryHandle handle,
+    String head,
+  ) async {
+    final output = await _runner.run(
+      GitInvocation(
+        program: gitPath,
+        args: ['rev-list', '--count', head],
+        cwd: handle.root,
+        kind: GitOperationKind.read,
+        outputPolicy: const OutputPolicy.capture(maxBytes: 4 * 1024),
+      ),
+    );
+    return int.tryParse(utf8.decode(output.stdout).trim()) ?? 0;
+  }
+
+  Future<int> _readReachableCommitCountExcluding(
+    RepositoryHandle handle,
+    String head,
+    String excludedHead,
+  ) async {
+    final output = await _runner.run(
+      GitInvocation(
+        program: gitPath,
+        args: ['rev-list', '--count', head, '--not', excludedHead],
+        cwd: handle.root,
+        kind: GitOperationKind.read,
+        outputPolicy: const OutputPolicy.capture(maxBytes: 4 * 1024),
+      ),
+    );
+    return int.tryParse(utf8.decode(output.stdout).trim()) ?? 0;
+  }
 
   Future<GitHistoryRollbackPreview> previewUndo(RepositoryId repositoryId) =>
       previewHistoryRollback(
@@ -6394,6 +6787,34 @@ class _HistoryRollbackInspection {
   final String fingerprint;
   final String? blockingMessage;
   final List<String> revisionOids;
+}
+
+class _InteractiveRebaseInspection {
+  const _InteractiveRebaseInspection({
+    required this.currentBranch,
+    required this.currentHead,
+    required this.upstreamHead,
+    required this.mergeCommitCount,
+    required this.branchProtected,
+    required this.pushedCommits,
+    required this.detachedHead,
+    required this.dirtyWorktree,
+    required this.operationInProgress,
+    required this.fingerprint,
+    required this.blockingMessage,
+  });
+
+  final String? currentBranch;
+  final String currentHead;
+  final String? upstreamHead;
+  final int mergeCommitCount;
+  final bool branchProtected;
+  final bool pushedCommits;
+  final bool detachedHead;
+  final bool dirtyWorktree;
+  final GitConflictOperation? operationInProgress;
+  final String fingerprint;
+  final String? blockingMessage;
 }
 
 GitError _historyFailure({

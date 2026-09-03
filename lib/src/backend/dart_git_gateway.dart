@@ -8,6 +8,7 @@ import 'diff.dart';
 import 'comparison.dart';
 import 'git_gateway.dart';
 import 'history.dart';
+import 'interactive_rebase.dart';
 import 'executor.dart';
 import 'remote.dart';
 import 'status.dart';
@@ -594,6 +595,12 @@ class DartGitGateway implements GitGateway, DiscardPreviewCancellationGateway {
     preview,
     cancellationToken: cancellationToken,
   );
+
+  @override
+  Future<GitInteractiveRebasePreview> previewInteractiveRebase(
+    RepositoryId repositoryId,
+    GitInteractiveRebasePlan plan,
+  ) => backend.previewInteractiveRebase(repositoryId, plan);
 
   @override
   Future<GitHistoryRollbackPreview> previewReset(

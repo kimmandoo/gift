@@ -7,6 +7,7 @@ import 'diff.dart';
 import 'comparison.dart';
 import 'status.dart';
 import 'history.dart';
+import 'interactive_rebase.dart';
 import 'executor.dart';
 import 'remote.dart';
 import 'objects.dart';
@@ -413,6 +414,11 @@ abstract interface class GitGateway {
     GitHistoryRollbackPreview preview, {
     GitCancellationToken? cancellationToken,
   });
+
+  Future<GitInteractiveRebasePreview> previewInteractiveRebase(
+    RepositoryId repositoryId,
+    GitInteractiveRebasePlan plan,
+  );
 
   Future<GitHistoryRollbackPreview> previewReset(
     RepositoryId repositoryId,

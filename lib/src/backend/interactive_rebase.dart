@@ -1,3 +1,4 @@
+import 'conflict.dart';
 import 'domain.dart';
 
 /// The commands that can appear in an interactive rebase todo plan.
@@ -61,6 +62,9 @@ class GitInteractiveRebaseEntry {
   final GitInteractiveRebaseAction action;
   final int originalIndex;
 
+  String get queryKey =>
+      [originalOid, originalIndex, action.gitValue, subject].join('\u0000');
+
   String get shortOid =>
       originalOid.length > 8 ? originalOid.substring(0, 8) : originalOid;
 
@@ -100,6 +104,62 @@ class GitInteractiveRebaseIssue {
   final int? entryIndex;
 }
 
+/// The repository facts shown before an interactive rebase can be started.
+///
+/// A preview receives a token only when the plan matches the current linear
+/// range and no protected or unsafe repository state was found. The token is
+/// consumed by the future execution contract after the same facts are checked
+/// again.
+class GitInteractiveRebasePreview {
+  GitInteractiveRebasePreview({
+    required this.repositoryId,
+    required this.plan,
+    required this.currentBranch,
+    required this.currentHead,
+    required this.upstreamHead,
+    required this.selectedCommitCount,
+    required this.mergeCommitCount,
+    required this.branchProtected,
+    required this.pushedCommits,
+    required this.detachedHead,
+    required this.dirtyWorktree,
+    required this.operationInProgress,
+    required this.fingerprint,
+    required this.requiresConfirmation,
+    this.token,
+    this.expiresAt,
+    this.blockingMessage,
+    Iterable<GitInteractiveRebaseIssue> planIssues =
+        const <GitInteractiveRebaseIssue>[],
+  }) : planIssues = List.unmodifiable(planIssues);
+
+  final RepositoryId repositoryId;
+  final GitInteractiveRebasePlan plan;
+  final String? currentBranch;
+  final String currentHead;
+  final String? upstreamHead;
+  final int selectedCommitCount;
+  final int mergeCommitCount;
+  final bool branchProtected;
+  final bool pushedCommits;
+  final bool detachedHead;
+  final bool dirtyWorktree;
+  final GitConflictOperation? operationInProgress;
+  final String fingerprint;
+  final bool requiresConfirmation;
+  final String? token;
+  final DateTime? expiresAt;
+  final String? blockingMessage;
+  final List<GitInteractiveRebaseIssue> planIssues;
+
+  bool get canExecute =>
+      plan.isValid &&
+      blockingMessage == null &&
+      token != null &&
+      expiresAt != null &&
+      expiresAt!.isAfter(DateTime.now());
+}
+
 /// A reviewed, immutable interactive rebase plan.
 ///
 /// This is intentionally only the preflight model. Repository state checks,
@@ -118,6 +178,14 @@ class GitInteractiveRebasePlan {
   final String? upstreamRevision;
   final List<GitInteractiveRebaseEntry> entries;
   final GitInteractiveRebaseOptions options;
+
+  String get queryKey => [
+    upstreamRevision ?? '',
+    options.autosquash,
+    options.root,
+    options.updateRefs,
+    ...entries.map((entry) => entry.queryKey),
+  ].join('\u0000');
 
   bool get isValid => validationIssues.isEmpty;
 

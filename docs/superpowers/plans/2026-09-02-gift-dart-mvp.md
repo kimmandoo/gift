@@ -413,6 +413,11 @@ system Git 2.35+.
 3. Implemented the typed plan model for pick, reword, edit, squash, fixup,
    drop, autosquash, root, and update-refs, including duplicate identity,
    invalid OID, root/upstream, and squash/fixup sequence validation.
-4. The next RED fixture will load a real linear history and preview repository
-   state before any interactive rebase process starts. It will cover dirty,
-   detached, protected, pushed, and in-progress blockers.
+4. Added a RED real-Git preview fixture; it covered a clean linear branch,
+   dirty and detached worktrees, protected and pushed branches, in-progress
+   operation metadata, and a plan that no longer matched the captured range.
+5. Implemented repository-state-bound preview tokens and exposed the preview
+   through the backend and `GitGateway`; the focused fixture, analysis,
+   formatting, and full test suite passed.
+6. The next RED fixture will drive a machine-owned interactive todo and verify
+   stale-preview rejection before any history rewrite starts.
