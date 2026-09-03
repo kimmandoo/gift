@@ -706,10 +706,12 @@ system Git 2.35+.
 
 1. Added a built-in IExpress setup executable that installs gift per user under
    `%LOCALAPPDATA%\\Programs\\gift`.
-2. Added Start Menu shortcut creation and current-user uninstall registration,
-   with hidden PowerShell/VBScript install and uninstall launchers.
-3. Published `gift-setup.exe` alongside the Release bundle and portable
-   executable in the Windows CI artifact, and documented the install flow.
+2. Added Start Menu and Desktop shortcut creation plus current-user uninstall
+   registration, with hidden PowerShell/VBScript install and uninstall
+   launchers.
+3. Kept `gift-portable.exe` as a temporary self-extracting launcher without
+   installation or shortcut side effects, and published both Windows artifacts
+   alongside the Release bundle.
 
 ## Planned follow-up: contextual actions and path selection
 

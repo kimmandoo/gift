@@ -63,9 +63,11 @@ files. It behaves as one file for copying and launching, but it still requires
 Git to be installed separately because the app uses the system Git executable.
 
 The Windows installer is a per-user setup executable. It installs gift under
-`%LOCALAPPDATA%\Programs\gift`, creates a Start Menu shortcut, and registers
-an uninstaller under the current user's Windows uninstall entries. It does
-not require administrator access. Git remains a separate system dependency.
+`%LOCALAPPDATA%\Programs\gift`, creates Start Menu and Desktop shortcuts, and
+registers an uninstaller under the current user's Windows uninstall entries.
+The portable executable only runs from a temporary extraction directory and
+does not install files or create shortcuts. Neither package requires
+administrator access. Git remains a separate system dependency.
 The desktop identity is kept in the checked-in release assets. The canonical
 pixel mascot is `assets/images/gift_icon.png`; Windows uses the derived
 multi-size `windows/runner/resources/app_icon.ico`, and macOS uses the

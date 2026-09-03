@@ -9,7 +9,9 @@ $extractDirectory = Join-Path ([System.IO.Path]::GetTempPath()) ('gift-setup-' +
 $packageDirectory = Split-Path -Parent $PayloadPath
 $applicationPath = Join-Path $installDirectory 'gift.exe'
 $startMenuDirectory = Join-Path ([Environment]::GetFolderPath('StartMenu')) 'Programs\gift'
-$shortcutPath = Join-Path $startMenuDirectory 'gift.lnk'
+$startMenuShortcutPath = Join-Path $startMenuDirectory 'gift.lnk'
+$desktopDirectory = [Environment]::GetFolderPath('Desktop')
+$desktopShortcutPath = Join-Path $desktopDirectory 'gift.lnk'
 $uninstallScript = Join-Path $installDirectory 'windows_uninstall.ps1'
 $uninstallVbs = Join-Path $installDirectory 'windows_uninstall.vbs'
 
@@ -32,11 +34,14 @@ try {
 
   New-Item -ItemType Directory -Path $startMenuDirectory -Force | Out-Null
   $shell = New-Object -ComObject WScript.Shell
-  $shortcut = $shell.CreateShortcut($shortcutPath)
-  $shortcut.TargetPath = $applicationPath
-  $shortcut.WorkingDirectory = $installDirectory
-  $shortcut.Description = 'Launch gift Git client'
-  $shortcut.Save()
+  foreach ($shortcutPath in @($startMenuShortcutPath, $desktopShortcutPath)) {
+    $shortcut = $shell.CreateShortcut($shortcutPath)
+    $shortcut.TargetPath = $applicationPath
+    $shortcut.WorkingDirectory = $installDirectory
+    $shortcut.IconLocation = "$applicationPath,0"
+    $shortcut.Description = 'Launch gift Git client'
+    $shortcut.Save()
+  }
 
   $uninstallKey = 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Uninstall\gift'
   New-Item -Path $uninstallKey -Force | Out-Null

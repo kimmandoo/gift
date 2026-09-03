@@ -20,8 +20,9 @@
   uninstall registration alongside the release bundle and portable launcher.
 - fix(push): restored vertical breathing room between the Remote and Publish
   scope controls so their labels remain legible at compact widths.
-- fix(push): added a visible in-dialog transfer card with an indeterminate
-  progress bar, destination label, and safe Cancel push action while Git runs.
+- fix(windows): made gift-setup create Desktop and Start Menu shortcuts and
+  clarified that portable only runs from temporary files without installation
+  side effects.
 
 ## 2026-09-03
 - fix(ui): grouped repository actions into a categorized menu and reduced

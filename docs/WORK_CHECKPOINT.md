@@ -5,11 +5,11 @@ This file is the handoff record for continuing work across query sessions.
 ## Current checkpoint
 
 - Date: 2026-09-04
-- Active task: Push field spacing correction is verified and ready to commit;
-  no follow-up implementation task is active.
+- Active task: Windows installer shortcut correction is verified and ready to
+  commit; no follow-up implementation task is active.
 - Branch: `main`; no new branch or worktree was created.
-- Latest completed implementation commit: `2383204` (`fix(push): show remote
-  transfer progress`).
+- Latest completed implementation commit: `9d39afb` (`fix(push): separate
+  remote and publish scope`).
 - Completed Task 28 after recording REMOTE-BRANCH-01/02 and UPDATE-01/02,
   adding the first RED fixture, and proving the real-Git implementation GREEN.
 - Added immutable remote ref snapshots with grouped remotes, local tracking,
@@ -516,6 +516,31 @@ This file is the handoff record for continuing work across query sessions.
 - Verification so far: `flutter analyze` passed; the focused Push dialog suite
   passed with 3 tests; and the complete responsive feature suite passed with
   72 tests.
+- Blockers: none.
+- Next action after this session commit: activate Task 40 or another
+  dependency-ready roadmap task.
+
+## Current session: Windows installer shortcut correction
+
+- Date: 2026-09-04.
+- Changed files: `CHANGELOG.md`, `README.md`, `docs/RELEASING.md`, this
+  checkpoint, `docs/superpowers/plans/2026-09-02-gift-dart-mvp.md`,
+  `tool/windows_setup_launcher.ps1`, and `tool/windows_uninstall.ps1`.
+- Diagnosis: `gift-setup.exe` already installed a persistent per-user copy and
+  registered an uninstaller, but it created only a Start Menu shortcut. Its
+  post-install app launch made the visible result feel like the portable
+  launcher.
+- Fix: setup now creates both Desktop and Start Menu shortcuts, sets the
+  installed executable as the shortcut icon, and the uninstaller removes both.
+  Release documentation now explicitly distinguishes persistent setup from
+  temporary portable execution.
+- Verification: all four Windows PowerShell packaging scripts parsed without
+  syntax errors; `tool/build_windows.ps1` rebuilt the release bundle,
+  `gift-portable.exe`, and `gift-setup.exe`; installer smoke confirmed the
+  persistent install directory, Desktop shortcut, Start Menu shortcut,
+  shortcut target, and uninstall registration; uninstaller smoke removed all
+  of them. The generated setup package also passed the requested install
+  flow.
 - Blockers: none.
 - Next action after this session commit: activate Task 40 or another
   dependency-ready roadmap task.
