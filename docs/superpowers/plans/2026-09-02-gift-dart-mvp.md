@@ -419,5 +419,11 @@ system Git 2.35+.
 5. Implemented repository-state-bound preview tokens and exposed the preview
    through the backend and `GitGateway`; the focused fixture, analysis,
    formatting, and full test suite passed.
-6. The next RED fixture will drive a machine-owned interactive todo and verify
-   stale-preview rejection before any history rewrite starts.
+6. Added RED real-Git execution fixtures for reorder, edit pause/continue,
+   squash/fixup/drop, abort, and stale-preview rejection.
+7. Implemented machine-owned todo injection, persistent recovery refs,
+   rewritten-OID reporting, and explicit continue/skip/abort recovery states.
+8. Added a History interactive-rebase dialog with upstream selection,
+   reorder/action controls, preview, execution, and recovery actions.
+9. The next RED fixture will cover conflicted rebases, hook rejection,
+   cancellation, and root/update-refs option limitations.

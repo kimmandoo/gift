@@ -1140,6 +1140,489 @@ class RepositoryService {
     );
   }
 
+  /// Executes only a fresh, token-bound plan. Git receives a temporary
+  /// sequence-editor command that copies the machine-generated todo file; the
+  /// UI never supplies an arbitrary command or todo path.
+  Future<GitInteractiveRebaseResult> executeInteractiveRebase(
+    RepositoryId repositoryId,
+    GitInteractiveRebasePreview preview, {
+    GitCancellationToken? cancellationToken,
+  }) {
+    return state.runMutation(repositoryId, () async {
+      final handle = await state.lookup(repositoryId);
+      final inspection = await _inspectInteractiveRebase(
+        repositoryId,
+        handle,
+        preview.plan,
+      );
+      if (preview.token != null) {
+        // Validate before translating a changed range into a generic blocker;
+        // a reviewed preview must fail as stale when refs moved underneath it.
+        state.validateInteractiveRebasePreview(
+          repositoryId: repositoryId,
+          preview: preview,
+          fingerprint: inspection.fingerprint,
+        );
+      } else {
+        _throwIfInteractiveRebaseBlocked(inspection);
+        throw const GitError(
+          category: GitErrorCategory.staleRollbackPreview,
+          userMessage: 'Review the rebase plan before starting it.',
+          diagnostic: 'interactive rebase execution received no preview token',
+          retryable: true,
+        );
+      }
+      _throwIfInteractiveRebaseBlocked(inspection);
+
+      final recoveryRef = await _createInteractiveRebaseRecoveryRef(
+        handle,
+        inspection.currentHead,
+      );
+      state.consumeInteractiveRebasePreview(preview.token!);
+      final editor = await _createInteractiveRebaseEditor(preview.plan);
+      try {
+        final args = [
+          'rebase',
+          '--interactive',
+          ...preview.plan.options.toGitArguments(),
+          if (!preview.plan.options.root) inspection.upstreamHead!,
+        ];
+        try {
+          await _runner.run(
+            GitInvocation(
+              program: gitPath,
+              args: args,
+              cwd: handle.root,
+              kind: GitOperationKind.mutation,
+              outputPolicy: const OutputPolicy.capture(maxBytes: 512 * 1024),
+              cancellationToken: cancellationToken,
+              environment: {
+                'GIT_SEQUENCE_EDITOR': editor.sequenceEditorCommand,
+                'GIT_EDITOR': ':',
+                'GIT_TERMINAL_PROMPT': '0',
+                'GIT_REFLOG_ACTION': 'gift interactive rebase',
+              },
+            ),
+          );
+        } on GitError catch (error, stackTrace) {
+          final afterFailure = await _readInteractiveRebaseRecovery(
+            repositoryId,
+          );
+          final operationStillActive =
+              afterFailure.operation?.operation == GitConflictOperation.rebase;
+          if (error.category == GitErrorCategory.cancelled) {
+            return _interactiveRebaseResult(
+              repositoryId: repositoryId,
+              phase: GitInteractiveRebasePhase.start,
+              state: GitInteractiveRebaseExecutionState.cancelled,
+              status: await getStatus(repositoryId),
+              previousHead: inspection.currentHead,
+              resultingHead:
+                  await _readHeadOid(handle) ?? inspection.currentHead,
+              summary: 'The rebase was cancelled. Review the repository state before choosing a recovery action.',
+              plan: preview.plan,
+              recoveryRef: recoveryRef,
+              recovery: operationStillActive ? afterFailure : null,
+            );
+          }
+          if (operationStillActive) {
+            return _interactiveRebaseResult(
+              repositoryId: repositoryId,
+              phase: GitInteractiveRebasePhase.start,
+              state: afterFailure.hasConflicts
+                  ? GitInteractiveRebaseExecutionState.conflicted
+                  : GitInteractiveRebaseExecutionState.paused,
+              status: await getStatus(repositoryId),
+              previousHead: inspection.currentHead,
+              resultingHead:
+                  await _readHeadOid(handle) ?? inspection.currentHead,
+              summary: afterFailure.hasConflicts
+                  ? 'Git stopped with conflicts. Resolve them, then choose continue, skip, or abort.'
+                  : 'Git paused the rebase. Choose continue, skip, or abort after reviewing the worktree.',
+              plan: preview.plan,
+              recoveryRef: recoveryRef,
+              recovery: afterFailure,
+            );
+          }
+          Error.throwWithStackTrace(
+            _mapInteractiveRebaseError(error),
+            stackTrace,
+          );
+        }
+
+        final afterStart = await _readInteractiveRebaseRecovery(repositoryId);
+        if (afterStart.operation?.operation == GitConflictOperation.rebase) {
+          return _interactiveRebaseResult(
+            repositoryId: repositoryId,
+            phase: GitInteractiveRebasePhase.start,
+            state: afterStart.hasConflicts
+                ? GitInteractiveRebaseExecutionState.conflicted
+                : GitInteractiveRebaseExecutionState.paused,
+            status: await getStatus(repositoryId),
+            previousHead: inspection.currentHead,
+            resultingHead: await _readHeadOid(handle) ?? inspection.currentHead,
+            summary: afterStart.hasConflicts
+                ? 'Git stopped with conflicts. Resolve them, then choose continue, skip, or abort.'
+                : 'Git paused the rebase. Choose continue, skip, or abort after reviewing the worktree.',
+            plan: preview.plan,
+            recoveryRef: recoveryRef,
+            recovery: afterStart,
+          );
+        }
+        final status = await getStatus(repositoryId);
+        final resultingHead =
+            await _readHeadOid(handle) ?? inspection.currentHead;
+        final rewritten = await _readInteractiveRebaseRewriteMap(
+          handle,
+          preview.plan,
+          resultingHead,
+        );
+        return _interactiveRebaseResult(
+          repositoryId: repositoryId,
+          phase: GitInteractiveRebasePhase.start,
+          state: GitInteractiveRebaseExecutionState.completed,
+          status: status,
+          previousHead: inspection.currentHead,
+          resultingHead: resultingHead,
+          summary: 'The interactive rebase completed.',
+          plan: preview.plan,
+          recoveryRef: recoveryRef,
+          rewrittenCommitOids: rewritten,
+          recoveryRefs: await _readInteractiveRebaseRecoveryRefs(
+            handle,
+            recoveryRef,
+            inspection.currentHead,
+          ),
+        );
+      } finally {
+        await editor.dispose();
+      }
+    });
+  }
+
+  /// Runs one explicit recovery command for an already-started rebase.
+  Future<GitInteractiveRebaseResult> recoverInteractiveRebase(
+    RepositoryId repositoryId,
+    GitInteractiveRebaseRecoveryRequest request, {
+    GitCancellationToken? cancellationToken,
+  }) {
+    return state.runMutation(repositoryId, () async {
+      final handle = await state.lookup(repositoryId);
+      final before = await _readInteractiveRebaseRecovery(repositoryId);
+      if (before.operation?.operation != GitConflictOperation.rebase) {
+        throw const GitError(
+          category: GitErrorCategory.operationInProgress,
+          userMessage: 'No interactive rebase is in progress.',
+          diagnostic: 'interactive rebase recovery was requested without rebase metadata',
+          retryable: false,
+        );
+      }
+      if (before.fingerprint != request.fingerprint) {
+        throw const GitError(
+          category: GitErrorCategory.staleConflict,
+          userMessage:
+              'The rebase state changed. Refresh it before recovering.',
+          diagnostic:
+              'interactive rebase recovery fingerprint no longer matched',
+          retryable: true,
+        );
+      }
+      if (request.action ==
+              GitInteractiveRebaseRecoveryAction.continueOperation &&
+          before.hasConflicts) {
+        throw const GitError(
+          category: GitErrorCategory.unresolvedConflicts,
+          userMessage: 'Resolve every conflicted path before continuing.',
+          diagnostic: 'interactive rebase continue was requested with unresolved conflicts',
+          retryable: false,
+        );
+      }
+
+      final previousHead = await _readHeadOid(handle) ?? '';
+      final args = switch (request.action) {
+        GitInteractiveRebaseRecoveryAction.continueOperation => const [
+          'rebase',
+          '--continue',
+        ],
+        GitInteractiveRebaseRecoveryAction.skip => const ['rebase', '--skip'],
+        GitInteractiveRebaseRecoveryAction.abort => const ['rebase', '--abort'],
+      };
+      try {
+        await _runner.run(
+          GitInvocation(
+            program: gitPath,
+            args: args,
+            cwd: handle.root,
+            kind: GitOperationKind.mutation,
+            outputPolicy: const OutputPolicy.capture(maxBytes: 512 * 1024),
+            cancellationToken: cancellationToken,
+            environment: const {'GIT_EDITOR': ':', 'GIT_TERMINAL_PROMPT': '0'},
+          ),
+        );
+      } on GitError catch (error, stackTrace) {
+        final afterFailure = await _readInteractiveRebaseRecovery(repositoryId);
+        final operationStillActive =
+            afterFailure.operation?.operation == GitConflictOperation.rebase;
+        if (error.category == GitErrorCategory.cancelled) {
+          return _interactiveRebaseRecoveryResult(
+            repositoryId,
+            request,
+            GitInteractiveRebaseExecutionState.cancelled,
+            await getStatus(repositoryId),
+            previousHead,
+            await _readHeadOid(handle) ?? previousHead,
+            'The rebase recovery command was cancelled. Review its current state.',
+            afterFailure,
+          );
+        }
+        if (operationStillActive) {
+          return _interactiveRebaseRecoveryResult(
+            repositoryId,
+            request,
+            afterFailure.hasConflicts
+                ? GitInteractiveRebaseExecutionState.conflicted
+                : GitInteractiveRebaseExecutionState.paused,
+            await getStatus(repositoryId),
+            previousHead,
+            await _readHeadOid(handle) ?? previousHead,
+            afterFailure.hasConflicts
+                ? 'Git still has conflicts. Resolve them before continuing.'
+                : 'The rebase is still paused. Choose an explicit recovery action.',
+            afterFailure,
+          );
+        }
+        Error.throwWithStackTrace(
+          _mapInteractiveRebaseError(error),
+          stackTrace,
+        );
+      }
+
+      final after = await _readInteractiveRebaseRecovery(repositoryId);
+      return _interactiveRebaseRecoveryResult(
+        repositoryId,
+        request,
+        request.action == GitInteractiveRebaseRecoveryAction.abort
+            ? GitInteractiveRebaseExecutionState.aborted
+            : after.operation == null
+            ? GitInteractiveRebaseExecutionState.completed
+            : GitInteractiveRebaseExecutionState.paused,
+        await getStatus(repositoryId),
+        previousHead,
+        await _readHeadOid(handle) ?? previousHead,
+        request.action == GitInteractiveRebaseRecoveryAction.abort
+            ? 'The interactive rebase was aborted.'
+            : after.operation == null
+            ? 'The interactive rebase completed.'
+            : 'The interactive rebase remains paused.',
+        after,
+      );
+    });
+  }
+
+  Future<_InteractiveRebaseRecovery> _readInteractiveRebaseRecovery(
+    RepositoryId repositoryId,
+  ) async {
+    final snapshot = await getConflicts(repositoryId);
+    return _InteractiveRebaseRecovery(
+      fingerprint: snapshot.fingerprint,
+      operation: snapshot.operation,
+      hasConflicts: snapshot.hasConflicts,
+    );
+  }
+
+  void _throwIfInteractiveRebaseBlocked(
+    _InteractiveRebaseInspection inspection,
+  ) {
+    final message = inspection.blockingMessage;
+    if (message == null) return;
+    final category = inspection.operationInProgress != null
+        ? GitErrorCategory.operationInProgress
+        : inspection.detachedHead
+        ? GitErrorCategory.detachedHead
+        : inspection.branchProtected
+        ? GitErrorCategory.protectedBranch
+        : inspection.pushedCommits
+        ? GitErrorCategory.pushedHistory
+        : inspection.dirtyWorktree
+        ? GitErrorCategory.dirtyWorktree
+        : GitErrorCategory.historyRollbackNotAllowed;
+    throw GitError(
+      category: category,
+      userMessage: message,
+      diagnostic: 'interactive rebase preflight rejected the request',
+      retryable: false,
+    );
+  }
+
+  Future<String> _createInteractiveRebaseRecoveryRef(
+    RepositoryHandle handle,
+    String currentHead,
+  ) async {
+    final suffix =
+        '${currentHead.substring(0, min(12, currentHead.length))}-${DateTime.now().microsecondsSinceEpoch}';
+    final ref = 'refs/gift/rebase/$suffix';
+    await _runner.run(
+      GitInvocation(
+        program: gitPath,
+        args: ['update-ref', ref, currentHead],
+        cwd: handle.root,
+        kind: GitOperationKind.mutation,
+        outputPolicy: const OutputPolicy.capture(maxBytes: 16 * 1024),
+      ),
+    );
+    return ref;
+  }
+
+  Future<_InteractiveRebaseEditor> _createInteractiveRebaseEditor(
+    GitInteractiveRebasePlan plan,
+  ) async {
+    final directory = await Directory.systemTemp.createTemp(
+      'gift-rebase-editor-',
+    );
+    final todo = File('${directory.path}${Platform.pathSeparator}todo');
+    final todoContents = plan.entries
+        .map(
+          (entry) =>
+              '${entry.action.gitValue} ${entry.originalOid} ${_todoSubject(entry.subject)}',
+        )
+        .join('\n');
+    await todo.writeAsString('$todoContents\n');
+    final scriptName = Platform.isWindows
+        ? 'sequence-editor.cmd'
+        : 'sequence-editor.sh';
+    final script = File(
+      '${directory.path}${Platform.pathSeparator}$scriptName',
+    );
+    if (Platform.isWindows) {
+      await script.writeAsString(
+        '@echo off\r\n'
+        'copy /Y "${_windowsPath(todo.path)}" "%~1" >NUL\r\n',
+      );
+    } else {
+      await script.writeAsString(
+        '#!/bin/sh\n'
+        'cp -- ${_shellPath(todo.path)} "\$1"\n',
+      );
+    }
+    return _InteractiveRebaseEditor(
+      directory: directory,
+      sequenceEditorCommand: Platform.isWindows
+          ? _windowsPath(script.path)
+          : 'sh ${_shellPath(script.path)}',
+    );
+  }
+
+  Future<Map<String, String>> _readInteractiveRebaseRewriteMap(
+    RepositoryHandle handle,
+    GitInteractiveRebasePlan plan,
+    String resultingHead,
+  ) async {
+    final finalOids = await _readInteractiveRebaseRange(
+      handle,
+      resultingHead,
+      plan.options.root
+          ? null
+          : await _resolveCommit(handle, plan.upstreamRevision!),
+      root: plan.options.root,
+    );
+    final rewritten = <String, String>{};
+    var resultIndex = 0;
+    String? lastResult;
+    for (final entry in plan.entries) {
+      if (entry.action == GitInteractiveRebaseAction.drop) continue;
+      if (entry.action == GitInteractiveRebaseAction.squash ||
+          entry.action == GitInteractiveRebaseAction.fixup) {
+        if (lastResult != null) rewritten[entry.originalOid] = lastResult;
+        continue;
+      }
+      if (resultIndex >= finalOids.length) continue;
+      lastResult = finalOids[resultIndex++];
+      rewritten[entry.originalOid] = lastResult;
+    }
+    return rewritten;
+  }
+
+  Future<List<String>> _readInteractiveRebaseRecoveryRefs(
+    RepositoryHandle handle,
+    String recoveryRef,
+    String previousHead,
+  ) async {
+    final refs = <String>[recoveryRef];
+    if (await _tryResolve(handle, 'HEAD@{1}') == previousHead) {
+      refs.add('HEAD@{1}');
+    }
+    return refs;
+  }
+
+  GitInteractiveRebaseResult _interactiveRebaseResult({
+    required RepositoryId repositoryId,
+    required GitInteractiveRebasePhase phase,
+    required GitInteractiveRebaseExecutionState state,
+    required GitStatusSnapshot status,
+    required String previousHead,
+    required String resultingHead,
+    required String summary,
+    required GitInteractiveRebasePlan plan,
+    required String recoveryRef,
+    _InteractiveRebaseRecovery? recovery,
+    Map<String, String> rewrittenCommitOids = const <String, String>{},
+    Iterable<String>? recoveryRefs,
+  }) => GitInteractiveRebaseResult(
+    repositoryId: repositoryId,
+    phase: phase,
+    state: state,
+    status: status,
+    previousHead: previousHead,
+    resultingHead: resultingHead,
+    summary: summary,
+    originalCommitOids: plan.entries.map((entry) => entry.originalOid),
+    rewrittenCommitOids: rewrittenCommitOids,
+    recoveryRefs: recoveryRefs ?? [recoveryRef],
+    recoveryActions: recovery == null
+        ? const <GitInteractiveRebaseRecoveryAction>[]
+        : const [
+            GitInteractiveRebaseRecoveryAction.continueOperation,
+            GitInteractiveRebaseRecoveryAction.skip,
+            GitInteractiveRebaseRecoveryAction.abort,
+          ],
+    recoveryFingerprint: recovery?.fingerprint,
+  );
+
+  GitInteractiveRebaseResult _interactiveRebaseRecoveryResult(
+    RepositoryId repositoryId,
+    GitInteractiveRebaseRecoveryRequest request,
+    GitInteractiveRebaseExecutionState state,
+    GitStatusSnapshot status,
+    String previousHead,
+    String resultingHead,
+    String summary,
+    _InteractiveRebaseRecovery recovery,
+  ) => GitInteractiveRebaseResult(
+    repositoryId: repositoryId,
+    phase: switch (request.action) {
+      GitInteractiveRebaseRecoveryAction.continueOperation =>
+        GitInteractiveRebasePhase.continueOperation,
+      GitInteractiveRebaseRecoveryAction.skip => GitInteractiveRebasePhase.skip,
+      GitInteractiveRebaseRecoveryAction.abort =>
+        GitInteractiveRebasePhase.abort,
+    },
+    state: state,
+    status: status,
+    previousHead: previousHead,
+    resultingHead: resultingHead,
+    summary: summary,
+    recoveryActions: recovery.operation == null
+        ? const <GitInteractiveRebaseRecoveryAction>[]
+        : const [
+            GitInteractiveRebaseRecoveryAction.continueOperation,
+            GitInteractiveRebaseRecoveryAction.skip,
+            GitInteractiveRebaseRecoveryAction.abort,
+          ],
+    recoveryFingerprint: recovery.operation == null
+        ? null
+        : recovery.fingerprint,
+  );
+
   Future<_InteractiveRebaseInspection> _inspectInteractiveRebase(
     RepositoryId repositoryId,
     RepositoryHandle handle,
@@ -2875,6 +3358,16 @@ class RepositoryService {
         : scope;
     return path == normalizedScope || path.startsWith('$normalizedScope/');
   }
+
+  String _todoSubject(String subject) {
+    final normalized = subject.replaceAll(RegExp(r'[\r\n\u0000]'), ' ').trim();
+    return normalized.isEmpty ? '(no commit subject)' : normalized;
+  }
+
+  String _shellPath(String path) =>
+      '"${path.replaceAll('\\', '\\\\').replaceAll('"', '\\"')}"';
+
+  String _windowsPath(String path) => path.replaceAll('"', '""');
 
   GitError _recoveryNotAllowed(
     GitBranchOperation operation,
@@ -6817,6 +7310,32 @@ class _InteractiveRebaseInspection {
   final String? blockingMessage;
 }
 
+class _InteractiveRebaseRecovery {
+  const _InteractiveRebaseRecovery({
+    required this.fingerprint,
+    required this.operation,
+    required this.hasConflicts,
+  });
+
+  final String fingerprint;
+  final GitConflictOperationMetadata? operation;
+  final bool hasConflicts;
+}
+
+class _InteractiveRebaseEditor {
+  const _InteractiveRebaseEditor({
+    required this.directory,
+    required this.sequenceEditorCommand,
+  });
+
+  final Directory directory;
+  final String sequenceEditorCommand;
+
+  Future<void> dispose() async {
+    if (directory.existsSync()) await directory.delete(recursive: true);
+  }
+}
+
 GitError _historyFailure({
   required GitErrorCategory category,
   required String userMessage,
@@ -6986,6 +7505,25 @@ GitError _mapBranchOperationError(GitError error) {
     );
   }
   return error;
+}
+
+GitError _mapInteractiveRebaseError(GitError error) {
+  if (error.category != GitErrorCategory.processFailed) return error;
+  if (RegExp(
+    r'\b(?:hook|pre-commit|commit-msg|post-commit|pre-rebase)\b',
+    caseSensitive: false,
+  ).hasMatch(error.diagnostic)) {
+    return error.copyWith(
+      category: GitErrorCategory.hookRejected,
+      userMessage: 'A Git hook stopped the interactive rebase.',
+      retryable: false,
+    );
+  }
+  return error.copyWith(
+    category: GitErrorCategory.historyRollbackNotAllowed,
+    userMessage: 'Git could not complete the interactive rebase.',
+    retryable: false,
+  );
 }
 
 void _validateBranchName(String name) {

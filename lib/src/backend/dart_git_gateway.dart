@@ -603,6 +603,28 @@ class DartGitGateway implements GitGateway, DiscardPreviewCancellationGateway {
   ) => backend.previewInteractiveRebase(repositoryId, plan);
 
   @override
+  Future<GitInteractiveRebaseResult> executeInteractiveRebase(
+    RepositoryId repositoryId,
+    GitInteractiveRebasePreview preview, {
+    GitCancellationToken? cancellationToken,
+  }) => backend.executeInteractiveRebase(
+    repositoryId,
+    preview,
+    cancellationToken: cancellationToken,
+  );
+
+  @override
+  Future<GitInteractiveRebaseResult> recoverInteractiveRebase(
+    RepositoryId repositoryId,
+    GitInteractiveRebaseRecoveryRequest request, {
+    GitCancellationToken? cancellationToken,
+  }) => backend.recoverInteractiveRebase(
+    repositoryId,
+    request,
+    cancellationToken: cancellationToken,
+  );
+
+  @override
   Future<GitHistoryRollbackPreview> previewReset(
     RepositoryId repositoryId,
     String targetRevision, {

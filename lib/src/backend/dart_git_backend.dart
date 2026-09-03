@@ -1065,6 +1065,40 @@ class DartGitBackend {
     ).previewInteractiveRebase(repositoryId, plan);
   }
 
+  Future<GitInteractiveRebaseResult> executeInteractiveRebase(
+    RepositoryId repositoryId,
+    GitInteractiveRebasePreview preview, {
+    GitCancellationToken? cancellationToken,
+  }) async {
+    final installation = await getGitInstallation();
+    return RepositoryService(
+      gitPath: installation.executablePath,
+      state: _state,
+      runner: _runner,
+    ).executeInteractiveRebase(
+      repositoryId,
+      preview,
+      cancellationToken: cancellationToken,
+    );
+  }
+
+  Future<GitInteractiveRebaseResult> recoverInteractiveRebase(
+    RepositoryId repositoryId,
+    GitInteractiveRebaseRecoveryRequest request, {
+    GitCancellationToken? cancellationToken,
+  }) async {
+    final installation = await getGitInstallation();
+    return RepositoryService(
+      gitPath: installation.executablePath,
+      state: _state,
+      runner: _runner,
+    ).recoverInteractiveRebase(
+      repositoryId,
+      request,
+      cancellationToken: cancellationToken,
+    );
+  }
+
   Future<GitHistoryRollbackPreview> previewReset(
     RepositoryId repositoryId,
     String targetRevision, {

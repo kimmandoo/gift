@@ -275,6 +275,18 @@ mixin GitPatchGatewayStub {
     GitInteractiveRebasePlan plan,
   ) => throw UnimplementedError();
 
+  Future<GitInteractiveRebaseResult> executeInteractiveRebase(
+    RepositoryId repositoryId,
+    GitInteractiveRebasePreview preview, {
+    GitCancellationToken? cancellationToken,
+  }) => throw UnimplementedError();
+
+  Future<GitInteractiveRebaseResult> recoverInteractiveRebase(
+    RepositoryId repositoryId,
+    GitInteractiveRebaseRecoveryRequest request, {
+    GitCancellationToken? cancellationToken,
+  }) => throw UnimplementedError();
+
   Future<GitHistoryRollbackPreview> previewReset(
     RepositoryId repositoryId,
     String targetRevision, {

@@ -420,6 +420,18 @@ abstract interface class GitGateway {
     GitInteractiveRebasePlan plan,
   );
 
+  Future<GitInteractiveRebaseResult> executeInteractiveRebase(
+    RepositoryId repositoryId,
+    GitInteractiveRebasePreview preview, {
+    GitCancellationToken? cancellationToken,
+  });
+
+  Future<GitInteractiveRebaseResult> recoverInteractiveRebase(
+    RepositoryId repositoryId,
+    GitInteractiveRebaseRecoveryRequest request, {
+    GitCancellationToken? cancellationToken,
+  });
+
   Future<GitHistoryRollbackPreview> previewReset(
     RepositoryId repositoryId,
     String targetRevision, {

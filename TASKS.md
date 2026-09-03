@@ -414,12 +414,16 @@ The repository UI polish follow-up is complete. Task 27 is now active.
   drop, autosquash, root, update-refs, and preflight validation contracts.
 - [x] Add a real-Git preview that captures the linear range and rejects dirty,
   detached, protected, pushed, and in-progress repository states.
-- [ ] Add repository-state preflight and machine-owned interactive todo
+- [x] Add repository-state preflight and machine-owned interactive todo
   execution with explicit continue, skip, and abort recovery.
-- [ ] Report original OIDs, rewritten OIDs, and reflog recovery references.
+- [x] Report original OIDs, rewritten OIDs, and reflog recovery references.
+- [x] Add a History plan editor with upstream selection, reorder/action
+  controls, preview, execution, and explicit recovery buttons.
+- [ ] Cover conflicted rebases, hook rejection, cancellation, and
+  option-specific root/update-refs limitations with fixtures and UI states.
 
-Task 27 is active. The next vertical is machine-owned interactive todo
-execution with stale-preview revalidation and explicit recovery states.
+Task 27 is active. The next vertical is conflicted-rebase, hook-rejection,
+cancellation, and option-limit fixture coverage.
 
 ## Post-MVP backlog
 

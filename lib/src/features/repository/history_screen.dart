@@ -5,8 +5,10 @@ import 'package:gift/src/backend/diff.dart';
 import 'package:gift/src/backend/error.dart';
 import 'package:gift/src/backend/git_gateway.dart';
 import 'package:gift/src/backend/history.dart';
+import 'package:gift/src/backend/interactive_rebase.dart';
 import 'package:gift/src/backend/reset.dart';
 import 'package:gift/src/features/repository/history_controller.dart';
+import 'package:gift/src/features/repository/interactive_rebase_dialog.dart';
 import 'package:gift/src/features/repository/reset_dialog.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -109,6 +111,14 @@ class _HistoryScreenState extends State<HistoryScreen> {
             tooltip: 'Undo, reset, or revert history',
             onPressed: () => unawaited(_openHistoryRollback(context)),
             icon: const Icon(Icons.history_toggle_off),
+          ),
+          IconButton(
+            key: const Key('history-interactive-rebase'),
+            tooltip: 'Interactive rebase',
+            onPressed: state.isLoading
+                ? null
+                : () => unawaited(_openInteractiveRebase(context)),
+            icon: const Icon(Icons.reorder),
           ),
           IconButton(
             tooltip: 'Refresh history',
@@ -896,6 +906,21 @@ class _HistoryScreenState extends State<HistoryScreen> {
       context: context,
       builder: (_) =>
           ResetDialog(gateway: widget.gateway, repository: widget.repository),
+    );
+    if (!context.mounted || result == null) return;
+    await _controller.refresh();
+    if (!context.mounted) return;
+    ScaffoldMessenger.of(context)
+        .showSnackBar(SnackBar(content: Text(result.summary)));
+  }
+
+  Future<void> _openInteractiveRebase(BuildContext context) async {
+    final result = await showDialog<GitInteractiveRebaseResult>(
+      context: context,
+      builder: (_) => InteractiveRebaseDialog(
+        gateway: widget.gateway,
+        repository: widget.repository,
+      ),
     );
     if (!context.mounted || result == null) return;
     await _controller.refresh();

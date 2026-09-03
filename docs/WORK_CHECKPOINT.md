@@ -42,6 +42,13 @@ This file is the handoff record for continuing work across query sessions.
 - Exposed the preview through `DartGitBackend` and `GitGateway`; the acceptance
   fixture covers clean, dirty, detached, protected, pushed, in-progress, and
   mismatched-plan states.
+- Added machine-owned interactive todo execution with preview-token
+  revalidation, persistent `refs/gift/rebase/*` recovery refs, original and
+  rewritten OID reporting, and explicit continue/skip/abort recovery states.
+- Added the History interactive-rebase dialog with upstream selection,
+  reorder/action controls, preview, execution, and recovery buttons. The
+  dialog keeps execution actions outside the scrollable body for narrow
+  windows.
 - Clarified repository menu labels and empty states, made the Changes app bar
   collapse to a menu before actions crowd the repository title, and fixed
   narrow file-history controls using their actual available width.
@@ -53,22 +60,22 @@ This file is the handoff record for continuing work across query sessions.
   interactive_rebase,repository_service}.dart`,
   `test/backend/interactive_rebase_test.dart`,
   `test/backend/interactive_rebase_preview_test.dart`,
+  `test/backend/interactive_rebase_execution_test.dart`,
   `test/helpers/git_patch_gateway_stub.dart`,
   `lib/src/features/repository/{changes_screen,comparison_dialog,
   file_history_dialog,history_screen,object_dialog,reset_dialog,
-  shelf_dialog}.dart`, and
+  shelf_dialog,interactive_rebase_dialog}.dart`, and
   `test/features/repository/{file_history_dialog,history_screen,
-  object_dialog}_test.dart`.
+  object_dialog,interactive_rebase_dialog}_test.dart`.
 - Verification: the initial RED run failed because the preview contract and
   backend method did not exist; after implementation, focused interactive
-  rebase preview tests, `flutter analyze`, `git diff --check`, and the full
-  Flutter suite passed with `156` tests.
-  the repository widget tests passed with `47` tests and the full Flutter suite
-  passed with `151` tests. Native Windows compilation is not available in this
-  Linux workspace.
-- Next action: add the first machine-owned interactive todo execution fixture,
-  revalidate the preview token against current refs/worktree state, and expose
-  explicit continue, skip, and abort recovery.
+  rebase execution tests passed with `5` tests; the interactive-rebase dialog
+  tests passed with `2` tests; `dart format`, `flutter analyze`, `git diff
+  --check`, and the full Flutter suite passed with `163` tests. Native Windows
+  compilation is not available in this Linux workspace.
+- Next action: add RED fixtures for conflicted rebases, hook rejection,
+  cancellation, and root/update-refs option limitations, then expose any
+  needed UI state and recovery guidance.
 - Earlier Task 23 and Windows incremental-build diagnostics remain recorded in
   the plan and prior checkpoints.
 - Blockers: none.

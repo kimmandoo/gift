@@ -7,6 +7,8 @@
   contracts.
 - feat(task27): added real-Git interactive-rebase previews with linear-range
   matching and unsafe-state blockers.
+- feat(task27): added machine-owned interactive-rebase execution, recovery,
+  rewritten-OID reporting, and History plan controls.
 - fix(ui): unified History detail scrolling, clarified repository action labels,
   and hardened compact menu layouts.
 - fix(history): added a recent-commit target picker so reset no longer

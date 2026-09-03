@@ -1,5 +1,6 @@
 import 'conflict.dart';
 import 'domain.dart';
+import 'status.dart';
 
 /// The commands that can appear in an interactive rebase todo plan.
 enum GitInteractiveRebaseAction { pick, reword, edit, squash, fixup, drop }
@@ -158,6 +159,70 @@ class GitInteractiveRebasePreview {
       token != null &&
       expiresAt != null &&
       expiresAt!.isAfter(DateTime.now());
+}
+
+/// The only phases accepted by the interactive-rebase execution boundary.
+enum GitInteractiveRebasePhase { start, continueOperation, skip, abort }
+
+enum GitInteractiveRebaseExecutionState {
+  completed,
+  paused,
+  conflicted,
+  aborted,
+  cancelled,
+}
+
+enum GitInteractiveRebaseRecoveryAction { continueOperation, skip, abort }
+
+/// A recovery request bound to the current conflict/operation snapshot.
+class GitInteractiveRebaseRecoveryRequest {
+  const GitInteractiveRebaseRecoveryRequest({
+    required this.action,
+    required this.fingerprint,
+  });
+
+  final GitInteractiveRebaseRecoveryAction action;
+  final String fingerprint;
+}
+
+/// The outcome of starting or explicitly recovering an interactive rebase.
+class GitInteractiveRebaseResult {
+  GitInteractiveRebaseResult({
+    required this.repositoryId,
+    required this.phase,
+    required this.state,
+    required this.status,
+    required this.previousHead,
+    required this.resultingHead,
+    required this.summary,
+    Iterable<String> originalCommitOids = const <String>[],
+    Map<String, String> rewrittenCommitOids = const <String, String>{},
+    Iterable<String> recoveryRefs = const <String>[],
+    Iterable<GitInteractiveRebaseRecoveryAction> recoveryActions =
+        const <GitInteractiveRebaseRecoveryAction>[],
+    this.recoveryFingerprint,
+  }) : originalCommitOids = List.unmodifiable(originalCommitOids),
+       rewrittenCommitOids = Map.unmodifiable(rewrittenCommitOids),
+       recoveryRefs = List.unmodifiable(recoveryRefs),
+       recoveryActions = List.unmodifiable(recoveryActions);
+
+  final RepositoryId repositoryId;
+  final GitInteractiveRebasePhase phase;
+  final GitInteractiveRebaseExecutionState state;
+  final GitStatusSnapshot status;
+  final String previousHead;
+  final String resultingHead;
+  final String summary;
+  final List<String> originalCommitOids;
+  final Map<String, String> rewrittenCommitOids;
+  final List<String> recoveryRefs;
+  final List<GitInteractiveRebaseRecoveryAction> recoveryActions;
+  final String? recoveryFingerprint;
+
+  bool get historyChanged =>
+      state == GitInteractiveRebaseExecutionState.completed;
+
+  bool get isRecoverable => recoveryActions.isNotEmpty;
 }
 
 /// A reviewed, immutable interactive rebase plan.
