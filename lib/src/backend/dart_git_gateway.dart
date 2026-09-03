@@ -11,6 +11,7 @@ import 'history.dart';
 import 'interactive_rebase.dart';
 import 'executor.dart';
 import 'remote.dart';
+import 'remote_branch.dart';
 import 'status.dart';
 import 'objects.dart';
 import 'shelf.dart';
@@ -151,6 +152,48 @@ class DartGitGateway implements GitGateway, DiscardPreviewCancellationGateway {
   @override
   Future<List<GitBranch>> getBranches(RepositoryId repositoryId) =>
       backend.getBranches(repositoryId);
+
+  @override
+  Future<GitRemoteBranchSnapshot> getRemoteBranchSnapshot(
+    RepositoryId repositoryId,
+  ) => backend.getRemoteBranchSnapshot(repositoryId);
+
+  @override
+  Future<GitBranchActionResult> checkoutRemoteBranch(
+    RepositoryId repositoryId,
+    GitRemoteBranch branch, {
+    String? localName,
+  }) =>
+      backend.checkoutRemoteBranch(repositoryId, branch, localName: localName);
+
+  @override
+  Future<GitUpdateProjectPreview> previewUpdateProject(
+    RepositoryId repositoryId,
+    GitUpdateProjectRequest request,
+  ) => backend.previewUpdateProject(repositoryId, request);
+
+  @override
+  Future<GitUpdateProjectResult> executeUpdateProject(
+    RepositoryId repositoryId,
+    GitUpdateProjectRequest request, {
+    GitCancellationToken? cancellationToken,
+  }) => backend.executeUpdateProject(
+    repositoryId,
+    request,
+    cancellationToken: cancellationToken,
+  );
+
+  @override
+  Future<GitRemoteBranchDeletePreview> previewRemoteBranchDelete(
+    RepositoryId repositoryId,
+    GitRemoteBranch branch,
+  ) => backend.previewRemoteBranchDelete(repositoryId, branch);
+
+  @override
+  Future<GitRemoteBranchActionResult> deleteRemoteBranch(
+    RepositoryId repositoryId,
+    GitRemoteBranchDeletePreview preview,
+  ) => backend.deleteRemoteBranch(repositoryId, preview);
 
   @override
   Future<GitBranchActionResult> createBranch(

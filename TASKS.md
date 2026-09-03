@@ -7,8 +7,8 @@
 ## Progress
 
 - **Total Tasks:** 38
-- **Completed:** 27 / 38
-- **Current Active Task:** none — Task 27 is complete; Task 28 is next.
+- **Completed:** 28 / 38
+- **Current Active Task:** None — Task 28 and its follow-up are complete.
 
 | # | Scope | Dart backend deliverables | Flutter deliverables | Status |
 |---|---|---|---|:---:|
@@ -39,7 +39,7 @@
 | **25** | File history & blame | File/directory/selection history and blame metadata | History and annotation views | ✅ |
 | **26** | Undo & reset | Revert commit, undo commit, and safe reset modes | Destructive history controls | ✅ |
 | **27** | Interactive rebase | Reorder, reword, edit, squash, fixup, drop, and recovery | Rebase plan and conflict flow | ✅ |
-| **28** | Remote branches & update | Remote branch checkout, compare, update, and tracking | Incoming/update information | ⬜ |
+| **28** | Remote branches & update | Remote branch checkout, compare, update, and tracking | Incoming/update information | 🚧 |
 | **29** | Push safety | Push review, force-with-lease, tags, and protected branches | Push review and rejection recovery | ⬜ |
 | **30** | Worktrees | Worktree list, create, open, remove, lock, and prune | Worktree manager | ⬜ |
 | **31** | Ignore & metadata | `.gitignore`, `.git/info/exclude`, ignored files, and attributes | Ignore/metadata actions | ⬜ |
@@ -424,7 +424,7 @@ The repository UI polish follow-up is complete. Task 27 is now active.
 - [x] Support reviewed reword subjects and preserve recovery evidence after
   successful, paused, aborted, and cancelled execution.
 
-Task 27 is complete. Task 28 is the next task and has not been activated.
+Task 27 is complete. Task 28 is active.
 
 ### ✅ Task 27 follow-up: interactive UI layout audit
 
@@ -437,7 +437,32 @@ Task 27 is complete. Task 28 is the next task and has not been activated.
 - [x] Tightened the conflict deletion checkbox without reducing its labeled
   interaction target and added compact, scaled-text regression coverage.
 
-The interactive UI layout audit is complete. Task 28 remains pending.
+The interactive UI layout audit is complete. Task 28 was then activated.
+
+### ✅ Task 28: Remote branches and update project
+
+- [x] Record remote-ref, tracking, divergence, local-change, update-conflict,
+  reset-to-remote, and incoming/outgoing refresh scenarios in the behavior
+  ledger.
+- [x] Add the first RED remote-branch/update fixture before implementation.
+- [x] Implement grouped remote refs, remote checkout/tracking, branch compare,
+  remote deletion, and Update Project recovery flows.
+- [x] Add responsive branch/update controls and verify stale-ref protection,
+  including remote-tip movement immediately before deletion.
+
+Task 28 is complete. Its backend and UI flows passed focused and full-suite
+verification. The post-task History diff UX follow-up remains active below.
+
+### ✅ Task 28 follow-up: History diff viewer UX
+
+- [x] Paint each diff background to the available viewer width instead of the
+  longest code line.
+- [x] Let the selected file row toggle its diff open and closed.
+- [x] Keep long code lines horizontally scrollable without widening the detail
+  pane or making the file row unreachable.
+
+Task 28 and its History diff viewer follow-up are complete. Task 29 remains
+the next pending task.
 
 ## Post-MVP backlog
 

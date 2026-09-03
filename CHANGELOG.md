@@ -2,6 +2,10 @@
 
 ## 2026-09-03
 
+- fix(history): made selected commit diff backgrounds fill the viewer width and
+  added inline file-diff collapse toggles.
+- feat(task28): added remote-branch browsing, tracking checkout, safe deletion,
+  comparison entry points, and reviewed Update Project recovery flows.
 - fix(ui): prevented interactive controls from clipping text and normalized
   compact button, checkbox, and input spacing across repository workflows.
 - fix(history): unified diff row background widths across short and long lines.

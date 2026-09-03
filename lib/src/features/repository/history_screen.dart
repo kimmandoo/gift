@@ -494,109 +494,119 @@ class _HistoryScreenState extends State<HistoryScreen> {
       return const Center(child: Text('Select a commit to inspect it.'));
     }
     final narrow = MediaQuery.sizeOf(context).width < 500;
-    return SingleChildScrollView(
-      key: const Key('history-details-scroll'),
-      padding: EdgeInsets.fromLTRB(narrow ? 16 : 20, 20, narrow ? 16 : 20, 24),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            commit.subject.isEmpty ? '(no subject)' : commit.subject,
-            style: Theme.of(context).textTheme.headlineSmall,
-          ),
-          const SizedBox(height: 8),
-          Row(
+    return LayoutBuilder(
+      builder: (context, constraints) => SingleChildScrollView(
+        key: const Key('history-details-scroll'),
+        padding: EdgeInsets.fromLTRB(
+          narrow ? 16 : 20,
+          20,
+          narrow ? 16 : 20,
+          24,
+        ),
+        child: SizedBox(
+          width: constraints.hasBoundedWidth ? constraints.maxWidth : null,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Expanded(
-                child: SelectableText(
-                  commit.oid,
-                  key: Key('oid:${commit.oid}'),
-                  style: Theme.of(context).textTheme.bodySmall
-                      ?.copyWith(fontFamily: 'monospace'),
-                ),
+              Text(
+                commit.subject.isEmpty ? '(no subject)' : commit.subject,
+                style: Theme.of(context).textTheme.headlineSmall,
               ),
-              IconButton(
-                key: Key('copy-oid:${commit.oid}'),
-                tooltip: 'Copy commit ID',
-                onPressed: () =>
-                    Clipboard.setData(ClipboardData(text: commit.oid)),
-                icon: const Icon(Icons.copy, size: 18),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          Text(
-            '${commit.authorName} <${commit.authorEmail}>',
-            style: Theme.of(context).textTheme.bodySmall,
-          ),
-          Text(
-            _formatDate(commit.authoredAt),
-            style: Theme.of(context).textTheme.bodySmall,
-          ),
-          if (commit.refs.isNotEmpty) ...[
-            const SizedBox(height: 16),
-            const Text('Refs'),
-            Wrap(
-              spacing: 6,
-              runSpacing: 4,
-              children: [
-                for (final ref in commit.refs)
-                  Chip(label: Text('${ref.kind}: ${ref.shortName}')),
-              ],
-            ),
-          ],
-          if (commit.parents.isNotEmpty) ...[
-            const SizedBox(height: 16),
-            Text('Parents: ${commit.parents.length}'),
-            Wrap(
-              spacing: 6,
-              runSpacing: 4,
-              children: [
-                for (final parent in commit.parents)
-                  OutlinedButton(
-                    key: Key('parent:$parent'),
-                    onPressed: () => _controller.selectParent(parent),
-                    child: Text(parent.substring(0, 8)),
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  Expanded(
+                    child: SelectableText(
+                      commit.oid,
+                      key: Key('oid:${commit.oid}'),
+                      style: Theme.of(context).textTheme.bodySmall
+                          ?.copyWith(fontFamily: 'monospace'),
+                    ),
                   ),
-              ],
-            ),
-          ],
-          if (commit.body.isNotEmpty) ...[
-            const SizedBox(height: 20),
-            const Divider(),
-            const SizedBox(height: 12),
-            SelectableText(commit.body),
-          ],
-          const SizedBox(height: 20),
-          Text(
-            state.commitFiles == null
-                ? 'Changed files'
-                : 'Changed files (${state.commitFiles!.length})',
-            style: Theme.of(context).textTheme.titleMedium,
-          ),
-          if (state.isLoadingCommitFiles)
-            const Padding(
-              padding: EdgeInsets.symmetric(vertical: 16),
-              child: LinearProgressIndicator(),
-            )
-          else if (state.commitFilesError case final error?)
-            Text(error.userMessage, key: const Key('commit-files-error'))
-          else if (state.commitFiles == null)
-            const Text('Commit files have not been loaded.')
-          else if (state.commitFiles!.isEmpty)
-            const Text('No changed files.')
-          else
-            for (final file in state.commitFiles!) ...[
-              _commitFileTile(context, file, state),
-              if (state.selectedPath == file.path) ...[
-                const SizedBox(height: 8),
-                KeyedSubtree(
-                  key: _selectedDiffKey,
-                  child: _selectedCommitFileDiff(context, state),
+                  IconButton(
+                    key: Key('copy-oid:${commit.oid}'),
+                    tooltip: 'Copy commit ID',
+                    onPressed: () =>
+                        Clipboard.setData(ClipboardData(text: commit.oid)),
+                    icon: const Icon(Icons.copy, size: 18),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              Text(
+                '${commit.authorName} <${commit.authorEmail}>',
+                style: Theme.of(context).textTheme.bodySmall,
+              ),
+              Text(
+                _formatDate(commit.authoredAt),
+                style: Theme.of(context).textTheme.bodySmall,
+              ),
+              if (commit.refs.isNotEmpty) ...[
+                const SizedBox(height: 16),
+                const Text('Refs'),
+                Wrap(
+                  spacing: 6,
+                  runSpacing: 4,
+                  children: [
+                    for (final ref in commit.refs)
+                      Chip(label: Text('${ref.kind}: ${ref.shortName}')),
+                  ],
                 ),
               ],
+              if (commit.parents.isNotEmpty) ...[
+                const SizedBox(height: 16),
+                Text('Parents: ${commit.parents.length}'),
+                Wrap(
+                  spacing: 6,
+                  runSpacing: 4,
+                  children: [
+                    for (final parent in commit.parents)
+                      OutlinedButton(
+                        key: Key('parent:$parent'),
+                        onPressed: () => _controller.selectParent(parent),
+                        child: Text(parent.substring(0, 8)),
+                      ),
+                  ],
+                ),
+              ],
+              if (commit.body.isNotEmpty) ...[
+                const SizedBox(height: 20),
+                const Divider(),
+                const SizedBox(height: 12),
+                SelectableText(commit.body),
+              ],
+              const SizedBox(height: 20),
+              Text(
+                state.commitFiles == null
+                    ? 'Changed files'
+                    : 'Changed files (${state.commitFiles!.length})',
+                style: Theme.of(context).textTheme.titleMedium,
+              ),
+              if (state.isLoadingCommitFiles)
+                const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 16),
+                  child: LinearProgressIndicator(),
+                )
+              else if (state.commitFilesError case final error?)
+                Text(error.userMessage, key: const Key('commit-files-error'))
+              else if (state.commitFiles == null)
+                const Text('Commit files have not been loaded.')
+              else if (state.commitFiles!.isEmpty)
+                const Text('No changed files.')
+              else
+                for (final file in state.commitFiles!) ...[
+                  _commitFileTile(context, file, state),
+                  if (state.selectedPath == file.path) ...[
+                    const SizedBox(height: 8),
+                    KeyedSubtree(
+                      key: _selectedDiffKey,
+                      child: _selectedCommitFileDiff(context, state),
+                    ),
+                  ],
+                ],
             ],
-        ],
+          ),
+        ),
       ),
     );
   }
@@ -625,7 +635,8 @@ class _HistoryScreenState extends State<HistoryScreen> {
           size: 20,
         ),
         selected: selected,
-        onTap: () => _selectFile(file),
+        onTap: () =>
+            selected ? _controller.clearFileSelection() : _selectFile(file),
       ),
     );
   }
@@ -748,32 +759,47 @@ class _HistoryScreenState extends State<HistoryScreen> {
             ),
           ConstrainedBox(
             constraints: const BoxConstraints(minHeight: 56),
-            child: SelectionArea(
-              child: Scrollbar(
-                notificationPredicate: (notification) =>
-                    notification.metrics.axis == Axis.horizontal,
-                child: SingleChildScrollView(
-                  key: const Key('commit-diff-scroll'),
-                  scrollDirection: Axis.horizontal,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 8,
-                    vertical: 8,
-                  ),
-                  child: IntrinsicWidth(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        for (var index = 0; index < diff.lines.length; index++)
-                          _historicalDiffLine(
-                            context,
-                            diff.lines[index],
-                            index,
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                final backgroundWidth = constraints.hasBoundedWidth
+                    ? (constraints.maxWidth - 16).clamp(0.0, double.infinity)
+                    : 680.0;
+                return SelectionArea(
+                  child: Scrollbar(
+                    notificationPredicate: (notification) =>
+                        notification.metrics.axis == Axis.horizontal,
+                    child: SingleChildScrollView(
+                      key: const Key('commit-diff-scroll'),
+                      scrollDirection: Axis.horizontal,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 8,
+                      ),
+                      child: ConstrainedBox(
+                        constraints: BoxConstraints(minWidth: backgroundWidth),
+                        child: IntrinsicWidth(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              for (
+                                var index = 0;
+                                index < diff.lines.length;
+                                index++
+                              )
+                                _historicalDiffLine(
+                                  context,
+                                  diff.lines[index],
+                                  index,
+                                  backgroundWidth: backgroundWidth,
+                                ),
+                            ],
                           ),
-                      ],
+                        ),
+                      ),
                     ),
                   ),
-                ),
-              ),
+                );
+              },
             ),
           ),
         ],
@@ -807,8 +833,9 @@ class _HistoryScreenState extends State<HistoryScreen> {
   Widget _historicalDiffLine(
     BuildContext context,
     GitDiffLine line,
-    int index,
-  ) {
+    int index, {
+    required double backgroundWidth,
+  }) {
     final scheme = Theme.of(context).colorScheme;
     final background = switch (line.kind) {
       GitDiffLineKind.addition => scheme.tertiaryContainer.withValues(
@@ -838,12 +865,19 @@ class _HistoryScreenState extends State<HistoryScreen> {
       GitDiffLineKind.noNewline => '·',
       GitDiffLineKind.context => ' ',
     };
-    return Container(
+    return Stack(
       key: Key('commit-diff-line:$index'),
-      color: background,
-      child: ConstrainedBox(
-        constraints: const BoxConstraints(minWidth: 680),
-        child: Row(
+      clipBehavior: Clip.none,
+      children: [
+        Positioned(
+          key: Key('commit-diff-background:$index'),
+          left: 0,
+          top: 0,
+          width: backgroundWidth,
+          bottom: 0,
+          child: ColoredBox(color: background),
+        ),
+        Row(
           mainAxisSize: MainAxisSize.min,
           children: [
             SizedBox(
@@ -889,7 +923,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
             ),
           ],
         ),
-      ),
+      ],
     );
   }
 

@@ -10,6 +10,7 @@ import 'history.dart';
 import 'interactive_rebase.dart';
 import 'executor.dart';
 import 'remote.dart';
+import 'remote_branch.dart';
 import 'objects.dart';
 import 'shelf.dart';
 import 'file_history.dart';
@@ -90,6 +91,37 @@ abstract interface class GitGateway {
   });
 
   Future<List<GitBranch>> getBranches(RepositoryId repositoryId);
+
+  Future<GitRemoteBranchSnapshot> getRemoteBranchSnapshot(
+    RepositoryId repositoryId,
+  );
+
+  Future<GitBranchActionResult> checkoutRemoteBranch(
+    RepositoryId repositoryId,
+    GitRemoteBranch branch, {
+    String? localName,
+  });
+
+  Future<GitRemoteBranchDeletePreview> previewRemoteBranchDelete(
+    RepositoryId repositoryId,
+    GitRemoteBranch branch,
+  );
+
+  Future<GitRemoteBranchActionResult> deleteRemoteBranch(
+    RepositoryId repositoryId,
+    GitRemoteBranchDeletePreview preview,
+  );
+
+  Future<GitUpdateProjectPreview> previewUpdateProject(
+    RepositoryId repositoryId,
+    GitUpdateProjectRequest request,
+  );
+
+  Future<GitUpdateProjectResult> executeUpdateProject(
+    RepositoryId repositoryId,
+    GitUpdateProjectRequest request, {
+    GitCancellationToken? cancellationToken,
+  });
 
   Future<GitBranchActionResult> createBranch(
     RepositoryId repositoryId,

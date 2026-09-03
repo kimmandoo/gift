@@ -9,6 +9,7 @@ import 'package:gift/src/backend/history.dart';
 import 'package:gift/src/backend/interactive_rebase.dart';
 import 'package:gift/src/backend/executor.dart';
 import 'package:gift/src/backend/remote.dart';
+import 'package:gift/src/backend/remote_branch.dart';
 import 'package:gift/src/backend/status.dart';
 import 'package:gift/src/backend/objects.dart';
 import 'package:gift/src/backend/shelf.dart';
@@ -40,6 +41,27 @@ mixin GitPatchGatewayStub {
   Future<List<GitBranch>> getBranches(RepositoryId repositoryId) =>
       throw UnimplementedError();
 
+  Future<GitRemoteBranchSnapshot> getRemoteBranchSnapshot(
+    RepositoryId repositoryId,
+  ) => throw UnimplementedError();
+
+  Future<GitBranchActionResult> checkoutRemoteBranch(
+    RepositoryId repositoryId,
+    GitRemoteBranch branch, {
+    String? localName,
+  }) => throw UnimplementedError();
+
+  Future<GitUpdateProjectPreview> previewUpdateProject(
+    RepositoryId repositoryId,
+    GitUpdateProjectRequest request,
+  ) => throw UnimplementedError();
+
+  Future<GitUpdateProjectResult> executeUpdateProject(
+    RepositoryId repositoryId,
+    GitUpdateProjectRequest request, {
+    GitCancellationToken? cancellationToken,
+  }) => throw UnimplementedError();
+
   Future<GitBranchActionResult> createBranch(
     RepositoryId repositoryId,
     String name,
@@ -52,6 +74,16 @@ mixin GitPatchGatewayStub {
 
   Future<List<GitRemote>> getRemotes(RepositoryId repositoryId) =>
       throw UnimplementedError();
+
+  Future<GitRemoteBranchDeletePreview> previewRemoteBranchDelete(
+    RepositoryId repositoryId,
+    GitRemoteBranch branch,
+  ) => throw UnimplementedError();
+
+  Future<GitRemoteBranchActionResult> deleteRemoteBranch(
+    RepositoryId repositoryId,
+    GitRemoteBranchDeletePreview preview,
+  ) => throw UnimplementedError();
 
   Future<GitRemoteOperationResult> fetch(
     RepositoryId repositoryId,

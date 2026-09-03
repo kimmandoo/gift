@@ -5,101 +5,43 @@ This file is the handoff record for continuing work across query sessions.
 ## Current checkpoint
 
 - Date: 2026-09-03
-- Active task: none — Task 27 is complete; Task 28 is next and remains
-  pending activation.
+- Active task: None. Task 28 and its History diff viewer follow-up are complete;
+  Task 29 is the next pending task.
 - Branch: `main`; no new branch or worktree was created.
-- Latest completed implementation commit: `fff2f12
-  feat(task27): complete interactive rebase flow`.
-- Completed the post-Task-27 interactive UI audit: History search and stash
-  actions now stack before labels compress their fields; compact comparison
-  source actions no longer crowd the dialog title; rebase selectors and move
-  controls fit 320px windows with enlarged text; and the conflict deletion
-  checkbox uses balanced dense spacing.
-- Added compact scaled-text geometry and overflow regression assertions across
-  History, object management, comparison, conflict, and interactive rebase UI.
-- Implemented typed reset/undo/revert contracts, short-lived stale-bound
-  previews, protected/pushed/dirty/detached/in-progress preflight, all four
-  reset modes, multi-commit revert, and explicit revert conflict recovery.
-- Added the preview-first rollback dialog to Changes and History. Hard reset
-  requires a separate acknowledgement after the impact preview.
-- Replaced the History selected-file diff text with a file-aware card showing
-  path context, change totals, copy, selectable numbered lines, semantic colors,
-  and bounded vertical/horizontal scrolling. The card now expands directly
-  below the selected file row instead of at the bottom of commit details.
-- Added a recent-commit target picker to the rollback dialog. The current
-  commit's parent is selected automatically; HEAD^/HEAD~1 and other special
-  expressions remain available under Advanced revision.
-- Unified History detail scrolling so the detail pane owns vertical movement;
-  the diff card now keeps only a horizontal scroller for long code lines and
-  reveals the selected diff near its file row.
-- Unified every historical diff row's background to the widest rendered line,
-  so a long line no longer creates a colored protrusion beyond neighboring
-  rows.
-- Activated Task 27 after recording REBASE-01 through REBASE-04 in the
-  behavior ledger and adding the first RED plan-model test at
-  `test/backend/interactive_rebase_test.dart` (`keeps original identities
-  while reordering and editing a plan`).
-- Added `GitInteractiveRebasePlan`, immutable reorder/action editing,
-  pick/reword/edit/squash/fixup/drop actions, autosquash/root/update-refs
-  option arguments, and validation for OIDs, duplicate identities,
-  squash/fixup targets, and root/upstream combinations.
-- Added `GitInteractiveRebasePreview` and a real-Git preflight that captures
-  the selected linear range, counts merge commits, detects the tracking ref,
-  and issues a short-lived token only when dirty, detached, protected,
-  pushed, in-progress, and stale-range blockers are absent.
-- Exposed the preview through `DartGitBackend` and `GitGateway`; the acceptance
-  fixture covers clean, dirty, detached, protected, pushed, in-progress, and
-  mismatched-plan states.
-- Added machine-owned interactive todo execution with preview-token
-  revalidation, persistent `refs/gift/rebase/*` recovery refs, original and
-  rewritten OID reporting, and explicit continue/skip/abort recovery states.
-- Added the History interactive-rebase dialog with upstream selection,
-  reorder/action controls, preview, execution, and recovery buttons. The
-  dialog keeps execution actions outside the scrollable body for narrow
-  windows.
-- Added reviewed reword subjects, explicit edit/conflict/hook/cancellation
-  pause reasons, a UI Cancel action, and option limitation notes for root,
-  autosquash, and update-refs.
-- Added real-Git fixtures for dependent-commit conflicts and Skip recovery,
-  pre-rebase hook rejection, cancellation without a history rewrite, complete
-  action coverage including fixup and reword messages, reachable recovery
-  refs, and root/update-refs option notes. Task 27 is complete.
-- Clarified repository menu labels and empty states, made the Changes app bar
-  collapse to a menu before actions crowd the repository title, and fixed
-  narrow file-history controls using their actual available width.
-- Changed files: `CHANGELOG.md`, `TASKS.md`,
-  `docs/WORK_CHECKPOINT.md`,
-  `docs/POST_MVP_ROADMAP.md`,
-  `docs/research/jetbrains-git-mvp-behavior.md`,
+- Latest completed implementation commit: this session's
+  `feat(task28): add remote update and history diff UX` commit; use `git log -1`
+  for its exact hash.
+- Completed Task 28 after recording REMOTE-BRANCH-01/02 and UPDATE-01/02,
+  adding the first RED fixture, and proving the real-Git implementation GREEN.
+- Added immutable remote ref snapshots with grouped remotes, local tracking,
+  tags, divergence counts, OID-bound checkout/compare entry points, and
+  preview-bound remote deletion with a just-in-time published-tip check.
+- Added Update Project merge, rebase, reset-to-remote, clean-worktree/stash
+  choices, stale preview validation, cancellation, conflict detection, and
+  explicit continue/abort recovery. Added responsive Branch and Changes UI,
+  including remote branch actions and the review-first update dialog.
+- Completed the post-Task-28 History follow-up: selected commit file diffs now
+  paint semantic backgrounds to the available viewer width, long code remains
+  horizontally scrollable, the detail pane does not widen, and tapping the
+  selected file row collapses its inline diff.
+- Changed files in this session: `CHANGELOG.md`, `TASKS.md`,
+  `docs/WORK_CHECKPOINT.md`, `docs/research/jetbrains-git-mvp-behavior.md`,
   `docs/superpowers/plans/2026-09-02-gift-dart-mvp.md`,
-  `lib/src/backend/{dart_git_backend,dart_git_gateway,git_gateway,
-  interactive_rebase,repository_service}.dart`,
-  `test/backend/interactive_rebase_test.dart`,
-  `test/backend/interactive_rebase_preview_test.dart`,
-  `test/backend/interactive_rebase_execution_test.dart`,
-  `test/helpers/git_patch_gateway_stub.dart`,
-  `lib/src/features/repository/{changes_screen,comparison_dialog,
-  file_history_dialog,history_screen,object_dialog,reset_dialog,
-  shelf_dialog,interactive_rebase_dialog}.dart`, and
-  `test/features/repository/{file_history_dialog,history_screen,
-  object_dialog,interactive_rebase_dialog}_test.dart`.
-- Current UI-audit files: `lib/src/features/repository/{comparison_dialog,
-  conflict_workspace_screen,history_screen,interactive_rebase_dialog,
-  object_dialog}.dart` and `test/features/repository/{comparison_dialog,
-  history_screen,interactive_rebase_dialog,object_dialog}_test.dart`.
-- Verification: the initial RED run failed because the preview contract and
-  backend method did not exist; after implementation, focused interactive
-  rebase execution tests passed with `5` tests; the interactive-rebase dialog
-  tests passed with `3` tests; `dart format`, `flutter analyze`, `git diff
-  --check`, and the full Flutter suite passed with `168` tests. Native Windows
-  compilation is not available in this Linux workspace.
-- Current UI-audit verification: the enlarged-text RED run exposed a 100px
-  upstream-selector overflow and a compact rebase-row overflow; after the
-  responsive fixes, formatting and `flutter analyze` passed, the focused
-  repository UI suite passed with 17 tests, the full Flutter suite passed with
-  168 tests, and `git diff --check` passed.
-- Next action: activate Task 28, record its behavior-ledger scenarios, and add
-  its first failing remote-branch/update-project fixture.
+  `lib/src/backend/{dart_git_backend,dart_git_gateway,error,git_gateway,
+  remote_branch,repository_service}.dart`,
+  `lib/src/features/repository/{branch_dialog,changes_screen,
+  comparison_dialog,history_controller,history_screen,
+  update_project_dialog}.dart`, `test/backend/remote_branch_test.dart`,
+  `test/features/repository/{branch_dialog,history_screen,
+  update_project_dialog}_test.dart`, and
+  `test/helpers/git_patch_gateway_stub.dart`.
+- Verification: focused remote/update/branch tests passed with `11` tests;
+  History tests passed with `7` tests; `dart format --output=none
+  --set-exit-if-changed lib test`, `flutter analyze`, `flutter test` with `178`
+  tests, and `git diff --check` passed. Native Windows compilation is not
+  available in this Linux workspace.
+- Next action: Task 29 remains pending; start it only after activating its
+  behavior-ledger scenarios and first RED test.
 - Earlier Task 23 and Windows incremental-build diagnostics remain recorded in
   the plan and prior checkpoints.
 - Blockers: none.

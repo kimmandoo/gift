@@ -15,6 +15,7 @@ import 'executor.dart';
 import 'history.dart';
 import 'interactive_rebase.dart';
 import 'remote.dart';
+import 'remote_branch.dart';
 import 'reset.dart';
 import 'status.dart';
 import 'objects.dart';
@@ -36,6 +37,9 @@ class AppState {
   final Map<String, _HistoryRollbackPreviewRecord> _rollbackPreviews = {};
   final Map<String, _InteractiveRebasePreviewRecord>
   _interactiveRebasePreviews = {};
+  final Map<String, _UpdatePreviewRecord> _updatePreviews = {};
+  final Map<String, _RemoteBranchDeletePreviewRecord>
+  _remoteBranchDeletePreviews = {};
   final DateTime Function() _now;
 
   static const discardPreviewLifetime = Duration(minutes: 2);
@@ -371,6 +375,105 @@ class AppState {
   void consumeInteractiveRebasePreview(String token) {
     _interactiveRebasePreviews.remove(token);
   }
+
+  GitBranchPreviewToken issueUpdatePreview({
+    required RepositoryId repositoryId,
+    required GitUpdateProjectRequest request,
+    required String fingerprint,
+  }) {
+    _updatePreviews.removeWhere(
+      (_, record) => !record.expiresAt.isAfter(_now()),
+    );
+    final token = _newOpaqueToken();
+    final expiresAt = _now().add(rollbackPreviewLifetime);
+    _updatePreviews[token] = _UpdatePreviewRecord(
+      repositoryId: repositoryId,
+      requestKey: _updateRequestKey(request),
+      fingerprint: fingerprint,
+      expiresAt: expiresAt,
+    );
+    return GitBranchPreviewToken(value: token, expiresAt: expiresAt);
+  }
+
+  void validateUpdatePreview({
+    required RepositoryId repositoryId,
+    required GitUpdateProjectRequest request,
+    required String fingerprint,
+  }) {
+    final token = request.confirmationToken;
+    final record = token == null ? null : _updatePreviews[token];
+    final matches =
+        record != null &&
+        record.repositoryId == repositoryId &&
+        record.requestKey == _updateRequestKey(request) &&
+        record.fingerprint == fingerprint &&
+        record.expiresAt.isAfter(_now());
+    if (!matches) {
+      if (token != null) _updatePreviews.remove(token);
+      throw const GitError(
+        category: GitErrorCategory.staleUpdatePreview,
+        userMessage:
+            'This update preview is stale or expired. Review it again.',
+        diagnostic: 'update preview token or repository fingerprint was missing, changed, or expired',
+        retryable: true,
+      );
+    }
+  }
+
+  void consumeUpdatePreview(String token) => _updatePreviews.remove(token);
+
+  String _updateRequestKey(GitUpdateProjectRequest request) =>
+      '${request.strategy.name}:${request.localChanges.name}';
+
+  GitBranchPreviewToken issueRemoteBranchDeletePreview({
+    required RepositoryId repositoryId,
+    required String branchName,
+    required String oid,
+    required String fingerprint,
+  }) {
+    _remoteBranchDeletePreviews.removeWhere(
+      (_, record) => !record.expiresAt.isAfter(_now()),
+    );
+    final token = _newOpaqueToken();
+    final expiresAt = _now().add(objectPreviewLifetime);
+    _remoteBranchDeletePreviews[token] = _RemoteBranchDeletePreviewRecord(
+      repositoryId: repositoryId,
+      branchName: branchName,
+      oid: oid,
+      fingerprint: fingerprint,
+      expiresAt: expiresAt,
+    );
+    return GitBranchPreviewToken(value: token, expiresAt: expiresAt);
+  }
+
+  void validateRemoteBranchDeletePreview({
+    required RepositoryId repositoryId,
+    required GitRemoteBranchDeletePreview preview,
+    required String oid,
+    required String fingerprint,
+  }) {
+    final record = _remoteBranchDeletePreviews[preview.token];
+    final matches =
+        record != null &&
+        record.repositoryId == repositoryId &&
+        record.branchName == preview.branch.name &&
+        record.oid == oid &&
+        record.oid == preview.oid &&
+        record.fingerprint == fingerprint &&
+        record.expiresAt.isAfter(_now());
+    if (!matches) {
+      _remoteBranchDeletePreviews.remove(preview.token);
+      throw const GitError(
+        category: GitErrorCategory.staleRemoteRef,
+        userMessage: 'The remote branch changed. Review its deletion again.',
+        diagnostic: 'remote branch deletion preview was stale or expired',
+        retryable: true,
+      );
+    }
+  }
+
+  void consumeRemoteBranchDeletePreview(String token) =>
+      _remoteBranchDeletePreviews.remove(token);
 }
 
 class _DiscardPreviewRecord {
@@ -451,6 +554,36 @@ class _InteractiveRebasePreviewRecord {
 
   final RepositoryId repositoryId;
   final String planKey;
+  final String fingerprint;
+  final DateTime expiresAt;
+}
+
+class _UpdatePreviewRecord {
+  const _UpdatePreviewRecord({
+    required this.repositoryId,
+    required this.requestKey,
+    required this.fingerprint,
+    required this.expiresAt,
+  });
+
+  final RepositoryId repositoryId;
+  final String requestKey;
+  final String fingerprint;
+  final DateTime expiresAt;
+}
+
+class _RemoteBranchDeletePreviewRecord {
+  const _RemoteBranchDeletePreviewRecord({
+    required this.repositoryId,
+    required this.branchName,
+    required this.oid,
+    required this.fingerprint,
+    required this.expiresAt,
+  });
+
+  final RepositoryId repositoryId;
+  final String branchName;
+  final String oid;
   final String fingerprint;
   final DateTime expiresAt;
 }
@@ -2703,6 +2836,533 @@ class RepositoryService {
     }
   }
 
+  /// Reads remote-tracking refs and their local tracking relationships in one
+  /// bounded snapshot. The snapshot fingerprint is used by update and
+  /// checkout mutations so a moved remote ref cannot be mistaken for the ref
+  /// the user reviewed.
+  Future<GitRemoteBranchSnapshot> getRemoteBranchSnapshot(
+    RepositoryId repositoryId,
+  ) async {
+    final handle = await state.lookup(repositoryId);
+    final status = await getStatus(repositoryId);
+    final remoteOutput = await _runner.run(
+      GitInvocation(
+        program: gitPath,
+        args: const [
+          'for-each-ref',
+          '--sort=refname',
+          '--format=%(refname:short)%00%(objectname)%00%(symref:short)',
+          'refs/remotes/',
+        ],
+        cwd: handle.root,
+        kind: GitOperationKind.read,
+        outputPolicy: const OutputPolicy.capture(maxBytes: 2 * 1024 * 1024),
+      ),
+    );
+    final localOutput = await _runner.run(
+      GitInvocation(
+        program: gitPath,
+        args: const [
+          'for-each-ref',
+          '--sort=refname',
+          '--format=%(refname:short)%00%(objectname)%00%(upstream:short)%00%(HEAD)',
+          'refs/heads/',
+        ],
+        cwd: handle.root,
+        kind: GitOperationKind.read,
+        outputPolicy: const OutputPolicy.capture(maxBytes: 512 * 1024),
+      ),
+    );
+    final tagOutput = await _runner.run(
+      GitInvocation(
+        program: gitPath,
+        args: const [
+          'for-each-ref',
+          '--sort=refname',
+          '--format=%(refname:short)%00%(objectname)%00%(*objectname)',
+          'refs/tags/',
+        ],
+        cwd: handle.root,
+        kind: GitOperationKind.read,
+        outputPolicy: const OutputPolicy.capture(maxBytes: 512 * 1024),
+      ),
+    );
+    late final List<GitRemoteBranch> remoteBranches;
+    late final List<GitBranch> localBranches;
+    try {
+      remoteBranches = parseGitRemoteBranches(remoteOutput.stdout);
+      localBranches = parseGitBranches(localOutput.stdout);
+    } on FormatException catch (error, stackTrace) {
+      Error.throwWithStackTrace(
+        GitError(
+          category: GitErrorCategory.parseFailure,
+          userMessage: 'Git returned an unreadable remote branch list.',
+          diagnostic: error.message,
+          retryable: false,
+        ),
+        stackTrace,
+      );
+    }
+    final localRefs = [
+      for (final branch in localBranches)
+        if (branch.oid case final oid?)
+          GitBranchRef(
+            name: branch.name,
+            oid: oid,
+            upstream: branch.upstream,
+            isCurrent: branch.isCurrent,
+          ),
+    ];
+    final tags = <GitRepositoryRef>[];
+    for (final rawLine
+        in utf8.decode(tagOutput.stdout, allowMalformed: true).split('\n')) {
+      final fields = rawLine.trimRight().split('\u0000');
+      if (fields.length != 3 || fields[0].isEmpty) {
+        if (rawLine.trim().isNotEmpty) {
+          throw const GitError(
+            category: GitErrorCategory.parseFailure,
+            userMessage: 'Git returned an unreadable tag list.',
+            diagnostic: 'tag ref record did not contain a name and peeled OID',
+            retryable: false,
+          );
+        }
+        continue;
+      }
+      final oid = fields[2].isNotEmpty ? fields[2] : fields[1];
+      if (oid.isEmpty) continue;
+      tags.add(GitRepositoryRef(name: fields[0], oid: oid));
+    }
+    final tracking = <String, String>{
+      for (final branch in localBranches)
+        if (branch.upstream case final upstream?)
+          if (upstream.isNotEmpty) upstream: branch.name,
+    };
+    final linkedBranches = [
+      for (final branch in remoteBranches)
+        branch.copyWith(localTrackingBranch: tracking[branch.name]),
+    ];
+    var outgoing = 0;
+    var incoming = 0;
+    if (status.branch.oid case final currentOid?) {
+      if (status.branch.upstream case final upstream?) {
+        final upstreamBranch = linkedBranches
+            .where((branch) => branch.name == upstream)
+            .firstOrNull;
+        if (upstreamBranch != null) {
+          final counts = await _readAheadBehind(
+            handle,
+            upstreamBranch.oid,
+            currentOid,
+          );
+          outgoing = counts.$1;
+          incoming = counts.$2;
+        }
+      }
+    }
+    final fingerprint = hashGitObjectBytes([
+      ...remoteOutput.stdout,
+      ...localOutput.stdout,
+      ...tagOutput.stdout,
+      ...utf8.encode(status.contentHash),
+    ]);
+    return GitRemoteBranchSnapshot(
+      repositoryId: repositoryId,
+      fingerprint: fingerprint,
+      currentBranch: status.branch.head,
+      upstream: status.branch.upstream,
+      branches: linkedBranches,
+      localBranches: localRefs,
+      tags: tags,
+      incoming: incoming,
+      outgoing: outgoing,
+    );
+  }
+
+  Future<GitBranchActionResult> checkoutRemoteBranch(
+    RepositoryId repositoryId,
+    GitRemoteBranch branch, {
+    String? localName,
+  }) {
+    final target = localName?.trim().isNotEmpty == true
+        ? localName!.trim()
+        : branch.branch;
+    _validateBranchName(target);
+    if (branch.isSymbolicHead || branch.name.contains('\u0000')) {
+      throw const GitError(
+        category: GitErrorCategory.remoteBranchNotFound,
+        userMessage: 'Choose a concrete remote branch to check out.',
+        diagnostic: 'a symbolic or invalid remote branch was requested',
+        retryable: false,
+      );
+    }
+    return state.runMutation(repositoryId, () async {
+      final handle = await state.lookup(repositoryId);
+      final remoteOid = await _readRefOid(
+        handle,
+        'refs/remotes/${branch.name}',
+        missingCategory: GitErrorCategory.remoteBranchNotFound,
+      );
+      if (remoteOid != branch.oid) {
+        throw const GitError(
+          category: GitErrorCategory.staleRemoteRef,
+          userMessage:
+              'The remote branch moved. Refresh branches and try again.',
+          diagnostic: 'remote-tracking branch OID changed after it was listed',
+          retryable: true,
+        );
+      }
+      await _validateBranchNameWithGit(handle, target);
+      try {
+        await _runner.run(
+          GitInvocation(
+            program: gitPath,
+            args: ['switch', '--track', '--create', target, branch.name],
+            cwd: handle.root,
+            kind: GitOperationKind.mutation,
+            outputPolicy: const OutputPolicy.capture(maxBytes: 128 * 1024),
+          ),
+        );
+      } on GitError catch (error, stackTrace) {
+        Error.throwWithStackTrace(_mapBranchError(error), stackTrace);
+      }
+      return GitBranchActionResult(
+        repositoryId: repositoryId,
+        branchName: target,
+        status: await getStatus(repositoryId),
+      );
+    });
+  }
+
+  Future<GitRemoteBranchDeletePreview> previewRemoteBranchDelete(
+    RepositoryId repositoryId,
+    GitRemoteBranch branch,
+  ) async {
+    if (branch.isSymbolicHead) {
+      throw const GitError(
+        category: GitErrorCategory.remoteBranchNotFound,
+        userMessage: 'A symbolic remote HEAD cannot be deleted.',
+        diagnostic: 'remote branch deletion targeted a symbolic HEAD ref',
+        retryable: false,
+      );
+    }
+    final snapshot = await getRemoteBranchSnapshot(repositoryId);
+    final current = snapshot.branches
+        .where((candidate) => candidate.name == branch.name)
+        .firstOrNull;
+    if (current == null) {
+      throw const GitError(
+        category: GitErrorCategory.remoteBranchNotFound,
+        userMessage:
+            'The remote branch is no longer available. Refresh branches.',
+        diagnostic: 'remote branch was not present in the current ref snapshot',
+        retryable: true,
+      );
+    }
+    final token = state.issueRemoteBranchDeletePreview(
+      repositoryId: repositoryId,
+      branchName: current.name,
+      oid: current.oid,
+      fingerprint: snapshot.fingerprint,
+    );
+    return GitRemoteBranchDeletePreview(
+      repositoryId: repositoryId,
+      branch: current,
+      oid: current.oid,
+      fingerprint: snapshot.fingerprint,
+      token: token.value,
+      expiresAt: token.expiresAt,
+    );
+  }
+
+  Future<GitRemoteBranchActionResult> deleteRemoteBranch(
+    RepositoryId repositoryId,
+    GitRemoteBranchDeletePreview preview,
+  ) => state.runMutation(repositoryId, () async {
+    final handle = await state.lookup(repositoryId);
+    final snapshot = await getRemoteBranchSnapshot(repositoryId);
+    final current = snapshot.branches
+        .where((candidate) => candidate.name == preview.branch.name)
+        .firstOrNull;
+    if (current == null) {
+      throw const GitError(
+        category: GitErrorCategory.remoteBranchNotFound,
+        userMessage: 'The remote branch is no longer available.',
+        diagnostic: 'remote branch disappeared before deletion',
+        retryable: true,
+      );
+    }
+    state.validateRemoteBranchDeletePreview(
+      repositoryId: repositoryId,
+      preview: preview,
+      oid: current.oid,
+      fingerprint: snapshot.fingerprint,
+    );
+    final remote = current.remote;
+    final branchName = current.branch;
+    final publishedOid = await _readRemoteBranchOid(handle, remote, branchName);
+    if (publishedOid != preview.oid) {
+      throw const GitError(
+        category: GitErrorCategory.staleRemoteRef,
+        userMessage:
+            'The remote branch moved. Refresh branches before deleting it.',
+        diagnostic: 'published remote branch OID changed after it was reviewed',
+        retryable: true,
+      );
+    }
+    late final ProcessOutput output;
+    try {
+      output = await _runner.run(
+        GitInvocation(
+          program: gitPath,
+          args: ['push', remote, '--delete', branchName],
+          cwd: handle.root,
+          kind: GitOperationKind.remote,
+          outputPolicy: const OutputPolicy.capture(maxBytes: 512 * 1024),
+        ),
+      );
+      await _runner.run(
+        GitInvocation(
+          program: gitPath,
+          args: ['fetch', '--prune', remote],
+          cwd: handle.root,
+          kind: GitOperationKind.remote,
+          outputPolicy: const OutputPolicy.capture(maxBytes: 512 * 1024),
+        ),
+      );
+    } on GitError catch (error, stackTrace) {
+      Error.throwWithStackTrace(_mapRemoteError(error), stackTrace);
+    }
+    state.consumeRemoteBranchDeletePreview(preview.token);
+    final refreshed = await getRemoteBranchSnapshot(repositoryId);
+    return GitRemoteBranchActionResult(
+      repositoryId: repositoryId,
+      branch: current,
+      status: await getStatus(repositoryId),
+      snapshot: refreshed,
+      summary: _objectSummary(output, 'The remote branch was deleted.'),
+    );
+  });
+
+  Future<GitUpdateProjectPreview> previewUpdateProject(
+    RepositoryId repositoryId,
+    GitUpdateProjectRequest request,
+  ) async {
+    if (request.phase != GitUpdatePhase.start) {
+      throw const GitError(
+        category: GitErrorCategory.updateNotAllowed,
+        userMessage: 'Recovery actions do not need a new update preview.',
+        diagnostic: 'a recovery phase was passed to update preview',
+        retryable: false,
+      );
+    }
+    final handle = await state.lookup(repositoryId);
+    final status = await getStatus(repositoryId);
+    final branch = status.branch.head;
+    final upstream = status.branch.upstream;
+    String? currentOid = status.branch.oid;
+    String? upstreamOid;
+    var blockingMessage = '';
+    if (branch == null || status.branch.isDetached) {
+      blockingMessage = 'Switch to a local branch before updating the project.';
+    } else if (currentOid == null || currentOid.isEmpty) {
+      blockingMessage = 'Create the first local commit before updating.';
+    } else if (upstream == null || upstream.isEmpty) {
+      blockingMessage = 'Set an upstream branch before updating the project.';
+    } else {
+      try {
+        upstreamOid = await _readRefOid(
+          handle,
+          'refs/remotes/$upstream',
+          missingCategory: GitErrorCategory.remoteBranchNotFound,
+        );
+      } on GitError catch (error) {
+        if (error.category == GitErrorCategory.remoteBranchNotFound) {
+          blockingMessage =
+              'The tracked remote branch is missing. Fetch again.';
+        } else {
+          rethrow;
+        }
+      }
+    }
+    final dirty = !status.isClean;
+    if (blockingMessage.isEmpty &&
+        dirty &&
+        request.localChanges == GitUpdateLocalChanges.reject) {
+      blockingMessage = 'Commit or stash local changes before updating.';
+    }
+    if (currentOid == null || currentOid.isEmpty) currentOid = '(unborn)';
+    if (upstreamOid == null || upstreamOid.isEmpty) upstreamOid = '(missing)';
+    var incoming = 0;
+    var outgoing = 0;
+    if (blockingMessage.isEmpty) {
+      final counts = await _readAheadBehind(handle, upstreamOid, currentOid);
+      outgoing = counts.$1;
+      incoming = counts.$2;
+    }
+    final fingerprint = _updateFingerprint(
+      status,
+      branch,
+      upstream,
+      currentOid,
+      upstreamOid,
+    );
+    final token = blockingMessage.isEmpty
+        ? state.issueUpdatePreview(
+            repositoryId: repositoryId,
+            request: request,
+            fingerprint: fingerprint,
+          )
+        : null;
+    return GitUpdateProjectPreview(
+      repositoryId: repositoryId,
+      request: request,
+      branch: branch ?? '(detached)',
+      upstream: upstream ?? '(none)',
+      currentOid: currentOid,
+      upstreamOid: upstreamOid,
+      incoming: incoming,
+      outgoing: outgoing,
+      dirtyWorktree: dirty,
+      requiresConfirmation: request.strategy == GitUpdateStrategy.resetToRemote,
+      fingerprint: fingerprint,
+      token: token?.value,
+      expiresAt: token?.expiresAt,
+      blockingMessage: blockingMessage.isEmpty ? null : blockingMessage,
+    );
+  }
+
+  Future<GitUpdateProjectResult> executeUpdateProject(
+    RepositoryId repositoryId,
+    GitUpdateProjectRequest request, {
+    GitCancellationToken? cancellationToken,
+  }) => state.runMutation(repositoryId, () async {
+    final handle = await state.lookup(repositoryId);
+    final status = await getStatus(repositoryId);
+    final branch = status.branch.head;
+    final upstream = status.branch.upstream;
+    if (branch == null || status.branch.isDetached || upstream == null) {
+      throw const GitError(
+        category: GitErrorCategory.updateNotAllowed,
+        userMessage:
+            'An attached branch with an upstream is required to update.',
+        diagnostic: 'update requested without a current tracking branch',
+        retryable: false,
+      );
+    }
+    final upstreamOid = await _readRefOid(
+      handle,
+      'refs/remotes/$upstream',
+      missingCategory: GitErrorCategory.remoteBranchNotFound,
+    );
+    final currentOid = status.branch.oid ?? '(unborn)';
+    final fingerprint = _updateFingerprint(
+      status,
+      branch,
+      upstream,
+      currentOid,
+      upstreamOid,
+    );
+    if (request.phase == GitUpdatePhase.start) {
+      state.validateUpdatePreview(
+        repositoryId: repositoryId,
+        request: request,
+        fingerprint: fingerprint,
+      );
+    } else {
+      await _validateUpdateRecovery(handle, request.strategy);
+    }
+    var stashed = false;
+    if (request.phase == GitUpdatePhase.start &&
+        !status.isClean &&
+        request.localChanges == GitUpdateLocalChanges.stash) {
+      await _runner.run(
+        GitInvocation(
+          program: gitPath,
+          args: const [
+            'stash',
+            'push',
+            '--include-untracked',
+            '--message=gift update',
+          ],
+          cwd: handle.root,
+          kind: GitOperationKind.mutation,
+          outputPolicy: const OutputPolicy.capture(maxBytes: 256 * 1024),
+          cancellationToken: cancellationToken,
+        ),
+      );
+      stashed = true;
+    }
+    final args = _updateArgs(request, upstream: upstream);
+    try {
+      await _runner.run(
+        GitInvocation(
+          program: gitPath,
+          args: args,
+          cwd: handle.root,
+          kind: GitOperationKind.mutation,
+          outputPolicy: const OutputPolicy.capture(maxBytes: 512 * 1024),
+          cancellationToken: cancellationToken,
+          environment: const {'GIT_EDITOR': ':'},
+        ),
+      );
+      if (stashed) {
+        await _runner.run(
+          GitInvocation(
+            program: gitPath,
+            args: const ['stash', 'pop'],
+            cwd: handle.root,
+            kind: GitOperationKind.mutation,
+            outputPolicy: const OutputPolicy.capture(maxBytes: 512 * 1024),
+          ),
+        );
+      }
+    } on GitError catch (error, stackTrace) {
+      final afterFailure = await getStatus(repositoryId);
+      if (afterFailure.conflicts.isNotEmpty &&
+          request.strategy != GitUpdateStrategy.resetToRemote) {
+        return GitUpdateProjectResult(
+          repositoryId: repositoryId,
+          request: request,
+          state: GitUpdateState.conflicted,
+          status: afterFailure,
+          summary: 'Update paused because conflicts need to be resolved.',
+          recoveryActions: const [
+            GitUpdatePhase.continueOperation,
+            GitUpdatePhase.abort,
+          ],
+        );
+      }
+      if (error.category == GitErrorCategory.cancelled) {
+        return GitUpdateProjectResult(
+          repositoryId: repositoryId,
+          request: request,
+          state: GitUpdateState.cancelled,
+          status: afterFailure,
+          summary: 'The project update was cancelled.',
+        );
+      }
+      Error.throwWithStackTrace(_mapUpdateError(error), stackTrace);
+    }
+    if (request.confirmationToken case final token?) {
+      state.consumeUpdatePreview(token);
+    }
+    final after = await getStatus(repositoryId);
+    final resultState = request.phase == GitUpdatePhase.abort
+        ? GitUpdateState.aborted
+        : GitUpdateState.completed;
+    return GitUpdateProjectResult(
+      repositoryId: repositoryId,
+      request: request,
+      state: resultState,
+      status: after,
+      summary: request.phase == GitUpdatePhase.abort
+          ? 'The project update was aborted.'
+          : request.strategy == GitUpdateStrategy.resetToRemote
+          ? 'The local branch was reset to its remote branch.'
+          : 'The project was updated from its remote branch.',
+    );
+  });
+
   Future<GitBranchActionResult> createBranch(
     RepositoryId repositoryId,
     String name,
@@ -3565,6 +4225,139 @@ class RepositoryService {
       '"${path.replaceAll('\\', '\\\\').replaceAll('"', '\\"')}"';
 
   String _windowsPath(String path) => path.replaceAll('"', '""');
+
+  Future<String> _readRefOid(
+    RepositoryHandle handle,
+    String ref, {
+    required GitErrorCategory missingCategory,
+  }) async {
+    try {
+      final output = await _runner.run(
+        GitInvocation(
+          program: gitPath,
+          args: ['rev-parse', '--verify', '--quiet', '$ref^{commit}'],
+          cwd: handle.root,
+          kind: GitOperationKind.read,
+          outputPolicy: const OutputPolicy.capture(maxBytes: 4 * 1024),
+        ),
+      );
+      final oid = utf8.decode(output.stdout, allowMalformed: true).trim();
+      if (_isCommitOid(oid)) return oid;
+    } on GitError catch (error, stackTrace) {
+      if (error.category != GitErrorCategory.processFailed) {
+        Error.throwWithStackTrace(error, stackTrace);
+      }
+    }
+    throw GitError(
+      category: missingCategory,
+      userMessage: 'The requested remote branch is no longer available.',
+      diagnostic: 'could not resolve remote commit ref: $ref',
+      retryable: true,
+    );
+  }
+
+  Future<String> _readRemoteBranchOid(
+    RepositoryHandle handle,
+    String remote,
+    String branch,
+  ) async {
+    _validateRemoteName(remote);
+    _validateBranchName(branch);
+    try {
+      final output = await _runner.run(
+        GitInvocation(
+          program: gitPath,
+          args: ['ls-remote', '--refs', remote, 'refs/heads/$branch'],
+          cwd: handle.root,
+          kind: GitOperationKind.read,
+          outputPolicy: const OutputPolicy.capture(maxBytes: 16 * 1024),
+        ),
+      );
+      final fields = utf8
+          .decode(output.stdout, allowMalformed: true)
+          .trim()
+          .split(RegExp(r'\s+'));
+      if (fields.length >= 2 && _isCommitOid(fields[0])) return fields[0];
+    } on GitError catch (error, stackTrace) {
+      Error.throwWithStackTrace(_mapRemoteError(error), stackTrace);
+    }
+    throw GitError(
+      category: GitErrorCategory.remoteBranchNotFound,
+      userMessage: 'The remote branch is no longer available.',
+      diagnostic: 'remote branch was not advertised by $remote: $branch',
+      retryable: true,
+    );
+  }
+
+  String _updateFingerprint(
+    GitStatusSnapshot status,
+    String? branch,
+    String? upstream,
+    String currentOid,
+    String upstreamOid,
+  ) => [
+    status.contentHash,
+    branch ?? '',
+    upstream ?? '',
+    currentOid,
+    upstreamOid,
+  ].join('|');
+
+  List<String> _updateArgs(
+    GitUpdateProjectRequest request, {
+    String? upstream,
+  }) {
+    if (request.phase == GitUpdatePhase.continueOperation) {
+      return switch (request.strategy) {
+        GitUpdateStrategy.merge => const ['merge', '--continue'],
+        GitUpdateStrategy.rebase => const ['rebase', '--continue'],
+        GitUpdateStrategy.resetToRemote => throw const GitError(
+          category: GitErrorCategory.updateNotAllowed,
+          userMessage: 'Reset-to-remote has no conflict continuation step.',
+          diagnostic: 'continue was requested for reset-to-remote',
+          retryable: false,
+        ),
+      };
+    }
+    if (request.phase == GitUpdatePhase.abort) {
+      return switch (request.strategy) {
+        GitUpdateStrategy.merge => const ['merge', '--abort'],
+        GitUpdateStrategy.rebase => const ['rebase', '--abort'],
+        GitUpdateStrategy.resetToRemote => throw const GitError(
+          category: GitErrorCategory.updateNotAllowed,
+          userMessage: 'Reset-to-remote has no conflict abort step.',
+          diagnostic: 'abort was requested for reset-to-remote',
+          retryable: false,
+        ),
+      };
+    }
+    return switch (request.strategy) {
+      GitUpdateStrategy.merge => ['merge', '--no-edit', upstream!],
+      GitUpdateStrategy.rebase => ['rebase', upstream!],
+      GitUpdateStrategy.resetToRemote => ['reset', '--hard', upstream!],
+    };
+  }
+
+  Future<void> _validateUpdateRecovery(
+    RepositoryHandle handle,
+    GitUpdateStrategy strategy,
+  ) async {
+    final operation = await _detectBranchOperation(handle);
+    final expected = switch (strategy) {
+      GitUpdateStrategy.merge => GitBranchOperation.merge,
+      GitUpdateStrategy.rebase => GitBranchOperation.rebase,
+      GitUpdateStrategy.resetToRemote => null,
+    };
+    if (expected == null || operation != expected) {
+      throw const GitError(
+        category: GitErrorCategory.updateNotAllowed,
+        userMessage: 'That update recovery action is no longer available.',
+        diagnostic:
+            'repository operation did not match update recovery strategy',
+        retryable: true,
+      );
+    }
+  }
 
   GitError _recoveryNotAllowed(
     GitBranchOperation operation,
@@ -7932,6 +8725,32 @@ GitError _mapRemoteError(GitError error) {
     );
   }
   return error;
+}
+
+GitError _mapUpdateError(GitError error) {
+  if (error.category != GitErrorCategory.processFailed) return error;
+  if (RegExp(
+    r'(local changes|would be overwritten|uncommitted changes)',
+    caseSensitive: false,
+  ).hasMatch(error.diagnostic)) {
+    return error.copyWith(
+      category: GitErrorCategory.dirtyWorktree,
+      userMessage: 'Commit or stash local changes before updating.',
+      retryable: false,
+    );
+  }
+  if (_looksLikeConflict(error)) {
+    return error.copyWith(
+      category: GitErrorCategory.mergeConflict,
+      userMessage: 'The update stopped because conflicts need to be resolved.',
+      retryable: true,
+    );
+  }
+  return error.copyWith(
+    category: GitErrorCategory.updateNotAllowed,
+    userMessage: 'Git could not update the project from its remote branch.',
+    retryable: true,
+  );
 }
 
 Future<String> _canonicalizeDirectory(String path, {bool moved = false}) async {

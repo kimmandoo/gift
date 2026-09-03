@@ -8,6 +8,7 @@ import 'package:gift/src/backend/git_gateway.dart';
 import 'package:gift/src/backend/history.dart';
 import 'package:gift/src/backend/status.dart';
 import 'package:gift/src/backend/remote.dart';
+import 'package:gift/src/backend/remote_branch.dart';
 import 'package:gift/src/features/repository/branch_dialog.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -147,6 +148,145 @@ void main() {
     expect(gateway.executed, isTrue);
     expect(find.byKey(const Key('branch-operation-result')), findsOneWidget);
   });
+
+  testWidgets('shows remote branches as checkout and compare actions', (
+    tester,
+  ) async {
+    addTearDown(tester.view.reset);
+    tester.view.physicalSize = const Size(420, 640);
+    tester.view.devicePixelRatio = 1;
+    final repository = const RepositoryOpened(
+      repositoryId: RepositoryId(value: 'remote-branch-ui-repository'),
+      root: '/workspace/project',
+    );
+    final status = GitStatusSnapshot(
+      repositoryId: repository.repositoryId,
+      root: repository.root,
+      branch: const GitBranchStatus(head: 'main'),
+      changes: const [],
+      contentHash: 'remote-ui',
+      generation: 1,
+    );
+    final gateway = FakeBranchGateway(
+      branches: const [GitBranch(name: 'main', isCurrent: true)],
+      action: GitBranchActionResult(
+        repositoryId: repository.repositoryId,
+        branchName: 'feature',
+        status: status,
+      ),
+      remoteSnapshot: GitRemoteBranchSnapshot(
+        repositoryId: repository.repositoryId,
+        fingerprint: 'remote-ui',
+        currentBranch: 'main',
+        branches: [
+          GitRemoteBranch(
+            name: 'origin/feature',
+            remote: 'origin',
+            branch: 'feature',
+            oid: 'a' * 40,
+          ),
+        ],
+      ),
+    );
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: BranchDialog(gateway: gateway, repository: repository),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('origin/feature'), findsOneWidget);
+    await tester.tap(
+      find.byKey(const ValueKey('remote-actions:origin/feature')),
+    );
+    await tester.pumpAndSettle();
+    expect(find.text('Checkout as local branch'), findsOneWidget);
+    await tester.tap(find.text('Checkout as local branch'));
+    await tester.pumpAndSettle();
+    expect(gateway.checkedOutRemote, 'origin/feature');
+  });
+
+  testWidgets('previews and confirms deleting a remote branch', (tester) async {
+    addTearDown(tester.view.reset);
+    tester.view.physicalSize = const Size(420, 640);
+    tester.view.devicePixelRatio = 1;
+    final repository = const RepositoryOpened(
+      repositoryId: RepositoryId(value: 'remote-delete-ui-repository'),
+      root: '/workspace/project',
+    );
+    final branch = GitRemoteBranch(
+      name: 'origin/old-feature',
+      remote: 'origin',
+      branch: 'old-feature',
+      oid: 'b' * 40,
+    );
+    final snapshot = GitRemoteBranchSnapshot(
+      repositoryId: repository.repositoryId,
+      fingerprint: 'remote-delete-ui',
+      currentBranch: 'main',
+      branches: [branch],
+    );
+    final status = GitStatusSnapshot(
+      repositoryId: repository.repositoryId,
+      root: repository.root,
+      branch: const GitBranchStatus(head: 'main'),
+      changes: const [],
+      contentHash: 'remote-delete-ui',
+      generation: 1,
+    );
+    final gateway = FakeBranchGateway(
+      branches: const [GitBranch(name: 'main', isCurrent: true)],
+      action: GitBranchActionResult(
+        repositoryId: repository.repositoryId,
+        branchName: 'main',
+        status: status,
+      ),
+      remoteSnapshot: snapshot,
+      remoteDeletePreview: GitRemoteBranchDeletePreview(
+        repositoryId: repository.repositoryId,
+        branch: branch,
+        oid: branch.oid,
+        fingerprint: snapshot.fingerprint,
+        token: 'delete-token',
+        expiresAt: DateTime(2030),
+      ),
+      remoteDeleteResult: GitRemoteBranchActionResult(
+        repositoryId: repository.repositoryId,
+        branch: branch,
+        status: status,
+        snapshot: GitRemoteBranchSnapshot(
+          repositoryId: repository.repositoryId,
+          fingerprint: 'remote-delete-ui-after',
+          currentBranch: 'main',
+          branches: const [],
+        ),
+        summary: 'The remote branch was deleted.',
+      ),
+    );
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: BranchDialog(gateway: gateway, repository: repository),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(
+      find.byKey(const ValueKey('remote-actions:origin/old-feature')),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Delete remote branch'));
+    await tester.pumpAndSettle();
+    expect(
+      find.byKey(const Key('confirm-delete-remote-branch')),
+      findsOneWidget,
+    );
+    await tester.tap(find.byKey(const Key('confirm-delete-remote-branch')));
+    await tester.pumpAndSettle();
+    expect(gateway.deletedRemote, 'origin/old-feature');
+  });
 }
 
 class FakeBranchGateway with GitPatchGatewayStub implements GitGateway {
@@ -155,18 +295,56 @@ class FakeBranchGateway with GitPatchGatewayStub implements GitGateway {
     required this.action,
     this.preview,
     this.operationResult,
+    this.remoteSnapshot,
+    this.remoteDeletePreview,
+    this.remoteDeleteResult,
   });
 
   final List<GitBranch> branches;
   final GitBranchActionResult action;
   final GitBranchOperationPreview? preview;
   final GitBranchOperationResult? operationResult;
+  final GitRemoteBranchSnapshot? remoteSnapshot;
+  final GitRemoteBranchDeletePreview? remoteDeletePreview;
+  final GitRemoteBranchActionResult? remoteDeleteResult;
   String? switchedTo;
+  String? checkedOutRemote;
+  String? deletedRemote;
   var executed = false;
 
   @override
   Future<List<GitBranch>> getBranches(RepositoryId repositoryId) async =>
       branches;
+
+  @override
+  Future<GitRemoteBranchSnapshot> getRemoteBranchSnapshot(
+    RepositoryId repositoryId,
+  ) async => remoteSnapshot!;
+
+  @override
+  Future<GitBranchActionResult> checkoutRemoteBranch(
+    RepositoryId repositoryId,
+    GitRemoteBranch branch, {
+    String? localName,
+  }) async {
+    checkedOutRemote = branch.name;
+    return action;
+  }
+
+  @override
+  Future<GitRemoteBranchDeletePreview> previewRemoteBranchDelete(
+    RepositoryId repositoryId,
+    GitRemoteBranch branch,
+  ) async => remoteDeletePreview!;
+
+  @override
+  Future<GitRemoteBranchActionResult> deleteRemoteBranch(
+    RepositoryId repositoryId,
+    GitRemoteBranchDeletePreview preview,
+  ) async {
+    deletedRemote = preview.branch.name;
+    return remoteDeleteResult!;
+  }
 
   @override
   Future<GitBranchActionResult> switchBranch(

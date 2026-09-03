@@ -443,4 +443,31 @@ system Git 2.35+.
 3. Expanded the rebase upstream selector to constrain long commit labels and
    stacked move buttons in compact rows to preserve subject width.
 4. Tightened conflict deletion control spacing and added widget assertions for
-   non-overlapping and overflow-free layouts. Task 28 remains pending.
+   non-overlapping and overflow-free layouts. Task 28 was then activated.
+
+## Completed vertical: Remote branches and update project (Task 28)
+
+1. Activated Task 28 after recording remote-ref grouping, remote checkout,
+   tracking, divergence, local-change protection, update conflict, reset-to-
+   remote, stale-ref, and incoming/outgoing refresh scenarios in the behavior
+   ledger.
+2. Added the first RED remote-branch/update fixture before introducing the
+   backend contract, then proved it GREEN with real bare-remote fixtures.
+3. Implemented grouped remote refs with tracking and incoming/outgoing counts,
+   OID-bound remote checkout, compare entry points, remote deletion with a
+   just-in-time published-tip check, and Update Project merge/rebase/reset,
+   stash handling, stale previews, and conflict recovery.
+4. Added responsive Branch and Changes controls plus focused tests for remote
+   checkout, deletion confirmation, update choices, reset, stale state, and
+   merge abort recovery. Task 28 is complete.
+
+## Completed follow-up: History diff viewer UX after Task 28
+
+1. The selected commit file diff must paint semantic backgrounds to the
+   available viewer width, independently of the longest code line.
+2. The selected file row must toggle the inline diff closed as well as open;
+   long lines remain horizontally scrollable inside the detail pane.
+3. Kept the vertical detail pane at its available width, moved only long code
+   content into the horizontal scroller, and added regression coverage for
+   full-width backgrounds and collapse behavior. Task 28 is fully complete;
+   Task 29 is next.

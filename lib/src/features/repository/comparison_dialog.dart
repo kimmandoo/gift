@@ -17,20 +17,26 @@ class ComparisonDialog extends StatefulWidget {
     super.key,
     required this.gateway,
     required this.repository,
+    this.initialLeft,
+    this.initialRight,
+    this.initialPath,
   });
 
   final GitGateway gateway;
   final RepositoryOpened repository;
+  final String? initialLeft;
+  final String? initialRight;
+  final String? initialPath;
 
   @override
   State<ComparisonDialog> createState() => _ComparisonDialogState();
 }
 
 class _ComparisonDialogState extends State<ComparisonDialog> {
-  final _leftController = TextEditingController(text: 'HEAD~1');
-  final _rightController = TextEditingController(text: 'HEAD');
-  final _pathController = TextEditingController();
-  final _externalTextController = TextEditingController();
+  late final TextEditingController _leftController;
+  late final TextEditingController _rightController;
+  late final TextEditingController _pathController;
+  late final TextEditingController _externalTextController;
   GitComparisonSnapshot? _comparison;
   GitDiffSnapshot? _diff;
   String? _selectedPath;
@@ -43,6 +49,14 @@ class _ComparisonDialogState extends State<ComparisonDialog> {
   @override
   void initState() {
     super.initState();
+    _leftController = TextEditingController(
+      text: widget.initialLeft ?? 'HEAD~1',
+    );
+    _rightController = TextEditingController(
+      text: widget.initialRight ?? 'HEAD',
+    );
+    _pathController = TextEditingController(text: widget.initialPath ?? '');
+    _externalTextController = TextEditingController();
     unawaited(_compare());
   }
 

@@ -281,6 +281,19 @@ class HistoryController extends ChangeNotifier {
     unawaited(_loadCommitDiff(commit, file, requestId));
   }
 
+  void clearFileSelection() {
+    if (_disposed) return;
+    _diffRequestId++;
+    _setState(
+      _state.copyWith(
+        clearSelectedPath: true,
+        clearCommitDiff: true,
+        clearCommitDiffError: true,
+        isLoadingCommitDiff: false,
+      ),
+    );
+  }
+
   void selectNext() => _moveSelection(1);
 
   void selectPrevious() => _moveSelection(-1);

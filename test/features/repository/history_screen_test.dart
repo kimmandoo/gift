@@ -211,7 +211,11 @@ void main() {
     expect(find.text('branch: main'), findsOneWidget);
 
     await tester.ensureVisible(find.byKey(const Key('commit-file:notes.txt')));
-    await tester.tap(find.byKey(const Key('commit-file:notes.txt')));
+    tester
+        .widget<ListTile>(find.byKey(const Key('commit-file:notes.txt')))
+        .onTap!
+        .call();
+    await tester.pumpAndSettle();
     await tester.pump();
     expect(find.byKey(const Key('commit-diff')), findsOneWidget);
     expect(
@@ -231,12 +235,14 @@ void main() {
     expect(find.byKey(const Key('commit-diff-line:0')), findsOneWidget);
     expect(find.byKey(const Key('commit-diff-line:1')), findsOneWidget);
     expect(
-      tester.getSize(find.byKey(const Key('commit-diff-line:0'))).width,
-      tester.getSize(find.byKey(const Key('commit-diff-line:1'))).width,
+      tester.getSize(find.byKey(const Key('commit-diff-background:0'))).width,
+      tester.getSize(find.byKey(const Key('commit-diff-background:1'))).width,
     );
     expect(
-      tester.getSize(find.byKey(const Key('commit-diff-line:0'))).width,
-      greaterThan(680),
+      tester.getSize(find.byKey(const Key('commit-diff-background:0'))).width,
+      lessThanOrEqualTo(
+        tester.getSize(find.byKey(const Key('commit-diff-scroll'))).width,
+      ),
     );
     expect(find.text('+1'), findsOneWidget);
     expect(find.text('-0'), findsOneWidget);
@@ -248,6 +254,10 @@ void main() {
         tester.getTopLeft(find.byKey(const Key('commit-file:notes.txt'))).dy,
       ),
     );
+
+    await tester.tap(find.byKey(const Key('commit-file:notes.txt')));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('commit-diff')), findsNothing);
 
     await tester.tap(find.byIcon(Icons.expand_more));
     await tester.pumpAndSettle();

@@ -11,6 +11,7 @@ import 'interactive_rebase.dart';
 import 'repository_service.dart';
 import 'executor.dart';
 import 'remote.dart';
+import 'remote_branch.dart';
 import 'status.dart';
 import 'objects.dart';
 import 'shelf.dart';
@@ -229,6 +230,83 @@ class DartGitBackend {
       state: _state,
       runner: _runner,
     ).getBranches(repositoryId);
+  }
+
+  Future<GitRemoteBranchSnapshot> getRemoteBranchSnapshot(
+    RepositoryId repositoryId,
+  ) async {
+    final installation = await getGitInstallation();
+    return RepositoryService(
+      gitPath: installation.executablePath,
+      state: _state,
+      runner: _runner,
+    ).getRemoteBranchSnapshot(repositoryId);
+  }
+
+  Future<GitBranchActionResult> checkoutRemoteBranch(
+    RepositoryId repositoryId,
+    GitRemoteBranch branch, {
+    String? localName,
+  }) async {
+    final installation = await getGitInstallation();
+    return RepositoryService(
+      gitPath: installation.executablePath,
+      state: _state,
+      runner: _runner,
+    ).checkoutRemoteBranch(repositoryId, branch, localName: localName);
+  }
+
+  Future<GitRemoteBranchDeletePreview> previewRemoteBranchDelete(
+    RepositoryId repositoryId,
+    GitRemoteBranch branch,
+  ) async {
+    final installation = await getGitInstallation();
+    return RepositoryService(
+      gitPath: installation.executablePath,
+      state: _state,
+      runner: _runner,
+    ).previewRemoteBranchDelete(repositoryId, branch);
+  }
+
+  Future<GitRemoteBranchActionResult> deleteRemoteBranch(
+    RepositoryId repositoryId,
+    GitRemoteBranchDeletePreview preview,
+  ) async {
+    final installation = await getGitInstallation();
+    return RepositoryService(
+      gitPath: installation.executablePath,
+      state: _state,
+      runner: _runner,
+    ).deleteRemoteBranch(repositoryId, preview);
+  }
+
+  Future<GitUpdateProjectPreview> previewUpdateProject(
+    RepositoryId repositoryId,
+    GitUpdateProjectRequest request,
+  ) async {
+    final installation = await getGitInstallation();
+    return RepositoryService(
+      gitPath: installation.executablePath,
+      state: _state,
+      runner: _runner,
+    ).previewUpdateProject(repositoryId, request);
+  }
+
+  Future<GitUpdateProjectResult> executeUpdateProject(
+    RepositoryId repositoryId,
+    GitUpdateProjectRequest request, {
+    GitCancellationToken? cancellationToken,
+  }) async {
+    final installation = await getGitInstallation();
+    return RepositoryService(
+      gitPath: installation.executablePath,
+      state: _state,
+      runner: _runner,
+    ).executeUpdateProject(
+      repositoryId,
+      request,
+      cancellationToken: cancellationToken,
+    );
   }
 
   Future<GitBranchActionResult> createBranch(

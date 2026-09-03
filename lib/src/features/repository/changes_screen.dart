@@ -8,6 +8,7 @@ import 'package:gift/src/backend/diff.dart';
 import 'package:gift/src/backend/error.dart';
 import 'package:gift/src/backend/git_gateway.dart';
 import 'package:gift/src/backend/remote.dart';
+import 'package:gift/src/backend/remote_branch.dart';
 import 'package:gift/src/backend/reset.dart';
 import 'package:gift/src/backend/status.dart';
 import 'package:gift/src/features/repository/changes_controller.dart';
@@ -15,6 +16,7 @@ import 'package:gift/src/features/repository/branch_dialog.dart';
 import 'package:gift/src/features/repository/history_screen.dart';
 import 'package:gift/src/features/repository/history_controller.dart';
 import 'package:gift/src/features/repository/remote_dialog.dart';
+import 'package:gift/src/features/repository/update_project_dialog.dart';
 import 'package:gift/src/features/repository/object_dialog.dart';
 import 'package:gift/src/features/repository/comparison_dialog.dart';
 import 'package:gift/src/features/repository/shelf_dialog.dart';
@@ -173,6 +175,9 @@ class _ChangesScreenBodyState extends ConsumerState<_ChangesScreenBody> {
                   case _ChangesMenuAction.remotes:
                     unawaited(_openRemotes(context));
                     break;
+                  case _ChangesMenuAction.updateProject:
+                    unawaited(_openUpdateProject(context));
+                    break;
                   case _ChangesMenuAction.branches:
                     unawaited(_openBranches(context));
                     break;
@@ -206,6 +211,10 @@ class _ChangesScreenBodyState extends ConsumerState<_ChangesScreenBody> {
                 const PopupMenuItem(
                   value: _ChangesMenuAction.remotes,
                   child: Text('Remote operations'),
+                ),
+                const PopupMenuItem(
+                  value: _ChangesMenuAction.updateProject,
+                  child: Text('Update project'),
                 ),
                 const PopupMenuItem(
                   value: _ChangesMenuAction.branches,
@@ -252,6 +261,12 @@ class _ChangesScreenBodyState extends ConsumerState<_ChangesScreenBody> {
               tooltip: 'Open remote operations',
               onPressed: () => unawaited(_openRemotes(context)),
               icon: const Icon(Icons.cloud_outlined),
+            ),
+            IconButton(
+              key: const Key('update-project'),
+              tooltip: 'Update project',
+              onPressed: () => unawaited(_openUpdateProject(context)),
+              icon: const Icon(Icons.cloud_download_outlined),
             ),
             IconButton(
               key: const Key('open-branches'),
@@ -1316,7 +1331,7 @@ class _ChangesScreenBodyState extends ConsumerState<_ChangesScreenBody> {
   }
 
   Future<void> _openBranches(BuildContext context) async {
-    final result = await showDialog<GitBranchActionResult>(
+    final result = await showDialog<Object>(
       context: context,
       builder: (_) =>
           BranchDialog(gateway: widget.gateway, repository: widget.repository),
@@ -1324,6 +1339,12 @@ class _ChangesScreenBodyState extends ConsumerState<_ChangesScreenBody> {
     if (!context.mounted || result == null) return;
     await _activeController.refresh();
     if (!context.mounted) return;
+    if (result case final GitRemoteBranchActionResult remoteResult) {
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(remoteResult.summary)));
+      return;
+    }
+    if (result is! GitBranchActionResult) return;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text('Switched to ${result.branchName}.')),
     );
@@ -1345,6 +1366,21 @@ class _ChangesScreenBodyState extends ConsumerState<_ChangesScreenBody> {
         ),
       ),
     );
+  }
+
+  Future<void> _openUpdateProject(BuildContext context) async {
+    final result = await showDialog<GitUpdateProjectResult>(
+      context: context,
+      builder: (_) => UpdateProjectDialog(
+        gateway: widget.gateway,
+        repository: widget.repository,
+      ),
+    );
+    if (!context.mounted || result == null) return;
+    await _activeController.refresh();
+    if (!context.mounted) return;
+    ScaffoldMessenger.of(context)
+        .showSnackBar(SnackBar(content: Text(result.summary)));
   }
 
   Future<void> _openObjects(BuildContext context) async {
@@ -1713,6 +1749,7 @@ String _cleanupLabel(GitCommitCleanupMode mode) => switch (mode) {
 
 enum _ChangesMenuAction {
   remotes,
+  updateProject,
   branches,
   history,
   objects,

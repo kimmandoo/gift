@@ -1,8 +1,12 @@
+import 'dart:async';
+
 import 'package:gift/src/backend/branch.dart';
 import 'package:gift/src/backend/domain.dart';
 import 'package:gift/src/backend/error.dart';
 import 'package:gift/src/backend/executor.dart';
 import 'package:gift/src/backend/git_gateway.dart';
+import 'package:gift/src/backend/remote_branch.dart';
+import 'package:gift/src/features/repository/comparison_dialog.dart';
 import 'package:flutter/material.dart';
 
 /// A small branch popup that keeps branch work separate from the Changes list.
@@ -25,6 +29,7 @@ class _BranchDialogState extends State<BranchDialog> {
   final _operationSourceController = TextEditingController();
   final _operationTargetController = TextEditingController();
   List<GitBranch>? _branches;
+  GitRemoteBranchSnapshot? _remoteSnapshot;
   GitBranchOperationPreview? _operationPreview;
   GitBranchOperationResult? _operationResult;
   GitCancellationToken? _operationCancellation;
@@ -153,10 +158,13 @@ class _BranchDialogState extends State<BranchDialog> {
     if (_isLoading && branches == null) {
       return const Center(child: CircularProgressIndicator());
     }
-    if (branches != null && branches.isEmpty) {
+    final remoteBranches = _remoteSnapshot?.branches
+        .where((branch) => !branch.isSymbolicHead)
+        .toList(growable: false);
+    if (branches == null) return const SizedBox.shrink();
+    if (branches.isEmpty && remoteBranches?.isNotEmpty != true) {
       return const Center(child: Text('No local branches yet.'));
     }
-    if (branches == null) return const SizedBox.shrink();
     return SingleChildScrollView(
       child: Column(
         children: [
@@ -192,6 +200,54 @@ class _BranchDialogState extends State<BranchDialog> {
                   ? null
                   : () => _switchBranch(branch.name),
             ),
+          if (remoteBranches?.isNotEmpty == true) ...[
+            const Divider(),
+            const ListTile(
+              dense: true,
+              leading: Icon(Icons.cloud_outlined),
+              title: Text('Remote branches'),
+            ),
+            for (final branch in remoteBranches!)
+              ListTile(
+                key: ValueKey('remote-branch:${branch.name}'),
+                leading: const Icon(Icons.cloud_queue_outlined),
+                title: Text(branch.name),
+                subtitle: Text(
+                  branch.localTrackingBranch == null
+                      ? 'Remote-tracking branch'
+                      : 'Tracked by ${branch.localTrackingBranch}',
+                  overflow: TextOverflow.ellipsis,
+                ),
+                trailing: PopupMenuButton<String>(
+                  key: ValueKey('remote-actions:${branch.name}'),
+                  tooltip: 'Remote branch actions',
+                  onSelected: (action) {
+                    if (action == 'checkout') {
+                      unawaited(_checkoutRemoteBranch(branch));
+                    } else if (action == 'compare') {
+                      unawaited(_compareRemoteBranch(branch));
+                    } else {
+                      unawaited(_deleteRemoteBranch(branch));
+                    }
+                  },
+                  itemBuilder: (context) => const [
+                    PopupMenuItem(
+                      value: 'checkout',
+                      child: Text('Checkout as local branch'),
+                    ),
+                    PopupMenuItem(
+                      value: 'compare',
+                      child: Text('Compare with current'),
+                    ),
+                    PopupMenuItem(
+                      value: 'delete',
+                      child: Text('Delete remote branch'),
+                    ),
+                  ],
+                ),
+                onTap: _isMutating ? null : () => _checkoutRemoteBranch(branch),
+              ),
+          ],
         ],
       ),
     );
@@ -475,12 +531,26 @@ class _BranchDialogState extends State<BranchDialog> {
         _branches = branches;
         _isLoading = false;
       });
+      unawaited(_loadRemoteBranches());
     } on GitError catch (error) {
       if (!mounted) return;
       setState(() {
         _error = error;
         _isLoading = false;
       });
+    }
+  }
+
+  Future<void> _loadRemoteBranches() async {
+    try {
+      final snapshot = await widget.gateway.getRemoteBranchSnapshot(
+        widget.repository.repositoryId,
+      );
+      if (!mounted) return;
+      setState(() => _remoteSnapshot = snapshot);
+    } on Object {
+      // Older/focused test gateways and repositories without remote refs keep
+      // the local branch browser usable when the optional remote read fails.
     }
   }
 
@@ -497,6 +567,75 @@ class _BranchDialogState extends State<BranchDialog> {
     await _runAction(
       () => widget.gateway.switchBranch(widget.repository.repositoryId, name),
     );
+  }
+
+  Future<void> _checkoutRemoteBranch(GitRemoteBranch branch) async {
+    if (_isMutating) return;
+    await _runAction(
+      () => widget.gateway.checkoutRemoteBranch(
+        widget.repository.repositoryId,
+        branch,
+      ),
+    );
+  }
+
+  Future<void> _compareRemoteBranch(GitRemoteBranch branch) async {
+    await showDialog<void>(
+      context: context,
+      builder: (_) => ComparisonDialog(
+        gateway: widget.gateway,
+        repository: widget.repository,
+        initialLeft: branch.name,
+        initialRight: _remoteSnapshot?.currentBranch ?? 'HEAD',
+      ),
+    );
+  }
+
+  Future<void> _deleteRemoteBranch(GitRemoteBranch branch) async {
+    if (_isMutating) return;
+    setState(() {
+      _isMutating = true;
+      _error = null;
+    });
+    try {
+      final preview = await widget.gateway.previewRemoteBranchDelete(
+        widget.repository.repositoryId,
+        branch,
+      );
+      if (!mounted) return;
+      final confirmed = await showDialog<bool>(
+        context: context,
+        builder: (dialogContext) => AlertDialog(
+          title: const Text('Delete remote branch?'),
+          content: Text(
+            'Delete ${branch.name} from ${branch.remote}? '
+            'This cannot be undone from Git.',
+          ),
+          actions: [
+            TextButton(
+              key: const Key('cancel-delete-remote-branch'),
+              onPressed: () => Navigator.of(dialogContext).pop(false),
+              child: const Text('Cancel'),
+            ),
+            FilledButton(
+              key: const Key('confirm-delete-remote-branch'),
+              onPressed: () => Navigator.of(dialogContext).pop(true),
+              child: const Text('Delete'),
+            ),
+          ],
+        ),
+      );
+      if (!mounted || confirmed != true) return;
+      final result = await widget.gateway.deleteRemoteBranch(
+        widget.repository.repositoryId,
+        preview,
+      );
+      if (mounted) Navigator.of(context).pop(result);
+    } on GitError catch (error) {
+      if (mounted) setState(() => _error = error);
+    } finally {
+      if (mounted) setState(() => _isMutating = false);
+    }
   }
 
   Future<void> _runAction(
