@@ -2,6 +2,10 @@
 
 ## 2026-09-03
 
+- feat(task31): added source-aware ignore status, scoped ignore rules, and
+  bounded repository metadata inspection.
+- feat(metadata): explained text, EOL, diff, and filter attributes without
+  executing configured commands.
 - feat(task30): added typed worktree listing, isolated creation/opening, and
   preview-bound remove, lock, unlock, and prune actions.
 - feat(workspace): opened linked worktrees as independent repository tabs and

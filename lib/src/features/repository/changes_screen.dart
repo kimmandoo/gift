@@ -25,6 +25,7 @@ import 'package:gift/src/features/repository/file_history_dialog.dart';
 import 'package:gift/src/features/repository/reset_dialog.dart';
 import 'package:gift/src/features/repository/push_dialog.dart';
 import 'package:gift/src/features/repository/worktree_dialog.dart';
+import 'package:gift/src/features/repository/ignore_dialog.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter/services.dart';
@@ -216,6 +217,9 @@ class _ChangesScreenBodyState extends ConsumerState<_ChangesScreenBody> {
                   case _ChangesMenuAction.worktrees:
                     unawaited(_openWorktrees(context));
                     break;
+                  case _ChangesMenuAction.ignoreMetadata:
+                    unawaited(_openIgnoreMetadata(context));
+                    break;
                   case _ChangesMenuAction.refresh:
                     unawaited(controller.refresh());
                     break;
@@ -269,6 +273,10 @@ class _ChangesScreenBodyState extends ConsumerState<_ChangesScreenBody> {
                 const PopupMenuItem(
                   value: _ChangesMenuAction.worktrees,
                   child: Text('Worktrees'),
+                ),
+                const PopupMenuItem(
+                  value: _ChangesMenuAction.ignoreMetadata,
+                  child: Text('Ignore & metadata'),
                 ),
                 PopupMenuItem(
                   value: _ChangesMenuAction.refresh,
@@ -349,6 +357,12 @@ class _ChangesScreenBodyState extends ConsumerState<_ChangesScreenBody> {
               tooltip: 'Manage worktrees',
               onPressed: () => unawaited(_openWorktrees(context)),
               icon: const Icon(Icons.account_tree_outlined),
+            ),
+            IconButton(
+              key: const Key('open-ignore-metadata'),
+              tooltip: 'Inspect ignore and metadata',
+              onPressed: () => unawaited(_openIgnoreMetadata(context)),
+              icon: const Icon(Icons.rule_folder_outlined),
             ),
             IconButton(
               tooltip: 'Refresh changes',
@@ -1519,6 +1533,16 @@ class _ChangesScreenBodyState extends ConsumerState<_ChangesScreenBody> {
         .showSnackBar(SnackBar(content: Text('Opened ${opened.root}.')));
   }
 
+  Future<void> _openIgnoreMetadata(BuildContext context) async {
+    await showDialog<void>(
+      context: context,
+      builder: (_) =>
+          IgnoreDialog(gateway: widget.gateway, repository: widget.repository),
+    );
+    if (!context.mounted) return;
+    await _activeController.refresh();
+  }
+
   Widget _scopeSelector(
     BuildContext context,
     GitChange selected,
@@ -1828,5 +1852,6 @@ enum _ChangesMenuAction {
   fileHistory,
   historyRollback,
   worktrees,
+  ignoreMetadata,
   refresh,
 }

@@ -5,12 +5,10 @@ This file is the handoff record for continuing work across query sessions.
 ## Current checkpoint
 
 - Date: 2026-09-03
-- Active task: None. Task 30 Worktrees is complete; Task 31 Ignore and
-  metadata is next.
+- Active task: None. Task 31 Ignore and metadata is complete; Task 32
+  Submodules and nested roots is next.
 - Branch: `main`; no new branch or worktree was created.
-- Latest completed implementation commit before this task: `9a673cd`; the
-  Task 30 changes are included in the commit created at the end of this
-  session.
+- Latest completed implementation commit before this task: `76f36e3`.
 - Completed Task 28 after recording REMOTE-BRANCH-01/02 and UPDATE-01/02,
   adding the first RED fixture, and proving the real-Git implementation GREEN.
 - Added immutable remote ref snapshots with grouped remotes, local tracking,
@@ -54,8 +52,24 @@ This file is the handoff record for continuing work across query sessions.
   the Worktree manager, and backend/widget tests.
 - Verification: focused worktree backend and UI tests passed; the full Flutter
   suite passed with 192 tests; `flutter analyze` and `git diff --check` passed.
-- Task 30 is complete. The next session should activate Task 31 only after
-  recording its ignore/metadata scenarios and first RED fixture.
+- Task 31 is complete. Its first RED real-Git fixture failed before the
+  contract existed, then passed after the backend and responsive dialog were
+  implemented.
+- Task 31 added source-aware ignored/untracked/tracked-modified snapshots,
+  scoped `.gitignore`/`.git/info/exclude` append actions, bounded
+  `git check-attr` inspection, and explanations for text/EOL/diff/filter
+  attributes. Inspection never executes configured filter or textconv commands.
+- Changed Task 31 files: `TASKS.md`, `CHANGELOG.md`,
+  `docs/research/jetbrains-git-mvp-behavior.md`,
+  `docs/superpowers/plans/2026-09-02-gift-dart-mvp.md`, this checkpoint,
+  `lib/src/backend/{ignore,git_gateway,dart_git_backend,dart_git_gateway,repository_service}.dart`,
+  `lib/src/features/repository/{ignore_dialog,changes_screen}.dart`, and the
+  related backend/widget test and gateway-stub files.
+- Verification: `PATH=/home/mgkim/.local/flutter/bin:$PATH dart run
+  tool/verify.dart` passed formatting, analysis, and all 195 Flutter tests;
+  `git diff --check` passed.
+- Next action: activate Task 32, record SUBMODULE scenarios, and add its first
+  failing real-Git fixture before implementing submodule/nested-root support.
 - Earlier Task 23 and Windows incremental-build diagnostics remain recorded in
   the plan and prior checkpoints.
 - Blockers: none.

@@ -527,3 +527,21 @@ system Git 2.35+.
    missing-path prune, plus compact scaled-text widget coverage. Focused tests,
    analysis, formatting, and the full Flutter suite passed. Task 30 is
    complete; Task 31 is next.
+
+## Completed vertical: Ignore files and repository metadata (Task 31)
+
+1. Activated Task 31 after recording nested ignore, negation, local exclude,
+   tracked-modified, source-aware ignore, safe append, and attribute inspection
+   scenarios as IGNORE-02/03/04.
+2. First RED test: `/home/mgkim/.local/flutter/bin/flutter test
+   test/backend/ignore_test.dart` failed because the typed ignore and
+   attributes contract did not exist yet.
+3. Implemented source-aware ignored/untracked/tracked-modified status,
+   safe scoped metadata writes, bounded attribute inspection, and responsive
+   metadata controls.
+4. Added real-Git coverage for nested negation, local excludes, tracked
+   modifications, source/pattern provenance, safe path validation, and
+   attributes. Added compact 360x640/1.2x scaled-text UI coverage and fixed a
+   narrow status-label overflow discovered by that test.
+5. Verification passed formatting, analysis, focused backend/UI tests, and the
+   full Flutter suite with 195 tests. Task 31 is complete; Task 32 is next.

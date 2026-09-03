@@ -7,8 +7,8 @@
 ## Progress
 
 - **Total Tasks:** 38
-- **Completed:** 30 / 38
-- **Current Active Task:** None. Task 30 — Worktrees is complete; Task 31 is next.
+- **Completed:** 31 / 38
+- **Current Active Task:** None. Task 32 — Submodules and nested roots is next.
 
 | # | Scope | Dart backend deliverables | Flutter deliverables | Status |
 |---|---|---|---|:---:|
@@ -42,7 +42,7 @@
 | **28** | Remote branches & update | Remote branch checkout, compare, update, and tracking | Incoming/update information | ✅ |
 | **29** | Push safety | Push review, force-with-lease, tags, and protected branches | Push review and rejection recovery | ✅ |
 | **30** | Worktrees | Worktree list, create, open, remove, lock, and prune | Worktree manager | ✅ |
-| **31** | Ignore & metadata | `.gitignore`, `.git/info/exclude`, ignored files, and attributes | Ignore/metadata actions | ⬜ |
+| **31** | Ignore & metadata | `.gitignore`, `.git/info/exclude`, ignored files, and attributes | Ignore/metadata actions | 🔄 |
 | **32** | Submodules & nested roots | Submodule status, sync, update, and nested repository mapping | Nested-root workspace | ⬜ |
 | **33** | Recovery diagnostics | Reflog browsing, recovery refs, and Git operation console | Recovery and command diagnostics | ⬜ |
 | **34** | Repository setup | Clone, init, publish, shallow/unshallow, and root mapping | Repository setup flows | ⬜ |
@@ -493,6 +493,21 @@ the full Flutter verification suite. Task 30 is complete; Task 31 is next.
 
 Task 30 is complete. The backend worktree fixtures and responsive manager
 passed focused and full Flutter verification. Task 31 is next.
+
+### ✅ Task 31: Ignore files and repository metadata
+
+- [x] Record nested ignore patterns, negation, local excludes, tracked
+  modifications, attributes, and compact metadata rendering scenarios.
+- [x] Add the first RED real-Git ignore/metadata fixture.
+- [x] Implement ignored/untracked/tracked status inspection, source-aware
+  ignore patterns, and bounded attributes inspection.
+- [x] Add responsive Ignore and metadata controls that refresh status after
+  changes without executing arbitrary configuration.
+- [x] Verify nested rules, local-only excludes, tracked files, attributes,
+  safe path handling, and compact rendering.
+
+Task 31 is complete. The backend and compact metadata dialog passed the full
+Flutter verification suite. Task 32 is next.
 
 ## Post-MVP backlog
 

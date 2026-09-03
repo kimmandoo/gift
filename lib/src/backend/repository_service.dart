@@ -23,6 +23,7 @@ import 'shelf.dart';
 import 'file_history.dart';
 import 'push.dart';
 import 'worktree.dart';
+import 'ignore.dart';
 
 /// In-memory registry for repository roots and session-local opaque IDs.
 ///
@@ -834,6 +835,293 @@ class RepositoryService {
       );
     }
   }
+
+  Future<GitIgnoreSnapshot> getIgnoreSnapshot(RepositoryId repositoryId) async {
+    final handle = await state.lookup(repositoryId);
+    final output = await _runner.run(
+      GitInvocation(
+        program: gitPath,
+        args: const [
+          'status',
+          '--porcelain=v2',
+          '--ignored=traditional',
+          '--untracked-files=all',
+          '-z',
+          '--branch',
+        ],
+        cwd: handle.root,
+        kind: GitOperationKind.read,
+        outputPolicy: const OutputPolicy.capture(maxBytes: 4 * 1024 * 1024),
+      ),
+    );
+    late final ParsedGitIgnoreStatus parsed;
+    try {
+      parsed = parseGitIgnoreStatus(output.stdout);
+    } on GitStatusParseException catch (error, stackTrace) {
+      Error.throwWithStackTrace(
+        GitError(
+          category: GitErrorCategory.parseFailure,
+          userMessage: 'Git returned an unreadable ignore status.',
+          diagnostic: error.message,
+          retryable: true,
+        ),
+        stackTrace,
+      );
+    }
+    final ignoredPaths = parsed.entries
+        .where((entry) => entry.isIgnored)
+        .map((entry) => entry.path)
+        .toList(growable: false);
+    final rules = await _readIgnoreRules(handle.root, ignoredPaths);
+    final entries = <GitIgnoreEntry>[];
+    for (final entry in parsed.entries) {
+      final rule = rules[entry.path];
+      if (entry.isIgnored && rule != null) {
+        entries.add(
+          GitIgnoreEntry(
+            path: entry.path,
+            kind: entry.kind,
+            source: rule.source,
+            sourcePath: rule.sourcePath,
+            line: rule.line,
+            pattern: rule.pattern,
+          ),
+        );
+      } else {
+        entries.add(entry);
+      }
+    }
+    final fingerprint = hashGitObjectBytes(
+      utf8.encode(
+        entries
+            .map(
+              (entry) => [
+                entry.path,
+                entry.kind.name,
+                entry.source.name,
+                entry.sourcePath ?? '',
+                entry.line ?? '',
+                entry.pattern ?? '',
+              ].join('|'),
+            )
+            .join('\n'),
+      ),
+    );
+    return GitIgnoreSnapshot(
+      repositoryId: repositoryId,
+      entries: entries,
+      fingerprint: fingerprint,
+    );
+  }
+
+  Future<GitIgnoreActionResult> addIgnorePattern(
+    RepositoryId repositoryId,
+    GitIgnoreRequest request,
+  ) => state.runMutation(repositoryId, () async {
+    final handle = await state.lookup(repositoryId);
+    final path = _validateIgnorePath(request.path);
+    final pattern = _ignorePatternForPath(path);
+    final file = await _ignoreFile(handle.root, request.scope);
+    final content = await _readMetadataText(file);
+    final lines = content.split(RegExp(r'\r?\n'));
+    final changed = !lines.any((line) => line == pattern);
+    if (changed) {
+      final separator = content.isEmpty || content.endsWith('\n') ? '' : '\n';
+      await file.parent.create(recursive: true);
+      await file.writeAsString('$content$separator$pattern\n', flush: true);
+    }
+    return GitIgnoreActionResult(
+      repositoryId: repositoryId,
+      request: request,
+      snapshot: await getIgnoreSnapshot(repositoryId),
+      status: await getStatus(repositoryId),
+      pattern: pattern,
+      changed: changed,
+      summary: changed
+          ? 'Added $pattern to ${_ignoreScopeLabel(request.scope)}.'
+          : '$pattern is already present in ${_ignoreScopeLabel(request.scope)}.',
+    );
+  });
+
+  Future<GitAttributesSnapshot> getAttributes(
+    RepositoryId repositoryId, {
+    List<String> paths = const [],
+  }) async {
+    if (paths.isEmpty) {
+      throw const GitError(
+        category: GitErrorCategory.parseFailure,
+        userMessage: 'Select a file to inspect its Git attributes.',
+        diagnostic: 'attribute inspection received no paths',
+        retryable: false,
+      );
+    }
+    final handle = await state.lookup(repositoryId);
+    final validatedPaths = [
+      for (final path in paths) _validateIgnorePath(path),
+    ];
+    final input = utf8.encode('${validatedPaths.join('\u0000')}\u0000');
+    final output = await _runner.run(
+      GitInvocation(
+        program: gitPath,
+        args: const ['check-attr', '-z', '--all', '--stdin'],
+        cwd: handle.root,
+        stdin: input,
+        kind: GitOperationKind.read,
+        outputPolicy: const OutputPolicy.capture(maxBytes: 2 * 1024 * 1024),
+      ),
+    );
+    final entries = parseGitAttributes(
+      output.stdout,
+      requestedPaths: validatedPaths,
+    );
+    final fingerprint = hashGitObjectBytes(
+      utf8.encode(
+        entries
+            .map(
+              (entry) => [
+                entry.path,
+                ...entry.values.entries.map(
+                  (item) => '${item.key}=${item.value}',
+                ),
+              ].join('|'),
+            )
+            .join('\n'),
+      ),
+    );
+    return GitAttributesSnapshot(
+      repositoryId: repositoryId,
+      entries: entries,
+      fingerprint: fingerprint,
+    );
+  }
+
+  Future<Map<String, GitIgnoreRule>> _readIgnoreRules(
+    String root,
+    List<String> paths,
+  ) async {
+    if (paths.isEmpty) return const {};
+    final input = utf8.encode('${paths.join('\u0000')}\u0000');
+    try {
+      final output = await _runner.run(
+        GitInvocation(
+          program: gitPath,
+          args: const ['check-ignore', '-v', '-z', '--no-index', '--stdin'],
+          cwd: root,
+          stdin: input,
+          kind: GitOperationKind.read,
+          outputPolicy: const OutputPolicy.capture(maxBytes: 2 * 1024 * 1024),
+        ),
+      );
+      return {
+        for (final rule in parseGitIgnoreRules(output.stdout)) rule.path: rule,
+      };
+    } on GitError catch (error) {
+      // A path can stop matching between status and check-ignore. Keep the
+      // status useful and leave only that path's provenance unknown.
+      if (error.category == GitErrorCategory.processFailed &&
+          error.exitCode == 1) {
+        return const {};
+      }
+      rethrow;
+    }
+  }
+
+  Future<File> _ignoreFile(String root, GitIgnoreScope scope) async {
+    if (scope == GitIgnoreScope.repository) {
+      return File('$root${Platform.pathSeparator}.gitignore');
+    }
+    final output = await _runner.run(
+      GitInvocation(
+        program: gitPath,
+        args: const ['rev-parse', '--git-path', 'info/exclude'],
+        cwd: root,
+        kind: GitOperationKind.read,
+        outputPolicy: const OutputPolicy.capture(maxBytes: 16 * 1024),
+      ),
+    );
+    final value = utf8.decode(output.stdout, allowMalformed: true).trim();
+    if (value.isEmpty) {
+      throw const GitError(
+        category: GitErrorCategory.parseFailure,
+        userMessage: 'Git did not provide its local exclude file.',
+        diagnostic:
+            'git rev-parse --git-path info/exclude returned empty output',
+        retryable: true,
+      );
+    }
+    final path = File(value).isAbsolute
+        ? value
+        : '$root${Platform.pathSeparator}${value.replaceAll('/', Platform.pathSeparator)}';
+    return File(path);
+  }
+
+  Future<String> _readMetadataText(File file) async {
+    if (!file.existsSync()) return '';
+    final bytes = await file.readAsBytes();
+    if (bytes.length > 1024 * 1024) {
+      throw const GitError(
+        category: GitErrorCategory.outputOverflow,
+        userMessage: 'The Git metadata file is too large to edit safely.',
+        diagnostic: 'ignore metadata exceeded 1 MiB',
+        retryable: false,
+      );
+    }
+    try {
+      return utf8.decode(bytes);
+    } on FormatException catch (error, stackTrace) {
+      Error.throwWithStackTrace(
+        GitError(
+          category: GitErrorCategory.parseFailure,
+          userMessage: 'The Git metadata file is not valid UTF-8.',
+          diagnostic: error.message,
+          retryable: false,
+        ),
+        stackTrace,
+      );
+    }
+  }
+
+  String _validateIgnorePath(String value) {
+    final path = value.trim().replaceAll('\\', '/');
+    if (path.isEmpty ||
+        path.startsWith('-') ||
+        path.startsWith('/') ||
+        RegExp(r'^[A-Za-z]:/').hasMatch(path) ||
+        path.contains('\u0000') ||
+        path.runes.any((rune) => rune < 0x20) ||
+        path
+            .split('/')
+            .any((part) => part.isEmpty || part == '..' || part == '.')) {
+      throw const GitError(
+        category: GitErrorCategory.parseFailure,
+        userMessage: 'Choose a relative file path inside the repository.',
+        diagnostic: 'ignore path was absolute, option-like, empty, or escaped the repository',
+        retryable: false,
+      );
+    }
+    return path;
+  }
+
+  String _ignorePatternForPath(String path) {
+    final segments = path.split('/').map(_escapeIgnoreSegment);
+    return '/${segments.join('/')}';
+  }
+
+  String _escapeIgnoreSegment(String segment) {
+    var escaped = segment.replaceAll('\\', '\\\\');
+    if (escaped.startsWith('#') || escaped.startsWith('!')) {
+      escaped = '\\$escaped';
+    }
+    while (escaped.endsWith(' ')) {
+      escaped = '${escaped.substring(0, escaped.length - 1)}\\ ';
+    }
+    return escaped;
+  }
+
+  String _ignoreScopeLabel(GitIgnoreScope scope) => switch (scope) {
+    GitIgnoreScope.repository => '.gitignore',
+    GitIgnoreScope.localExclude => '.git/info/exclude',
+  };
 
   /// Reads the unmerged index and the in-progress operation as one bounded
   /// snapshot. The fingerprint is rebuilt before each mutation, so a view

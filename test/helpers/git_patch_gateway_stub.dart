@@ -17,6 +17,7 @@ import 'package:gift/src/backend/file_history.dart';
 import 'package:gift/src/backend/reset.dart';
 import 'package:gift/src/backend/push.dart';
 import 'package:gift/src/backend/worktree.dart';
+import 'package:gift/src/backend/ignore.dart';
 
 /// Existing feature fakes do not need partial-patch behavior unless a test is
 /// specifically about it. This keeps those focused fakes small as the
@@ -138,6 +139,19 @@ mixin GitPatchGatewayStub {
     RepositoryId repositoryId,
     GitWorktreeActionRequest request, {
     GitCancellationToken? cancellationToken,
+  }) => throw UnimplementedError();
+
+  Future<GitIgnoreSnapshot> getIgnoreSnapshot(RepositoryId repositoryId) =>
+      throw UnimplementedError();
+
+  Future<GitIgnoreActionResult> addIgnorePattern(
+    RepositoryId repositoryId,
+    GitIgnoreRequest request,
+  ) => throw UnimplementedError();
+
+  Future<GitAttributesSnapshot> getAttributes(
+    RepositoryId repositoryId, {
+    List<String> paths = const [],
   }) => throw UnimplementedError();
 
   Future<GitStashSnapshot> getStashes(RepositoryId repositoryId) =>

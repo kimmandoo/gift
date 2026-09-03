@@ -17,6 +17,7 @@ import 'file_history.dart';
 import 'reset.dart';
 import 'push.dart';
 import 'worktree.dart';
+import 'ignore.dart';
 
 /// The small API that Flutter features depend on.
 ///
@@ -198,6 +199,18 @@ abstract interface class GitGateway {
     RepositoryId repositoryId,
     GitWorktreeActionRequest request, {
     GitCancellationToken? cancellationToken,
+  });
+
+  Future<GitIgnoreSnapshot> getIgnoreSnapshot(RepositoryId repositoryId);
+
+  Future<GitIgnoreActionResult> addIgnorePattern(
+    RepositoryId repositoryId,
+    GitIgnoreRequest request,
+  );
+
+  Future<GitAttributesSnapshot> getAttributes(
+    RepositoryId repositoryId, {
+    List<String> paths = const [],
   });
 
   Future<GitStashSnapshot> getStashes(RepositoryId repositoryId);

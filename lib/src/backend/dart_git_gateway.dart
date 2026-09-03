@@ -19,6 +19,7 @@ import 'file_history.dart';
 import 'reset.dart';
 import 'push.dart';
 import 'worktree.dart';
+import 'ignore.dart';
 
 /// Adapts the UI-facing [GitGateway] contract to the Dart backend facade.
 ///
@@ -303,6 +304,22 @@ class DartGitGateway implements GitGateway, DiscardPreviewCancellationGateway {
     request,
     cancellationToken: cancellationToken,
   );
+
+  @override
+  Future<GitIgnoreSnapshot> getIgnoreSnapshot(RepositoryId repositoryId) =>
+      backend.getIgnoreSnapshot(repositoryId);
+
+  @override
+  Future<GitIgnoreActionResult> addIgnorePattern(
+    RepositoryId repositoryId,
+    GitIgnoreRequest request,
+  ) => backend.addIgnorePattern(repositoryId, request);
+
+  @override
+  Future<GitAttributesSnapshot> getAttributes(
+    RepositoryId repositoryId, {
+    List<String> paths = const [],
+  }) => backend.getAttributes(repositoryId, paths: paths);
 
   @override
   Future<GitStashSnapshot> getStashes(RepositoryId repositoryId) =>

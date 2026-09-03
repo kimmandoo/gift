@@ -19,6 +19,7 @@ import 'file_history.dart';
 import 'reset.dart';
 import 'push.dart';
 import 'worktree.dart';
+import 'ignore.dart';
 
 /// Application-facing entry point for backend operations.
 ///
@@ -497,6 +498,42 @@ class DartGitBackend {
       request,
       cancellationToken: cancellationToken,
     );
+  }
+
+  Future<GitIgnoreSnapshot> getIgnoreSnapshot(RepositoryId repositoryId) async {
+    final installation = await getGitInstallation();
+    return RepositoryService(
+      gitPath: installation.executablePath,
+      state: _state,
+      runner: _runner,
+      shelfStore: _shelfStore,
+    ).getIgnoreSnapshot(repositoryId);
+  }
+
+  Future<GitIgnoreActionResult> addIgnorePattern(
+    RepositoryId repositoryId,
+    GitIgnoreRequest request,
+  ) async {
+    final installation = await getGitInstallation();
+    return RepositoryService(
+      gitPath: installation.executablePath,
+      state: _state,
+      runner: _runner,
+      shelfStore: _shelfStore,
+    ).addIgnorePattern(repositoryId, request);
+  }
+
+  Future<GitAttributesSnapshot> getAttributes(
+    RepositoryId repositoryId, {
+    List<String> paths = const [],
+  }) async {
+    final installation = await getGitInstallation();
+    return RepositoryService(
+      gitPath: installation.executablePath,
+      state: _state,
+      runner: _runner,
+      shelfStore: _shelfStore,
+    ).getAttributes(repositoryId, paths: paths);
   }
 
   Future<GitStashSnapshot> getStashes(RepositoryId repositoryId) async {
