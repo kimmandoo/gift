@@ -1,10 +1,13 @@
 <div align="center">
 
-<img src="assets/images/gift_logo.png" alt="GIFT pixel shiba mascot" width="360" style="image-rendering: pixelated;" />
+<img src="assets/images/gift_logo.png" alt="GIFT pixel Shiba with a gift ribbon" width="360" style="image-rendering: pixelated;" />
 
 # GIFT
 
 **A small, keyboard-first Git client for desktop.**
+
+GIFT combines Git and Flutter; the original `gitft` shorthand was shortened
+to the friendlier `gift`.
 
 Flutter UI · Dart backend · Windows · macOS · Linux
 

@@ -54,6 +54,13 @@ The helper prints the output location after a successful build:
 - macOS: `build/macos/Build/Products/Release/gift.app`
 - Windows: `build/windows/x64/runner/Release/`
 
+The desktop identity is kept in the checked-in release assets. The canonical
+pixel mascot is `assets/images/gift_icon.png`; Windows uses the derived
+multi-size `windows/runner/resources/app_icon.ico`, and macOS uses the
+matching PNG sizes in `macos/Runner/Assets.xcassets/AppIcon.appiconset/`.
+The README wordmark is `assets/images/gift_logo.png` and shares the same
+mascot source.
+
 ## Continuous integration
 
 `.github/workflows/ci.yml` runs verification on Ubuntu, macOS, and Windows.

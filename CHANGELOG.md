@@ -17,6 +17,9 @@
   bounded patch import/export without mutating Git stash.
 - feat(task25): added bounded file history, rename-following blame, and
   fingerprint-guarded Get-from-Revision workflows.
+- build(identity): replaced the desktop icon and README wordmark with a
+  chubby Shiba Inu pixel mascot and gift-ribbon mark, and documented the
+  Git-plus-Flutter name.
 - feat(task22): added identity-bound stash, tag, remote, and upstream
   management workflows with responsive object controls.
 - feat(task21): added fingerprint-guarded conflict inspection, resolution,

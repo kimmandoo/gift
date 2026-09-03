@@ -11,6 +11,15 @@ Flutter 화면과 Dart 백엔드가 같은 프로세스 안에서 동작합니�
 연결합니다. 모든 코드는 독립적으로 작성하고 에셋도 프로젝트의 시각
 규칙에 맞게 관리합니다.
 
+## 제품 아이덴티티와 에셋
+
+제품명 `gift`는 Git과 Flutter를 합친 이름입니다. 초기 `gitft` 표기를
+짧고 읽기 쉬운 `gift`로 다듬었습니다. `assets/images/gift_icon.png`가
+통통한 시바견 얼굴과 선물 리본을 담은 canonical 아이콘이며, Windows와
+macOS의 데스크톱 아이콘은 이 파일에서 파생됩니다. README용
+`assets/images/gift_logo.png`도 같은 아이콘과 Jersey 15 워드마크를
+사용하므로 플랫폼 산출물과 문서의 제품 이미지가 어긋나지 않습니다.
+
 ## 한 번의 저장소 열기 흐름
 
 ```text

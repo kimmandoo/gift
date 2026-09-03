@@ -8,7 +8,7 @@
 
 - **Total Tasks:** 38
 - **Completed:** 25 / 38
-- **Current Active Task:** `25 — File history, blame, and revision recovery (complete; logo follow-up)`
+- **Current Active Task:** `No numbered task active (Task 25 and the logo follow-up are complete)`
 
 | # | Scope | Dart backend deliverables | Flutter deliverables | Status |
 |---|---|---|---|:---:|
@@ -337,8 +337,7 @@ first RED were recorded in the implementation plan.
 - [x] Add responsive shelf/changelist controls with explicit untracked-file
   limitations and shelf-versus-stash explanations.
 
-Task 24 is complete. Task 25 is active. Its first RED will be recorded in the
-implementation plan before the file-history/blame contract is introduced.
+Task 24 is complete.
 
 ### ✅ Task 25: File history, blame, and revision recovery
 
@@ -351,8 +350,19 @@ implementation plan before the file-history/blame contract is introduced.
 - [x] Cover root/rename/delete/binary files, path and line ranges, bounded
   output, and refresh races in backend and widget fixtures.
 
-Task 25 is complete. A product-identity logo refresh is the requested
-follow-up before the next numbered task.
+Task 25 is complete.
+
+### ✅ Product identity follow-up: pixel Shiba gift-ribbon logo
+
+- [x] Replaced the canonical icon with a transparent 2D pixel-art chubby
+  Shiba Inu face wearing a gift ribbon.
+- [x] Rebuilt the README wordmark and derived Windows and macOS release icons
+  from the same canonical source.
+- [x] Documented that `gift` combines Git and Flutter and that `gitft` was
+  shortened to `gift`.
+
+The logo follow-up is complete. Keep Task 26 planned until it is explicitly
+activated with its behavior scenarios and first failing test.
 
 ## Post-MVP backlog
 

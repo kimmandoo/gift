@@ -293,7 +293,7 @@ system Git 2.35+.
 5. Passed focused backend/UI tests, formatting, analysis, and the full suite.
    Task 22 is complete.
 
-## Active vertical: Diff and comparison workbench (Task 23)
+## Completed vertical: Diff and comparison workbench (Task 23)
 
 1. Audited the public IntelliJ IDEA Git workflow documentation against the
    completed Tasks 1–22 and recorded the missing comparison, shelf, history,
@@ -307,8 +307,7 @@ system Git 2.35+.
    contract and backend methods did not exist. Implemented the bounded model,
    revision/folder diff, selected-file loading, and responsive workbench.
 5. Passed the focused comparison backend/UI tests, formatting, analysis, and
-   the full Flutter suite. Task 23 remains active for clipboard/external-text,
-   and three-way flows; keep Task 24 planned until that work is complete.
+   the full Flutter suite.
 6. Added a RED real-Git transfer fixture; it initially failed because the
    comparison transfer action and backend contract did not exist.
 7. Implemented reviewed Apply and Revert actions from parsed backend diffs,
@@ -326,7 +325,7 @@ system Git 2.35+.
 10. Passed the focused comparison backend/UI tests, formatting, analysis, and
     the full Flutter suite. Task 23 is complete.
 
-## Active vertical: Shelves, changelists, and patch exchange (Task 24)
+## Completed vertical: Shelves, changelists, and patch exchange (Task 24)
 
 1. Activated Task 24 after recording the changelist, shelf, repeated
    unshelving, external patch, base-loss, and no-stash-mutation scenarios in
@@ -340,11 +339,11 @@ system Git 2.35+.
    semantics, then passed shelf backend/UI fixtures, analysis, formatting, and
    the full Flutter suite (`140` tests). Task 24 is complete.
 
-## Active vertical: File history, blame, and revision recovery (Task 25)
+## Completed vertical: File history, blame, and revision recovery (Task 25)
 
 1. Activated Task 25 after recording file, directory, line-range, rename,
    binary, and stale-selection scenarios in the behavior ledger.
-2. Add the first RED file-history/blame contract test before introducing the
+2. Added the first RED file-history/blame contract test before introducing the
    bounded history and annotation models.
 3. Added the first RED fixture; it failed because the file-history model and
    gateway methods did not exist. Implemented bounded file/directory/selection
@@ -355,8 +354,12 @@ system Git 2.35+.
    outcomes. Passed the focused backend/UI tests, formatting, analysis, and
    the full Flutter suite. Task 25 is complete.
 
-## Follow-up: gift product-identity logo refresh
+## Completed follow-up: gift product-identity logo refresh
 
-1. Replace the current icon and README/release logo assets with an original
-   2D pixel-art chubby Shiba Inu face wearing a gift ribbon, preserving the
-   `gift` identity formed from Git + Flutter.
+1. Generated and inspected an original transparent 2D pixel-art chubby Shiba
+   Inu face wearing a gift ribbon, preserving the `gift` identity formed from
+   Git + Flutter.
+2. Rebuilt `assets/images/gift_logo.png` from the canonical mascot and
+   regenerated the Windows ICO and macOS AppIcon PNG sizes.
+3. Updated README, release documentation, architecture notes, task records,
+   changelog, and this checkpoint to describe the new product identity.
