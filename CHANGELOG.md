@@ -7,6 +7,13 @@
   clearer card, status, and open affordances.
 - fix(ui): standardized dialog action spacing and hardened compact hosting and
   repository-setup layouts against cramped windows.
+- fix(ui): kept History's rollback, rebase, hosting, and refresh actions
+  visible without requiring an extra menu step.
+- fix(ui): prevented expandable revision and commit-option text from being
+  clipped at compact widths and larger text scales.
+- fix(ui): exposed primary Changes actions while retaining a categorized menu
+  for less frequent repository tools.
+
 
 
 - feat(task31): added source-aware ignore status, scoped ignore rules, and

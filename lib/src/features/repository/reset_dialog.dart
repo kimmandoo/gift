@@ -81,7 +81,7 @@ class _ResetDialogState extends State<ResetDialog> {
                 'Review the exact effect before changing repository history.',
                 style: Theme.of(context).textTheme.bodyMedium,
               ),
-              const SizedBox(height: 16),
+              SizedBox(height: compact ? 8 : 16),
               DropdownButtonFormField<GitHistoryRollbackAction>(
                 key: const Key('rollback-action'),
                 initialValue: _action,
@@ -125,7 +125,7 @@ class _ResetDialogState extends State<ResetDialog> {
                         });
                       },
               ),
-              const SizedBox(height: 12),
+              SizedBox(height: compact ? 8 : 12),
               if (_action == GitHistoryRollbackAction.reset) ...[
                 if (_targetHistoryLoading)
                   const Padding(
@@ -175,41 +175,39 @@ class _ResetDialogState extends State<ResetDialog> {
                     key: Key('rollback-target-history-error'),
                   ),
                 const SizedBox(height: 8),
-                ExpansionTile(
-                  key: const Key('rollback-advanced-target'),
-                  initiallyExpanded: _advancedTargetExpanded,
-                  tilePadding: EdgeInsets.zero,
-                  childrenPadding: EdgeInsets.zero,
-                  title: const Text(
-                    'Advanced revision',
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  subtitle: const Text(
-                    'Use HEAD^, HEAD~1, a branch, or a full commit ID',
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  onExpansionChanged: (expanded) {
-                    setState(() => _advancedTargetExpanded = expanded);
-                  },
-                  children: [
-                    TextField(
-                      key: const Key('rollback-target-revision'),
-                      controller: _targetController,
-                      enabled: !_isBusy,
-                      decoration: const InputDecoration(
-                        labelText: 'Revision expression',
-                        hintText: 'Only needed for an advanced target',
-                        border: OutlineInputBorder(),
-                      ),
-                      onChanged: (_) {
-                        _selectedTarget = null;
-                        _targetEditedByUser = true;
-                        _clearReview();
-                      },
+                ListTileTheme(
+                  dense: true,
+                  minVerticalPadding: 6,
+                  child: ExpansionTile(
+                    key: const Key('rollback-advanced-target'),
+                    initiallyExpanded: _advancedTargetExpanded,
+                    tilePadding: EdgeInsets.zero,
+                    childrenPadding: const EdgeInsets.only(top: 8),
+                    title: const Text('Advanced revision'),
+                    subtitle: const Text(
+                      'HEAD^, HEAD~1, branch, or full commit ID',
                     ),
-                  ],
+                    onExpansionChanged: (expanded) {
+                      setState(() => _advancedTargetExpanded = expanded);
+                    },
+                    children: [
+                      TextField(
+                        key: const Key('rollback-target-revision'),
+                        controller: _targetController,
+                        enabled: !_isBusy,
+                        decoration: const InputDecoration(
+                          labelText: 'Revision expression',
+                          hintText: 'Only needed for an advanced target',
+                          border: OutlineInputBorder(),
+                        ),
+                        onChanged: (_) {
+                          _selectedTarget = null;
+                          _targetEditedByUser = true;
+                          _clearReview();
+                        },
+                      ),
+                    ],
+                  ),
                 ),
                 const SizedBox(height: 12),
                 DropdownButtonFormField<GitResetMode>(

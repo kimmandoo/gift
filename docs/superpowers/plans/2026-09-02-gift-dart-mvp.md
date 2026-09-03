@@ -628,3 +628,17 @@ system Git 2.35+.
    analysis but retained 15 known Windows-only backend fixture failures
    (newline/path normalization, rebase process cleanup, and Windows file
    locking); no UI test failed.
+
+## Completed follow-up: expandable controls and action visibility
+
+1. Removed compact `ListTile` density from expandable controls where it could
+   compress wrapped titles and subtitles into the tile bounds.
+2. Kept advanced revision and commit options text fully readable, added
+   expansion content breathing room, and tightened compact reset spacing so the
+   control remains reachable before scrolling.
+3. Restored History's rollback, rebase, hosting, and refresh actions directly
+   to the app bar.
+4. Exposed Push, Update project, Branches, and History directly on wider
+   Changes toolbars while retaining the grouped menu below the compact
+   breakpoint.
+5. Passed focused Changes, History, and Reset widget tests.

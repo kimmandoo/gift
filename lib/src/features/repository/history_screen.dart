@@ -106,56 +106,27 @@ class _HistoryScreenState extends State<HistoryScreen> {
           ],
         ),
         actions: [
-          PopupMenuButton<_HistoryMenuAction>(
-            key: const Key('history-actions-menu'),
-            tooltip: 'History actions',
-            icon: const Icon(Icons.menu_open),
-            onSelected: (action) {
-              switch (action) {
-                case _HistoryMenuAction.rollback:
-                  unawaited(_openHistoryRollback(context));
-                  break;
-                case _HistoryMenuAction.rebase:
-                  unawaited(_openInteractiveRebase(context));
-                  break;
-                case _HistoryMenuAction.hosting:
-                  unawaited(_openHosting(context, state));
-                  break;
-              }
-            },
-            itemBuilder: (context) => [
-              const PopupMenuItem(
-                value: _HistoryMenuAction.rollback,
-                child: Row(
-                  children: [
-                    Icon(Icons.history_toggle_off, size: 18),
-                    SizedBox(width: 12),
-                    Text('Undo, reset, or revert'),
-                  ],
-                ),
-              ),
-              const PopupMenuItem(
-                value: _HistoryMenuAction.rebase,
-                child: Row(
-                  children: [
-                    Icon(Icons.reorder, size: 18),
-                    SizedBox(width: 12),
-                    Text('Interactive rebase'),
-                  ],
-                ),
-              ),
-              PopupMenuItem(
-                value: _HistoryMenuAction.hosting,
-                enabled: state.selectedCommit != null,
-                child: const Row(
-                  children: [
-                    Icon(Icons.link_outlined, size: 18),
-                    SizedBox(width: 12),
-                    Text('Open hosting links'),
-                  ],
-                ),
-              ),
-            ],
+          IconButton(
+            key: const Key('history-rollback'),
+            tooltip: 'Undo, reset, or revert history',
+            onPressed: () => unawaited(_openHistoryRollback(context)),
+            icon: const Icon(Icons.history_toggle_off),
+          ),
+          IconButton(
+            key: const Key('history-interactive-rebase'),
+            tooltip: 'Interactive rebase',
+            onPressed: state.isLoading
+                ? null
+                : () => unawaited(_openInteractiveRebase(context)),
+            icon: const Icon(Icons.reorder),
+          ),
+          IconButton(
+            key: const Key('history-hosting'),
+            tooltip: 'Open hosting links',
+            onPressed: state.selectedCommit == null
+                ? null
+                : () => unawaited(_openHosting(context, state)),
+            icon: const Icon(Icons.link_outlined),
           ),
           const PixelThemeToggle(),
           IconButton(
@@ -288,57 +259,61 @@ class _HistoryScreenState extends State<HistoryScreen> {
     final compactFilterHeight = (MediaQuery.sizeOf(context).height * 0.35)
         .clamp(120.0, 180.0);
 
-    return ExpansionTile(
-      key: const Key('history-filters-toggle'),
-      initiallyExpanded: false,
-      title: LayoutBuilder(
-        builder: (context, constraints) {
-          final searchField = TextField(
-            key: const Key('history-search'),
-            controller: _searchController,
-            focusNode: _searchFocusNode,
-            textInputAction: TextInputAction.search,
-            onSubmitted: (_) => _applyFilters(),
-            decoration: const InputDecoration(
-              labelText: 'Search commits',
-              hintText: 'Subject or body',
-              isDense: true,
-            ),
-          );
-          final searchButton = OutlinedButton.icon(
-            key: const Key('history-apply-filters'),
-            onPressed: _applyFilters,
-            icon: const Icon(Icons.search, size: 18),
-            label: const Text('Search'),
-          );
-          if (constraints.maxWidth < 360) {
-            return Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
+    return ListTileTheme(
+      dense: false,
+      minVerticalPadding: 8,
+      child: ExpansionTile(
+        key: const Key('history-filters-toggle'),
+        initiallyExpanded: false,
+        title: LayoutBuilder(
+          builder: (context, constraints) {
+            final searchField = TextField(
+              key: const Key('history-search'),
+              controller: _searchController,
+              focusNode: _searchFocusNode,
+              textInputAction: TextInputAction.search,
+              onSubmitted: (_) => _applyFilters(),
+              decoration: const InputDecoration(
+                labelText: 'Search commits',
+                hintText: 'Subject or body',
+                isDense: true,
+              ),
+            );
+            final searchButton = OutlinedButton.icon(
+              key: const Key('history-apply-filters'),
+              onPressed: _applyFilters,
+              icon: const Icon(Icons.search, size: 18),
+              label: const Text('Search'),
+            );
+            if (constraints.maxWidth < 360) {
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  searchField,
+                  const SizedBox(height: 8),
+                  Align(alignment: Alignment.centerRight, child: searchButton),
+                ],
+              );
+            }
+            return Row(
               children: [
-                searchField,
-                const SizedBox(height: 8),
-                Align(alignment: Alignment.centerRight, child: searchButton),
+                Expanded(child: searchField),
+                const SizedBox(width: 8),
+                searchButton,
               ],
             );
-          }
-          return Row(
-            children: [
-              Expanded(child: searchField),
-              const SizedBox(width: 8),
-              searchButton,
-            ],
-          );
-        },
+          },
+        ),
+        children: [
+          if (MediaQuery.sizeOf(context).height < 560)
+            SizedBox(
+              height: compactFilterHeight,
+              child: SingleChildScrollView(child: filterFields),
+            )
+          else
+            filterFields,
+        ],
       ),
-      children: [
-        if (MediaQuery.sizeOf(context).height < 560)
-          SizedBox(
-            height: compactFilterHeight,
-            child: SingleChildScrollView(child: filterFields),
-          )
-        else
-          filterFields,
-      ],
     );
   }
 
@@ -1111,8 +1086,6 @@ class _HistoryScreenState extends State<HistoryScreen> {
         .showSnackBar(SnackBar(content: Text(result.summary)));
   }
 }
-
-enum _HistoryMenuAction { rollback, rebase, hosting }
 
 class _CommitGraphPainter extends CustomPainter {
   const _CommitGraphPainter({

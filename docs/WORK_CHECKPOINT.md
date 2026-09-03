@@ -7,8 +7,8 @@ This file is the handoff record for continuing work across query sessions.
 - Date: 2026-09-03
 - Active task: Post-Task-35 UI/UX audit is complete; Task 36 is next.
 - Branch: `main`; no new branch or worktree was created.
-- Latest completed implementation commit: `4d9f65f` (`fix(ui): polish
-  post-task35 navigation and dialogs`).
+- Latest completed implementation commit: `8843063` (`fix(ui): expose actions
+  and protect expandable text`).
 - Completed Task 28 after recording REMOTE-BRANCH-01/02 and UPDATE-01/02,
   adding the first RED fixture, and proving the real-Git implementation GREEN.
 - Added immutable remote ref snapshots with grouped remotes, local tracking,
@@ -293,6 +293,16 @@ This file is the handoff record for continuing work across query sessions.
   retained 15 known Windows-only backend fixture failures involving
   newline/path normalization, rebase cleanup, and file locking. Desktop
   `flutter run -d windows` built and synced successfully.
+- Continued the UI follow-up after user review: expandable revision and commit
+  option tiles now preserve wrapped text, and compact reset spacing keeps the
+  advanced control reachable without hidden content.
+- History keeps rollback, rebase, hosting, and refresh actions visible in its
+  app bar. Wider Changes toolbars expose Push, Update project, Branches, and
+  History while compact windows retain the categorized actions menu.
+- Additional changed files: `lib/src/features/repository/reset_dialog.dart`,
+  plus the updated Changes and History toolbar widgets and UI records.
+- Additional verification: focused Changes, History, and Reset widget tests
+  passed after the follow-up edits.
 - Next action: activate Task 36 after recording scale/resilience scenarios and
   adding its first failing performance or supervision fixture.
 
