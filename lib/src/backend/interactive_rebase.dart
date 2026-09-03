@@ -90,6 +90,7 @@ enum GitInteractiveRebaseIssueKind {
   duplicateCommit,
   invalidOriginalIndex,
   duplicateOriginalIndex,
+  invalidSubject,
   invalidActionSequence,
 }
 
@@ -130,9 +131,11 @@ class GitInteractiveRebasePreview {
     this.token,
     this.expiresAt,
     this.blockingMessage,
+    Iterable<String> optionLimitations = const <String>[],
     Iterable<GitInteractiveRebaseIssue> planIssues =
         const <GitInteractiveRebaseIssue>[],
-  }) : planIssues = List.unmodifiable(planIssues);
+  }) : optionLimitations = List.unmodifiable(optionLimitations),
+       planIssues = List.unmodifiable(planIssues);
 
   final RepositoryId repositoryId;
   final GitInteractiveRebasePlan plan;
@@ -151,6 +154,7 @@ class GitInteractiveRebasePreview {
   final String? token;
   final DateTime? expiresAt;
   final String? blockingMessage;
+  final List<String> optionLimitations;
   final List<GitInteractiveRebaseIssue> planIssues;
 
   bool get canExecute =>
@@ -172,17 +176,25 @@ enum GitInteractiveRebaseExecutionState {
   cancelled,
 }
 
+/// Explains why Git left an interactive rebase in a recoverable state.
+enum GitInteractiveRebasePauseReason { edit, conflict, hookRejected, cancelled }
+
 enum GitInteractiveRebaseRecoveryAction { continueOperation, skip, abort }
 
 /// A recovery request bound to the current conflict/operation snapshot.
 class GitInteractiveRebaseRecoveryRequest {
-  const GitInteractiveRebaseRecoveryRequest({
+  GitInteractiveRebaseRecoveryRequest({
     required this.action,
     required this.fingerprint,
-  });
+    Iterable<String> originalCommitOids = const <String>[],
+    Iterable<String> recoveryRefs = const <String>[],
+  }) : originalCommitOids = List.unmodifiable(originalCommitOids),
+       recoveryRefs = List.unmodifiable(recoveryRefs);
 
   final GitInteractiveRebaseRecoveryAction action;
   final String fingerprint;
+  final List<String> originalCommitOids;
+  final List<String> recoveryRefs;
 }
 
 /// The outcome of starting or explicitly recovering an interactive rebase.
@@ -200,6 +212,7 @@ class GitInteractiveRebaseResult {
     Iterable<String> recoveryRefs = const <String>[],
     Iterable<GitInteractiveRebaseRecoveryAction> recoveryActions =
         const <GitInteractiveRebaseRecoveryAction>[],
+    this.pauseReason,
     this.recoveryFingerprint,
   }) : originalCommitOids = List.unmodifiable(originalCommitOids),
        rewrittenCommitOids = Map.unmodifiable(rewrittenCommitOids),
@@ -217,6 +230,7 @@ class GitInteractiveRebaseResult {
   final Map<String, String> rewrittenCommitOids;
   final List<String> recoveryRefs;
   final List<GitInteractiveRebaseRecoveryAction> recoveryActions;
+  final GitInteractiveRebasePauseReason? pauseReason;
   final String? recoveryFingerprint;
 
   bool get historyChanged =>
@@ -227,10 +241,9 @@ class GitInteractiveRebaseResult {
 
 /// A reviewed, immutable interactive rebase plan.
 ///
-/// This is intentionally only the preflight model. Repository state checks,
-/// todo-file execution, conflict recovery, and rewritten-object reporting are
-/// separate backend steps so a plan can be displayed and tested before Git is
-/// allowed to rewrite history.
+/// Repository state checks, todo-file execution, conflict recovery, and
+/// rewritten-object reporting remain separate backend steps so a plan can be
+/// displayed and tested before Git is allowed to rewrite history.
 class GitInteractiveRebasePlan {
   GitInteractiveRebasePlan({
     required this.repositoryId,
@@ -328,6 +341,17 @@ class GitInteractiveRebasePlan {
           ),
         );
       }
+      if (entry.subject.trim().isEmpty ||
+          entry.subject.contains(RegExp(r'[\r\n\u0000]'))) {
+        issues.add(
+          GitInteractiveRebaseIssue(
+            kind: GitInteractiveRebaseIssueKind.invalidSubject,
+            message:
+                'Commit ${entry.shortOid} needs a one-line, non-empty subject.',
+            entryIndex: index,
+          ),
+        );
+      }
 
       if (_requiresPreviousCommit(entry.action) &&
           (index == 0 ||
@@ -369,6 +393,19 @@ class GitInteractiveRebasePlan {
     _checkIndex(entryIndex);
     final edited = [...entries];
     edited[entryIndex] = edited[entryIndex].copyWith(action: action);
+    return GitInteractiveRebasePlan(
+      repositoryId: repositoryId,
+      upstreamRevision: upstreamRevision,
+      entries: edited,
+      options: options,
+    );
+  }
+
+  /// Returns a plan with a reviewed one-line message for a reword row.
+  GitInteractiveRebasePlan withSubject(int entryIndex, String subject) {
+    _checkIndex(entryIndex);
+    final edited = [...entries];
+    edited[entryIndex] = edited[entryIndex].copyWith(subject: subject);
     return GitInteractiveRebasePlan(
       repositoryId: repositoryId,
       upstreamRevision: upstreamRevision,

@@ -1136,6 +1136,7 @@ class RepositoryService {
       token: token?.value,
       expiresAt: token?.expiresAt,
       blockingMessage: inspection.blockingMessage,
+      optionLimitations: inspection.optionLimitations,
       planIssues: plan.validationIssues,
     );
   }
@@ -1198,7 +1199,7 @@ class RepositoryService {
               cancellationToken: cancellationToken,
               environment: {
                 'GIT_SEQUENCE_EDITOR': editor.sequenceEditorCommand,
-                'GIT_EDITOR': ':',
+                'GIT_EDITOR': editor.messageEditorCommand,
                 'GIT_TERMINAL_PROMPT': '0',
                 'GIT_REFLOG_ACTION': 'gift interactive rebase',
               },
@@ -1223,9 +1224,16 @@ class RepositoryService {
               plan: preview.plan,
               recoveryRef: recoveryRef,
               recovery: operationStillActive ? afterFailure : null,
+              pauseReason: operationStillActive
+                  ? GitInteractiveRebasePauseReason.cancelled
+                  : null,
             );
           }
           if (operationStillActive) {
+            final pauseReason = _interactiveRebasePauseReason(
+              error: error,
+              recovery: afterFailure,
+            );
             return _interactiveRebaseResult(
               repositoryId: repositoryId,
               phase: GitInteractiveRebasePhase.start,
@@ -1236,18 +1244,43 @@ class RepositoryService {
               previousHead: inspection.currentHead,
               resultingHead:
                   await _readHeadOid(handle) ?? inspection.currentHead,
-              summary: afterFailure.hasConflicts
-                  ? 'Git stopped with conflicts. Resolve them, then choose continue, skip, or abort.'
-                  : 'Git paused the rebase. Choose continue, skip, or abort after reviewing the worktree.',
+              summary: _interactiveRebasePauseSummary(pauseReason),
               plan: preview.plan,
               recoveryRef: recoveryRef,
               recovery: afterFailure,
+              pauseReason: pauseReason,
             );
           }
-          Error.throwWithStackTrace(
-            _mapInteractiveRebaseError(error),
-            stackTrace,
-          );
+          final mappedError = _mapInteractiveRebaseError(error);
+          final resultingHead = await _readHeadOid(handle);
+          if (mappedError.category == GitErrorCategory.hookRejected &&
+              resultingHead != null &&
+              resultingHead != inspection.currentHead) {
+            final status = await getStatus(repositoryId);
+            return _interactiveRebaseResult(
+              repositoryId: repositoryId,
+              phase: GitInteractiveRebasePhase.start,
+              state: GitInteractiveRebaseExecutionState.completed,
+              status: status,
+              previousHead: inspection.currentHead,
+              resultingHead: resultingHead,
+              summary: 'The rebase changed history, but a Git hook reported a failure afterward. Review the recovery ref.',
+              plan: preview.plan,
+              recoveryRef: recoveryRef,
+              pauseReason: GitInteractiveRebasePauseReason.hookRejected,
+              rewrittenCommitOids: await _readInteractiveRebaseRewriteMap(
+                handle,
+                preview.plan,
+                resultingHead,
+              ),
+              recoveryRefs: await _readInteractiveRebaseRecoveryRefs(
+                handle,
+                recoveryRef,
+                inspection.currentHead,
+              ),
+            );
+          }
+          Error.throwWithStackTrace(mappedError, stackTrace);
         }
 
         final afterStart = await _readInteractiveRebaseRecovery(repositoryId);
@@ -1267,6 +1300,9 @@ class RepositoryService {
             plan: preview.plan,
             recoveryRef: recoveryRef,
             recovery: afterStart,
+            pauseReason: afterStart.hasConflicts
+                ? GitInteractiveRebasePauseReason.conflict
+                : GitInteractiveRebasePauseReason.edit,
           );
         }
         final status = await getStatus(repositoryId);
@@ -1339,6 +1375,12 @@ class RepositoryService {
       }
 
       final previousHead = await _readHeadOid(handle) ?? '';
+      final originalHead = before.originalHead ?? previousHead;
+      final recoveryRefs = await _readInteractiveRebaseRecoveryRefs(
+        handle,
+        null,
+        originalHead,
+      );
       final args = switch (request.action) {
         GitInteractiveRebaseRecoveryAction.continueOperation => const [
           'rebase',
@@ -1369,13 +1411,22 @@ class RepositoryService {
             request,
             GitInteractiveRebaseExecutionState.cancelled,
             await getStatus(repositoryId),
-            previousHead,
+            originalHead,
             await _readHeadOid(handle) ?? previousHead,
             'The rebase recovery command was cancelled. Review its current state.',
             afterFailure,
+            originalCommitOids: request.originalCommitOids,
+            recoveryRefs: recoveryRefs,
+            pauseReason: afterFailure.operation == null
+                ? null
+                : GitInteractiveRebasePauseReason.cancelled,
           );
         }
         if (operationStillActive) {
+          final pauseReason = _interactiveRebasePauseReason(
+            error: error,
+            recovery: afterFailure,
+          );
           return _interactiveRebaseRecoveryResult(
             repositoryId,
             request,
@@ -1383,12 +1434,13 @@ class RepositoryService {
                 ? GitInteractiveRebaseExecutionState.conflicted
                 : GitInteractiveRebaseExecutionState.paused,
             await getStatus(repositoryId),
-            previousHead,
+            originalHead,
             await _readHeadOid(handle) ?? previousHead,
-            afterFailure.hasConflicts
-                ? 'Git still has conflicts. Resolve them before continuing.'
-                : 'The rebase is still paused. Choose an explicit recovery action.',
+            _interactiveRebasePauseSummary(pauseReason),
             afterFailure,
+            originalCommitOids: request.originalCommitOids,
+            recoveryRefs: recoveryRefs,
+            pauseReason: pauseReason,
           );
         }
         Error.throwWithStackTrace(
@@ -1407,7 +1459,7 @@ class RepositoryService {
             ? GitInteractiveRebaseExecutionState.completed
             : GitInteractiveRebaseExecutionState.paused,
         await getStatus(repositoryId),
-        previousHead,
+        originalHead,
         await _readHeadOid(handle) ?? previousHead,
         request.action == GitInteractiveRebaseRecoveryAction.abort
             ? 'The interactive rebase was aborted.'
@@ -1415,20 +1467,75 @@ class RepositoryService {
             ? 'The interactive rebase completed.'
             : 'The interactive rebase remains paused.',
         after,
+        originalCommitOids: request.originalCommitOids,
+        recoveryRefs: await _readInteractiveRebaseRecoveryRefs(
+          handle,
+          null,
+          originalHead,
+        ),
+        pauseReason: after.operation == null
+            ? null
+            : GitInteractiveRebasePauseReason.edit,
       );
     });
+  }
+
+  Future<String?> _readInteractiveRebaseOriginalHead(
+    RepositoryHandle handle,
+  ) async {
+    for (final directoryName in const ['rebase-merge', 'rebase-apply']) {
+      final path = await _readGitPath(handle, directoryName);
+      if (path == null || !Directory(path).existsSync()) continue;
+      final original = await _readFileAt(
+        '$path${Platform.pathSeparator}orig-head',
+      );
+      final value = original?.trim();
+      if (value != null && value.isNotEmpty) return value;
+    }
+    return null;
   }
 
   Future<_InteractiveRebaseRecovery> _readInteractiveRebaseRecovery(
     RepositoryId repositoryId,
   ) async {
+    final handle = await state.lookup(repositoryId);
     final snapshot = await getConflicts(repositoryId);
+    final originalHead =
+        snapshot.operation?.operation == GitConflictOperation.rebase
+        ? await _readInteractiveRebaseOriginalHead(handle)
+        : null;
     return _InteractiveRebaseRecovery(
       fingerprint: snapshot.fingerprint,
       operation: snapshot.operation,
       hasConflicts: snapshot.hasConflicts,
+      originalHead: originalHead,
     );
   }
+
+  GitInteractiveRebasePauseReason _interactiveRebasePauseReason({
+    required GitError? error,
+    required _InteractiveRebaseRecovery recovery,
+  }) {
+    if (error?.category == GitErrorCategory.hookRejected ||
+        (error != null &&
+            RegExp(
+              r'\b(?:hook|pre-commit|commit-msg|pre-rebase)\b',
+              caseSensitive: false,
+            ).hasMatch(error.diagnostic))) {
+      return GitInteractiveRebasePauseReason.hookRejected;
+    }
+    if (recovery.hasConflicts) return GitInteractiveRebasePauseReason.conflict;
+    return GitInteractiveRebasePauseReason.edit;
+  }
+
+  String _interactiveRebasePauseSummary(
+    GitInteractiveRebasePauseReason reason,
+  ) => switch (reason) {
+    GitInteractiveRebasePauseReason.conflict => 'Git stopped with conflicts. Resolve them, then choose continue, skip, or abort.',
+    GitInteractiveRebasePauseReason.hookRejected => 'A Git hook stopped the rebase. Fix the hook or worktree, then choose continue, skip, or abort.',
+    GitInteractiveRebasePauseReason.cancelled => 'The rebase was cancelled while it was in progress. Review the worktree, then choose continue, skip, or abort.',
+    GitInteractiveRebasePauseReason.edit => 'Git paused the rebase for review. Choose continue, skip, or abort after checking the worktree.',
+  };
 
   void _throwIfInteractiveRebaseBlocked(
     _InteractiveRebaseInspection inspection,
@@ -1493,22 +1600,71 @@ class RepositoryService {
     final script = File(
       '${directory.path}${Platform.pathSeparator}$scriptName',
     );
+    final messageScriptName = Platform.isWindows
+        ? 'message-editor.cmd'
+        : 'message-editor.sh';
+    final messageScript = File(
+      '${directory.path}${Platform.pathSeparator}$messageScriptName',
+    );
+    final rewordEntries = plan.entries
+        .where((entry) => entry.action == GitInteractiveRebaseAction.reword)
+        .toList(growable: false);
     if (Platform.isWindows) {
       await script.writeAsString(
         '@echo off\r\n'
         'copy /Y "${_windowsPath(todo.path)}" "%~1" >NUL\r\n',
       );
+      final messageScriptContents = StringBuffer(
+        '@echo off\r\n'
+        'set "head="\r\n'
+        'for /f "delims=" %%H in (\'git rev-parse HEAD\') do set "head=%%H"\r\n',
+      );
+      for (var index = 0; index < rewordEntries.length; index++) {
+        final entry = rewordEntries[index];
+        final messageFile = File(
+          '${directory.path}${Platform.pathSeparator}message-$index.txt',
+        );
+        await messageFile.writeAsString('${_todoSubject(entry.subject)}\r\n');
+        messageScriptContents
+          ..writeln(
+            'if "%head%"=="${entry.originalOid}" copy /Y "${_windowsPath(messageFile.path)}" "%~1" >NUL',
+          )
+          ..writeln('if "%head%"=="${entry.originalOid}" exit /b 0');
+      }
+      messageScriptContents.write('exit /b 0\r\n');
+      await messageScript.writeAsString(messageScriptContents.toString());
     } else {
       await script.writeAsString(
         '#!/bin/sh\n'
         'cp -- ${_shellPath(todo.path)} "\$1"\n',
       );
+      final messageScriptContents = StringBuffer(
+        '#!/bin/sh\n'
+        'head=\$(git rev-parse HEAD 2>/dev/null || true)\n',
+      );
+      for (var index = 0; index < rewordEntries.length; index++) {
+        final entry = rewordEntries[index];
+        final messageFile = File(
+          '${directory.path}${Platform.pathSeparator}message-$index.txt',
+        );
+        await messageFile.writeAsString('${_todoSubject(entry.subject)}\n');
+        messageScriptContents
+          ..writeln('if [ "\$head" = "${entry.originalOid}" ]; then')
+          ..writeln('  cp -- ${_shellPath(messageFile.path)} "\$1"')
+          ..writeln('  exit 0')
+          ..writeln('fi');
+      }
+      messageScriptContents.write('exit 0\n');
+      await messageScript.writeAsString(messageScriptContents.toString());
     }
     return _InteractiveRebaseEditor(
       directory: directory,
       sequenceEditorCommand: Platform.isWindows
           ? _windowsPath(script.path)
           : 'sh ${_shellPath(script.path)}',
+      messageEditorCommand: Platform.isWindows
+          ? _windowsPath(messageScript.path)
+          : 'sh ${_shellPath(messageScript.path)}',
     );
   }
 
@@ -1544,12 +1700,39 @@ class RepositoryService {
 
   Future<List<String>> _readInteractiveRebaseRecoveryRefs(
     RepositoryHandle handle,
-    String recoveryRef,
+    String? recoveryRef,
     String previousHead,
   ) async {
-    final refs = <String>[recoveryRef];
+    final refs = <String>[];
+    if (recoveryRef != null) refs.add(recoveryRef);
+    try {
+      final output = await _runner.run(
+        GitInvocation(
+          program: gitPath,
+          args: const [
+            'for-each-ref',
+            '--format=%(refname)',
+            'refs/gift/rebase',
+          ],
+          cwd: handle.root,
+          kind: GitOperationKind.read,
+          outputPolicy: const OutputPolicy.capture(maxBytes: 64 * 1024),
+        ),
+      );
+      for (final ref
+          in utf8
+              .decode(output.stdout, allowMalformed: true)
+              .split('\n')
+              .map((value) => value.trim())
+              .where((value) => value.isNotEmpty)) {
+        if (!refs.contains(ref)) refs.add(ref);
+      }
+    } on GitError {
+      // The explicit recovery ref is still useful when listing refs is not
+      // available in a damaged repository.
+    }
     if (await _tryResolve(handle, 'HEAD@{1}') == previousHead) {
-      refs.add('HEAD@{1}');
+      if (!refs.contains('HEAD@{1}')) refs.add('HEAD@{1}');
     }
     return refs;
   }
@@ -1565,6 +1748,7 @@ class RepositoryService {
     required GitInteractiveRebasePlan plan,
     required String recoveryRef,
     _InteractiveRebaseRecovery? recovery,
+    GitInteractiveRebasePauseReason? pauseReason,
     Map<String, String> rewrittenCommitOids = const <String, String>{},
     Iterable<String>? recoveryRefs,
   }) => GitInteractiveRebaseResult(
@@ -1585,6 +1769,7 @@ class RepositoryService {
             GitInteractiveRebaseRecoveryAction.skip,
             GitInteractiveRebaseRecoveryAction.abort,
           ],
+    pauseReason: pauseReason,
     recoveryFingerprint: recovery?.fingerprint,
   );
 
@@ -1596,8 +1781,11 @@ class RepositoryService {
     String previousHead,
     String resultingHead,
     String summary,
-    _InteractiveRebaseRecovery recovery,
-  ) => GitInteractiveRebaseResult(
+    _InteractiveRebaseRecovery recovery, {
+    GitInteractiveRebasePauseReason? pauseReason,
+    Iterable<String> originalCommitOids = const <String>[],
+    Iterable<String> recoveryRefs = const <String>[],
+  }) => GitInteractiveRebaseResult(
     repositoryId: repositoryId,
     phase: switch (request.action) {
       GitInteractiveRebaseRecoveryAction.continueOperation =>
@@ -1611,6 +1799,8 @@ class RepositoryService {
     previousHead: previousHead,
     resultingHead: resultingHead,
     summary: summary,
+    originalCommitOids: originalCommitOids,
+    recoveryRefs: recoveryRefs,
     recoveryActions: recovery.operation == null
         ? const <GitInteractiveRebaseRecoveryAction>[]
         : const [
@@ -1618,6 +1808,7 @@ class RepositoryService {
             GitInteractiveRebaseRecoveryAction.skip,
             GitInteractiveRebaseRecoveryAction.abort,
           ],
+    pauseReason: pauseReason,
     recoveryFingerprint: recovery.operation == null
         ? null
         : recovery.fingerprint,
@@ -1693,6 +1884,11 @@ class RepositoryService {
       expectedCommitOids.length,
       root: plan.options.root,
     );
+    final optionLimitations = <String>[
+      if (plan.options.root) 'Root mode rewrites every reachable commit, so the complete history must be loaded and remain linear.',
+      if (plan.options.autosquash) 'Autosquash only moves existing squash!/fixup! commits; it does not create those messages.',
+      if (plan.options.updateRefs) 'Update refs may move local branches pointing into the rewritten range; branches checked out in another worktree are left unchanged by Git.',
+    ];
     final branch = status.branch.head;
     final fingerprint = hashGitObjectBytes(
       utf8.encode(
@@ -1751,6 +1947,7 @@ class RepositoryService {
       operationInProgress: operation?.operation,
       fingerprint: fingerprint,
       blockingMessage: blockingMessage,
+      optionLimitations: optionLimitations,
     );
   }
 
@@ -7295,6 +7492,7 @@ class _InteractiveRebaseInspection {
     required this.operationInProgress,
     required this.fingerprint,
     required this.blockingMessage,
+    required this.optionLimitations,
   });
 
   final String? currentBranch;
@@ -7308,6 +7506,7 @@ class _InteractiveRebaseInspection {
   final GitConflictOperation? operationInProgress;
   final String fingerprint;
   final String? blockingMessage;
+  final List<String> optionLimitations;
 }
 
 class _InteractiveRebaseRecovery {
@@ -7315,21 +7514,25 @@ class _InteractiveRebaseRecovery {
     required this.fingerprint,
     required this.operation,
     required this.hasConflicts,
+    required this.originalHead,
   });
 
   final String fingerprint;
   final GitConflictOperationMetadata? operation;
   final bool hasConflicts;
+  final String? originalHead;
 }
 
 class _InteractiveRebaseEditor {
   const _InteractiveRebaseEditor({
     required this.directory,
     required this.sequenceEditorCommand,
+    required this.messageEditorCommand,
   });
 
   final Directory directory;
   final String sequenceEditorCommand;
+  final String messageEditorCommand;
 
   Future<void> dispose() async {
     if (directory.existsSync()) await directory.delete(recursive: true);

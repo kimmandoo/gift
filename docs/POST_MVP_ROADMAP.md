@@ -306,6 +306,9 @@ without explicit confirmation.
 
 **Depends on:** Tasks 20, 21, and 26.
 
+**Status:** Complete — reviewed plans, machine-owned execution, recovery
+states, and real-Git safety fixtures are covered.
+
 **Goal:** Provide a reviewed, recoverable plan for editing a branch history.
 
 - Model pick, reword, edit, squash, fixup, drop, and reorder entries before

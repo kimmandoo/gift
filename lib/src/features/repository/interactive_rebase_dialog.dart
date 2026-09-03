@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:gift/src/backend/domain.dart';
 import 'package:gift/src/backend/error.dart';
+import 'package:gift/src/backend/executor.dart';
 import 'package:gift/src/backend/git_gateway.dart';
 import 'package:gift/src/backend/history.dart';
 import 'package:gift/src/backend/interactive_rebase.dart';
@@ -41,6 +42,7 @@ class _InteractiveRebaseDialogState extends State<InteractiveRebaseDialog> {
   var _updateRefs = false;
   var _isLoading = true;
   var _isMutating = false;
+  GitCancellationToken? _cancellationToken;
 
   @override
   void initState() {
@@ -300,13 +302,51 @@ class _InteractiveRebaseDialogState extends State<InteractiveRebaseDialog> {
             ],
           ),
           const SizedBox(width: 6),
-          Expanded(
-            child: Text(
-              '${entry.shortOid} · ${entry.subject}',
-              maxLines: compact ? 2 : 1,
-              overflow: TextOverflow.ellipsis,
+          if (entry.action == GitInteractiveRebaseAction.reword)
+            Expanded(
+              child: TextFormField(
+                key: ValueKey('rebase-subject:${entry.originalOid}'),
+                initialValue: entry.subject,
+                maxLines: 1,
+                onChanged: _isMutating
+                    ? null
+                    : (subject) {
+                        setState(() {
+                          _entries = [
+                            for (
+                              var itemIndex = 0;
+                              itemIndex < _entries.length;
+                              itemIndex++
+                            )
+                              itemIndex == index
+                                  ? _entries[itemIndex].copyWith(
+                                      subject: subject,
+                                    )
+                                  : _entries[itemIndex],
+                          ];
+                          _clearReview();
+                        });
+                      },
+                decoration: InputDecoration(
+                  isDense: true,
+                  hintText: 'New commit subject',
+                  prefixText: '${entry.shortOid} · ',
+                  border: const OutlineInputBorder(),
+                  contentPadding: EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: compact ? 6 : 8,
+                  ),
+                ),
+              ),
+            )
+          else
+            Expanded(
+              child: Text(
+                '${entry.shortOid} · ${entry.subject}',
+                maxLines: compact ? 2 : 1,
+                overflow: TextOverflow.ellipsis,
+              ),
             ),
-          ),
           IconButton(
             key: ValueKey('rebase-up:${entry.originalOid}'),
             tooltip: 'Move up',
@@ -337,6 +377,12 @@ class _InteractiveRebaseDialogState extends State<InteractiveRebaseDialog> {
       spacing: 8,
       runSpacing: 4,
       children: [
+        if (_isMutating)
+          TextButton(
+            key: const Key('cancel-interactive-rebase'),
+            onPressed: _cancelMutation,
+            child: const Text('Cancel'),
+          ),
         OutlinedButton(
           key: const Key('preview-interactive-rebase'),
           onPressed: _isMutating ? null : _previewPlan,
@@ -364,15 +410,27 @@ class _InteractiveRebaseDialogState extends State<InteractiveRebaseDialog> {
           : Theme.of(context).colorScheme.errorContainer,
       child: Padding(
         padding: const EdgeInsets.all(12),
-        child: Text(
-          'Branch: ${preview.currentBranch ?? '(detached)'} · '
-          '${preview.selectedCommitCount} commit(s) · '
-          '${preview.mergeCommitCount} merge commit(s)\n$state',
-          style: TextStyle(
-            color: preview.canExecute
-                ? Theme.of(context).colorScheme.onTertiaryContainer
-                : Theme.of(context).colorScheme.onErrorContainer,
-          ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Text(
+              'Branch: ${preview.currentBranch ?? '(detached)'} · '
+              '${preview.selectedCommitCount} commit(s) · '
+              '${preview.mergeCommitCount} merge commit(s)\n$state',
+              style: TextStyle(
+                color: preview.canExecute
+                    ? Theme.of(context).colorScheme.onTertiaryContainer
+                    : Theme.of(context).colorScheme.onErrorContainer,
+              ),
+            ),
+            if (preview.optionLimitations.isNotEmpty) ...[
+              const SizedBox(height: 8),
+              Text(
+                'Option notes:\n${preview.optionLimitations.map((note) => '• $note').join('\n')}',
+                style: Theme.of(context).textTheme.bodySmall,
+              ),
+            ],
+          ],
         ),
       ),
     );
@@ -390,10 +448,26 @@ class _InteractiveRebaseDialogState extends State<InteractiveRebaseDialog> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Text(result.summary),
+            if (result.pauseReason case final reason?) ...[
+              const SizedBox(height: 4),
+              Text(
+                'Stop reason: ${_pauseReasonLabel(reason)}',
+                style: Theme.of(context).textTheme.labelSmall,
+              ),
+            ],
             if (result.recoveryRefs.isNotEmpty) ...[
               const SizedBox(height: 4),
               Text(
-                'Recovery ref: ${result.recoveryRefs.first}',
+                'Recovery refs: ${result.recoveryRefs.join(', ')}',
+                style: Theme.of(context).textTheme.labelSmall,
+              ),
+            ],
+            if (result.originalCommitOids.isNotEmpty ||
+                result.rewrittenCommitOids.isNotEmpty) ...[
+              const SizedBox(height: 4),
+              Text(
+                'Rewritten commits: ${result.rewrittenCommitOids.length}/'
+                '${result.originalCommitOids.length}',
                 style: Theme.of(context).textTheme.labelSmall,
               ),
             ],
@@ -534,14 +608,17 @@ class _InteractiveRebaseDialogState extends State<InteractiveRebaseDialog> {
   Future<void> _executePlan() async {
     final preview = _preview;
     if (_isMutating || preview == null || !preview.canExecute) return;
+    final cancellationToken = GitCancellationToken();
     setState(() {
       _isMutating = true;
       _error = null;
+      _cancellationToken = cancellationToken;
     });
     try {
       final result = await widget.gateway.executeInteractiveRebase(
         widget.repository.repositoryId,
         preview,
+        cancellationToken: cancellationToken,
       );
       if (!mounted) return;
       setState(() {
@@ -555,7 +632,14 @@ class _InteractiveRebaseDialogState extends State<InteractiveRebaseDialog> {
     } on GitError catch (error) {
       if (mounted) setState(() => _error = error);
     } finally {
-      if (mounted) setState(() => _isMutating = false);
+      if (mounted) {
+        setState(() {
+          _isMutating = false;
+          if (identical(_cancellationToken, cancellationToken)) {
+            _cancellationToken = null;
+          }
+        });
+      }
     }
   }
 
@@ -564,9 +648,12 @@ class _InteractiveRebaseDialogState extends State<InteractiveRebaseDialog> {
     String fingerprint,
   ) async {
     if (_isMutating) return;
+    final previousResult = _result;
+    final cancellationToken = GitCancellationToken();
     setState(() {
       _isMutating = true;
       _error = null;
+      _cancellationToken = cancellationToken;
     });
     try {
       final result = await widget.gateway.recoverInteractiveRebase(
@@ -574,7 +661,10 @@ class _InteractiveRebaseDialogState extends State<InteractiveRebaseDialog> {
         GitInteractiveRebaseRecoveryRequest(
           action: action,
           fingerprint: fingerprint,
+          originalCommitOids: previousResult?.originalCommitOids ?? const [],
+          recoveryRefs: previousResult?.recoveryRefs ?? const [],
         ),
+        cancellationToken: cancellationToken,
       );
       if (!mounted) return;
       setState(() => _result = result);
@@ -585,14 +675,31 @@ class _InteractiveRebaseDialogState extends State<InteractiveRebaseDialog> {
     } on GitError catch (error) {
       if (mounted) setState(() => _error = error);
     } finally {
-      if (mounted) setState(() => _isMutating = false);
+      if (mounted) {
+        setState(() {
+          _isMutating = false;
+          if (identical(_cancellationToken, cancellationToken)) {
+            _cancellationToken = null;
+          }
+        });
+      }
     }
   }
+
+  void _cancelMutation() => _cancellationToken?.cancel();
 
   String _recoveryLabel(GitInteractiveRebaseRecoveryAction action) =>
       switch (action) {
         GitInteractiveRebaseRecoveryAction.continueOperation => 'Continue',
         GitInteractiveRebaseRecoveryAction.skip => 'Skip',
         GitInteractiveRebaseRecoveryAction.abort => 'Abort',
+      };
+
+  String _pauseReasonLabel(GitInteractiveRebasePauseReason reason) =>
+      switch (reason) {
+        GitInteractiveRebasePauseReason.edit => 'edit requested',
+        GitInteractiveRebasePauseReason.conflict => 'unresolved conflict',
+        GitInteractiveRebasePauseReason.hookRejected => 'hook rejected',
+        GitInteractiveRebasePauseReason.cancelled => 'cancelled',
       };
 }

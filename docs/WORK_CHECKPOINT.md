@@ -5,7 +5,8 @@ This file is the handoff record for continuing work across query sessions.
 ## Current checkpoint
 
 - Date: 2026-09-03
-- Active task: Task 27 — interactive rebase and history rewriting.
+- Active task: none — Task 27 is complete; Task 28 is next and remains
+  pending activation.
 - Branch: `main`; no new branch or worktree was created.
 - Latest completed implementation commit: `0e859f6
   feat(task27): add interactive rebase execution`.
@@ -49,11 +50,19 @@ This file is the handoff record for continuing work across query sessions.
   reorder/action controls, preview, execution, and recovery buttons. The
   dialog keeps execution actions outside the scrollable body for narrow
   windows.
+- Added reviewed reword subjects, explicit edit/conflict/hook/cancellation
+  pause reasons, a UI Cancel action, and option limitation notes for root,
+  autosquash, and update-refs.
+- Added real-Git fixtures for dependent-commit conflicts and Skip recovery,
+  pre-rebase hook rejection, cancellation without a history rewrite, complete
+  action coverage including fixup and reword messages, reachable recovery
+  refs, and root/update-refs option notes. Task 27 is complete.
 - Clarified repository menu labels and empty states, made the Changes app bar
   collapse to a menu before actions crowd the repository title, and fixed
   narrow file-history controls using their actual available width.
 - Changed files: `CHANGELOG.md`, `TASKS.md`,
   `docs/WORK_CHECKPOINT.md`,
+  `docs/POST_MVP_ROADMAP.md`,
   `docs/research/jetbrains-git-mvp-behavior.md`,
   `docs/superpowers/plans/2026-09-02-gift-dart-mvp.md`,
   `lib/src/backend/{dart_git_backend,dart_git_gateway,git_gateway,
@@ -70,12 +79,11 @@ This file is the handoff record for continuing work across query sessions.
 - Verification: the initial RED run failed because the preview contract and
   backend method did not exist; after implementation, focused interactive
   rebase execution tests passed with `5` tests; the interactive-rebase dialog
-  tests passed with `2` tests; `dart format`, `flutter analyze`, `git diff
-  --check`, and the full Flutter suite passed with `163` tests. Native Windows
+  tests passed with `3` tests; `dart format`, `flutter analyze`, `git diff
+  --check`, and the full Flutter suite passed with `168` tests. Native Windows
   compilation is not available in this Linux workspace.
-- Next action: add RED fixtures for conflicted rebases, hook rejection,
-  cancellation, and root/update-refs option limitations, then expose any
-  needed UI state and recovery guidance.
+- Next action: activate Task 28, record its behavior-ledger scenarios, and add
+  its first failing remote-branch/update-project fixture.
 - Earlier Task 23 and Windows incremental-build diagnostics remain recorded in
   the plan and prior checkpoints.
 - Blockers: none.

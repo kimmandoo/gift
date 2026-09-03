@@ -9,6 +9,8 @@
   matching and unsafe-state blockers.
 - feat(task27): added machine-owned interactive-rebase execution, recovery,
   rewritten-OID reporting, and History plan controls.
+- fix(task27): classified conflict, hook, cancellation, and option-limit
+  outcomes and added reviewed reword subjects.
 - fix(ui): unified History detail scrolling, clarified repository action labels,
   and hardened compact menu layouts.
 - fix(history): added a recent-commit target picker so reset no longer

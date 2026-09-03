@@ -7,8 +7,8 @@
 ## Progress
 
 - **Total Tasks:** 38
-- **Completed:** 26 / 38
-- **Current Active Task:** `Task 27 — Interactive rebase and history rewriting`
+- **Completed:** 27 / 38
+- **Current Active Task:** none — Task 27 is complete; Task 28 is next.
 
 | # | Scope | Dart backend deliverables | Flutter deliverables | Status |
 |---|---|---|---|:---:|
@@ -38,7 +38,7 @@
 | **24** | Shelf & changelists | Shelf storage, changelist grouping, and patch import/export | Shelf/changelist workflow | ✅ |
 | **25** | File history & blame | File/directory/selection history and blame metadata | History and annotation views | ✅ |
 | **26** | Undo & reset | Revert commit, undo commit, and safe reset modes | Destructive history controls | ✅ |
-| **27** | Interactive rebase | Reorder, reword, edit, squash, fixup, drop, and recovery | Rebase plan and conflict flow | 🔄 |
+| **27** | Interactive rebase | Reorder, reword, edit, squash, fixup, drop, and recovery | Rebase plan and conflict flow | ✅ |
 | **28** | Remote branches & update | Remote branch checkout, compare, update, and tracking | Incoming/update information | ⬜ |
 | **29** | Push safety | Push review, force-with-lease, tags, and protected branches | Push review and rejection recovery | ⬜ |
 | **30** | Worktrees | Worktree list, create, open, remove, lock, and prune | Worktree manager | ⬜ |
@@ -404,7 +404,7 @@ scenarios and first failing test were recorded.
 
 The repository UI polish follow-up is complete. Task 27 is now active.
 
-### 🔄 Task 27: Interactive rebase and history rewriting
+### ✅ Task 27: Interactive rebase and history rewriting
 
 - [x] Record plan editing, action validation, protected-state, option, and
   conflict-recovery scenarios in the behavior ledger.
@@ -419,11 +419,12 @@ The repository UI polish follow-up is complete. Task 27 is now active.
 - [x] Report original OIDs, rewritten OIDs, and reflog recovery references.
 - [x] Add a History plan editor with upstream selection, reorder/action
   controls, preview, execution, and explicit recovery buttons.
-- [ ] Cover conflicted rebases, hook rejection, cancellation, and
+- [x] Cover conflicted rebases, hook rejection, cancellation, and
   option-specific root/update-refs limitations with fixtures and UI states.
+- [x] Support reviewed reword subjects and preserve recovery evidence after
+  successful, paused, aborted, and cancelled execution.
 
-Task 27 is active. The next vertical is conflicted-rebase, hook-rejection,
-cancellation, and option-limit fixture coverage.
+Task 27 is complete. Task 28 is the next task and has not been activated.
 
 ## Post-MVP backlog
 

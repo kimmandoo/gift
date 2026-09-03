@@ -403,7 +403,7 @@ system Git 2.35+.
 4. Unified historical diff row backgrounds to the widest rendered line and
    covered the short-line/long-line width invariant in a widget test.
 
-## Active vertical: Interactive rebase and history rewriting (Task 27)
+## Completed vertical: Interactive rebase and history rewriting (Task 27)
 
 1. Activated Task 27 after recording plan editing, action validation,
    protected-state, option, and continue/skip/abort recovery scenarios in the
@@ -425,5 +425,9 @@ system Git 2.35+.
    rewritten-OID reporting, and explicit continue/skip/abort recovery states.
 8. Added a History interactive-rebase dialog with upstream selection,
    reorder/action controls, preview, execution, and recovery actions.
-9. The next RED fixture will cover conflicted rebases, hook rejection,
-   cancellation, and root/update-refs option limitations.
+9. Added conflict, hook rejection, cancellation, root/update-refs limitation,
+   recovery-ref, and reachable-history fixtures, plus a narrow-layout Cancel
+   control test.
+10. Added reviewed reword subjects and pause-reason reporting for edit,
+    conflict, hook, and cancellation states. Passed the full Flutter suite;
+    Task 27 is complete. Task 28 remains pending activation.

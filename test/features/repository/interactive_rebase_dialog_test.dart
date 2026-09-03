@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:gift/src/backend/domain.dart';
@@ -40,6 +42,7 @@ void main() {
     expect(gateway.previewedPlan, isNotNull);
     expect(find.byKey(const Key('interactive-rebase-preview')), findsOneWidget);
     expect(find.byKey(const Key('execute-interactive-rebase')), findsOneWidget);
+    expect(find.textContaining('Option notes:'), findsOneWidget);
   });
 
   testWidgets('starts the reviewed rebase from the dialog', (tester) async {
@@ -61,12 +64,42 @@ void main() {
 
     expect(gateway.executeCount, 1);
   });
+
+  testWidgets('offers cancellation while rebase execution is in flight', (
+    tester,
+  ) async {
+    final gateway = _InteractiveRebaseGateway()..holdExecution = true;
+    final repository = RepositoryOpened(
+      repositoryId: const RepositoryId(value: 'repo-1'),
+      root: '/tmp/rebase-repository',
+    );
+    await tester.pumpWidget(
+      MaterialApp(
+        home: InteractiveRebaseDialog(gateway: gateway, repository: repository),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('preview-interactive-rebase')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('execute-interactive-rebase')));
+    await tester.pump();
+
+    expect(find.byKey(const Key('cancel-interactive-rebase')), findsOneWidget);
+    await tester.tap(find.byKey(const Key('cancel-interactive-rebase')));
+    expect(gateway.executeToken?.isCancelled, isTrue);
+
+    gateway.completeExecution();
+    await tester.pumpAndSettle();
+  });
 }
 
 class _InteractiveRebaseGateway with GitPatchGatewayStub implements GitGateway {
   final repositoryId = const RepositoryId(value: 'repo-1');
   GitInteractiveRebasePlan? previewedPlan;
   var executeCount = 0;
+  var holdExecution = false;
+  GitCancellationToken? executeToken;
+  Completer<GitInteractiveRebaseResult>? executionCompleter;
 
   @override
   Future<GitHistoryPage> getHistory(
@@ -116,6 +149,10 @@ class _InteractiveRebaseGateway with GitPatchGatewayStub implements GitGateway {
       requiresConfirmation: true,
       token: 'preview-token',
       expiresAt: DateTime.now().add(const Duration(minutes: 1)),
+      optionLimitations: const [
+        'Root mode rewrites every reachable commit.',
+        'Update refs may move local branches.',
+      ],
     );
   }
 
@@ -126,6 +163,11 @@ class _InteractiveRebaseGateway with GitPatchGatewayStub implements GitGateway {
     GitCancellationToken? cancellationToken,
   }) async {
     executeCount++;
+    executeToken = cancellationToken;
+    if (holdExecution) {
+      executionCompleter = Completer<GitInteractiveRebaseResult>();
+      return executionCompleter!.future;
+    }
     return GitInteractiveRebaseResult(
       repositoryId: repositoryId,
       phase: GitInteractiveRebasePhase.start,
@@ -136,6 +178,27 @@ class _InteractiveRebaseGateway with GitPatchGatewayStub implements GitGateway {
       summary: 'The interactive rebase completed.',
       originalCommitOids: preview.plan.entries.map(
         (entry) => entry.originalOid,
+      ),
+    );
+  }
+
+  void completeExecution() {
+    executionCompleter?.complete(
+      GitInteractiveRebaseResult(
+        repositoryId: repositoryId,
+        phase: GitInteractiveRebasePhase.start,
+        state: GitInteractiveRebaseExecutionState.cancelled,
+        status: GitStatusSnapshot(
+          repositoryId: repositoryId,
+          root: '/tmp/rebase-repository',
+          branch: const GitBranchStatus(head: 'topic', oid: _headOid),
+          changes: const [],
+          contentHash: 'clean',
+          generation: 1,
+        ),
+        previousHead: _headOid,
+        resultingHead: _headOid,
+        summary: 'The rebase was cancelled.',
       ),
     );
   }
