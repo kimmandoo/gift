@@ -8,8 +8,8 @@ This file is the handoff record for continuing work across query sessions.
 - Active task: none — Task 27 is complete; Task 28 is next and remains
   pending activation.
 - Branch: `main`; no new branch or worktree was created.
-- Latest completed implementation commit: `0e859f6
-  feat(task27): add interactive rebase execution`.
+- Latest completed implementation commit: `fff2f12
+  feat(task27): complete interactive rebase flow`.
 - Implemented typed reset/undo/revert contracts, short-lived stale-bound
   previews, protected/pushed/dirty/detached/in-progress preflight, all four
   reset modes, multi-commit revert, and explicit revert conflict recovery.
