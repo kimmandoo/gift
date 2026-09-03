@@ -12,6 +12,7 @@ import 'executor.dart';
 import 'remote.dart';
 import 'status.dart';
 import 'objects.dart';
+import 'shelf.dart';
 
 /// Application-facing entry point for backend operations.
 ///
@@ -22,15 +23,18 @@ class DartGitBackend {
     GitInstallationService? installationService,
     AppState? state,
     ProcessGitRunner? runner,
+    GitShelfStore? shelfStore,
   }) : _installationService = installationService ?? GitInstallationService(),
        _state = state ?? AppState(),
-       _runner = runner ?? const ProcessGitRunner();
+       _runner = runner ?? const ProcessGitRunner(),
+       _shelfStore = shelfStore ?? const FileGitShelfStore();
 
   static const version = '1.0.0';
 
   final GitInstallationService _installationService;
   final AppState _state;
   final ProcessGitRunner _runner;
+  final GitShelfStore _shelfStore;
 
   Health health() => const Health(product: 'gift', coreVersion: version);
 
@@ -47,6 +51,7 @@ class DartGitBackend {
       gitPath: installation.executablePath,
       state: _state,
       runner: _runner,
+      shelfStore: _shelfStore,
     ).openRepository(path);
   }
 
@@ -56,6 +61,7 @@ class DartGitBackend {
       gitPath: installation.executablePath,
       state: _state,
       runner: _runner,
+      shelfStore: _shelfStore,
     ).getStatus(repositoryId);
   }
 
@@ -722,6 +728,176 @@ class DartGitBackend {
       state: _state,
       runner: _runner,
     ).applyComparison(repositoryId, comparison, path, action: action);
+  }
+
+  Future<GitChangelistSnapshot> getChangelists(
+    RepositoryId repositoryId,
+  ) async {
+    final installation = await getGitInstallation();
+    return RepositoryService(
+      gitPath: installation.executablePath,
+      state: _state,
+      runner: _runner,
+      shelfStore: _shelfStore,
+    ).getChangelists(repositoryId);
+  }
+
+  Future<GitChangelistSnapshot> createChangelist(
+    RepositoryId repositoryId,
+    String name,
+  ) async {
+    final installation = await getGitInstallation();
+    return RepositoryService(
+      gitPath: installation.executablePath,
+      state: _state,
+      runner: _runner,
+      shelfStore: _shelfStore,
+    ).createChangelist(repositoryId, name);
+  }
+
+  Future<GitChangelistSnapshot> renameChangelist(
+    RepositoryId repositoryId,
+    String changelistId,
+    String name,
+  ) async {
+    final installation = await getGitInstallation();
+    return RepositoryService(
+      gitPath: installation.executablePath,
+      state: _state,
+      runner: _runner,
+      shelfStore: _shelfStore,
+    ).renameChangelist(repositoryId, changelistId, name);
+  }
+
+  Future<GitChangelistSnapshot> activateChangelist(
+    RepositoryId repositoryId,
+    String changelistId,
+  ) async {
+    final installation = await getGitInstallation();
+    return RepositoryService(
+      gitPath: installation.executablePath,
+      state: _state,
+      runner: _runner,
+      shelfStore: _shelfStore,
+    ).activateChangelist(repositoryId, changelistId);
+  }
+
+  Future<GitChangelistSnapshot> deleteChangelist(
+    RepositoryId repositoryId,
+    String changelistId,
+  ) async {
+    final installation = await getGitInstallation();
+    return RepositoryService(
+      gitPath: installation.executablePath,
+      state: _state,
+      runner: _runner,
+      shelfStore: _shelfStore,
+    ).deleteChangelist(repositoryId, changelistId);
+  }
+
+  Future<GitChangelistSnapshot> moveChangelistPaths(
+    RepositoryId repositoryId,
+    Iterable<String> paths,
+    String changelistId,
+  ) async {
+    final installation = await getGitInstallation();
+    return RepositoryService(
+      gitPath: installation.executablePath,
+      state: _state,
+      runner: _runner,
+      shelfStore: _shelfStore,
+    ).moveChangelistPaths(repositoryId, paths, changelistId);
+  }
+
+  Future<GitShelfSnapshot> getShelves(RepositoryId repositoryId) async {
+    final installation = await getGitInstallation();
+    return RepositoryService(
+      gitPath: installation.executablePath,
+      state: _state,
+      runner: _runner,
+      shelfStore: _shelfStore,
+    ).getShelves(repositoryId);
+  }
+
+  Future<GitShelfActionResult> shelve(
+    RepositoryId repositoryId, {
+    String name = '',
+    Iterable<String> paths = const <String>[],
+  }) async {
+    final installation = await getGitInstallation();
+    return RepositoryService(
+      gitPath: installation.executablePath,
+      state: _state,
+      runner: _runner,
+      shelfStore: _shelfStore,
+    ).shelve(repositoryId, name: name, paths: paths);
+  }
+
+  Future<GitShelfActionResult> unshelve(
+    RepositoryId repositoryId,
+    String shelfId,
+  ) async {
+    final installation = await getGitInstallation();
+    return RepositoryService(
+      gitPath: installation.executablePath,
+      state: _state,
+      runner: _runner,
+      shelfStore: _shelfStore,
+    ).unshelve(repositoryId, shelfId);
+  }
+
+  Future<GitShelfActionResult> restoreShelf(
+    RepositoryId repositoryId,
+    String shelfId,
+  ) async {
+    final installation = await getGitInstallation();
+    return RepositoryService(
+      gitPath: installation.executablePath,
+      state: _state,
+      runner: _runner,
+      shelfStore: _shelfStore,
+    ).restoreShelf(repositoryId, shelfId);
+  }
+
+  Future<GitShelfActionResult> deleteShelf(
+    RepositoryId repositoryId,
+    String shelfId,
+  ) async {
+    final installation = await getGitInstallation();
+    return RepositoryService(
+      gitPath: installation.executablePath,
+      state: _state,
+      runner: _runner,
+      shelfStore: _shelfStore,
+    ).deleteShelf(repositoryId, shelfId);
+  }
+
+  Future<GitShelfActionResult> importShelf(
+    RepositoryId repositoryId,
+    String name,
+    List<int> patchBytes, {
+    String? baseRevision,
+  }) async {
+    final installation = await getGitInstallation();
+    return RepositoryService(
+      gitPath: installation.executablePath,
+      state: _state,
+      runner: _runner,
+      shelfStore: _shelfStore,
+    ).importShelf(repositoryId, name, patchBytes, baseRevision: baseRevision);
+  }
+
+  Future<List<int>> exportShelf(
+    RepositoryId repositoryId,
+    String shelfId,
+  ) async {
+    final installation = await getGitInstallation();
+    return RepositoryService(
+      gitPath: installation.executablePath,
+      state: _state,
+      runner: _runner,
+      shelfStore: _shelfStore,
+    ).exportShelf(repositoryId, shelfId);
   }
 
   Future<GitStatusSnapshot> stage(

@@ -16,6 +16,7 @@ import 'history.dart';
 import 'remote.dart';
 import 'status.dart';
 import 'objects.dart';
+import 'shelf.dart';
 
 /// In-memory registry for repository roots and session-local opaque IDs.
 ///
@@ -347,10 +348,13 @@ class RepositoryService {
     required this.gitPath,
     required this.state,
     ProcessGitRunner? runner,
-  }) : _runner = runner ?? const ProcessGitRunner();
+    GitShelfStore? shelfStore,
+  }) : _runner = runner ?? const ProcessGitRunner(),
+       _shelfStore = shelfStore ?? const FileGitShelfStore();
 
   final String gitPath;
   final ProcessGitRunner _runner;
+  final GitShelfStore _shelfStore;
   final AppState state;
 
   Future<RepositoryOpened> openRepository(String path) async {
@@ -3648,6 +3652,701 @@ class RepositoryService {
       source.kind == GitComparisonSourceKind.revision ||
       source.kind == GitComparisonSourceKind.branch ||
       source.kind == GitComparisonSourceKind.tag;
+
+  Future<GitChangelistSnapshot> getChangelists(
+    RepositoryId repositoryId,
+  ) async {
+    final handle = await state.lookup(repositoryId);
+    final data = await _readShelfData(handle);
+    return _changelistSnapshot(repositoryId, data);
+  }
+
+  Future<GitChangelistSnapshot> createChangelist(
+    RepositoryId repositoryId,
+    String name,
+  ) {
+    _validateChangelistName(name);
+    return state.runMutation(repositoryId, () async {
+      final handle = await state.lookup(repositoryId);
+      final data = await _readShelfData(handle);
+      final lists = data.changelists
+          .map(
+            (list) => GitChangelist(
+              id: list.id,
+              name: list.name,
+              paths: list.paths,
+              isActive: false,
+            ),
+          )
+          .toList();
+      lists.add(
+        GitChangelist(
+          id: _newShelfId('list'),
+          name: name.trim(),
+          paths: const [],
+          isActive: true,
+        ),
+      );
+      final updated = GitShelfStoreData(
+        changelists: lists,
+        shelves: data.shelves,
+      );
+      await _writeShelfData(handle, updated);
+      return _changelistSnapshot(repositoryId, updated);
+    });
+  }
+
+  Future<GitChangelistSnapshot> renameChangelist(
+    RepositoryId repositoryId,
+    String changelistId,
+    String name,
+  ) {
+    _validateChangelistName(name);
+    return state.runMutation(repositoryId, () async {
+      final handle = await state.lookup(repositoryId);
+      final data = await _readShelfData(handle);
+      if (!data.changelists.any((list) => list.id == changelistId)) {
+        throw _shelfObjectNotFound('changelist', changelistId);
+      }
+      final updated = GitShelfStoreData(
+        changelists: data.changelists.map(
+          (list) => list.id == changelistId
+              ? GitChangelist(
+                  id: list.id,
+                  name: name.trim(),
+                  paths: list.paths,
+                  isActive: list.isActive,
+                )
+              : list,
+        ),
+        shelves: data.shelves,
+      );
+      await _writeShelfData(handle, updated);
+      return _changelistSnapshot(repositoryId, updated);
+    });
+  }
+
+  Future<GitChangelistSnapshot> activateChangelist(
+    RepositoryId repositoryId,
+    String changelistId,
+  ) => state.runMutation(repositoryId, () async {
+    final handle = await state.lookup(repositoryId);
+    final data = await _readShelfData(handle);
+    if (!data.changelists.any((list) => list.id == changelistId)) {
+      throw _shelfObjectNotFound('changelist', changelistId);
+    }
+    final updated = GitShelfStoreData(
+      changelists: data.changelists.map(
+        (list) => GitChangelist(
+          id: list.id,
+          name: list.name,
+          paths: list.paths,
+          isActive: list.id == changelistId,
+        ),
+      ),
+      shelves: data.shelves,
+    );
+    await _writeShelfData(handle, updated);
+    return _changelistSnapshot(repositoryId, updated);
+  });
+
+  Future<GitChangelistSnapshot> deleteChangelist(
+    RepositoryId repositoryId,
+    String changelistId,
+  ) => state.runMutation(repositoryId, () async {
+    final handle = await state.lookup(repositoryId);
+    final data = await _readShelfData(handle);
+    final selected = data.changelists
+        .where((list) => list.id == changelistId)
+        .firstOrNull;
+    if (selected == null) {
+      throw _shelfObjectNotFound('changelist', changelistId);
+    }
+    if (data.changelists.length == 1 || selected.id == 'default') {
+      throw const GitError(
+        category: GitErrorCategory.objectOperationNotAllowed,
+        userMessage: 'The default changelist cannot be deleted.',
+        diagnostic: 'attempted to delete the required default changelist',
+        retryable: false,
+      );
+    }
+    final fallback = data.changelists.firstWhere(
+      (list) => list.id == 'default',
+      orElse: () => data.changelists.first,
+    );
+    final movedPaths = {...fallback.paths, ...selected.paths};
+    final lists = data.changelists
+        .where((list) => list.id != changelistId)
+        .map(
+          (list) => list.id == fallback.id
+              ? GitChangelist(
+                  id: list.id,
+                  name: list.name,
+                  paths: movedPaths,
+                  isActive: selected.isActive || list.isActive,
+                )
+              : list,
+        )
+        .toList();
+    if (!lists.any((list) => list.isActive)) {
+      final first = lists.first;
+      lists[0] = GitChangelist(
+        id: first.id,
+        name: first.name,
+        paths: first.paths,
+        isActive: true,
+      );
+    }
+    final updated = GitShelfStoreData(
+      changelists: lists,
+      shelves: data.shelves,
+    );
+    await _writeShelfData(handle, updated);
+    return _changelistSnapshot(repositoryId, updated);
+  });
+
+  Future<GitChangelistSnapshot> moveChangelistPaths(
+    RepositoryId repositoryId,
+    Iterable<String> paths,
+    String changelistId,
+  ) => state.runMutation(repositoryId, () async {
+    final requested = _validatedShelfPaths(paths);
+    if (requested.isEmpty) {
+      throw const GitError(
+        category: GitErrorCategory.parseFailure,
+        userMessage: 'Choose at least one path to move.',
+        diagnostic: 'changelist move received no paths',
+        retryable: false,
+      );
+    }
+    final handle = await state.lookup(repositoryId);
+    final data = await _readShelfData(handle);
+    if (!data.changelists.any((list) => list.id == changelistId)) {
+      throw _shelfObjectNotFound('changelist', changelistId);
+    }
+    final updated = GitShelfStoreData(
+      changelists: data.changelists.map((list) {
+        final remaining = list.paths.where((path) => !requested.contains(path));
+        return GitChangelist(
+          id: list.id,
+          name: list.name,
+          paths: list.id == changelistId
+              ? {...remaining, ...requested}
+              : remaining,
+          isActive: list.isActive,
+        );
+      }),
+      shelves: data.shelves,
+    );
+    await _writeShelfData(handle, updated);
+    return _changelistSnapshot(repositoryId, updated);
+  });
+
+  Future<GitShelfSnapshot> getShelves(RepositoryId repositoryId) async {
+    final handle = await state.lookup(repositoryId);
+    final data = await _readShelfData(handle);
+    return _shelfSnapshot(repositoryId, data);
+  }
+
+  Future<GitShelfActionResult> shelve(
+    RepositoryId repositoryId, {
+    String name = '',
+    Iterable<String> paths = const <String>[],
+  }) => state.runMutation(repositoryId, () async {
+    final handle = await state.lookup(repositoryId);
+    final data = await _readShelfData(handle);
+    final status = await getStatus(repositoryId);
+    final changedTracked = status.changes
+        .where(
+          (change) =>
+              !change.isUntracked &&
+              !change.isConflicted &&
+              (change.isStaged || change.isUnstaged),
+        )
+        .map((change) => change.path)
+        .toSet();
+    final selected = paths.isEmpty
+        ? changedTracked.toList()
+        : _validatedShelfPaths(paths);
+    if (selected.isEmpty) {
+      throw const GitError(
+        category: GitErrorCategory.objectOperationNotAllowed,
+        userMessage: 'There are no tracked changes to shelve.',
+        diagnostic: 'shelve found no staged or unstaged tracked paths',
+        retryable: false,
+      );
+    }
+    if (selected.any((path) => !changedTracked.contains(path))) {
+      throw const GitError(
+        category: GitErrorCategory.objectOperationNotAllowed,
+        userMessage: 'Only current tracked changes can be shelved.',
+        diagnostic: 'shelve selection contained an untracked, conflicted, or unchanged path',
+        retryable: false,
+      );
+    }
+    final baseRevision = await _readHeadOid(handle);
+    if (baseRevision == null) {
+      throw const GitError(
+        category: GitErrorCategory.unbornBranch,
+        userMessage: 'Create the first commit before shelving changes.',
+        diagnostic: 'shelve requires a base revision for safe restoration',
+        retryable: false,
+      );
+    }
+    final output = await _runner.run(
+      GitInvocation(
+        program: gitPath,
+        args: [
+          'diff',
+          '--no-color',
+          '--no-ext-diff',
+          '--binary',
+          '--full-index',
+          'HEAD',
+          '--',
+          ...selected,
+        ],
+        cwd: handle.root,
+        kind: GitOperationKind.read,
+        outputPolicy: const OutputPolicy.capture(maxBytes: maxShelfPatchBytes),
+      ),
+    );
+    if (output.stdout.isEmpty) {
+      throw const GitError(
+        category: GitErrorCategory.objectOperationNotAllowed,
+        userMessage: 'The selected paths have no shelvable content.',
+        diagnostic: 'git diff HEAD returned an empty shelf patch',
+        retryable: false,
+      );
+    }
+    final shelf = GitShelf(
+      id: _newShelfId('shelf'),
+      name: _shelfName(name),
+      baseRevision: baseRevision,
+      paths: selected,
+      patchBytes: output.stdout,
+      createdAt: DateTime.now(),
+    );
+    final updated = GitShelfStoreData(
+      changelists: data.changelists,
+      shelves: [shelf, ...data.shelves],
+    );
+    await _writeShelfData(handle, updated);
+    try {
+      await _restoreShelvedPaths(handle, selected);
+    } on Object {
+      // The reusable shelf remains available when Git cannot clear the
+      // working tree, so the user can recover it without losing the patch.
+      rethrow;
+    }
+    return _shelfResult(
+      repositoryId,
+      GitShelfActionOutcome.shelved,
+      updated,
+      shelf: shelf,
+      summary: 'Saved ${selected.length} tracked path(s) to the shelf.',
+    );
+  });
+
+  Future<GitShelfActionResult> unshelve(
+    RepositoryId repositoryId,
+    String shelfId,
+  ) => _applyShelf(repositoryId, shelfId, reverse: false);
+
+  Future<GitShelfActionResult> restoreShelf(
+    RepositoryId repositoryId,
+    String shelfId,
+  ) => _applyShelf(repositoryId, shelfId, reverse: true);
+
+  Future<GitShelfActionResult> _applyShelf(
+    RepositoryId repositoryId,
+    String shelfId, {
+    required bool reverse,
+  }) => state.runMutation(repositoryId, () async {
+    final handle = await state.lookup(repositoryId);
+    final data = await _readShelfData(handle);
+    final shelf = data.shelves.where((item) => item.id == shelfId).firstOrNull;
+    if (shelf == null) throw _shelfObjectNotFound('shelf', shelfId);
+    if (!reverse && shelf.baseRevision != null) {
+      final base = await _tryResolve(handle, '${shelf.baseRevision}^{commit}');
+      if (base == null) {
+        return _shelfResult(
+          repositoryId,
+          GitShelfActionOutcome.baseMissing,
+          data,
+          shelf: shelf,
+          summary: 'The shelf base revision is no longer available.',
+        );
+      }
+    }
+    final args = ['apply', if (reverse) '--reverse'];
+    try {
+      await _runner.run(
+        GitInvocation(
+          program: gitPath,
+          args: [...args, '--check'],
+          cwd: handle.root,
+          stdin: shelf.patchBytes,
+          kind: GitOperationKind.mutation,
+          outputPolicy: const OutputPolicy.capture(maxBytes: 128 * 1024),
+        ),
+      );
+      await _runner.run(
+        GitInvocation(
+          program: gitPath,
+          args: args,
+          cwd: handle.root,
+          stdin: shelf.patchBytes,
+          kind: GitOperationKind.mutation,
+          outputPolicy: const OutputPolicy.capture(maxBytes: 128 * 1024),
+        ),
+      );
+    } on GitError catch (error, stackTrace) {
+      if (error.category == GitErrorCategory.processFailed) {
+        return _shelfResult(
+          repositoryId,
+          GitShelfActionOutcome.conflict,
+          data,
+          shelf: shelf,
+          summary: 'The shelf could not be applied to the current worktree.',
+        );
+      }
+      Error.throwWithStackTrace(error, stackTrace);
+    }
+    return _shelfResult(
+      repositoryId,
+      reverse
+          ? GitShelfActionOutcome.restored
+          : GitShelfActionOutcome.unshelved,
+      data,
+      shelf: shelf,
+      summary: reverse
+          ? 'The selected shelf changes were restored from the worktree.'
+          : 'The selected shelf remains available and was unshelved.',
+    );
+  });
+
+  Future<GitShelfActionResult> deleteShelf(
+    RepositoryId repositoryId,
+    String shelfId,
+  ) => state.runMutation(repositoryId, () async {
+    final handle = await state.lookup(repositoryId);
+    final data = await _readShelfData(handle);
+    final shelf = data.shelves.where((item) => item.id == shelfId).firstOrNull;
+    if (shelf == null) throw _shelfObjectNotFound('shelf', shelfId);
+    final updated = GitShelfStoreData(
+      changelists: data.changelists,
+      shelves: data.shelves.where((item) => item.id != shelfId),
+    );
+    await _writeShelfData(handle, updated);
+    return _shelfResult(
+      repositoryId,
+      GitShelfActionOutcome.deleted,
+      updated,
+      summary: 'Deleted the selected shelf; the working tree was unchanged.',
+    );
+  });
+
+  Future<GitShelfActionResult> importShelf(
+    RepositoryId repositoryId,
+    String name,
+    List<int> patchBytes, {
+    String? baseRevision,
+  }) {
+    _validateShelfName(name);
+    if (baseRevision != null) _validateRevisionInput(baseRevision);
+    final paths = _validateShelfPatch(patchBytes);
+    return state.runMutation(repositoryId, () async {
+      final handle = await state.lookup(repositoryId);
+      final data = await _readShelfData(handle);
+      final shelf = GitShelf(
+        id: _newShelfId('shelf'),
+        name: _shelfName(name),
+        baseRevision: baseRevision,
+        paths: paths,
+        patchBytes: patchBytes,
+        createdAt: DateTime.now(),
+        imported: true,
+      );
+      final updated = GitShelfStoreData(
+        changelists: data.changelists,
+        shelves: [shelf, ...data.shelves],
+      );
+      await _writeShelfData(handle, updated);
+      return _shelfResult(
+        repositoryId,
+        GitShelfActionOutcome.imported,
+        updated,
+        shelf: shelf,
+        summary: 'Imported a reusable patch without changing Git stash state.',
+      );
+    });
+  }
+
+  Future<List<int>> exportShelf(
+    RepositoryId repositoryId,
+    String shelfId,
+  ) async {
+    final handle = await state.lookup(repositoryId);
+    final data = await _readShelfData(handle);
+    final shelf = data.shelves.where((item) => item.id == shelfId).firstOrNull;
+    if (shelf == null) throw _shelfObjectNotFound('shelf', shelfId);
+    return List.unmodifiable(shelf.patchBytes);
+  }
+
+  Future<GitShelfStoreData> _readShelfData(RepositoryHandle handle) async {
+    try {
+      final data = await _shelfStore.read(handle.root);
+      if (data.changelists.isNotEmpty) return data;
+      final initial = GitShelfStoreData(
+        changelists: [
+          GitChangelist(
+            id: 'default',
+            name: 'Changes',
+            paths: const [],
+            isActive: true,
+          ),
+        ],
+        shelves: data.shelves,
+      );
+      await _shelfStore.write(handle.root, initial);
+      return initial;
+    } on FormatException catch (error, stackTrace) {
+      Error.throwWithStackTrace(
+        GitError(
+          category: GitErrorCategory.parseFailure,
+          userMessage: 'Saved shelf metadata could not be read.',
+          diagnostic: error.message,
+          retryable: false,
+        ),
+        stackTrace,
+      );
+    } on FileSystemException catch (error, stackTrace) {
+      Error.throwWithStackTrace(
+        GitError(
+          category: GitErrorCategory.permissionDenied,
+          userMessage: 'Saved shelf metadata could not be opened.',
+          diagnostic: error.message,
+          retryable: true,
+        ),
+        stackTrace,
+      );
+    }
+  }
+
+  Future<void> _writeShelfData(
+    RepositoryHandle handle,
+    GitShelfStoreData data,
+  ) async {
+    try {
+      await _shelfStore.write(handle.root, data);
+    } on FormatException catch (error, stackTrace) {
+      Error.throwWithStackTrace(
+        GitError(
+          category: GitErrorCategory.outputOverflow,
+          userMessage: 'The shelf store is too large to save safely.',
+          diagnostic: error.message,
+          retryable: false,
+        ),
+        stackTrace,
+      );
+    } on FileSystemException catch (error, stackTrace) {
+      Error.throwWithStackTrace(
+        GitError(
+          category: GitErrorCategory.permissionDenied,
+          userMessage: 'The shelf could not be saved.',
+          diagnostic: error.message,
+          retryable: true,
+        ),
+        stackTrace,
+      );
+    }
+  }
+
+  GitChangelistSnapshot _changelistSnapshot(
+    RepositoryId repositoryId,
+    GitShelfStoreData data,
+  ) {
+    final fingerprint = hashGitObjectBytes(
+      utf8.encode(
+        jsonEncode(data.changelists.map((list) => list.toJson()).toList()),
+      ),
+    );
+    return GitChangelistSnapshot(
+      repositoryId: repositoryId,
+      lists: data.changelists,
+      fingerprint: fingerprint,
+    );
+  }
+
+  GitShelfSnapshot _shelfSnapshot(
+    RepositoryId repositoryId,
+    GitShelfStoreData data,
+  ) {
+    final fingerprint = hashGitObjectBytes(
+      utf8.encode(
+        jsonEncode(data.shelves.map((shelf) => shelf.toJson()).toList()),
+      ),
+    );
+    return GitShelfSnapshot(
+      repositoryId: repositoryId,
+      shelves: data.shelves,
+      fingerprint: fingerprint,
+    );
+  }
+
+  GitShelfActionResult _shelfResult(
+    RepositoryId repositoryId,
+    GitShelfActionOutcome outcome,
+    GitShelfStoreData data, {
+    GitShelf? shelf,
+    required String summary,
+  }) => GitShelfActionResult(
+    repositoryId: repositoryId,
+    outcome: outcome,
+    changelists: _changelistSnapshot(repositoryId, data),
+    shelves: _shelfSnapshot(repositoryId, data),
+    shelf: shelf,
+    summary: summary,
+  );
+
+  Future<void> _restoreShelvedPaths(
+    RepositoryHandle handle,
+    Iterable<String> paths,
+  ) async {
+    await _runner.run(
+      GitInvocation(
+        program: gitPath,
+        args: [
+          'restore',
+          '--source=HEAD',
+          '--staged',
+          '--worktree',
+          '--',
+          ...paths,
+        ],
+        cwd: handle.root,
+        kind: GitOperationKind.mutation,
+        outputPolicy: const OutputPolicy.capture(maxBytes: 128 * 1024),
+      ),
+    );
+  }
+
+  List<String> _validatedShelfPaths(Iterable<String> paths) {
+    final result = <String>{};
+    for (final path in paths) {
+      _validateComparisonPath(path);
+      if (path == '.') {
+        throw const GitError(
+          category: GitErrorCategory.parseFailure,
+          userMessage: 'Choose individual repository paths for a shelf.',
+          diagnostic: 'shelf path was the repository root marker',
+          retryable: false,
+        );
+      }
+      result.add(path);
+    }
+    return result.toList();
+  }
+
+  List<String> _validateShelfPatch(List<int> bytes) {
+    if (bytes.isEmpty ||
+        bytes.length > maxShelfPatchBytes ||
+        bytes.contains(0)) {
+      throw const GitError(
+        category: GitErrorCategory.outputOverflow,
+        userMessage: 'The external patch is empty, binary, or too large.',
+        diagnostic: 'imported shelf patch exceeded the bounded text contract',
+        retryable: false,
+      );
+    }
+    late final String text;
+    try {
+      text = utf8.decode(bytes);
+    } on FormatException catch (error, stackTrace) {
+      Error.throwWithStackTrace(
+        const GitError(
+          category: GitErrorCategory.parseFailure,
+          userMessage: 'The external patch is not valid UTF-8 text.',
+          diagnostic: 'imported patch contained malformed UTF-8',
+          retryable: false,
+        ),
+        stackTrace,
+      );
+    }
+    final paths = <String>{};
+    for (var line in text.split('\n')) {
+      if (line.endsWith('\r')) line = line.substring(0, line.length - 1);
+      final prefix = line.startsWith('--- a/')
+          ? '--- a/'.length
+          : line.startsWith('+++ b/')
+          ? '+++ b/'.length
+          : line.startsWith('rename from ')
+          ? 'rename from '.length
+          : line.startsWith('rename to ')
+          ? 'rename to '.length
+          : null;
+      if (prefix == null) continue;
+      final candidate = line.substring(prefix).split('\t').first;
+      if (candidate == '/dev/null') continue;
+      _validateShelfPaths([candidate]);
+      paths.add(candidate);
+    }
+    if (paths.isEmpty || !text.contains('diff --git ')) {
+      throw const GitError(
+        category: GitErrorCategory.parseFailure,
+        userMessage: 'The external patch has no supported repository paths.',
+        diagnostic: 'imported patch did not contain a Git file diff header',
+        retryable: false,
+      );
+    }
+    return paths.toList();
+  }
+
+  void _validateShelfPaths(Iterable<String> paths) {
+    _validatedShelfPaths(paths);
+  }
+
+  void _validateChangelistName(String name) {
+    final value = name.trim();
+    if (value.isEmpty ||
+        value.length > 120 ||
+        value.contains('\u0000') ||
+        value.contains('\n')) {
+      throw const GitError(
+        category: GitErrorCategory.parseFailure,
+        userMessage: 'Enter a short changelist name.',
+        diagnostic: 'changelist name was empty, too long, or contained a control character',
+        retryable: false,
+      );
+    }
+  }
+
+  void _validateShelfName(String name) {
+    if (name.trim().length > 120 ||
+        name.contains('\u0000') ||
+        name.contains('\n')) {
+      throw const GitError(
+        category: GitErrorCategory.parseFailure,
+        userMessage: 'Enter a shorter shelf name.',
+        diagnostic: 'shelf name exceeded the bounded metadata contract',
+        retryable: false,
+      );
+    }
+  }
+
+  String _shelfName(String name) =>
+      name.trim().isEmpty ? 'Shelf ${DateTime.now().toLocal()}' : name.trim();
+
+  String _newShelfId(String prefix) =>
+      '$prefix-${DateTime.now().microsecondsSinceEpoch.toRadixString(36)}';
+
+  GitError _shelfObjectNotFound(String kind, String id) => GitError(
+    category: GitErrorCategory.objectNotFound,
+    userMessage: 'The selected $kind is no longer available.',
+    diagnostic: '$kind identity was not found in shelf metadata: $id',
+    retryable: true,
+  );
 
   Future<GitStatusSnapshot> stage(RepositoryId repositoryId, String path) =>
       _mutatePath(repositoryId, const ['add'], path);

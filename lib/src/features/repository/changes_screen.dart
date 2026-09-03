@@ -16,6 +16,7 @@ import 'package:gift/src/features/repository/history_controller.dart';
 import 'package:gift/src/features/repository/remote_dialog.dart';
 import 'package:gift/src/features/repository/object_dialog.dart';
 import 'package:gift/src/features/repository/comparison_dialog.dart';
+import 'package:gift/src/features/repository/shelf_dialog.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter/services.dart';
@@ -181,6 +182,9 @@ class _ChangesScreenBodyState extends ConsumerState<_ChangesScreenBody> {
                   case _ChangesMenuAction.threeWayComparison:
                     unawaited(_openThreeWayComparison(context));
                     break;
+                  case _ChangesMenuAction.shelves:
+                    unawaited(_openShelves(context));
+                    break;
                   case _ChangesMenuAction.refresh:
                     unawaited(controller.refresh());
                     break;
@@ -210,6 +214,10 @@ class _ChangesScreenBodyState extends ConsumerState<_ChangesScreenBody> {
                 const PopupMenuItem(
                   value: _ChangesMenuAction.threeWayComparison,
                   child: Text('Three-way compare'),
+                ),
+                const PopupMenuItem(
+                  value: _ChangesMenuAction.shelves,
+                  child: Text('Shelves & changelists'),
                 ),
                 PopupMenuItem(
                   value: _ChangesMenuAction.refresh,
@@ -254,6 +262,12 @@ class _ChangesScreenBodyState extends ConsumerState<_ChangesScreenBody> {
               tooltip: 'Three-way comparison',
               onPressed: () => unawaited(_openThreeWayComparison(context)),
               icon: const Icon(Icons.call_split),
+            ),
+            IconButton(
+              key: const Key('open-shelves'),
+              tooltip: 'Shelves and changelists',
+              onPressed: () => unawaited(_openShelves(context)),
+              icon: const Icon(Icons.archive_outlined),
             ),
             IconButton(
               tooltip: 'Refresh changes',
@@ -1333,6 +1347,19 @@ class _ChangesScreenBodyState extends ConsumerState<_ChangesScreenBody> {
     );
   }
 
+  Future<void> _openShelves(BuildContext context) async {
+    await showDialog<void>(
+      context: context,
+      builder: (_) => ShelfDialog(
+        gateway: widget.gateway,
+        repository: widget.repository,
+        initialPaths: [?_activeController.state.selectedPath],
+      ),
+    );
+    if (!context.mounted) return;
+    await _activeController.refresh();
+  }
+
   Widget _scopeSelector(
     BuildContext context,
     GitChange selected,
@@ -1636,5 +1663,6 @@ enum _ChangesMenuAction {
   objects,
   comparison,
   threeWayComparison,
+  shelves,
   refresh,
 }

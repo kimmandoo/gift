@@ -10,6 +10,7 @@ import 'history.dart';
 import 'executor.dart';
 import 'remote.dart';
 import 'objects.dart';
+import 'shelf.dart';
 
 /// The small API that Flutter features depend on.
 ///
@@ -294,6 +295,67 @@ abstract interface class GitGateway {
     String path, {
     GitComparisonTransferAction action = GitComparisonTransferAction.apply,
   });
+
+  Future<GitChangelistSnapshot> getChangelists(RepositoryId repositoryId);
+
+  Future<GitChangelistSnapshot> createChangelist(
+    RepositoryId repositoryId,
+    String name,
+  );
+
+  Future<GitChangelistSnapshot> renameChangelist(
+    RepositoryId repositoryId,
+    String changelistId,
+    String name,
+  );
+
+  Future<GitChangelistSnapshot> activateChangelist(
+    RepositoryId repositoryId,
+    String changelistId,
+  );
+
+  Future<GitChangelistSnapshot> deleteChangelist(
+    RepositoryId repositoryId,
+    String changelistId,
+  );
+
+  Future<GitChangelistSnapshot> moveChangelistPaths(
+    RepositoryId repositoryId,
+    Iterable<String> paths,
+    String changelistId,
+  );
+
+  Future<GitShelfSnapshot> getShelves(RepositoryId repositoryId);
+
+  Future<GitShelfActionResult> shelve(
+    RepositoryId repositoryId, {
+    String name = '',
+    Iterable<String> paths = const <String>[],
+  });
+
+  Future<GitShelfActionResult> unshelve(
+    RepositoryId repositoryId,
+    String shelfId,
+  );
+
+  Future<GitShelfActionResult> restoreShelf(
+    RepositoryId repositoryId,
+    String shelfId,
+  );
+
+  Future<GitShelfActionResult> deleteShelf(
+    RepositoryId repositoryId,
+    String shelfId,
+  );
+
+  Future<GitShelfActionResult> importShelf(
+    RepositoryId repositoryId,
+    String name,
+    List<int> patchBytes, {
+    String? baseRevision,
+  });
+
+  Future<List<int>> exportShelf(RepositoryId repositoryId, String shelfId);
 
   Future<GitStatusSnapshot> stage(RepositoryId repositoryId, String path);
 

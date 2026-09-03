@@ -4,8 +4,8 @@ This roadmap turns the MVP into a dependable daily Git client while preserving
 gift's clean-room workflow research and minimal 2D pixel-game interface.
 Task 15 was marked safe done under WSL because the remaining native bundle
 check is CI-only in this environment. Tasks 16 through 22 are complete;
-Task 23 is complete, Task 24 is active, and Tasks 25 through 35 remain planned
-Git workflow coverage.
+Tasks 23 and 24 are complete, Task 25 is active, and Tasks 26 through 35
+remain planned Git workflow coverage.
 Do not start a later post-MVP task until its dependencies are complete and its
 visible behavior has been recorded in the behavior ledger without copying
 proprietary implementation details or assets.
@@ -240,11 +240,10 @@ arbitrary patch text from the UI.
 
 ## Task 24 — Shelves, changelists, and patch exchange
 
-**Status:** In progress — implementation has been activated after Task 23.
-
-## Task 24 — Shelves, changelists, and patch exchange
-
 **Depends on:** Tasks 17, 18, and 23.
+
+**Status:** Complete — app-local changelists, reusable shelves, and bounded
+patch exchange are covered.
 
 **Goal:** Add JetBrains-style local change organization without confusing a
 local shelf with a Git stash.
@@ -265,6 +264,8 @@ of Git stash entries.
 ## Task 25 — File history, blame, and revision recovery
 
 **Depends on:** Tasks 19 and 23.
+
+**Status:** In progress — implementation has been activated after Task 24.
 
 **Goal:** Let users explain and recover a file change without browsing only the
 global commit graph.

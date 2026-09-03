@@ -13,6 +13,8 @@
   checked machine-generated patches and refreshed status.
 - feat(task23): added bounded clipboard, external-text, three-way, and file
   navigation comparison flows with explicit content states.
+- feat(task24): added persistent app-local changelists, reusable shelves, and
+  bounded patch import/export without mutating Git stash.
 - feat(task22): added identity-bound stash, tag, remote, and upstream
   management workflows with responsive object controls.
 - feat(task21): added fingerprint-guarded conflict inspection, resolution,

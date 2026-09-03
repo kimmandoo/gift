@@ -12,6 +12,7 @@ import 'executor.dart';
 import 'remote.dart';
 import 'status.dart';
 import 'objects.dart';
+import 'shelf.dart';
 
 /// Adapts the UI-facing [GitGateway] contract to the Dart backend facade.
 ///
@@ -435,6 +436,88 @@ class DartGitGateway implements GitGateway, DiscardPreviewCancellationGateway {
     String path, {
     GitComparisonTransferAction action = GitComparisonTransferAction.apply,
   }) => backend.applyComparison(repositoryId, comparison, path, action: action);
+
+  @override
+  Future<GitChangelistSnapshot> getChangelists(RepositoryId repositoryId) =>
+      backend.getChangelists(repositoryId);
+
+  @override
+  Future<GitChangelistSnapshot> createChangelist(
+    RepositoryId repositoryId,
+    String name,
+  ) => backend.createChangelist(repositoryId, name);
+
+  @override
+  Future<GitChangelistSnapshot> renameChangelist(
+    RepositoryId repositoryId,
+    String changelistId,
+    String name,
+  ) => backend.renameChangelist(repositoryId, changelistId, name);
+
+  @override
+  Future<GitChangelistSnapshot> activateChangelist(
+    RepositoryId repositoryId,
+    String changelistId,
+  ) => backend.activateChangelist(repositoryId, changelistId);
+
+  @override
+  Future<GitChangelistSnapshot> deleteChangelist(
+    RepositoryId repositoryId,
+    String changelistId,
+  ) => backend.deleteChangelist(repositoryId, changelistId);
+
+  @override
+  Future<GitChangelistSnapshot> moveChangelistPaths(
+    RepositoryId repositoryId,
+    Iterable<String> paths,
+    String changelistId,
+  ) => backend.moveChangelistPaths(repositoryId, paths, changelistId);
+
+  @override
+  Future<GitShelfSnapshot> getShelves(RepositoryId repositoryId) =>
+      backend.getShelves(repositoryId);
+
+  @override
+  Future<GitShelfActionResult> shelve(
+    RepositoryId repositoryId, {
+    String name = '',
+    Iterable<String> paths = const <String>[],
+  }) => backend.shelve(repositoryId, name: name, paths: paths);
+
+  @override
+  Future<GitShelfActionResult> unshelve(
+    RepositoryId repositoryId,
+    String shelfId,
+  ) => backend.unshelve(repositoryId, shelfId);
+
+  @override
+  Future<GitShelfActionResult> restoreShelf(
+    RepositoryId repositoryId,
+    String shelfId,
+  ) => backend.restoreShelf(repositoryId, shelfId);
+
+  @override
+  Future<GitShelfActionResult> deleteShelf(
+    RepositoryId repositoryId,
+    String shelfId,
+  ) => backend.deleteShelf(repositoryId, shelfId);
+
+  @override
+  Future<GitShelfActionResult> importShelf(
+    RepositoryId repositoryId,
+    String name,
+    List<int> patchBytes, {
+    String? baseRevision,
+  }) => backend.importShelf(
+    repositoryId,
+    name,
+    patchBytes,
+    baseRevision: baseRevision,
+  );
+
+  @override
+  Future<List<int>> exportShelf(RepositoryId repositoryId, String shelfId) =>
+      backend.exportShelf(repositoryId, shelfId);
 
   @override
   Future<GitStatusSnapshot> stage(RepositoryId repositoryId, String path) =>

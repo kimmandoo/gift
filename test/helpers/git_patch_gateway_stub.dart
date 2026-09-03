@@ -10,6 +10,7 @@ import 'package:gift/src/backend/executor.dart';
 import 'package:gift/src/backend/remote.dart';
 import 'package:gift/src/backend/status.dart';
 import 'package:gift/src/backend/objects.dart';
+import 'package:gift/src/backend/shelf.dart';
 
 /// Existing feature fakes do not need partial-patch behavior unless a test is
 /// specifically about it. This keeps those focused fakes small as the
@@ -254,6 +255,70 @@ mixin GitPatchGatewayStub {
     RepositoryId repositoryId,
     String path,
   ) => throw UnimplementedError();
+
+  Future<GitChangelistSnapshot> getChangelists(RepositoryId repositoryId) =>
+      throw UnimplementedError();
+
+  Future<GitChangelistSnapshot> createChangelist(
+    RepositoryId repositoryId,
+    String name,
+  ) => throw UnimplementedError();
+
+  Future<GitChangelistSnapshot> renameChangelist(
+    RepositoryId repositoryId,
+    String changelistId,
+    String name,
+  ) => throw UnimplementedError();
+
+  Future<GitChangelistSnapshot> activateChangelist(
+    RepositoryId repositoryId,
+    String changelistId,
+  ) => throw UnimplementedError();
+
+  Future<GitChangelistSnapshot> deleteChangelist(
+    RepositoryId repositoryId,
+    String changelistId,
+  ) => throw UnimplementedError();
+
+  Future<GitChangelistSnapshot> moveChangelistPaths(
+    RepositoryId repositoryId,
+    Iterable<String> paths,
+    String changelistId,
+  ) => throw UnimplementedError();
+
+  Future<GitShelfSnapshot> getShelves(RepositoryId repositoryId) =>
+      throw UnimplementedError();
+
+  Future<GitShelfActionResult> shelve(
+    RepositoryId repositoryId, {
+    String name = '',
+    Iterable<String> paths = const <String>[],
+  }) => throw UnimplementedError();
+
+  Future<GitShelfActionResult> unshelve(
+    RepositoryId repositoryId,
+    String shelfId,
+  ) => throw UnimplementedError();
+
+  Future<GitShelfActionResult> restoreShelf(
+    RepositoryId repositoryId,
+    String shelfId,
+  ) => throw UnimplementedError();
+
+  Future<GitShelfActionResult> deleteShelf(
+    RepositoryId repositoryId,
+    String shelfId,
+  ) => throw UnimplementedError();
+
+  Future<GitShelfActionResult> importShelf(
+    RepositoryId repositoryId,
+    String name,
+    List<int> patchBytes, {
+    String? baseRevision,
+  }) => throw UnimplementedError();
+
+  Future<List<int>> exportShelf(RepositoryId repositoryId, String shelfId) =>
+      throw UnimplementedError();
 
   Future<GitStatusSnapshot> discard(
     RepositoryId repositoryId,

@@ -5,8 +5,8 @@ This file is the handoff record for continuing work across query sessions.
 ## Current checkpoint
 
 - Date: 2026-09-03
-- Active task: Task 24, shelves, changelists, and patch exchange, is active;
-  Task 23 is complete and its comparison scenarios are covered.
+- Active task: Task 25, file history, blame, and revision recovery, is active;
+  Tasks 23 and 24 are complete and their scenarios are covered.
 - Branch: `main`; no new branch or worktree was created.
 - Latest commit before this implementation session: `03b369c
   fix(ui): align diff checkboxes with code lines`.
@@ -15,17 +15,15 @@ This file is the handoff record for continuing work across query sessions.
   content remain in a linear history. The two remaining obsolete branding
   labels in reachable commit messages were also replaced, and the rewrite
   backup ref was removed.
-- Changed files in this session: comparison source/backend contracts and
-  service implementation, comparison and Changes UI, comparison backend/UI
-  fixtures, and Task 23/24 roadmap, architecture, changelog, plan, and task
-  records.
-- Verification so far: focused comparison backend tests and comparison dialog
-  widget tests passed; formatting, analysis, and the full suite remain part of
-  the pre-commit gate. Native Windows compilation is not available in this
-  Linux workspace.
-- Next action: run the complete Task 23 verification, commit and push it,
-  then record and run the first Task 24 RED shelf/changelist contract before
-  introducing its model and gateway methods.
+- Changed files in this session: Task 24 shelf/changelist models, persistence,
+  backend/gateway methods, responsive Shelf dialog and Changes entry point,
+  shelf backend/UI fixtures, and Task 24/25 roadmap, architecture, changelog,
+  plan, and task records.
+- Verification: shelf backend/UI fixtures, `flutter analyze`, the full Flutter
+  suite (`140` tests), formatting, and `git diff --check` passed. Native
+  Windows compilation is not available in this Linux workspace.
+- Next action: commit and push Task 24, then record and run the first Task 25
+  RED file-history/blame contract before introducing its models.
 - First failing signal for Task 23 remains recorded in the plan. This session's
   second RED was the missing `GitComparisonTransferAction` and
   `DartGitBackend.applyComparison` contract. This UI fix first reproduced a

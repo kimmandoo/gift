@@ -574,14 +574,19 @@ ChangesScreen
    Three-way content is loaded independently for base, left, and right and
    reports conflicts without exposing an unreviewed transfer action.
 
-## Shelves and changelists (Task 24, active)
+## Shelves and changelists (Task 24, complete)
 
-Task 24 will keep app-local changelist and shelf metadata separate from Git's
-stash refs. Shelf patches will be bounded, repository-relative, and tied to a
-base revision/content fingerprint so repeated unshelving and apply conflicts
-remain reviewable. The UI will state that unversioned files are not included
-in tracked-path shelves unless explicitly handled by a later repository
-workflow.
+Task 24 keeps app-local changelist and shelf metadata separate from Git's stash
+refs. Shelf patches are bounded, repository-relative, and tied to a base
+revision so repeated unshelving and apply conflicts remain reviewable. The UI
+states that unversioned files are not included in tracked-path shelves.
+
+## File history and blame (Task 25, active)
+
+Task 25 will reuse the immutable history snapshot boundary for file and
+directory queries, while blame annotations remain line-scoped metadata. Both
+surfaces will keep path, revision, and line-range inputs validated and bounded
+so a stale selection cannot silently inspect a different file.
 
 ## Remaining Git workflow coverage (Tasks 23–35)
 

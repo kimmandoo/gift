@@ -331,3 +331,18 @@ system Git 2.35+.
 1. Activated Task 24 after recording the changelist, shelf, repeated
    unshelving, external patch, base-loss, and no-stash-mutation scenarios in
    the behavior ledger.
+2. Added a RED fixture for persistence, reusable shelf application, repeated
+   unshelving conflict, and the missing shelf contract before implementation.
+3. Implemented app-local JSON shelf storage below Git metadata, validated
+   changelist mutations, selected tracked-path shelving, reusable
+   unshelving/restoration, base-loss reporting, and bounded patch exchange.
+4. Added compact shelf/changelist controls and explicit stash/unversioned
+   semantics, then passed shelf backend/UI fixtures, analysis, formatting, and
+   the full Flutter suite (`140` tests). Task 24 is complete.
+
+## Active vertical: File history, blame, and revision recovery (Task 25)
+
+1. Activated Task 25 after recording file, directory, line-range, rename,
+   binary, and stale-selection scenarios in the behavior ledger.
+2. Add the first RED file-history/blame contract test before introducing the
+   bounded history and annotation models.

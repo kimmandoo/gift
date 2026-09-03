@@ -7,8 +7,8 @@
 ## Progress
 
 - **Total Tasks:** 38
-- **Completed:** 23 / 38
-- **Current Active Task:** `24 — Shelves, changelists, and patch exchange (active)`
+- **Completed:** 24 / 38
+- **Current Active Task:** `25 — File history, blame, and revision recovery (active)`
 
 | # | Scope | Dart backend deliverables | Flutter deliverables | Status |
 |---|---|---|---|:---:|
@@ -35,8 +35,8 @@
 | **21** | Conflict resolution | Conflict-state parser and safe resolution mutations | Three-pane merge workflow | ✅ |
 | **22** | Git objects | Stash, tags, remotes, and upstream management | Focused object-management dialogs | ✅ |
 | **23** | Diff & compare | Revision, branch, folder, clipboard, and 3-way comparisons | Diff workbench and apply/revert actions | ✅ |
-| **24** | Shelf & changelists | Shelf storage, changelist grouping, and patch import/export | Shelf/changelist workflow | 🔄 |
-| **25** | File history & blame | File/directory/selection history and blame metadata | History and annotation views | ⬜ |
+| **24** | Shelf & changelists | Shelf storage, changelist grouping, and patch import/export | Shelf/changelist workflow | ✅ |
+| **25** | File history & blame | File/directory/selection history and blame metadata | History and annotation views | 🔄 |
 | **26** | Undo & reset | Revert commit, undo commit, and safe reset modes | Destructive history controls | ⬜ |
 | **27** | Interactive rebase | Reorder, reword, edit, squash, fixup, drop, and recovery | Rebase plan and conflict flow | ⬜ |
 | **28** | Remote branches & update | Remote branch checkout, compare, update, and tracking | Incoming/update information | ⬜ |
@@ -323,19 +323,33 @@ object-management contract existed.
 - [x] Covered external text, three-way conflict content, repeated file
   navigation, and non-historical transfer rejection with fixtures.
 
-Task 23 is complete. Task 24 is active. Its first RED will be recorded in the
-implementation plan before the shelf/changelist contract is introduced.
+Task 23 is complete. Task 24 was activated after its behavior scenarios and
+first RED were recorded in the implementation plan.
 
-### 🔄 Task 24: Shelves, changelists, and patch exchange (active)
+### ✅ Task 24: Shelves, changelists, and patch exchange
 
-- [ ] Create, rename, activate, delete, and persist app-local changelists
+- [x] Create, rename, activate, delete, and persist app-local changelists
   without mutating Git stash entries.
-- [ ] Shelve selected tracked paths, inspect reusable patches, unshelve more
+- [x] Shelve selected tracked paths, inspect reusable patches, unshelve more
   than once, and report conflicts or missing base revisions explicitly.
-- [ ] Import and export bounded external patches with repository-relative path
+- [x] Import and export bounded external patches with repository-relative path
   validation and safe deletion/recovery states.
-- [ ] Add responsive shelf/changelist controls with explicit untracked-file
+- [x] Add responsive shelf/changelist controls with explicit untracked-file
   limitations and shelf-versus-stash explanations.
+
+Task 24 is complete. Task 25 is active. Its first RED will be recorded in the
+implementation plan before the file-history/blame contract is introduced.
+
+### 🔄 Task 25: File history, blame, and revision recovery (active)
+
+- [ ] Add bounded file, directory, and selected-line history queries with
+  follow/rename metadata and revision navigation.
+- [ ] Add blame annotations with author/date/OID, movement options, and
+  copyable line ownership without allowing arbitrary Git arguments.
+- [ ] Add responsive history and annotation views with empty, binary, missing,
+  and stale selection states.
+- [ ] Cover root/rename/delete/binary files, path and line ranges, bounded
+  output, and refresh races in backend and widget fixtures.
 
 ## Post-MVP backlog
 
