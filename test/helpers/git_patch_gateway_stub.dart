@@ -15,6 +15,7 @@ import 'package:gift/src/backend/objects.dart';
 import 'package:gift/src/backend/shelf.dart';
 import 'package:gift/src/backend/file_history.dart';
 import 'package:gift/src/backend/reset.dart';
+import 'package:gift/src/backend/push.dart';
 
 /// Existing feature fakes do not need partial-patch behavior unless a test is
 /// specifically about it. This keeps those focused fakes small as the
@@ -100,6 +101,17 @@ mixin GitPatchGatewayStub {
   Future<GitRemoteOperationResult> push(
     RepositoryId repositoryId,
     String remote, {
+    GitCancellationToken? cancellationToken,
+  }) => throw UnimplementedError();
+
+  Future<GitPushPreview> previewPush(
+    RepositoryId repositoryId,
+    GitPushRequest request,
+  ) => throw UnimplementedError();
+
+  Future<GitPushResult> executePush(
+    RepositoryId repositoryId,
+    GitPushRequest request, {
     GitCancellationToken? cancellationToken,
   }) => throw UnimplementedError();
 

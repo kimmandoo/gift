@@ -10,6 +10,7 @@ import 'package:gift/src/backend/git_gateway.dart';
 import 'package:gift/src/backend/remote.dart';
 import 'package:gift/src/backend/remote_branch.dart';
 import 'package:gift/src/backend/reset.dart';
+import 'package:gift/src/backend/push.dart';
 import 'package:gift/src/backend/status.dart';
 import 'package:gift/src/features/repository/changes_controller.dart';
 import 'package:gift/src/features/repository/branch_dialog.dart';
@@ -22,6 +23,7 @@ import 'package:gift/src/features/repository/comparison_dialog.dart';
 import 'package:gift/src/features/repository/shelf_dialog.dart';
 import 'package:gift/src/features/repository/file_history_dialog.dart';
 import 'package:gift/src/features/repository/reset_dialog.dart';
+import 'package:gift/src/features/repository/push_dialog.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter/services.dart';
@@ -1364,7 +1366,7 @@ class _ChangesScreenBodyState extends ConsumerState<_ChangesScreenBody> {
   }
 
   Future<void> _openRemotes(BuildContext context) async {
-    final result = await showDialog<GitRemoteOperationResult>(
+    final result = await showDialog<Object?>(
       context: context,
       builder: (_) =>
           RemoteDialog(gateway: widget.gateway, repository: widget.repository),
@@ -1372,34 +1374,29 @@ class _ChangesScreenBodyState extends ConsumerState<_ChangesScreenBody> {
     if (!context.mounted || result == null) return;
     await _activeController.refresh();
     if (!context.mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          '${_remoteOperationLabel(result.operation)} ${result.remote} complete.',
-        ),
-      ),
-    );
+    final message = switch (result) {
+      GitRemoteOperationResult() =>
+        '${_remoteOperationLabel(result.operation)} ${result.remote} complete.',
+      GitPushResult() => result.summary,
+      _ => null,
+    };
+    if (message != null) {
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(message)));
+    }
   }
 
   Future<void> _openPush(BuildContext context) async {
-    final result = await showDialog<GitRemoteOperationResult>(
+    final result = await showDialog<GitPushResult>(
       context: context,
-      builder: (_) => RemoteDialog(
-        gateway: widget.gateway,
-        repository: widget.repository,
-        initialOperation: GitRemoteOperation.push,
-      ),
+      builder: (_) =>
+          PushDialog(gateway: widget.gateway, repository: widget.repository),
     );
     if (!context.mounted || result == null) return;
     await _activeController.refresh();
     if (!context.mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          '${_remoteOperationLabel(result.operation)} ${result.remote} complete.',
-        ),
-      ),
-    );
+    ScaffoldMessenger.of(context)
+        .showSnackBar(SnackBar(content: Text(result.summary)));
   }
 
   Future<void> _openUpdateProject(BuildContext context) async {

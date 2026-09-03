@@ -7,8 +7,8 @@
 ## Progress
 
 - **Total Tasks:** 38
-- **Completed:** 28 / 38
-- **Current Active Task:** None — Task 28 and its follow-up are complete.
+- **Completed:** 29 / 38
+- **Current Active Task:** None — Task 29 is complete; Task 30 is next.
 
 | # | Scope | Dart backend deliverables | Flutter deliverables | Status |
 |---|---|---|---|:---:|
@@ -40,7 +40,7 @@
 | **26** | Undo & reset | Revert commit, undo commit, and safe reset modes | Destructive history controls | ✅ |
 | **27** | Interactive rebase | Reorder, reword, edit, squash, fixup, drop, and recovery | Rebase plan and conflict flow | ✅ |
 | **28** | Remote branches & update | Remote branch checkout, compare, update, and tracking | Incoming/update information | ✅ |
-| **29** | Push safety | Push review, force-with-lease, tags, and protected branches | Push review and rejection recovery | ⬜ |
+| **29** | Push safety | Push review, force-with-lease, tags, and protected branches | Push review and rejection recovery | ✅ |
 | **30** | Worktrees | Worktree list, create, open, remove, lock, and prune | Worktree manager | ⬜ |
 | **31** | Ignore & metadata | `.gitignore`, `.git/info/exclude`, ignored files, and attributes | Ignore/metadata actions | ⬜ |
 | **32** | Submodules & nested roots | Submodule status, sync, update, and nested repository mapping | Nested-root workspace | ⬜ |
@@ -424,7 +424,7 @@ The repository UI polish follow-up is complete. Task 27 is now active.
 - [x] Support reviewed reword subjects and preserve recovery evidence after
   successful, paused, aborted, and cancelled execution.
 
-Task 27 is complete. Task 28 is active.
+Task 27 is complete. Task 28 and its follow-up are complete; Task 29 is next.
 
 ### ✅ Task 27 follow-up: interactive UI layout audit
 
@@ -461,8 +461,22 @@ verification. The post-task History diff UX follow-up remains active below.
 - [x] Keep long code lines horizontally scrollable without widening the detail
   pane or making the file row unreachable.
 
-Task 28 and its History diff viewer follow-up are complete. Task 29 remains
-the next pending task.
+Task 28 and its History diff viewer follow-up are complete. Task 29 is complete.
+
+### ✅ Task 29: Push safety
+
+- [x] Record push review, target selection, all-tags scope, lease freshness,
+  protected branches, rejection classification, and merge/rebase recovery
+  scenarios in the behavior ledger.
+- [x] Add the first RED real-bare-remote push review fixture.
+- [x] Implement a typed push preview and execution contract with explicit
+  target refspecs, expected remote tips, and force-with-lease validation.
+- [x] Add responsive Push review UI and rejection recovery actions.
+- [x] Verify new branches, selected commit targets, tags, non-fast-forward,
+  lease failure, protected branches, and merge/rebase recovery.
+
+Task 29 is complete. The review-first push backend and responsive dialog passed
+the full Flutter verification suite. Task 30 is next.
 
 ## Post-MVP backlog
 

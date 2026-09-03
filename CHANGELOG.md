@@ -2,6 +2,10 @@
 
 ## 2026-09-03
 
+- feat(task29): added review-bound branch, selected-commit, explicit-tag, and
+  force-with-lease push flows with protected-branch and rejection recovery.
+- fix(remote): routed remote push actions through the review dialog instead of
+  running an opaque push directly.
 - fix(history): kept long diff text aligned with its fixed viewport background
   while horizontal scrolling.
 - feat(remote): exposed a direct Push entry point from the Changes workspace.

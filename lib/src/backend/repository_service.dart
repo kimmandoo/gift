@@ -21,6 +21,7 @@ import 'status.dart';
 import 'objects.dart';
 import 'shelf.dart';
 import 'file_history.dart';
+import 'push.dart';
 
 /// In-memory registry for repository roots and session-local opaque IDs.
 ///
@@ -38,6 +39,7 @@ class AppState {
   final Map<String, _InteractiveRebasePreviewRecord>
   _interactiveRebasePreviews = {};
   final Map<String, _UpdatePreviewRecord> _updatePreviews = {};
+  final Map<String, _PushPreviewRecord> _pushPreviews = {};
   final Map<String, _RemoteBranchDeletePreviewRecord>
   _remoteBranchDeletePreviews = {};
   final DateTime Function() _now;
@@ -46,6 +48,7 @@ class AppState {
   static const branchPreviewLifetime = Duration(minutes: 2);
   static const objectPreviewLifetime = Duration(minutes: 2);
   static const rollbackPreviewLifetime = Duration(minutes: 2);
+  static const pushPreviewLifetime = Duration(minutes: 2);
 
   RepositoryOpened register(String root) {
     final repositoryId = RepositoryId(value: _newRepositoryId());
@@ -422,6 +425,49 @@ class AppState {
 
   void consumeUpdatePreview(String token) => _updatePreviews.remove(token);
 
+  GitBranchPreviewToken issuePushPreview({
+    required RepositoryId repositoryId,
+    required GitPushRequest request,
+    required String fingerprint,
+  }) {
+    _pushPreviews.removeWhere((_, record) => !record.expiresAt.isAfter(_now()));
+    final token = _newOpaqueToken();
+    final expiresAt = _now().add(pushPreviewLifetime);
+    _pushPreviews[token] = _PushPreviewRecord(
+      repositoryId: repositoryId,
+      requestKey: request.queryKey,
+      fingerprint: fingerprint,
+      expiresAt: expiresAt,
+    );
+    return GitBranchPreviewToken(value: token, expiresAt: expiresAt);
+  }
+
+  void validatePushPreview({
+    required RepositoryId repositoryId,
+    required GitPushRequest request,
+    required String fingerprint,
+  }) {
+    final token = request.confirmationToken;
+    final record = token == null ? null : _pushPreviews[token];
+    final matches =
+        record != null &&
+        record.repositoryId == repositoryId &&
+        record.requestKey == request.queryKey &&
+        record.fingerprint == fingerprint &&
+        record.expiresAt.isAfter(_now());
+    if (!matches) {
+      if (token != null) _pushPreviews.remove(token);
+      throw const GitError(
+        category: GitErrorCategory.stalePushPreview,
+        userMessage: 'This push review is stale or expired. Review it again.',
+        diagnostic: 'push preview token or repository/remote fingerprint was missing, changed, or expired',
+        retryable: true,
+      );
+    }
+  }
+
+  void consumePushPreview(String token) => _pushPreviews.remove(token);
+
   String _updateRequestKey(GitUpdateProjectRequest request) =>
       '${request.strategy.name}:${request.localChanges.name}';
 
@@ -584,6 +630,20 @@ class _RemoteBranchDeletePreviewRecord {
   final RepositoryId repositoryId;
   final String branchName;
   final String oid;
+  final String fingerprint;
+  final DateTime expiresAt;
+}
+
+class _PushPreviewRecord {
+  const _PushPreviewRecord({
+    required this.repositoryId,
+    required this.requestKey,
+    required this.fingerprint,
+    required this.expiresAt,
+  });
+
+  final RepositoryId repositoryId;
+  final String requestKey;
   final String fingerprint;
   final DateTime expiresAt;
 }
@@ -4429,6 +4489,427 @@ class RepositoryService {
     cancellationToken: cancellationToken,
   );
 
+  /// Captures the exact branch/tag scope and remote tip that the user is
+  /// about to publish. The returned token is intentionally tied to both the
+  /// request and the live remote OID, so a review cannot silently turn into a
+  /// different push after another clone updates the remote.
+  Future<GitPushPreview> previewPush(
+    RepositoryId repositoryId,
+    GitPushRequest request,
+  ) async {
+    final inspection = await _buildPushPreview(repositoryId, request);
+    if (inspection.blockingMessage != null) return inspection;
+    final token = state.issuePushPreview(
+      repositoryId: repositoryId,
+      request: request,
+      fingerprint: inspection.fingerprint,
+    );
+    return _copyPushPreview(
+      inspection,
+      request: request.copyWith(confirmationToken: token.value),
+      token: token.value,
+      expiresAt: token.expiresAt,
+    );
+  }
+
+  /// Publishes only the refspecs shown by [previewPush]. A remote rejection is
+  /// returned as a typed result so the UI can offer retry or merge/rebase
+  /// recovery without guessing from process text.
+  Future<GitPushResult> executePush(
+    RepositoryId repositoryId,
+    GitPushRequest request, {
+    GitCancellationToken? cancellationToken,
+  }) => state.runMutation(repositoryId, () async {
+    final inspection = await _buildPushPreview(repositoryId, request);
+    if (inspection.blockingMessage != null) {
+      throw _pushBlockingError(inspection);
+    }
+    state.validatePushPreview(
+      repositoryId: repositoryId,
+      request: request,
+      fingerprint: inspection.fingerprint,
+    );
+    if (request.confirmationToken case final token?) {
+      state.consumePushPreview(token);
+    }
+    final handle = await state.lookup(repositoryId);
+    final args = _pushArgs(inspection);
+    late final ProcessOutput output;
+    try {
+      output = await _runner.run(
+        GitInvocation(
+          program: gitPath,
+          args: args,
+          cwd: handle.root,
+          kind: GitOperationKind.remote,
+          outputPolicy: const OutputPolicy.capture(maxBytes: 2 * 1024 * 1024),
+          cancellationToken: cancellationToken,
+        ),
+      );
+    } on GitError catch (error, stackTrace) {
+      final mapped = _mapPushError(error, request.forceWithLease);
+      final afterFailure = await getStatus(repositoryId);
+      if (mapped.category == GitErrorCategory.cancelled) {
+        return GitPushResult(
+          repositoryId: repositoryId,
+          request: request,
+          state: GitPushState.cancelled,
+          status: afterFailure,
+          summary: 'The push was cancelled.',
+          failureCategory: mapped.category,
+          recoveryActions: const [GitPushRecoveryAction.retry],
+        );
+      }
+      if (_isRecoverablePushFailure(mapped.category)) {
+        return GitPushResult(
+          repositoryId: repositoryId,
+          request: request,
+          state: GitPushState.rejected,
+          status: afterFailure,
+          summary: mapped.userMessage,
+          failureCategory: mapped.category,
+          recoveryActions: _pushRecoveryActions(mapped.category),
+        );
+      }
+      Error.throwWithStackTrace(mapped, stackTrace);
+    }
+    final after = await getStatus(repositoryId);
+    return GitPushResult(
+      repositoryId: repositoryId,
+      request: request,
+      state: GitPushState.completed,
+      status: after,
+      summary: _objectSummary(output, 'The selected changes were pushed.'),
+    );
+  });
+
+  Future<GitPushPreview> _buildPushPreview(
+    RepositoryId repositoryId,
+    GitPushRequest request,
+  ) async {
+    _validateRemoteName(request.remote);
+    final handle = await state.lookup(repositoryId);
+    final remotes = await getRemotes(repositoryId);
+    if (_findRemote(remotes, request.remote) == null) {
+      throw _objectNotFound('remote', request.remote);
+    }
+    final status = await getStatus(repositoryId);
+    final currentBranch = status.branch.head ?? '';
+    final localHead = status.branch.oid ?? '';
+    final tags = <GitTag>[];
+    var targetBranch = request.branch ?? currentBranch;
+    var targetOid = localHead;
+    String? remoteHead;
+    var blockingMessage = <String>[];
+
+    if (request.target == GitPushTarget.allTags) {
+      if (request.forceWithLease) {
+        blockingMessage.add(
+          'Force-with-lease is available for branches, not tags.',
+        );
+      }
+      final tagSnapshot = await getTags(repositoryId);
+      final selectedNames = request.tagNames.isEmpty
+          ? tagSnapshot.tags.map((tag) => tag.name).toList(growable: false)
+          : request.tagNames;
+      final seen = <String>{};
+      for (final name in selectedNames) {
+        _validateTagName(name);
+        if (!seen.add(name)) {
+          blockingMessage.add('A tag was selected more than once: $name.');
+          continue;
+        }
+        final tag = tagSnapshot.tags
+            .where((candidate) => candidate.name == name)
+            .firstOrNull;
+        if (tag == null) {
+          blockingMessage.add(
+            'The selected tag is no longer available: $name.',
+          );
+        } else {
+          tags.add(tag);
+        }
+      }
+      if (tags.isEmpty && blockingMessage.isEmpty) {
+        blockingMessage.add('Select at least one tag to publish.');
+      }
+      final fingerprint = hashGitObjectBytes(
+        utf8.encode(
+          [
+            status.contentHash,
+            request.queryKey,
+            tagSnapshot.fingerprint,
+            ...tags.map((tag) => '${tag.name}:${_tagIdentity(tag)}'),
+          ].join('|'),
+        ),
+      );
+      return GitPushPreview(
+        repositoryId: repositoryId,
+        request: request,
+        remote: request.remote,
+        currentBranch: currentBranch,
+        targetBranch: targetBranch,
+        localHead: localHead,
+        targetOid: targetOid,
+        remoteHead: null,
+        commits: const [],
+        changedPaths: const [],
+        tags: tags,
+        dirtyWorktree: !status.isClean,
+        protectedBranch: false,
+        requiresConfirmation: false,
+        fingerprint: fingerprint,
+        blockingMessage: blockingMessage.isEmpty
+            ? null
+            : blockingMessage.join(' '),
+      );
+    }
+
+    if (currentBranch.isEmpty || status.branch.isDetached) {
+      blockingMessage.add('Switch to a local branch before pushing.');
+    } else {
+      _validateBranchName(targetBranch);
+    }
+    if (localHead.isEmpty) {
+      blockingMessage.add('Create a commit before pushing.');
+    }
+    if (request.target == GitPushTarget.selectedCommit) {
+      final selected = request.commitOid;
+      if (selected == null || selected.isEmpty) {
+        blockingMessage.add('Choose a commit to push up to.');
+      } else {
+        _validateCommitOid(selected);
+        final resolved = await _tryResolve(handle, selected);
+        if (resolved == null) {
+          blockingMessage.add('The selected commit is no longer available.');
+        } else {
+          targetOid = resolved;
+          if (localHead.isNotEmpty &&
+              !await _isAncestor(handle, targetOid, localHead)) {
+            blockingMessage.add(
+              'Choose a commit reachable from the current branch.',
+            );
+          }
+        }
+      }
+    }
+    if (targetBranch.isNotEmpty &&
+        currentBranch.isNotEmpty &&
+        !status.branch.isDetached) {
+      remoteHead = await _tryReadRemoteBranchOid(
+        handle,
+        request.remote,
+        targetBranch,
+      );
+    }
+    final protectedBranch = _isProtectedPushBranch(targetBranch);
+    if (request.forceWithLease) {
+      if (protectedBranch) {
+        blockingMessage.add(
+          'Force push is blocked for protected branch $targetBranch.',
+        );
+      } else if (remoteHead == null) {
+        blockingMessage.add(
+          'Force-with-lease needs an existing remote branch tip to review.',
+        );
+      } else if (request.expectedRemoteOid == null ||
+          request.expectedRemoteOid!.isEmpty) {
+        blockingMessage.add(
+          'Refresh the remote tip before confirming force-with-lease.',
+        );
+      } else if (request.expectedRemoteOid != remoteHead) {
+        blockingMessage.add(
+          'The remote branch moved. Refresh the push review before continuing.',
+        );
+      } else {
+        _validateCommitOid(request.expectedRemoteOid!);
+      }
+    }
+    final remoteHeadAvailableLocally =
+        remoteHead == null ||
+        await _tryResolve(handle, '$remoteHead^{commit}') != null;
+    final canCompareCommits = remoteHeadAvailableLocally;
+    final commits = remoteHead == targetOid || !canCompareCommits
+        ? const <GitPushCommit>[]
+        : await _readPushCommits(handle, remoteHead, targetOid);
+    final changedPaths = remoteHead == targetOid || !canCompareCommits
+        ? const <String>[]
+        : await _readPushChangedPaths(handle, remoteHead, targetOid);
+    final fingerprint = hashGitObjectBytes(
+      utf8.encode(
+        [
+          status.contentHash,
+          request.queryKey,
+          currentBranch,
+          targetBranch,
+          localHead,
+          targetOid,
+          remoteHead ?? '<missing>',
+          ...commits.map((commit) => commit.oid),
+          ...changedPaths,
+        ].join('|'),
+      ),
+    );
+    return GitPushPreview(
+      repositoryId: repositoryId,
+      request: request,
+      remote: request.remote,
+      currentBranch: currentBranch,
+      targetBranch: targetBranch,
+      localHead: localHead,
+      targetOid: targetOid,
+      remoteHead: remoteHead,
+      commits: commits,
+      changedPaths: changedPaths,
+      tags: tags,
+      dirtyWorktree: !status.isClean,
+      protectedBranch: protectedBranch,
+      requiresConfirmation: request.forceWithLease,
+      fingerprint: fingerprint,
+      blockingMessage: blockingMessage.isEmpty
+          ? null
+          : blockingMessage.join(' '),
+    );
+  }
+
+  GitPushPreview _copyPushPreview(
+    GitPushPreview preview, {
+    required GitPushRequest request,
+    String? token,
+    DateTime? expiresAt,
+  }) => GitPushPreview(
+    repositoryId: preview.repositoryId,
+    request: request,
+    remote: preview.remote,
+    currentBranch: preview.currentBranch,
+    targetBranch: preview.targetBranch,
+    localHead: preview.localHead,
+    targetOid: preview.targetOid,
+    remoteHead: preview.remoteHead,
+    commits: preview.commits,
+    changedPaths: preview.changedPaths,
+    tags: preview.tags,
+    dirtyWorktree: preview.dirtyWorktree,
+    protectedBranch: preview.protectedBranch,
+    requiresConfirmation: preview.requiresConfirmation,
+    fingerprint: preview.fingerprint,
+    blockingMessage: preview.blockingMessage,
+    token: token,
+    expiresAt: expiresAt,
+  );
+
+  Future<List<GitPushCommit>> _readPushCommits(
+    RepositoryHandle handle,
+    String? remoteHead,
+    String targetOid,
+  ) async {
+    if (targetOid.isEmpty) return const [];
+    final output = await _runner.run(
+      GitInvocation(
+        program: gitPath,
+        args: [
+          'log',
+          '--reverse',
+          '--max-count=100',
+          '--no-decorate',
+          '--format=%H%x00%s%x00%x1e',
+          if (remoteHead == null) targetOid else '$remoteHead..$targetOid',
+        ],
+        cwd: handle.root,
+        kind: GitOperationKind.read,
+        outputPolicy: const OutputPolicy.capture(maxBytes: 2 * 1024 * 1024),
+      ),
+    );
+    final commits = <GitPushCommit>[];
+    final text = utf8.decode(output.stdout, allowMalformed: true);
+    for (final record in text.split('\u001e')) {
+      final fields = record.split('\u0000');
+      if (fields.length < 2 || fields[0].isEmpty) continue;
+      if (!_isCommitOid(fields[0])) continue;
+      commits.add(GitPushCommit(oid: fields[0], subject: fields[1]));
+    }
+    return commits;
+  }
+
+  Future<List<String>> _readPushChangedPaths(
+    RepositoryHandle handle,
+    String? remoteHead,
+    String targetOid,
+  ) async {
+    if (targetOid.isEmpty) return const [];
+    if (remoteHead != null) {
+      return _readChangedPaths(handle, remoteHead, targetOid);
+    }
+    final output = await _runner.run(
+      GitInvocation(
+        program: gitPath,
+        args: [
+          'diff-tree',
+          '--root',
+          '--no-commit-id',
+          '--name-only',
+          '-z',
+          '-r',
+          targetOid,
+        ],
+        cwd: handle.root,
+        kind: GitOperationKind.read,
+        outputPolicy: const OutputPolicy.capture(maxBytes: 512 * 1024),
+      ),
+    );
+    return _splitNulBytes(output.stdout)
+        .where((bytes) => bytes.isNotEmpty)
+        .map((bytes) => utf8.decode(bytes, allowMalformed: true))
+        .toSet()
+        .toList(growable: false);
+  }
+
+  Future<String?> _tryReadRemoteBranchOid(
+    RepositoryHandle handle,
+    String remote,
+    String branch,
+  ) async {
+    try {
+      return await _readRemoteBranchOid(handle, remote, branch);
+    } on GitError catch (error) {
+      if (error.category == GitErrorCategory.remoteBranchNotFound) return null;
+      rethrow;
+    }
+  }
+
+  List<String> _pushArgs(GitPushPreview preview) {
+    if (preview.request.target == GitPushTarget.allTags) {
+      return [
+        'push',
+        preview.remote,
+        ...preview.tags.map(
+          (tag) => 'refs/tags/${tag.name}:refs/tags/${tag.name}',
+        ),
+      ];
+    }
+    return [
+      'push',
+      if (preview.request.forceWithLease)
+        '--force-with-lease=refs/heads/${preview.targetBranch}:${preview.remoteHead}',
+      preview.remote,
+      '${preview.targetOid}:refs/heads/${preview.targetBranch}',
+    ];
+  }
+
+  GitError _pushBlockingError(GitPushPreview preview) {
+    final category = preview.protectedBranch && preview.request.forceWithLease
+        ? GitErrorCategory.protectedBranch
+        : preview.currentBranch.isEmpty
+        ? GitErrorCategory.detachedHead
+        : GitErrorCategory.stalePushPreview;
+    return GitError(
+      category: category,
+      userMessage: preview.blockingMessage ?? 'Review the push again.',
+      diagnostic: 'push preview was blocked before mutation',
+      retryable: category == GitErrorCategory.stalePushPreview,
+    );
+  }
+
   Future<GitStashSnapshot> getStashes(RepositoryId repositoryId) async {
     final handle = await state.lookup(repositoryId);
     return _readStashSnapshot(repositoryId, handle);
@@ -8163,6 +8644,12 @@ class RepositoryService {
 
   bool _isCommitOid(String value) =>
       RegExp(r'^[0-9a-fA-F]{40,64}$').hasMatch(value);
+
+  bool _isProtectedPushBranch(String branch) =>
+      branch == 'main' ||
+      branch == 'master' ||
+      branch == 'develop' ||
+      branch.startsWith('release/');
 }
 
 class _HistorySnapshot {
@@ -8684,6 +9171,16 @@ GitError _mapRemoteError(GitError error) {
   if (error.category != GitErrorCategory.processFailed) return error;
   final diagnostic = error.diagnostic;
   if (RegExp(
+    r'(stale info|stale remote|force-with-lease)',
+    caseSensitive: false,
+  ).hasMatch(diagnostic)) {
+    return error.copyWith(
+      category: GitErrorCategory.staleRemoteRef,
+      userMessage: 'The remote branch moved before the push was accepted.',
+      retryable: true,
+    );
+  }
+  if (RegExp(
     r'(authentication failed|could not read username|permission denied|access denied)',
     caseSensitive: false,
   ).hasMatch(diagnostic)) {
@@ -8726,6 +9223,37 @@ GitError _mapRemoteError(GitError error) {
   }
   return error;
 }
+
+GitError _mapPushError(GitError error, bool forceWithLease) {
+  final mapped = _mapRemoteError(error);
+  if (forceWithLease && mapped.category == GitErrorCategory.nonFastForward) {
+    return mapped.copyWith(
+      category: GitErrorCategory.staleRemoteRef,
+      userMessage: 'The remote branch moved before the lease was accepted.',
+      retryable: true,
+    );
+  }
+  return mapped;
+}
+
+bool _isRecoverablePushFailure(GitErrorCategory category) => switch (category) {
+  GitErrorCategory.nonFastForward ||
+  GitErrorCategory.staleRemoteRef ||
+  GitErrorCategory.authenticationRequired ||
+  GitErrorCategory.permissionDenied ||
+  GitErrorCategory.networkUnavailable => true,
+  _ => false,
+};
+
+List<GitPushRecoveryAction> _pushRecoveryActions(GitErrorCategory category) =>
+    switch (category) {
+      GitErrorCategory.nonFastForward => const [
+        GitPushRecoveryAction.merge,
+        GitPushRecoveryAction.rebase,
+      ],
+      GitErrorCategory.staleRemoteRef => const [GitPushRecoveryAction.retry],
+      _ => const [GitPushRecoveryAction.retry],
+    };
 
 GitError _mapUpdateError(GitError error) {
   if (error.category != GitErrorCategory.processFailed) return error;

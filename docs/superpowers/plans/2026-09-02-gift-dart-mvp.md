@@ -488,3 +488,21 @@ system Git 2.35+.
 6. Exposed a direct Push entry point from Changes while retaining the existing
    cancellable remote operation flow. The full Flutter suite passed; Task 29's
    remaining push-review work is still next.
+
+## Completed vertical: Push safety (Task 29)
+
+1. Activated Task 29 after recording push review, explicit target refspec,
+   all-tags, expected remote tip, protected branch, rejection, and
+   merge/rebase recovery scenarios in the behavior ledger.
+2. Added the first RED test: `/home/mgkim/.local/flutter/bin/flutter test
+   test/backend/push_test.dart` failed because the typed push preview contract
+   did not exist yet.
+3. Implemented the preview and execution contract, then added real bare-remote
+   fixtures for normal publication, new target branches, selected commit
+   targets, tags, stale remote tips, force-with-lease, protected branches, and
+   rejection recovery.
+4. Added the responsive Push review dialog, explicit force confirmation, and
+   merge/rebase recovery entry points; routed Remote operations push actions
+   through the same review flow.
+5. Passed formatting, analysis, the focused push/UI tests, and the full suite
+   of 187 Flutter tests. Task 30 is next.

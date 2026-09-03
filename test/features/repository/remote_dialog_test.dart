@@ -10,6 +10,7 @@ import 'package:gift/src/backend/executor.dart';
 import 'package:gift/src/backend/git_gateway.dart';
 import 'package:gift/src/backend/history.dart';
 import 'package:gift/src/backend/remote.dart';
+import 'package:gift/src/backend/push.dart';
 import 'package:gift/src/backend/status.dart';
 import 'package:gift/src/features/repository/remote_dialog.dart';
 import 'package:flutter/material.dart';
@@ -104,7 +105,8 @@ void main() {
     expect(find.byKey(const ValueKey('push:origin')), findsOneWidget);
     await tester.tap(find.byKey(const ValueKey('push:origin')));
     await tester.pumpAndSettle();
-    expect(gateway.pushCalls, 1);
+    expect(find.byKey(const Key('push-dialog')), findsOneWidget);
+    expect(gateway.pushCalls, 0);
   });
 }
 
@@ -143,8 +145,15 @@ class FakeRemoteGateway with GitPatchGatewayStub implements GitGateway {
       throw UnimplementedError();
 
   @override
-  Future<GitStatusSnapshot> getStatus(RepositoryId repositoryId) =>
-      throw UnimplementedError();
+  Future<GitStatusSnapshot> getStatus(RepositoryId repositoryId) async =>
+      GitStatusSnapshot(
+        repositoryId: repositoryId,
+        root: repository.root,
+        branch: GitBranchStatus(head: 'main', oid: 'a' * 40),
+        changes: const [],
+        contentHash: 'clean',
+        generation: 1,
+      );
 
   @override
   Future<GitHistoryPage> getHistory(
@@ -152,7 +161,13 @@ class FakeRemoteGateway with GitPatchGatewayStub implements GitGateway {
     int limit = 50,
     int offset = 0,
     GitHistoryQuery? query,
-  }) => throw UnimplementedError();
+  }) async => GitHistoryPage(
+    repositoryId: repositoryId,
+    commits: const [],
+    offset: 0,
+    limit: limit,
+    hasMore: false,
+  );
 
   @override
   Future<List<GitBranch>> getBranches(RepositoryId repositoryId) =>
@@ -222,6 +237,43 @@ class FakeRemoteGateway with GitPatchGatewayStub implements GitGateway {
       summary: 'pushed',
     );
   }
+
+  @override
+  Future<GitPushPreview> previewPush(
+    RepositoryId repositoryId,
+    GitPushRequest request,
+  ) async => GitPushPreview(
+    repositoryId: repositoryId,
+    request: request,
+    remote: request.remote,
+    currentBranch: 'main',
+    targetBranch: 'main',
+    localHead: 'a' * 40,
+    targetOid: 'a' * 40,
+    remoteHead: 'b' * 40,
+    commits: const [],
+    changedPaths: const [],
+    tags: const [],
+    dirtyWorktree: false,
+    protectedBranch: false,
+    requiresConfirmation: false,
+    fingerprint: 'push',
+    token: 'token',
+    expiresAt: DateTime.now().add(const Duration(minutes: 1)),
+  );
+
+  @override
+  Future<GitPushResult> executePush(
+    RepositoryId repositoryId,
+    GitPushRequest request, {
+    GitCancellationToken? cancellationToken,
+  }) async => GitPushResult(
+    repositoryId: repositoryId,
+    request: request,
+    state: GitPushState.completed,
+    status: await getStatus(repositoryId),
+    summary: 'pushed',
+  );
 
   @override
   Future<DiscardPreview> createDiscardPreview(

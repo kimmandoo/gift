@@ -5,12 +5,12 @@ This file is the handoff record for continuing work across query sessions.
 ## Current checkpoint
 
 - Date: 2026-09-03
-- Active task: None. Task 28, its History diff viewer follow-up, and compact UI
-  hardening are complete; Task 29 is the next pending task.
+- Active task: None. Task 29 Push safety is complete; Task 30 Worktrees is
+  next.
 - Branch: `main`; no new branch or worktree was created.
-- Latest completed implementation commit: this session's
-  `feat(remote): expose push action and fix diff rendering` commit; use
-  `git log -1` for its exact hash.
+- Latest completed implementation commit before this task: `f72fc74`; the
+  Task 29 changes are included in the commit created at the end of this
+  session.
 - Completed Task 28 after recording REMOTE-BRANCH-01/02 and UPDATE-01/02,
   adding the first RED fixture, and proving the real-Git implementation GREEN.
 - Added immutable remote ref snapshots with grouped remotes, local tracking,
@@ -29,22 +29,30 @@ This file is the handoff record for continuing work across query sessions.
   use one scroll surface, and constrained/ellipsized Advanced revision and
   rollback preview controls.
 - Kept the diff background in a fixed viewport layer while long code scrolls,
-  and exposed a direct Push entry point from the Changes workspace. The
-  existing cancellable remote push backend remains the execution path; the
-  review/force-with-lease work is still Task 29.
-- Changed files in this session: `CHANGELOG.md`, `TASKS.md`,
-  `docs/WORK_CHECKPOINT.md`,
-  `docs/superpowers/plans/2026-09-02-gift-dart-mvp.md`,
-  `lib/src/features/repository/{history_screen,file_history_dialog,
-  remote_dialog,reset_dialog,changes_screen}.dart`, and
-  `test/features/repository/{history_screen,file_history_dialog,
-  remote_dialog,reset_dialog}_test.dart`.
-- Verification: focused History/remote/File History/Advanced revision tests
-  passed; `dart format --output=none --set-exit-if-changed lib test`,
-  `flutter analyze`, `flutter test` with `181` tests, and `git diff --check`
-  passed. Native Windows compilation is not available in this Linux workspace.
-- Next action: Task 29 remains pending; start it only after activating its
-  behavior-ledger scenarios and first RED test.
+  and exposed a direct Push entry point from the Changes workspace. Task 29
+  then activated the behavior-ledger PUSH-02/03/04 scenarios.
+- First Task 29 RED test: `/home/mgkim/.local/flutter/bin/flutter test
+  test/backend/push_test.dart` failed before implementation because
+  `push.dart`, `DartGitBackend.previewPush`, and `GitPushRequest` did not yet
+  exist.
+- Task 29 implementation now includes typed branch/selected-commit/tag push
+  requests, OID-bound review tokens, explicit refspecs, force-with-lease,
+  protected-branch blocking, stale review detection, rejection classification,
+  and merge/rebase recovery actions. Changes and Remote operations both open
+  the review dialog.
+- Changed files this session: `CHANGELOG.md`, `TASKS.md`,
+  `docs/WORK_CHECKPOINT.md`, `docs/research/jetbrains-git-mvp-behavior.md`,
+  `docs/superpowers/plans/2026-09-02-gift-dart-mvp.md`, backend push contracts
+  and adapters, `lib/src/backend/repository_service.dart`,
+  `lib/src/features/repository/{changes_screen,remote_dialog,push_dialog}.dart`,
+  and the push/remote tests and gateway stub.
+- Verification so far: all real-Git push fixtures passed, including new target
+  branch, selected commit, named tags, stale review, non-fast-forward,
+  protected branch, and non-protected force-with-lease; Push dialog and
+  existing Changes/Remote widget tests passed; `flutter analyze` passed.
+- Task 29 is complete. The full Flutter suite passed with 187 tests, and the
+  next session should activate Task 30 only after recording its worktree
+  scenarios and first RED fixture.
 - Earlier Task 23 and Windows incremental-build diagnostics remain recorded in
   the plan and prior checkpoints.
 - Blockers: none.

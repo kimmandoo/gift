@@ -47,6 +47,7 @@ enum GitErrorCategory {
   staleRemoteRef,
   remoteBranchNotFound,
   staleUpdatePreview,
+  stalePushPreview,
   updateNotAllowed,
   staleConflict,
   conflictResolutionNotAllowed,

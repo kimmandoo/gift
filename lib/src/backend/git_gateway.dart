@@ -15,6 +15,7 @@ import 'objects.dart';
 import 'shelf.dart';
 import 'file_history.dart';
 import 'reset.dart';
+import 'push.dart';
 
 /// The small API that Flutter features depend on.
 ///
@@ -161,6 +162,17 @@ abstract interface class GitGateway {
   Future<GitRemoteOperationResult> push(
     RepositoryId repositoryId,
     String remote, {
+    GitCancellationToken? cancellationToken,
+  });
+
+  Future<GitPushPreview> previewPush(
+    RepositoryId repositoryId,
+    GitPushRequest request,
+  );
+
+  Future<GitPushResult> executePush(
+    RepositoryId repositoryId,
+    GitPushRequest request, {
     GitCancellationToken? cancellationToken,
   });
 

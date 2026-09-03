@@ -3,6 +3,8 @@ import 'package:gift/src/backend/error.dart';
 import 'package:gift/src/backend/executor.dart';
 import 'package:gift/src/backend/git_gateway.dart';
 import 'package:gift/src/backend/remote.dart';
+import 'package:gift/src/backend/push.dart';
+import 'package:gift/src/features/repository/push_dialog.dart';
 import 'package:flutter/material.dart';
 
 /// Shows remotes and keeps one cancellable synchronization operation visible.
@@ -146,8 +148,8 @@ class _RemoteDialogState extends State<RemoteDialog> {
                       key: ValueKey('push:${remote.name}'),
                       onPressed: disabled
                           ? null
-                          : () => _run(remote.name, GitRemoteOperation.push),
-                      child: const Text('Push'),
+                          : () => _openPushReview(context, remote.name),
+                      child: const Text('Review push'),
                     ),
                   ],
                 ),
@@ -157,6 +159,19 @@ class _RemoteDialogState extends State<RemoteDialog> {
         );
       },
     );
+  }
+
+  Future<void> _openPushReview(BuildContext context, String remote) async {
+    final result = await showDialog<GitPushResult>(
+      context: context,
+      builder: (_) => PushDialog(
+        gateway: widget.gateway,
+        repository: widget.repository,
+        initialRemote: remote,
+      ),
+    );
+    if (!context.mounted || result == null) return;
+    Navigator.of(context).pop(result);
   }
 
   Future<void> _loadRemotes() async {
@@ -199,10 +214,8 @@ class _RemoteDialogState extends State<RemoteDialog> {
           remote,
           cancellationToken: token,
         ),
-        GitRemoteOperation.push => await widget.gateway.push(
-          widget.repository.repositoryId,
-          remote,
-          cancellationToken: token,
+        GitRemoteOperation.push => throw StateError(
+          'Push must be opened through the review dialog.',
         ),
       };
       if (!mounted) return;

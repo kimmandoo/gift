@@ -17,6 +17,7 @@ import 'objects.dart';
 import 'shelf.dart';
 import 'file_history.dart';
 import 'reset.dart';
+import 'push.dart';
 
 /// Adapts the UI-facing [GitGateway] contract to the Dart backend facade.
 ///
@@ -251,6 +252,23 @@ class DartGitGateway implements GitGateway, DiscardPreviewCancellationGateway {
     GitCancellationToken? cancellationToken,
   }) =>
       backend.push(repositoryId, remote, cancellationToken: cancellationToken);
+
+  @override
+  Future<GitPushPreview> previewPush(
+    RepositoryId repositoryId,
+    GitPushRequest request,
+  ) => backend.previewPush(repositoryId, request);
+
+  @override
+  Future<GitPushResult> executePush(
+    RepositoryId repositoryId,
+    GitPushRequest request, {
+    GitCancellationToken? cancellationToken,
+  }) => backend.executePush(
+    repositoryId,
+    request,
+    cancellationToken: cancellationToken,
+  );
 
   @override
   Future<GitStashSnapshot> getStashes(RepositoryId repositoryId) =>

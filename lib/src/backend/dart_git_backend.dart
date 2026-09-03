@@ -17,6 +17,7 @@ import 'objects.dart';
 import 'shelf.dart';
 import 'file_history.dart';
 import 'reset.dart';
+import 'push.dart';
 
 /// Application-facing entry point for backend operations.
 ///
@@ -408,6 +409,31 @@ class DartGitBackend {
       state: _state,
       runner: _runner,
     ).push(repositoryId, remote, cancellationToken: cancellationToken);
+  }
+
+  Future<GitPushPreview> previewPush(
+    RepositoryId repositoryId,
+    GitPushRequest request,
+  ) async {
+    final installation = await getGitInstallation();
+    return RepositoryService(
+      gitPath: installation.executablePath,
+      state: _state,
+      runner: _runner,
+    ).previewPush(repositoryId, request);
+  }
+
+  Future<GitPushResult> executePush(
+    RepositoryId repositoryId,
+    GitPushRequest request, {
+    GitCancellationToken? cancellationToken,
+  }) async {
+    final installation = await getGitInstallation();
+    return RepositoryService(
+      gitPath: installation.executablePath,
+      state: _state,
+      runner: _runner,
+    ).executePush(repositoryId, request, cancellationToken: cancellationToken);
   }
 
   Future<GitStashSnapshot> getStashes(RepositoryId repositoryId) async {
