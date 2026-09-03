@@ -7,8 +7,8 @@
 ## Progress
 
 - **Total Tasks:** 38
-- **Completed:** 29 / 38
-- **Current Active Task:** None — Task 29 is complete; Task 30 is next.
+- **Completed:** 30 / 38
+- **Current Active Task:** None. Task 30 — Worktrees is complete; Task 31 is next.
 
 | # | Scope | Dart backend deliverables | Flutter deliverables | Status |
 |---|---|---|---|:---:|
@@ -41,7 +41,7 @@
 | **27** | Interactive rebase | Reorder, reword, edit, squash, fixup, drop, and recovery | Rebase plan and conflict flow | ✅ |
 | **28** | Remote branches & update | Remote branch checkout, compare, update, and tracking | Incoming/update information | ✅ |
 | **29** | Push safety | Push review, force-with-lease, tags, and protected branches | Push review and rejection recovery | ✅ |
-| **30** | Worktrees | Worktree list, create, open, remove, lock, and prune | Worktree manager | ⬜ |
+| **30** | Worktrees | Worktree list, create, open, remove, lock, and prune | Worktree manager | ✅ |
 | **31** | Ignore & metadata | `.gitignore`, `.git/info/exclude`, ignored files, and attributes | Ignore/metadata actions | ⬜ |
 | **32** | Submodules & nested roots | Submodule status, sync, update, and nested repository mapping | Nested-root workspace | ⬜ |
 | **33** | Recovery diagnostics | Reflog browsing, recovery refs, and Git operation console | Recovery and command diagnostics | ⬜ |
@@ -476,7 +476,23 @@ Task 28 and its History diff viewer follow-up are complete. Task 29 is complete.
   lease failure, protected branches, and merge/rebase recovery.
 
 Task 29 is complete. The review-first push backend and responsive dialog passed
-the full Flutter verification suite. Task 30 is next.
+the full Flutter verification suite. Task 30 is complete; Task 31 is next.
+
+### ✅ Task 30: Git worktrees
+
+- [x] Record linked worktree listing, add/open, branch occupancy, dirty/remove,
+  lock/unlock, missing-path prune, current/main protection, and cross-root
+  isolation scenarios in the behavior ledger.
+- [x] Add the first RED real-Git worktree fixture.
+- [x] Implement typed worktree snapshots and safe add/open/remove/lock/unlock/
+  prune operations.
+- [x] Add a responsive Worktree manager and keep opened roots isolated in the
+  workspace.
+- [x] Verify occupied branches, dirty and locked worktrees, deleted paths,
+  prune recovery, and cross-worktree status isolation.
+
+Task 30 is complete. The backend worktree fixtures and responsive manager
+passed focused and full Flutter verification. Task 31 is next.
 
 ## Post-MVP backlog
 

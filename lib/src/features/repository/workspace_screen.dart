@@ -101,6 +101,9 @@ class _WorkspaceScreenState extends State<WorkspaceScreen> {
         repository: repository,
         controller: tab.changesController,
         historyController: tab.historyController,
+        onOpenRepository: (opened) async {
+          await widget.controller.openPath(opened.root);
+        },
         autoInitialize: widget.autoInitialize,
       );
     }

@@ -24,6 +24,7 @@ import 'package:gift/src/features/repository/shelf_dialog.dart';
 import 'package:gift/src/features/repository/file_history_dialog.dart';
 import 'package:gift/src/features/repository/reset_dialog.dart';
 import 'package:gift/src/features/repository/push_dialog.dart';
+import 'package:gift/src/features/repository/worktree_dialog.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter/services.dart';
@@ -41,6 +42,7 @@ class ChangesScreen extends StatelessWidget {
     this.controller,
     this.historyController,
     this.onBack,
+    this.onOpenRepository,
     this.autoInitialize = true,
   });
 
@@ -49,6 +51,7 @@ class ChangesScreen extends StatelessWidget {
   final ChangesController? controller;
   final HistoryController? historyController;
   final VoidCallback? onBack;
+  final Future<void> Function(RepositoryOpened repository)? onOpenRepository;
   final bool autoInitialize;
 
   @override
@@ -62,6 +65,7 @@ class ChangesScreen extends StatelessWidget {
         controller: controller,
         historyController: historyController,
         onBack: onBack,
+        onOpenRepository: onOpenRepository,
         autoInitialize: autoInitialize,
       ),
     );
@@ -75,6 +79,7 @@ class _ChangesScreenBody extends ConsumerStatefulWidget {
     this.controller,
     this.historyController,
     this.onBack,
+    this.onOpenRepository,
     required this.autoInitialize,
   });
 
@@ -83,6 +88,7 @@ class _ChangesScreenBody extends ConsumerStatefulWidget {
   final ChangesController? controller;
   final HistoryController? historyController;
   final VoidCallback? onBack;
+  final Future<void> Function(RepositoryOpened repository)? onOpenRepository;
   final bool autoInitialize;
 
   @override
@@ -207,6 +213,9 @@ class _ChangesScreenBodyState extends ConsumerState<_ChangesScreenBody> {
                   case _ChangesMenuAction.historyRollback:
                     unawaited(_openHistoryRollback(context));
                     break;
+                  case _ChangesMenuAction.worktrees:
+                    unawaited(_openWorktrees(context));
+                    break;
                   case _ChangesMenuAction.refresh:
                     unawaited(controller.refresh());
                     break;
@@ -256,6 +265,10 @@ class _ChangesScreenBodyState extends ConsumerState<_ChangesScreenBody> {
                 const PopupMenuItem(
                   value: _ChangesMenuAction.historyRollback,
                   child: Text('Undo, reset, or revert'),
+                ),
+                const PopupMenuItem(
+                  value: _ChangesMenuAction.worktrees,
+                  child: Text('Worktrees'),
                 ),
                 PopupMenuItem(
                   value: _ChangesMenuAction.refresh,
@@ -330,6 +343,12 @@ class _ChangesScreenBodyState extends ConsumerState<_ChangesScreenBody> {
               tooltip: 'Undo, reset, or revert history',
               onPressed: () => unawaited(_openHistoryRollback(context)),
               icon: const Icon(Icons.history_toggle_off),
+            ),
+            IconButton(
+              key: const Key('open-worktrees'),
+              tooltip: 'Manage worktrees',
+              onPressed: () => unawaited(_openWorktrees(context)),
+              icon: const Icon(Icons.account_tree_outlined),
             ),
             IconButton(
               tooltip: 'Refresh changes',
@@ -1482,6 +1501,24 @@ class _ChangesScreenBodyState extends ConsumerState<_ChangesScreenBody> {
         .showSnackBar(SnackBar(content: Text(result.summary)));
   }
 
+  Future<void> _openWorktrees(BuildContext context) async {
+    final opened = await showDialog<RepositoryOpened>(
+      context: context,
+      builder: (_) => WorktreeDialog(
+        gateway: widget.gateway,
+        repository: widget.repository,
+      ),
+    );
+    if (!context.mounted || opened == null) return;
+    final onOpenRepository = widget.onOpenRepository;
+    if (onOpenRepository != null) {
+      await onOpenRepository(opened);
+      return;
+    }
+    ScaffoldMessenger.of(context)
+        .showSnackBar(SnackBar(content: Text('Opened ${opened.root}.')));
+  }
+
   Widget _scopeSelector(
     BuildContext context,
     GitChange selected,
@@ -1790,5 +1827,6 @@ enum _ChangesMenuAction {
   shelves,
   fileHistory,
   historyRollback,
+  worktrees,
   refresh,
 }

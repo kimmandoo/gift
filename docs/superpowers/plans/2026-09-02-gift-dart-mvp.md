@@ -506,3 +506,24 @@ system Git 2.35+.
    through the same review flow.
 5. Passed formatting, analysis, the focused push/UI tests, and the full suite
    of 187 Flutter tests. Task 30 is next.
+
+## Completed vertical: Git worktrees (Task 30)
+
+1. Activated Task 30 after recording linked worktree listing, add/open,
+   occupied branches, dirty removal, lock state, missing-path prune,
+   current/main protection, and cross-worktree isolation scenarios.
+2. First RED test: `/home/mgkim/.local/flutter/bin/flutter test
+   test/backend/worktree_test.dart` failed because the typed worktree contract
+   had not been added yet.
+3. Implemented NUL-delimited porcelain parsing, isolated add/open behavior,
+   dirty/current/main/locked safety checks, expiring action previews, and
+   stale-record pruning.
+4. Added the responsive Worktree manager with compact add-form disclosure,
+   state chips, dirty-removal confirmation, lock reason entry, and prune/open
+   controls. Opening a linked root routes through WorkspaceController so it
+   becomes an isolated repository tab.
+5. Added real-Git fixtures for branch occupancy, cross-worktree status
+   isolation, dirty confirmation, lock/unlock, current/main protection, and
+   missing-path prune, plus compact scaled-text widget coverage. Focused tests,
+   analysis, formatting, and the full Flutter suite passed. Task 30 is
+   complete; Task 31 is next.

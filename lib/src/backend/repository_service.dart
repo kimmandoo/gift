@@ -22,6 +22,7 @@ import 'objects.dart';
 import 'shelf.dart';
 import 'file_history.dart';
 import 'push.dart';
+import 'worktree.dart';
 
 /// In-memory registry for repository roots and session-local opaque IDs.
 ///
@@ -40,6 +41,7 @@ class AppState {
   _interactiveRebasePreviews = {};
   final Map<String, _UpdatePreviewRecord> _updatePreviews = {};
   final Map<String, _PushPreviewRecord> _pushPreviews = {};
+  final Map<String, _WorktreePreviewRecord> _worktreePreviews = {};
   final Map<String, _RemoteBranchDeletePreviewRecord>
   _remoteBranchDeletePreviews = {};
   final DateTime Function() _now;
@@ -49,6 +51,7 @@ class AppState {
   static const objectPreviewLifetime = Duration(minutes: 2);
   static const rollbackPreviewLifetime = Duration(minutes: 2);
   static const pushPreviewLifetime = Duration(minutes: 2);
+  static const worktreePreviewLifetime = Duration(minutes: 2);
 
   RepositoryOpened register(String root) {
     final repositoryId = RepositoryId(value: _newRepositoryId());
@@ -468,6 +471,52 @@ class AppState {
 
   void consumePushPreview(String token) => _pushPreviews.remove(token);
 
+  GitBranchPreviewToken issueWorktreePreview({
+    required RepositoryId repositoryId,
+    required GitWorktreeActionRequest request,
+    required String fingerprint,
+  }) {
+    _worktreePreviews.removeWhere(
+      (_, record) => !record.expiresAt.isAfter(_now()),
+    );
+    final token = _newOpaqueToken();
+    final expiresAt = _now().add(worktreePreviewLifetime);
+    _worktreePreviews[token] = _WorktreePreviewRecord(
+      repositoryId: repositoryId,
+      requestKey: request.queryKey,
+      fingerprint: fingerprint,
+      expiresAt: expiresAt,
+    );
+    return GitBranchPreviewToken(value: token, expiresAt: expiresAt);
+  }
+
+  void validateWorktreePreview({
+    required RepositoryId repositoryId,
+    required GitWorktreeActionRequest request,
+    required String fingerprint,
+  }) {
+    final token = request.confirmationToken;
+    final record = token == null ? null : _worktreePreviews[token];
+    final matches =
+        record != null &&
+        record.repositoryId == repositoryId &&
+        record.requestKey == request.queryKey &&
+        record.fingerprint == fingerprint &&
+        record.expiresAt.isAfter(_now());
+    if (!matches) {
+      if (token != null) _worktreePreviews.remove(token);
+      throw const GitError(
+        category: GitErrorCategory.staleWorktreePreview,
+        userMessage:
+            'This worktree action is stale or expired. Review it again.',
+        diagnostic: 'worktree action token or repository snapshot was missing, changed, or expired',
+        retryable: true,
+      );
+    }
+  }
+
+  void consumeWorktreePreview(String token) => _worktreePreviews.remove(token);
+
   String _updateRequestKey(GitUpdateProjectRequest request) =>
       '${request.strategy.name}:${request.localChanges.name}';
 
@@ -636,6 +685,20 @@ class _RemoteBranchDeletePreviewRecord {
 
 class _PushPreviewRecord {
   const _PushPreviewRecord({
+    required this.repositoryId,
+    required this.requestKey,
+    required this.fingerprint,
+    required this.expiresAt,
+  });
+
+  final RepositoryId repositoryId;
+  final String requestKey;
+  final String fingerprint;
+  final DateTime expiresAt;
+}
+
+class _WorktreePreviewRecord {
+  const _WorktreePreviewRecord({
     required this.repositoryId,
     required this.requestKey,
     required this.fingerprint,
@@ -4909,6 +4972,516 @@ class RepositoryService {
       retryable: category == GitErrorCategory.stalePushPreview,
     );
   }
+
+  Future<GitWorktreeSnapshot> getWorktrees(RepositoryId repositoryId) async {
+    final handle = await state.lookup(repositoryId);
+    final output = await _runner.run(
+      GitInvocation(
+        program: gitPath,
+        args: const ['worktree', 'list', '--porcelain', '-z'],
+        cwd: handle.root,
+        kind: GitOperationKind.read,
+        outputPolicy: const OutputPolicy.capture(maxBytes: 2 * 1024 * 1024),
+      ),
+    );
+    late final List<GitWorktree> parsed;
+    try {
+      parsed = parseGitWorktrees(output.stdout);
+    } on FormatException catch (error, stackTrace) {
+      Error.throwWithStackTrace(
+        GitError(
+          category: GitErrorCategory.parseFailure,
+          userMessage: 'Git returned an unreadable worktree list.',
+          diagnostic: error.message,
+          retryable: false,
+        ),
+        stackTrace,
+      );
+    }
+    final enriched = <GitWorktree>[];
+    for (var index = 0; index < parsed.length; index++) {
+      final worktree = parsed[index];
+      var dirty = false;
+      var dirtyPaths = const <String>[];
+      if (!worktree.isPrunable && Directory(worktree.path).existsSync()) {
+        try {
+          final status = await _readWorktreeStatus(worktree.path);
+          dirty = status.changes.isNotEmpty;
+          dirtyPaths = {
+            for (final change in status.changes) ...[
+              change.path,
+              ?change.originalPath,
+            ],
+          }.toList(growable: false);
+        } on GitError {
+          // A worktree can disappear between `worktree list` and status. Git
+          // will mark it prunable on the next list, so keep this snapshot
+          // usable and let the action preflight refresh it.
+        }
+      }
+      enriched.add(
+        worktree.copyWith(
+          isMain: index == 0,
+          isCurrent: _sameWorktreePath(worktree.path, handle.root),
+          isDirty: dirty,
+          dirtyPaths: dirtyPaths,
+        ),
+      );
+    }
+    final fingerprint = hashGitObjectBytes(
+      utf8.encode(
+        [
+          ...enriched.map(
+            (worktree) => [
+              worktree.path,
+              worktree.head ?? '',
+              worktree.branch ?? '',
+              worktree.isLocked,
+              worktree.lockReason ?? '',
+              worktree.isPrunable,
+              worktree.pruneReason ?? '',
+              worktree.isDirty,
+              ...worktree.dirtyPaths,
+            ].join('|'),
+          ),
+        ].join('\n'),
+      ),
+    );
+    return GitWorktreeSnapshot(
+      repositoryId: repositoryId,
+      worktrees: enriched,
+      fingerprint: fingerprint,
+    );
+  }
+
+  Future<GitWorktreeCreateResult> createWorktree(
+    RepositoryId repositoryId,
+    GitWorktreeCreateRequest request,
+  ) => state.runMutation(repositoryId, () async {
+    final handle = await state.lookup(repositoryId);
+    _validateWorktreeCreateRequest(request);
+    final path = await _resolveWorktreePath(handle.root, request.path);
+    final before = await getWorktrees(repositoryId);
+    if (before.worktrees.any(
+      (worktree) => _sameWorktreePath(worktree.path, path),
+    )) {
+      throw worktreeInputError(
+        'That path is already registered as a worktree.',
+        'worktree add targeted an existing registered path',
+      );
+    }
+    if (request.branch case final branch?) {
+      _validateBranchName(branch);
+      if (request.createBranch &&
+          await _tryResolve(handle, 'refs/heads/$branch') != null) {
+        throw const GitError(
+          category: GitErrorCategory.worktreeBranchOccupied,
+          userMessage:
+              'That branch already exists. Choose another branch name.',
+          diagnostic: 'worktree create requested a branch that already exists',
+          retryable: false,
+        );
+      }
+    }
+    if (request.startPoint case final startPoint?) {
+      _validateRevisionInput(startPoint);
+    }
+    final args = <String>['worktree', 'add'];
+    if (request.detach) {
+      args.add('--detach');
+    } else if (request.createBranch) {
+      args.addAll(['-b', request.branch!]);
+    }
+    args.add(path);
+    if (request.detach) {
+      args.add(request.startPoint ?? 'HEAD');
+    } else if (request.createBranch) {
+      if (request.startPoint case final startPoint?) args.add(startPoint);
+    } else {
+      args.add(request.branch!);
+    }
+    late final ProcessOutput output;
+    try {
+      output = await _runner.run(
+        GitInvocation(
+          program: gitPath,
+          args: args,
+          cwd: handle.root,
+          kind: GitOperationKind.mutation,
+          outputPolicy: const OutputPolicy.capture(maxBytes: 512 * 1024),
+        ),
+      );
+    } on GitError catch (error, stackTrace) {
+      Error.throwWithStackTrace(_mapWorktreeError(error), stackTrace);
+    }
+    final snapshot = await getWorktrees(repositoryId);
+    final created = snapshot.worktrees
+        .where((worktree) => _sameWorktreePath(worktree.path, path))
+        .firstOrNull;
+    if (created == null) {
+      throw const GitError(
+        category: GitErrorCategory.parseFailure,
+        userMessage: 'The new worktree was not found after creation.',
+        diagnostic: 'git worktree add completed without a matching list entry',
+        retryable: true,
+      );
+    }
+    return GitWorktreeCreateResult(
+      repositoryId: repositoryId,
+      request: request,
+      worktree: created,
+      snapshot: snapshot,
+      summary: _objectSummary(output, 'The worktree was created.'),
+    );
+  });
+
+  Future<RepositoryOpened> openWorktree(
+    RepositoryId repositoryId,
+    GitWorktree worktree,
+  ) async {
+    final handle = await state.lookup(repositoryId);
+    final snapshot = await getWorktrees(repositoryId);
+    final current = snapshot.worktrees
+        .where(
+          (candidate) =>
+              _sameWorktreePath(candidate.path, worktree.path) &&
+              candidate.head == worktree.head &&
+              candidate.branch == worktree.branch,
+        )
+        .firstOrNull;
+    if (current == null || current.isPrunable) {
+      throw const GitError(
+        category: GitErrorCategory.staleWorktreePreview,
+        userMessage:
+            'The worktree changed or is no longer available. Refresh it.',
+        diagnostic:
+            'worktree path, branch, or HEAD no longer matched the listed entry',
+        retryable: true,
+      );
+    }
+    if (!Directory(current.path).existsSync()) {
+      throw const GitError(
+        category: GitErrorCategory.repositoryMoved,
+        userMessage: 'The worktree folder is no longer available.',
+        diagnostic: 'worktree path disappeared before it could be opened',
+        retryable: true,
+      );
+    }
+    if (_sameWorktreePath(handle.root, current.path)) {
+      return state.register(handle.root);
+    }
+    return openRepository(current.path);
+  }
+
+  Future<GitWorktreeActionPreview> previewWorktreeAction(
+    RepositoryId repositoryId,
+    GitWorktreeActionRequest request,
+  ) async {
+    final inspection = await _buildWorktreeActionPreview(repositoryId, request);
+    if (inspection.blockingMessage != null) return inspection;
+    final token = state.issueWorktreePreview(
+      repositoryId: repositoryId,
+      request: request,
+      fingerprint: inspection.fingerprint,
+    );
+    return _copyWorktreeActionPreview(
+      inspection,
+      request: _copyWorktreeRequest(request, token.value),
+      token: token.value,
+      expiresAt: token.expiresAt,
+    );
+  }
+
+  Future<GitWorktreeActionResult> executeWorktreeAction(
+    RepositoryId repositoryId,
+    GitWorktreeActionRequest request, {
+    GitCancellationToken? cancellationToken,
+  }) => state.runMutation(repositoryId, () async {
+    final inspection = await _buildWorktreeActionPreview(repositoryId, request);
+    if (inspection.blockingMessage != null) {
+      throw _worktreeBlockingError(inspection);
+    }
+    state.validateWorktreePreview(
+      repositoryId: repositoryId,
+      request: request,
+      fingerprint: inspection.fingerprint,
+    );
+    if (request.confirmationToken case final token?) {
+      state.consumeWorktreePreview(token);
+    }
+    final handle = await state.lookup(repositoryId);
+    final args = switch (request.action) {
+      GitWorktreeAction.remove => [
+        'worktree',
+        'remove',
+        if (inspection.worktree.isDirty) '--force',
+        inspection.worktree.path,
+      ],
+      GitWorktreeAction.lock => [
+        'worktree',
+        'lock',
+        if (request.lockReason case final reason? when reason.trim().isNotEmpty)
+          '--reason=$reason',
+        inspection.worktree.path,
+      ],
+      GitWorktreeAction.unlock => [
+        'worktree',
+        'unlock',
+        inspection.worktree.path,
+      ],
+      GitWorktreeAction.prune => const ['worktree', 'prune', '--verbose'],
+    };
+    late final ProcessOutput output;
+    try {
+      output = await _runner.run(
+        GitInvocation(
+          program: gitPath,
+          args: args,
+          cwd: handle.root,
+          kind: GitOperationKind.mutation,
+          outputPolicy: const OutputPolicy.capture(maxBytes: 512 * 1024),
+          cancellationToken: cancellationToken,
+        ),
+      );
+    } on GitError catch (error, stackTrace) {
+      Error.throwWithStackTrace(_mapWorktreeError(error), stackTrace);
+    }
+    final snapshot = await getWorktrees(repositoryId);
+    return GitWorktreeActionResult(
+      repositoryId: repositoryId,
+      request: request,
+      action: request.action,
+      status: await getStatus(repositoryId),
+      snapshot: snapshot,
+      summary: _objectSummary(output, _worktreeActionSummary(request.action)),
+    );
+  });
+
+  Future<GitWorktreeActionPreview> _buildWorktreeActionPreview(
+    RepositoryId repositoryId,
+    GitWorktreeActionRequest request,
+  ) async {
+    if (request.path.trim().isEmpty ||
+        request.path.contains('\u0000') ||
+        request.path.runes.any((rune) => rune < 0x20)) {
+      throw worktreeInputError(
+        'Choose a valid worktree path.',
+        'worktree action path was empty or contained control characters',
+      );
+    }
+    final handle = await state.lookup(repositoryId);
+    final snapshot = await getWorktrees(repositoryId);
+    final normalized = _worktreePathFromInput(handle.root, request.path);
+    final worktree = snapshot.worktrees
+        .where((candidate) => _sameWorktreePath(candidate.path, normalized))
+        .firstOrNull;
+    if (worktree == null) {
+      throw const GitError(
+        category: GitErrorCategory.staleWorktreePreview,
+        userMessage:
+            'That worktree is no longer listed. Refresh the worktrees.',
+        diagnostic:
+            'worktree action targeted a path absent from the current list',
+        retryable: true,
+      );
+    }
+    var blockingMessage = <String>[];
+    switch (request.action) {
+      case GitWorktreeAction.remove:
+        if (worktree.isMain) {
+          blockingMessage.add('The main worktree cannot be removed.');
+        }
+        if (worktree.isCurrent) {
+          blockingMessage.add('The currently open worktree cannot be removed.');
+        }
+        if (worktree.isLocked) {
+          blockingMessage.add('Unlock this worktree before removing it.');
+        }
+        if (worktree.isPrunable) {
+          blockingMessage.add('Use prune for a missing worktree record.');
+        }
+        if (worktree.isDirty && !request.confirmDirty) {
+          blockingMessage.add(
+            'This worktree has local changes. Confirm dirty removal to continue.',
+          );
+        }
+      case GitWorktreeAction.lock:
+        if (worktree.isLocked) {
+          blockingMessage.add('The worktree is already locked.');
+        }
+        if (worktree.isPrunable) {
+          blockingMessage.add('A missing worktree cannot be locked.');
+        }
+      case GitWorktreeAction.unlock:
+        if (!worktree.isLocked) {
+          blockingMessage.add('The worktree is not locked.');
+        }
+        if (worktree.isPrunable) {
+          blockingMessage.add('A missing worktree cannot be unlocked.');
+        }
+      case GitWorktreeAction.prune:
+        if (!worktree.isPrunable) {
+          blockingMessage.add('That worktree has no stale record to prune.');
+        }
+    }
+    final fingerprint = hashGitObjectBytes(
+      utf8.encode(
+        [
+          snapshot.fingerprint,
+          request.queryKey,
+          worktree.path,
+          worktree.head ?? '',
+          worktree.branch ?? '',
+          worktree.isLocked,
+          worktree.isPrunable,
+          worktree.isDirty,
+          ...worktree.dirtyPaths,
+        ].join('|'),
+      ),
+    );
+    return GitWorktreeActionPreview(
+      repositoryId: repositoryId,
+      request: request,
+      worktree: worktree,
+      dirtyPaths: worktree.dirtyPaths,
+      requiresConfirmation:
+          request.action == GitWorktreeAction.remove && worktree.isDirty,
+      fingerprint: fingerprint,
+      blockingMessage: blockingMessage.isEmpty
+          ? null
+          : blockingMessage.join(' '),
+    );
+  }
+
+  GitWorktreeActionPreview _copyWorktreeActionPreview(
+    GitWorktreeActionPreview preview, {
+    required GitWorktreeActionRequest request,
+    required String token,
+    required DateTime expiresAt,
+  }) => GitWorktreeActionPreview(
+    repositoryId: preview.repositoryId,
+    request: request,
+    worktree: preview.worktree,
+    dirtyPaths: preview.dirtyPaths,
+    requiresConfirmation: preview.requiresConfirmation,
+    fingerprint: preview.fingerprint,
+    blockingMessage: preview.blockingMessage,
+    token: token,
+    expiresAt: expiresAt,
+  );
+
+  GitWorktreeActionRequest _copyWorktreeRequest(
+    GitWorktreeActionRequest request,
+    String token,
+  ) => GitWorktreeActionRequest(
+    action: request.action,
+    path: request.path,
+    confirmDirty: request.confirmDirty,
+    lockReason: request.lockReason,
+    confirmationToken: token,
+  );
+
+  Future<ParsedGitStatus> _readWorktreeStatus(String path) async {
+    final output = await _runner.run(
+      GitInvocation(
+        program: gitPath,
+        args: const ['status', '--porcelain=v2', '-z', '--branch'],
+        cwd: path,
+        kind: GitOperationKind.read,
+        outputPolicy: const OutputPolicy.capture(maxBytes: 512 * 1024),
+      ),
+    );
+    try {
+      return parseGitStatus(output.stdout);
+    } on FormatException catch (error, stackTrace) {
+      Error.throwWithStackTrace(
+        GitError(
+          category: GitErrorCategory.parseFailure,
+          userMessage: 'Git returned an unreadable worktree status.',
+          diagnostic: error.message,
+          retryable: true,
+        ),
+        stackTrace,
+      );
+    }
+  }
+
+  Future<String> _resolveWorktreePath(String root, String input) async {
+    final path = _worktreePathFromInput(root, input);
+    final directory = Directory(path);
+    if (directory.existsSync()) return directory.resolveSymbolicLinks();
+    final parent = directory.parent;
+    if (!parent.existsSync()) {
+      throw worktreeInputError(
+        'Create the worktree parent folder first.',
+        'worktree destination parent did not exist',
+      );
+    }
+    final parentPath = await parent.resolveSymbolicLinks();
+    final segments = directory.uri.pathSegments
+        .where((segment) => segment.isNotEmpty)
+        .toList(growable: false);
+    if (segments.isEmpty) {
+      throw worktreeInputError(
+        'Choose a valid worktree destination.',
+        'worktree destination did not contain a final path segment',
+      );
+    }
+    return '$parentPath${Platform.pathSeparator}${segments.last}';
+  }
+
+  void _validateWorktreeCreateRequest(GitWorktreeCreateRequest request) {
+    if (request.path.trim().isEmpty ||
+        request.path.contains('\u0000') ||
+        request.path.runes.any((rune) => rune < 0x20)) {
+      throw worktreeInputError(
+        'Choose a valid worktree destination.',
+        'worktree create path was empty or contained control characters',
+      );
+    }
+    if (request.detach && request.branch != null) {
+      throw worktreeInputError(
+        'Detached worktrees cannot also select a branch.',
+        'worktree create combined detach and branch options',
+      );
+    }
+    if (!request.detach && request.branch == null) {
+      throw worktreeInputError(
+        'Choose a branch or create a detached worktree.',
+        'worktree create omitted both branch and detach mode',
+      );
+    }
+    if (!request.createBranch && request.startPoint != null) {
+      throw worktreeInputError(
+        'An existing branch cannot use a separate start point.',
+        'existing branch worktree request contained a start point',
+      );
+    }
+  }
+
+  GitError _worktreeBlockingError(GitWorktreeActionPreview preview) {
+    final message =
+        preview.blockingMessage ?? 'Review the worktree action again.';
+    final category =
+        message.contains('cannot be removed') || message.contains('Unlock')
+        ? GitErrorCategory.worktreeOperationNotAllowed
+        : message.contains('local changes')
+        ? GitErrorCategory.dirtyWorktree
+        : GitErrorCategory.staleWorktreePreview;
+    return GitError(
+      category: category,
+      userMessage: message,
+      diagnostic: 'worktree action was blocked before mutation',
+      retryable: category == GitErrorCategory.staleWorktreePreview,
+    );
+  }
+
+  String _worktreeActionSummary(GitWorktreeAction action) => switch (action) {
+    GitWorktreeAction.remove => 'The worktree was removed.',
+    GitWorktreeAction.lock => 'The worktree was locked.',
+    GitWorktreeAction.unlock => 'The worktree was unlocked.',
+    GitWorktreeAction.prune => 'Stale worktree records were pruned.',
+  };
 
   Future<GitStashSnapshot> getStashes(RepositoryId repositoryId) async {
     final handle = await state.lookup(repositoryId);
@@ -9234,6 +9807,66 @@ GitError _mapPushError(GitError error, bool forceWithLease) {
     );
   }
   return mapped;
+}
+
+GitError _mapWorktreeError(GitError error) {
+  if (error.category != GitErrorCategory.processFailed) return error;
+  final diagnostic = error.diagnostic;
+  if (RegExp(
+    r'(already exists|already used|is already checked out|branch .* exists)',
+    caseSensitive: false,
+  ).hasMatch(diagnostic)) {
+    return error.copyWith(
+      category: GitErrorCategory.worktreeBranchOccupied,
+      userMessage: 'That branch or worktree is already in use.',
+      retryable: false,
+    );
+  }
+  if (RegExp(
+    r'(dirty|modified|contains modified)',
+    caseSensitive: false,
+  ).hasMatch(diagnostic)) {
+    return error.copyWith(
+      category: GitErrorCategory.dirtyWorktree,
+      userMessage: 'The worktree has local changes that must be confirmed.',
+      retryable: false,
+    );
+  }
+  if (RegExp(
+    r'(locked|lock file)',
+    caseSensitive: false,
+  ).hasMatch(diagnostic)) {
+    return error.copyWith(
+      category: GitErrorCategory.worktreeOperationNotAllowed,
+      userMessage: 'The worktree is locked. Unlock it before removing it.',
+      retryable: false,
+    );
+  }
+  return error;
+}
+
+String _worktreePathFromInput(String root, String input) {
+  final value = input.trim();
+  final absolute =
+      value.startsWith('/') ||
+      value.startsWith('\\') ||
+      RegExp(r'^[A-Za-z]:[\\/]').hasMatch(value);
+  final path = absolute
+      ? value
+      : '$root${Platform.pathSeparator}${value.replaceAll('/', Platform.pathSeparator)}';
+  return Directory(path).absolute.path;
+}
+
+bool _sameWorktreePath(String left, String right) {
+  final normalizedLeft = Directory(left).absolute.path
+      .replaceAll('\\', '/')
+      .replaceAll(RegExp(r'/+$'), '');
+  final normalizedRight = Directory(right).absolute.path
+      .replaceAll('\\', '/')
+      .replaceAll(RegExp(r'/+$'), '');
+  return Platform.isWindows
+      ? normalizedLeft.toLowerCase() == normalizedRight.toLowerCase()
+      : normalizedLeft == normalizedRight;
 }
 
 bool _isRecoverablePushFailure(GitErrorCategory category) => switch (category) {

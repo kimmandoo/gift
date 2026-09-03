@@ -16,6 +16,7 @@ import 'package:gift/src/backend/shelf.dart';
 import 'package:gift/src/backend/file_history.dart';
 import 'package:gift/src/backend/reset.dart';
 import 'package:gift/src/backend/push.dart';
+import 'package:gift/src/backend/worktree.dart';
 
 /// Existing feature fakes do not need partial-patch behavior unless a test is
 /// specifically about it. This keeps those focused fakes small as the
@@ -112,6 +113,30 @@ mixin GitPatchGatewayStub {
   Future<GitPushResult> executePush(
     RepositoryId repositoryId,
     GitPushRequest request, {
+    GitCancellationToken? cancellationToken,
+  }) => throw UnimplementedError();
+
+  Future<GitWorktreeSnapshot> getWorktrees(RepositoryId repositoryId) =>
+      throw UnimplementedError();
+
+  Future<GitWorktreeCreateResult> createWorktree(
+    RepositoryId repositoryId,
+    GitWorktreeCreateRequest request,
+  ) => throw UnimplementedError();
+
+  Future<RepositoryOpened> openWorktree(
+    RepositoryId repositoryId,
+    GitWorktree worktree,
+  ) => throw UnimplementedError();
+
+  Future<GitWorktreeActionPreview> previewWorktreeAction(
+    RepositoryId repositoryId,
+    GitWorktreeActionRequest request,
+  ) => throw UnimplementedError();
+
+  Future<GitWorktreeActionResult> executeWorktreeAction(
+    RepositoryId repositoryId,
+    GitWorktreeActionRequest request, {
     GitCancellationToken? cancellationToken,
   }) => throw UnimplementedError();
 

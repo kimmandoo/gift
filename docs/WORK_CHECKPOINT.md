@@ -5,11 +5,11 @@ This file is the handoff record for continuing work across query sessions.
 ## Current checkpoint
 
 - Date: 2026-09-03
-- Active task: None. Task 29 Push safety is complete; Task 30 Worktrees is
-  next.
+- Active task: None. Task 30 Worktrees is complete; Task 31 Ignore and
+  metadata is next.
 - Branch: `main`; no new branch or worktree was created.
-- Latest completed implementation commit before this task: `f72fc74`; the
-  Task 29 changes are included in the commit created at the end of this
+- Latest completed implementation commit before this task: `9a673cd`; the
+  Task 30 changes are included in the commit created at the end of this
   session.
 - Completed Task 28 after recording REMOTE-BRANCH-01/02 and UPDATE-01/02,
   adding the first RED fixture, and proving the real-Git implementation GREEN.
@@ -40,19 +40,22 @@ This file is the handoff record for continuing work across query sessions.
   protected-branch blocking, stale review detection, rejection classification,
   and merge/rebase recovery actions. Changes and Remote operations both open
   the review dialog.
-- Changed files this session: `CHANGELOG.md`, `TASKS.md`,
-  `docs/WORK_CHECKPOINT.md`, `docs/research/jetbrains-git-mvp-behavior.md`,
-  `docs/superpowers/plans/2026-09-02-gift-dart-mvp.md`, backend push contracts
-  and adapters, `lib/src/backend/repository_service.dart`,
-  `lib/src/features/repository/{changes_screen,remote_dialog,push_dialog}.dart`,
-  and the push/remote tests and gateway stub.
-- Verification so far: all real-Git push fixtures passed, including new target
-  branch, selected commit, named tags, stale review, non-fast-forward,
-  protected branch, and non-protected force-with-lease; Push dialog and
-  existing Changes/Remote widget tests passed; `flutter analyze` passed.
-- Task 29 is complete. The full Flutter suite passed with 187 tests, and the
-  next session should activate Task 30 only after recording its worktree
-  scenarios and first RED fixture.
+- Task 30 implementation includes typed worktree snapshots, NUL-delimited
+  porcelain parsing, isolated add/open operations, dirty/current/main/locked
+  action guards, expiring action previews, and stale-record pruning.
+- The Worktree manager is available from the Changes actions. It provides a
+  compact add form, state/path/HEAD display, lock/unlock/remove/prune actions,
+  dirty-removal confirmation, and opens linked roots through the workspace tab
+  controller.
+- Changed files this session: `TASKS.md`, `CHANGELOG.md`,
+  `docs/research/jetbrains-git-mvp-behavior.md`,
+  `docs/superpowers/plans/2026-09-02-gift-dart-mvp.md`, this checkpoint, the
+  worktree backend contracts/adapters/service, Changes and workspace wiring,
+  the Worktree manager, and backend/widget tests.
+- Verification: focused worktree backend and UI tests passed; the full Flutter
+  suite passed with 192 tests; `flutter analyze` and `git diff --check` passed.
+- Task 30 is complete. The next session should activate Task 31 only after
+  recording its ignore/metadata scenarios and first RED fixture.
 - Earlier Task 23 and Windows incremental-build diagnostics remain recorded in
   the plan and prior checkpoints.
 - Blockers: none.

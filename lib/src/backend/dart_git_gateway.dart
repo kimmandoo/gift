@@ -18,6 +18,7 @@ import 'shelf.dart';
 import 'file_history.dart';
 import 'reset.dart';
 import 'push.dart';
+import 'worktree.dart';
 
 /// Adapts the UI-facing [GitGateway] contract to the Dart backend facade.
 ///
@@ -265,6 +266,39 @@ class DartGitGateway implements GitGateway, DiscardPreviewCancellationGateway {
     GitPushRequest request, {
     GitCancellationToken? cancellationToken,
   }) => backend.executePush(
+    repositoryId,
+    request,
+    cancellationToken: cancellationToken,
+  );
+
+  @override
+  Future<GitWorktreeSnapshot> getWorktrees(RepositoryId repositoryId) =>
+      backend.getWorktrees(repositoryId);
+
+  @override
+  Future<GitWorktreeCreateResult> createWorktree(
+    RepositoryId repositoryId,
+    GitWorktreeCreateRequest request,
+  ) => backend.createWorktree(repositoryId, request);
+
+  @override
+  Future<RepositoryOpened> openWorktree(
+    RepositoryId repositoryId,
+    GitWorktree worktree,
+  ) => backend.openWorktree(repositoryId, worktree);
+
+  @override
+  Future<GitWorktreeActionPreview> previewWorktreeAction(
+    RepositoryId repositoryId,
+    GitWorktreeActionRequest request,
+  ) => backend.previewWorktreeAction(repositoryId, request);
+
+  @override
+  Future<GitWorktreeActionResult> executeWorktreeAction(
+    RepositoryId repositoryId,
+    GitWorktreeActionRequest request, {
+    GitCancellationToken? cancellationToken,
+  }) => backend.executeWorktreeAction(
     repositoryId,
     request,
     cancellationToken: cancellationToken,

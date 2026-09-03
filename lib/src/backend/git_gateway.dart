@@ -16,6 +16,7 @@ import 'shelf.dart';
 import 'file_history.dart';
 import 'reset.dart';
 import 'push.dart';
+import 'worktree.dart';
 
 /// The small API that Flutter features depend on.
 ///
@@ -173,6 +174,29 @@ abstract interface class GitGateway {
   Future<GitPushResult> executePush(
     RepositoryId repositoryId,
     GitPushRequest request, {
+    GitCancellationToken? cancellationToken,
+  });
+
+  Future<GitWorktreeSnapshot> getWorktrees(RepositoryId repositoryId);
+
+  Future<GitWorktreeCreateResult> createWorktree(
+    RepositoryId repositoryId,
+    GitWorktreeCreateRequest request,
+  );
+
+  Future<RepositoryOpened> openWorktree(
+    RepositoryId repositoryId,
+    GitWorktree worktree,
+  );
+
+  Future<GitWorktreeActionPreview> previewWorktreeAction(
+    RepositoryId repositoryId,
+    GitWorktreeActionRequest request,
+  );
+
+  Future<GitWorktreeActionResult> executeWorktreeAction(
+    RepositoryId repositoryId,
+    GitWorktreeActionRequest request, {
     GitCancellationToken? cancellationToken,
   });
 

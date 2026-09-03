@@ -2,6 +2,10 @@
 
 ## 2026-09-03
 
+- feat(task30): added typed worktree listing, isolated creation/opening, and
+  preview-bound remove, lock, unlock, and prune actions.
+- feat(workspace): opened linked worktrees as independent repository tabs and
+  added a responsive Worktree manager with dirty-removal confirmation.
 - feat(task29): added review-bound branch, selected-commit, explicit-tag, and
   force-with-lease push flows with protected-branch and rejection recovery.
 - fix(remote): routed remote push actions through the review dialog instead of

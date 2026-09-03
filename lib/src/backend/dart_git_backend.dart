@@ -18,6 +18,7 @@ import 'shelf.dart';
 import 'file_history.dart';
 import 'reset.dart';
 import 'push.dart';
+import 'worktree.dart';
 
 /// Application-facing entry point for backend operations.
 ///
@@ -434,6 +435,68 @@ class DartGitBackend {
       state: _state,
       runner: _runner,
     ).executePush(repositoryId, request, cancellationToken: cancellationToken);
+  }
+
+  Future<GitWorktreeSnapshot> getWorktrees(RepositoryId repositoryId) async {
+    final installation = await getGitInstallation();
+    return RepositoryService(
+      gitPath: installation.executablePath,
+      state: _state,
+      runner: _runner,
+    ).getWorktrees(repositoryId);
+  }
+
+  Future<GitWorktreeCreateResult> createWorktree(
+    RepositoryId repositoryId,
+    GitWorktreeCreateRequest request,
+  ) async {
+    final installation = await getGitInstallation();
+    return RepositoryService(
+      gitPath: installation.executablePath,
+      state: _state,
+      runner: _runner,
+    ).createWorktree(repositoryId, request);
+  }
+
+  Future<RepositoryOpened> openWorktree(
+    RepositoryId repositoryId,
+    GitWorktree worktree,
+  ) async {
+    final installation = await getGitInstallation();
+    return RepositoryService(
+      gitPath: installation.executablePath,
+      state: _state,
+      runner: _runner,
+    ).openWorktree(repositoryId, worktree);
+  }
+
+  Future<GitWorktreeActionPreview> previewWorktreeAction(
+    RepositoryId repositoryId,
+    GitWorktreeActionRequest request,
+  ) async {
+    final installation = await getGitInstallation();
+    return RepositoryService(
+      gitPath: installation.executablePath,
+      state: _state,
+      runner: _runner,
+    ).previewWorktreeAction(repositoryId, request);
+  }
+
+  Future<GitWorktreeActionResult> executeWorktreeAction(
+    RepositoryId repositoryId,
+    GitWorktreeActionRequest request, {
+    GitCancellationToken? cancellationToken,
+  }) async {
+    final installation = await getGitInstallation();
+    return RepositoryService(
+      gitPath: installation.executablePath,
+      state: _state,
+      runner: _runner,
+    ).executeWorktreeAction(
+      repositoryId,
+      request,
+      cancellationToken: cancellationToken,
+    );
   }
 
   Future<GitStashSnapshot> getStashes(RepositoryId repositoryId) async {
