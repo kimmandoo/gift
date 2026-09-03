@@ -11,10 +11,12 @@ class RemoteDialog extends StatefulWidget {
     super.key,
     required this.gateway,
     required this.repository,
+    this.initialOperation,
   });
 
   final GitGateway gateway;
   final RepositoryOpened repository;
+  final GitRemoteOperation? initialOperation;
 
   @override
   State<RemoteDialog> createState() => _RemoteDialogState();
@@ -44,7 +46,11 @@ class _RemoteDialogState extends State<RemoteDialog> {
         horizontal: compact ? 16 : 40,
         vertical: 24,
       ),
-      title: const Text('Remote operations'),
+      title: Text(
+        widget.initialOperation == GitRemoteOperation.push
+            ? 'Push to remote'
+            : 'Remote operations',
+      ),
       actionsOverflowButtonSpacing: 4,
       content: SizedBox(
         width: width,
@@ -120,20 +126,22 @@ class _RemoteDialogState extends State<RemoteDialog> {
                   spacing: 8,
                   runSpacing: 4,
                   children: [
-                    OutlinedButton(
-                      key: ValueKey('fetch:${remote.name}'),
-                      onPressed: disabled
-                          ? null
-                          : () => _run(remote.name, GitRemoteOperation.fetch),
-                      child: const Text('Fetch'),
-                    ),
-                    OutlinedButton(
-                      key: ValueKey('pull:${remote.name}'),
-                      onPressed: disabled
-                          ? null
-                          : () => _run(remote.name, GitRemoteOperation.pull),
-                      child: const Text('Pull'),
-                    ),
+                    if (widget.initialOperation != GitRemoteOperation.push)
+                      OutlinedButton(
+                        key: ValueKey('fetch:${remote.name}'),
+                        onPressed: disabled
+                            ? null
+                            : () => _run(remote.name, GitRemoteOperation.fetch),
+                        child: const Text('Fetch'),
+                      ),
+                    if (widget.initialOperation != GitRemoteOperation.push)
+                      OutlinedButton(
+                        key: ValueKey('pull:${remote.name}'),
+                        onPressed: disabled
+                            ? null
+                            : () => _run(remote.name, GitRemoteOperation.pull),
+                        child: const Text('Pull'),
+                      ),
                     FilledButton(
                       key: ValueKey('push:${remote.name}'),
                       onPressed: disabled

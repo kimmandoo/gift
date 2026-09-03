@@ -777,44 +777,77 @@ class _HistoryScreenState extends State<HistoryScreen> {
             constraints: const BoxConstraints(minHeight: 56),
             child: LayoutBuilder(
               builder: (context, constraints) {
-                final backgroundWidth = constraints.hasBoundedWidth
-                    ? (constraints.maxWidth - 16).clamp(0.0, double.infinity)
-                    : (MediaQuery.sizeOf(context).width - 16).clamp(
-                        0.0,
-                        double.infinity,
-                      );
+                final viewportWidth = constraints.hasBoundedWidth
+                    ? constraints.maxWidth
+                    : MediaQuery.sizeOf(context).width;
+                final contentMinWidth = (viewportWidth - 16).clamp(
+                  0.0,
+                  double.infinity,
+                );
                 return SelectionArea(
                   child: Scrollbar(
                     notificationPredicate: (notification) =>
                         notification.metrics.axis == Axis.horizontal,
-                    child: SingleChildScrollView(
-                      key: const Key('commit-diff-scroll'),
-                      scrollDirection: Axis.horizontal,
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 8,
-                      ),
-                      child: ConstrainedBox(
-                        constraints: BoxConstraints(minWidth: backgroundWidth),
-                        child: IntrinsicWidth(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.stretch,
-                            children: [
-                              for (
-                                var index = 0;
-                                index < diff.lines.length;
-                                index++
-                              )
-                                _historicalDiffLine(
-                                  context,
-                                  diff.lines[index],
-                                  index,
-                                  backgroundWidth: backgroundWidth,
+                    child: Stack(
+                      children: [
+                        Positioned.fill(
+                          child: IgnorePointer(
+                            child: ExcludeSemantics(
+                              child: Padding(
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 8,
                                 ),
-                            ],
+                                child: Column(
+                                  crossAxisAlignment:
+                                      CrossAxisAlignment.stretch,
+                                  children: [
+                                    for (
+                                      var index = 0;
+                                      index < diff.lines.length;
+                                      index++
+                                    )
+                                      _historicalDiffBackgroundLine(
+                                        context,
+                                        diff.lines[index],
+                                        index,
+                                      ),
+                                  ],
+                                ),
+                              ),
+                            ),
                           ),
                         ),
-                      ),
+                        SingleChildScrollView(
+                          key: const Key('commit-diff-scroll'),
+                          scrollDirection: Axis.horizontal,
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 8,
+                          ),
+                          child: ConstrainedBox(
+                            constraints: BoxConstraints(
+                              minWidth: contentMinWidth,
+                            ),
+                            child: IntrinsicWidth(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.stretch,
+                                children: [
+                                  for (
+                                    var index = 0;
+                                    index < diff.lines.length;
+                                    index++
+                                  )
+                                    _historicalDiffLine(
+                                      context,
+                                      diff.lines[index],
+                                      index,
+                                    ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 );
@@ -849,14 +882,93 @@ class _HistoryScreenState extends State<HistoryScreen> {
     );
   }
 
+  Widget _historicalDiffBackgroundLine(
+    BuildContext context,
+    GitDiffLine line,
+    int index,
+  ) {
+    return ColoredBox(
+      key: Key('commit-diff-background:$index'),
+      color: _historicalDiffBackgroundColor(context, line),
+      child: const SizedBox(height: 20),
+    );
+  }
+
   Widget _historicalDiffLine(
     BuildContext context,
     GitDiffLine line,
-    int index, {
-    required double backgroundWidth,
+    int index,
+  ) {
+    return SizedBox(
+      height: 20,
+      child: _historicalDiffLineContent(
+        context,
+        line,
+        key: Key('commit-diff-line:$index'),
+      ),
+    );
+  }
+
+  Widget _historicalDiffLineContent(
+    BuildContext context,
+    GitDiffLine line, {
+    Key? key,
   }) {
     final scheme = Theme.of(context).colorScheme;
-    final background = switch (line.kind) {
+    final foreground = _historicalDiffForegroundColor(context, line);
+    final marker = _historicalDiffMarker(line);
+    return Row(
+      key: key,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        SizedBox(
+          width: 42,
+          child: Text(
+            line.oldLineNumber?.toString() ?? '',
+            textAlign: TextAlign.right,
+            style: Theme.of(context).textTheme.labelSmall?.copyWith(
+              fontFamily: 'monospace',
+              color: scheme.onSurfaceVariant,
+            ),
+          ),
+        ),
+        const SizedBox(width: 8),
+        SizedBox(
+          width: 42,
+          child: Text(
+            line.newLineNumber?.toString() ?? '',
+            textAlign: TextAlign.right,
+            style: Theme.of(context).textTheme.labelSmall?.copyWith(
+              fontFamily: 'monospace',
+              color: scheme.onSurfaceVariant,
+            ),
+          ),
+        ),
+        const SizedBox(width: 8),
+        SizedBox(
+          width: 18,
+          child: Text(
+            marker,
+            style: TextStyle(
+              color: foreground,
+              fontFamily: 'monospace',
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ),
+        const SizedBox(width: 8),
+        Text(
+          line.text,
+          softWrap: false,
+          style: TextStyle(color: foreground, fontFamily: 'monospace'),
+        ),
+      ],
+    );
+  }
+
+  Color _historicalDiffBackgroundColor(BuildContext context, GitDiffLine line) {
+    final scheme = Theme.of(context).colorScheme;
+    return switch (line.kind) {
       GitDiffLineKind.addition => scheme.tertiaryContainer.withValues(
         alpha: 0.55,
       ),
@@ -868,7 +980,11 @@ class _HistoryScreenState extends State<HistoryScreen> {
       GitDiffLineKind.noNewline => scheme.surfaceContainerHighest,
       GitDiffLineKind.context => Colors.transparent,
     };
-    final foreground = switch (line.kind) {
+  }
+
+  Color _historicalDiffForegroundColor(BuildContext context, GitDiffLine line) {
+    final scheme = Theme.of(context).colorScheme;
+    return switch (line.kind) {
       GitDiffLineKind.addition => scheme.onTertiaryContainer,
       GitDiffLineKind.deletion => scheme.onErrorContainer,
       GitDiffLineKind.hunkHeader => scheme.onPrimaryContainer,
@@ -876,75 +992,16 @@ class _HistoryScreenState extends State<HistoryScreen> {
       GitDiffLineKind.noNewline => scheme.onSurfaceVariant,
       GitDiffLineKind.context => scheme.onSurface,
     };
-    final marker = switch (line.kind) {
-      GitDiffLineKind.addition => '+',
-      GitDiffLineKind.deletion => '−',
-      GitDiffLineKind.hunkHeader => '·',
-      GitDiffLineKind.metadata => '·',
-      GitDiffLineKind.noNewline => '·',
-      GitDiffLineKind.context => ' ',
-    };
-    return Stack(
-      key: Key('commit-diff-line:$index'),
-      clipBehavior: Clip.none,
-      children: [
-        Positioned(
-          key: Key('commit-diff-background:$index'),
-          left: 0,
-          top: 0,
-          width: backgroundWidth,
-          bottom: 0,
-          child: ColoredBox(color: background),
-        ),
-        Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            SizedBox(
-              width: 42,
-              child: Text(
-                line.oldLineNumber?.toString() ?? '',
-                textAlign: TextAlign.right,
-                style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                  fontFamily: 'monospace',
-                  color: scheme.onSurfaceVariant,
-                ),
-              ),
-            ),
-            const SizedBox(width: 8),
-            SizedBox(
-              width: 42,
-              child: Text(
-                line.newLineNumber?.toString() ?? '',
-                textAlign: TextAlign.right,
-                style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                  fontFamily: 'monospace',
-                  color: scheme.onSurfaceVariant,
-                ),
-              ),
-            ),
-            const SizedBox(width: 8),
-            SizedBox(
-              width: 18,
-              child: Text(
-                marker,
-                style: TextStyle(
-                  color: foreground,
-                  fontFamily: 'monospace',
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-            ),
-            const SizedBox(width: 8),
-            Text(
-              line.text,
-              softWrap: false,
-              style: TextStyle(color: foreground, fontFamily: 'monospace'),
-            ),
-          ],
-        ),
-      ],
-    );
   }
+
+  String _historicalDiffMarker(GitDiffLine line) => switch (line.kind) {
+    GitDiffLineKind.addition => '+',
+    GitDiffLineKind.deletion => '−',
+    GitDiffLineKind.hunkHeader => '·',
+    GitDiffLineKind.metadata => '·',
+    GitDiffLineKind.noNewline => '·',
+    GitDiffLineKind.context => ' ',
+  };
 
   Widget _emptyError(GitError error) {
     return Center(

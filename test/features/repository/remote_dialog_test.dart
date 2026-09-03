@@ -67,6 +67,45 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('The Git operation was cancelled.'), findsOneWidget);
   });
+
+  testWidgets('exposes a push-only remote entry point', (tester) async {
+    addTearDown(tester.view.reset);
+    tester.view.physicalSize = const Size(420, 760);
+    tester.view.devicePixelRatio = 1;
+    final repository = const RepositoryOpened(
+      repositoryId: RepositoryId(value: 'push-entry-repository'),
+      root: '/workspace/project',
+    );
+    final gateway = FakeRemoteGateway(repository);
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Builder(
+          builder: (context) => FilledButton(
+            onPressed: () => showDialog<void>(
+              context: context,
+              builder: (_) => RemoteDialog(
+                gateway: gateway,
+                repository: repository,
+                initialOperation: GitRemoteOperation.push,
+              ),
+            ),
+            child: const Text('Open push'),
+          ),
+        ),
+      ),
+    );
+    await tester.tap(find.text('Open push'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Push to remote'), findsOneWidget);
+    expect(find.byKey(const ValueKey('fetch:origin')), findsNothing);
+    expect(find.byKey(const ValueKey('pull:origin')), findsNothing);
+    expect(find.byKey(const ValueKey('push:origin')), findsOneWidget);
+    await tester.tap(find.byKey(const ValueKey('push:origin')));
+    await tester.pumpAndSettle();
+    expect(gateway.pushCalls, 1);
+  });
 }
 
 class FakeRemoteGateway with GitPatchGatewayStub implements GitGateway {
@@ -75,6 +114,7 @@ class FakeRemoteGateway with GitPatchGatewayStub implements GitGateway {
   final RepositoryOpened repository;
   final pending = Completer<GitRemoteOperationResult>();
   GitCancellationToken? token;
+  var pushCalls = 0;
 
   @override
   Future<List<GitRemote>> getRemotes(RepositoryId repositoryId) async => const [
@@ -165,7 +205,23 @@ class FakeRemoteGateway with GitPatchGatewayStub implements GitGateway {
     RepositoryId repositoryId,
     String remote, {
     GitCancellationToken? cancellationToken,
-  }) => throw UnimplementedError();
+  }) async {
+    pushCalls++;
+    return GitRemoteOperationResult(
+      repositoryId: repositoryId,
+      remote: remote,
+      operation: GitRemoteOperation.push,
+      status: GitStatusSnapshot(
+        repositoryId: repositoryId,
+        root: repository.root,
+        branch: GitBranchStatus(head: 'main', oid: 'a' * 40),
+        changes: const [],
+        contentHash: 'clean',
+        generation: 1,
+      ),
+      summary: 'pushed',
+    );
+  }
 
   @override
   Future<DiscardPreview> createDiscardPreview(

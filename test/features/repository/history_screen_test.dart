@@ -249,7 +249,7 @@ void main() {
     final diffViewportWidth = tester
         .getSize(find.byKey(const Key('commit-diff-scroll')))
         .width;
-    expect(diffBackgroundWidth, closeTo(diffViewportWidth - 16, 0.01));
+    expect(diffBackgroundWidth, closeTo(diffViewportWidth, 0.01));
     expect(find.text('+1'), findsOneWidget);
     expect(find.text('-0'), findsOneWidget);
     expect(find.byKey(const Key('copy-commit-diff')), findsOneWidget);

@@ -175,6 +175,9 @@ class _ChangesScreenBodyState extends ConsumerState<_ChangesScreenBody> {
                   case _ChangesMenuAction.remotes:
                     unawaited(_openRemotes(context));
                     break;
+                  case _ChangesMenuAction.push:
+                    unawaited(_openPush(context));
+                    break;
                   case _ChangesMenuAction.updateProject:
                     unawaited(_openUpdateProject(context));
                     break;
@@ -211,6 +214,10 @@ class _ChangesScreenBodyState extends ConsumerState<_ChangesScreenBody> {
                 const PopupMenuItem(
                   value: _ChangesMenuAction.remotes,
                   child: Text('Remote operations'),
+                ),
+                const PopupMenuItem(
+                  value: _ChangesMenuAction.push,
+                  child: Text('Push'),
                 ),
                 const PopupMenuItem(
                   value: _ChangesMenuAction.updateProject,
@@ -261,6 +268,12 @@ class _ChangesScreenBodyState extends ConsumerState<_ChangesScreenBody> {
               tooltip: 'Open remote operations',
               onPressed: () => unawaited(_openRemotes(context)),
               icon: const Icon(Icons.cloud_outlined),
+            ),
+            IconButton(
+              key: const Key('open-push'),
+              tooltip: 'Push to remote',
+              onPressed: () => unawaited(_openPush(context)),
+              icon: const Icon(Icons.cloud_upload_outlined),
             ),
             IconButton(
               key: const Key('update-project'),
@@ -1368,6 +1381,27 @@ class _ChangesScreenBodyState extends ConsumerState<_ChangesScreenBody> {
     );
   }
 
+  Future<void> _openPush(BuildContext context) async {
+    final result = await showDialog<GitRemoteOperationResult>(
+      context: context,
+      builder: (_) => RemoteDialog(
+        gateway: widget.gateway,
+        repository: widget.repository,
+        initialOperation: GitRemoteOperation.push,
+      ),
+    );
+    if (!context.mounted || result == null) return;
+    await _activeController.refresh();
+    if (!context.mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          '${_remoteOperationLabel(result.operation)} ${result.remote} complete.',
+        ),
+      ),
+    );
+  }
+
   Future<void> _openUpdateProject(BuildContext context) async {
     final result = await showDialog<GitUpdateProjectResult>(
       context: context,
@@ -1749,6 +1783,7 @@ String _cleanupLabel(GitCommitCleanupMode mode) => switch (mode) {
 
 enum _ChangesMenuAction {
   remotes,
+  push,
   updateProject,
   branches,
   history,

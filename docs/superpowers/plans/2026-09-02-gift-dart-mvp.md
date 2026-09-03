@@ -483,4 +483,8 @@ system Git 2.35+.
    branch names.
 4. Made the historical diff viewport derive its fallback width from the window
    instead of an arbitrary fixed width, and added compact regression coverage.
-   The full Flutter suite passed; Task 29 remains next.
+5. Kept diff backgrounds in a fixed viewport layer so horizontally scrolling a
+   long line cannot expose its text against an uncolored strip.
+6. Exposed a direct Push entry point from Changes while retaining the existing
+   cancellable remote operation flow. The full Flutter suite passed; Task 29's
+   remaining push-review work is still next.

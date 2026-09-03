@@ -2,6 +2,9 @@
 
 ## 2026-09-03
 
+- fix(history): kept long diff text aligned with its fixed viewport background
+  while horizontal scrolling.
+- feat(remote): exposed a direct Push entry point from the Changes workspace.
 - fix(ui): prevented compact History filters and details from overflowing, and
   kept diff backgrounds tied to the available viewport width.
 - fix(ui): made File History and Advanced revision controls scrollable and

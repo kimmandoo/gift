@@ -9,8 +9,8 @@ This file is the handoff record for continuing work across query sessions.
   hardening are complete; Task 29 is the next pending task.
 - Branch: `main`; no new branch or worktree was created.
 - Latest completed implementation commit: this session's
-  `fix(ui): harden compact history controls` commit; use `git log -1` for its
-  exact hash.
+  `feat(remote): expose push action and fix diff rendering` commit; use
+  `git log -1` for its exact hash.
 - Completed Task 28 after recording REMOTE-BRANCH-01/02 and UPDATE-01/02,
   adding the first RED fixture, and proving the real-Git implementation GREEN.
 - Added immutable remote ref snapshots with grouped remotes, local tracking,
@@ -28,16 +28,20 @@ This file is the handoff record for continuing work across query sessions.
   expansion and diff viewport fallback at small window sizes, made File History
   use one scroll surface, and constrained/ellipsized Advanced revision and
   rollback preview controls.
+- Kept the diff background in a fixed viewport layer while long code scrolls,
+  and exposed a direct Push entry point from the Changes workspace. The
+  existing cancellable remote push backend remains the execution path; the
+  review/force-with-lease work is still Task 29.
 - Changed files in this session: `CHANGELOG.md`, `TASKS.md`,
   `docs/WORK_CHECKPOINT.md`,
   `docs/superpowers/plans/2026-09-02-gift-dart-mvp.md`,
   `lib/src/features/repository/{history_screen,file_history_dialog,
-  reset_dialog}.dart`, and
+  remote_dialog,reset_dialog,changes_screen}.dart`, and
   `test/features/repository/{history_screen,file_history_dialog,
-  reset_dialog}_test.dart`.
-- Verification: focused History/File History/Advanced revision tests passed
-  with `11` tests; `dart format --output=none --set-exit-if-changed lib test`,
-  `flutter analyze`, `flutter test` with `180` tests, and `git diff --check`
+  remote_dialog,reset_dialog}_test.dart`.
+- Verification: focused History/remote/File History/Advanced revision tests
+  passed; `dart format --output=none --set-exit-if-changed lib test`,
+  `flutter analyze`, `flutter test` with `181` tests, and `git diff --check`
   passed. Native Windows compilation is not available in this Linux workspace.
 - Next action: Task 29 remains pending; start it only after activating its
   behavior-ledger scenarios and first RED test.
