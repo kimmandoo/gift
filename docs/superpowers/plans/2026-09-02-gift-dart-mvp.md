@@ -565,3 +565,22 @@ system Git 2.35+.
    validation, and 360x640/1.2x rendering. Verification passed formatting,
    analysis, and the full Flutter suite with 197 tests. Task 32 is complete;
    Task 33 is next.
+
+## Completed vertical: Recovery diagnostics (Task 33)
+
+1. Activated Task 33 after recording reflog recovery, stale confirmation,
+   operation history, output bounds, and credential-redaction scenarios as
+   RECOVERY-02/03.
+2. First RED test: `/home/mgkim/.local/flutter/bin/flutter test
+   test/backend/recovery_test.dart` failed because the typed reflog, recovery
+   branch, and operation-console contracts had not been added yet.
+3. Implemented bounded reflog parsing, OID- and fingerprint-bound recovery
+   branch previews, non-destructive branch creation, and a process-local
+   redacted operation history that omits stdin.
+4. Added the responsive Recovery diagnostics dialog with reflog selection,
+   branch review/confirmation, and bounded operation records. Invalid refs,
+   existing branch names, stale previews, and non-commit objects are rejected.
+5. Added real-Git and widget coverage for recovery branch creation, operation
+   output bounds, secret redaction, and compact 360x640/1.2x rendering.
+   Verification passed formatting, analysis, and the full Flutter suite with
+   200 tests. Task 33 is complete; Task 34 is next.

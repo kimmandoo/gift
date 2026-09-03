@@ -10,6 +10,10 @@
   nested-root workspace mapping.
 - feat(submodules): added explicit scoped init, sync, update, deinit, and
   compact manager controls for child repositories.
+- feat(task33): added bounded reflog browsing and confirmation-bound recovery
+  branch creation.
+- feat(recovery): added a redacted process-local Git operation console that
+  omitted stdin and bounded diagnostic output.
 - feat(task30): added typed worktree listing, isolated creation/opening, and
   preview-bound remove, lock, unlock, and prune actions.
 - feat(workspace): opened linked worktrees as independent repository tabs and

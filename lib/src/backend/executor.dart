@@ -79,6 +79,86 @@ class GitInvocation {
   final Map<String, String>? environment;
 }
 
+/// A bounded, credential-safe record of one Git process invocation. Stdin is
+/// deliberately represented only by its byte count because commit messages
+/// and credentials may be supplied there.
+class GitOperationRecord {
+  GitOperationRecord({
+    required this.startedAt,
+    required this.duration,
+    required this.program,
+    required List<String> args,
+    required this.cwd,
+    required this.kind,
+    required this.succeeded,
+    required this.exitCode,
+    required this.diagnostic,
+    required this.stdinBytes,
+  }) : args = List.unmodifiable(args);
+
+  final DateTime startedAt;
+  final Duration duration;
+  final String program;
+  final List<String> args;
+  final String cwd;
+  final GitOperationKind kind;
+  final bool succeeded;
+  final int? exitCode;
+  final String diagnostic;
+  final int stdinBytes;
+
+  String get command => [program, ...args].join(' ');
+}
+
+/// Process-local operation history used by the recovery diagnostics view.
+/// It is intentionally bounded and can be filtered to one registered root.
+class GitOperationHistory {
+  GitOperationHistory._();
+
+  static final shared = GitOperationHistory._();
+  static const maxRecords = 200;
+  final List<GitOperationRecord> _records = [];
+
+  void clear() => _records.clear();
+
+  List<GitOperationRecord> records({String? cwd, int limit = 100}) {
+    final boundedLimit = limit.clamp(0, maxRecords);
+    final filtered = cwd == null
+        ? _records
+        : _records.where((record) => record.cwd == cwd).toList(growable: false);
+    return List.unmodifiable(filtered.reversed.take(boundedLimit));
+  }
+
+  void add({
+    required GitInvocation invocation,
+    required DateTime startedAt,
+    required Duration duration,
+    required bool succeeded,
+    required int? exitCode,
+    required String diagnostic,
+  }) {
+    _records.add(
+      GitOperationRecord(
+        startedAt: startedAt,
+        duration: duration,
+        program: redactBytes(utf8.encode(invocation.program)),
+        args: [
+          for (final arg in invocation.args) _redactOperationArgument(arg),
+        ],
+        cwd: invocation.cwd,
+        kind: invocation.kind,
+        succeeded: succeeded,
+        exitCode: exitCode,
+        diagnostic: _boundOperationText(redactBytes(utf8.encode(diagnostic))),
+        stdinBytes: invocation.stdin?.length ?? 0,
+      ),
+    );
+    if (_records.length > maxRecords) {
+      _records.removeRange(0, _records.length - maxRecords);
+    }
+  }
+}
+
 class ProcessOutput {
   const ProcessOutput({
     required this.stdout,
@@ -97,6 +177,33 @@ class ProcessGitRunner {
   final Duration defaultTimeout;
 
   Future<ProcessOutput> run(GitInvocation invocation) async {
+    final startedAt = DateTime.now();
+    final stopwatch = Stopwatch()..start();
+    try {
+      final output = await _run(invocation);
+      GitOperationHistory.shared.add(
+        invocation: invocation,
+        startedAt: startedAt,
+        duration: stopwatch.elapsed,
+        succeeded: true,
+        exitCode: output.exitCode,
+        diagnostic: redactBytes(output.stderr),
+      );
+      return output;
+    } on Object catch (error) {
+      GitOperationHistory.shared.add(
+        invocation: invocation,
+        startedAt: startedAt,
+        duration: stopwatch.elapsed,
+        succeeded: false,
+        exitCode: error is GitError ? error.exitCode : null,
+        diagnostic: error is GitError ? error.diagnostic : '$error',
+      );
+      rethrow;
+    }
+  }
+
+  Future<ProcessOutput> _run(GitInvocation invocation) async {
     if (invocation.cancellationToken?.isCancelled == true) {
       throw _cancelledError();
     }
@@ -214,6 +321,21 @@ class ProcessGitRunner {
     );
   }
 }
+
+String _redactOperationArgument(String value) {
+  var redacted = redactBytes(utf8.encode(value));
+  redacted = redacted.replaceAllMapped(
+    RegExp(
+      r'(access[_-]?token|refresh[_-]?token|password|passwd|secret|token)([=:])[^\s&]+',
+      caseSensitive: false,
+    ),
+    (match) => '${match.group(1)}${match.group(2)}***',
+  );
+  return _boundOperationText(redacted);
+}
+
+String _boundOperationText(String value) =>
+    value.length <= 4096 ? value : '${value.substring(0, 4096)}…';
 
 enum _ProcessOutcomeKind { completed, cancelled, timedOut }
 

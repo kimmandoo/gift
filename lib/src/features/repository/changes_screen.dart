@@ -27,6 +27,7 @@ import 'package:gift/src/features/repository/push_dialog.dart';
 import 'package:gift/src/features/repository/worktree_dialog.dart';
 import 'package:gift/src/features/repository/ignore_dialog.dart';
 import 'package:gift/src/features/repository/submodule_dialog.dart';
+import 'package:gift/src/features/repository/recovery_dialog.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter/services.dart';
@@ -224,6 +225,9 @@ class _ChangesScreenBodyState extends ConsumerState<_ChangesScreenBody> {
                   case _ChangesMenuAction.submodules:
                     unawaited(_openSubmodules(context));
                     break;
+                  case _ChangesMenuAction.recovery:
+                    unawaited(_openRecovery(context));
+                    break;
                   case _ChangesMenuAction.refresh:
                     unawaited(controller.refresh());
                     break;
@@ -285,6 +289,10 @@ class _ChangesScreenBodyState extends ConsumerState<_ChangesScreenBody> {
                 const PopupMenuItem(
                   value: _ChangesMenuAction.submodules,
                   child: Text('Submodules & nested roots'),
+                ),
+                const PopupMenuItem(
+                  value: _ChangesMenuAction.recovery,
+                  child: Text('Recovery diagnostics'),
                 ),
                 PopupMenuItem(
                   value: _ChangesMenuAction.refresh,
@@ -377,6 +385,12 @@ class _ChangesScreenBodyState extends ConsumerState<_ChangesScreenBody> {
               tooltip: 'Manage submodules and nested roots',
               onPressed: () => unawaited(_openSubmodules(context)),
               icon: const Icon(Icons.account_tree_outlined),
+            ),
+            IconButton(
+              key: const Key('open-recovery'),
+              tooltip: 'Open recovery diagnostics',
+              onPressed: () => unawaited(_openRecovery(context)),
+              icon: const Icon(Icons.restore),
             ),
             IconButton(
               tooltip: 'Refresh changes',
@@ -1578,6 +1592,18 @@ class _ChangesScreenBodyState extends ConsumerState<_ChangesScreenBody> {
         .showSnackBar(SnackBar(content: Text('Opened ${opened.root}.')));
   }
 
+  Future<void> _openRecovery(BuildContext context) async {
+    await showDialog<void>(
+      context: context,
+      builder: (_) => RecoveryDialog(
+        gateway: widget.gateway,
+        repository: widget.repository,
+      ),
+    );
+    if (!context.mounted) return;
+    await _activeController.refresh();
+  }
+
   Widget _scopeSelector(
     BuildContext context,
     GitChange selected,
@@ -1889,5 +1915,6 @@ enum _ChangesMenuAction {
   worktrees,
   ignoreMetadata,
   submodules,
+  recovery,
   refresh,
 }

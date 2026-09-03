@@ -7,8 +7,8 @@
 ## Progress
 
 - **Total Tasks:** 38
-- **Completed:** 32 / 38
-- **Current Active Task:** None. Task 33 — Recovery diagnostics is next.
+- **Completed:** 33 / 38
+- **Current Active Task:** None. Task 34 — Repository setup is next.
 
 | # | Scope | Dart backend deliverables | Flutter deliverables | Status |
 |---|---|---|---|:---:|
@@ -44,7 +44,7 @@
 | **30** | Worktrees | Worktree list, create, open, remove, lock, and prune | Worktree manager | ✅ |
 | **31** | Ignore & metadata | `.gitignore`, `.git/info/exclude`, ignored files, and attributes | Ignore/metadata actions | ✅ |
 | **32** | Submodules & nested roots | Submodule status, sync, update, and nested repository mapping | Nested-root workspace | ✅ |
-| **33** | Recovery diagnostics | Reflog browsing, recovery refs, and Git operation console | Recovery and command diagnostics | ⬜ |
+| **33** | Recovery diagnostics | Reflog browsing, recovery refs, and Git operation console | Recovery and command diagnostics | ✅ |
 | **34** | Repository setup | Clone, init, publish, shallow/unshallow, and root mapping | Repository setup flows | ⬜ |
 | **35** | Hosting integration | Optional GitHub/GitLab links and review handoff contracts | Hosting links and review entry points | ⬜ |
 | **36** | Scale & resilience | File watching, cache invalidation, process supervision | Large-repository responsiveness | ⬜ |
@@ -523,6 +523,20 @@ Flutter verification suite. Task 32 is next.
 
 Task 32 is complete. The backend and compact submodule manager passed the
 full Flutter verification suite. Task 33 is next.
+
+### ✅ Task 33: Recovery diagnostics
+
+- [x] Record reflog browsing, recovery branch confirmation, stale recovery
+  state, operation history, and credential-safe diagnostics scenarios.
+- [x] Add the first RED real-Git recovery fixture.
+- [x] Implement bounded reflog parsing, recovery branch previews, and a
+  redacted operation console.
+- [x] Add responsive recovery and command-diagnostics controls.
+- [x] Verify expired/stale recovery previews, branch validation, output bounds,
+  and secret redaction.
+
+Task 33 is complete. The reflog recovery and redacted operation console passed
+the full Flutter verification suite. Task 34 is next.
 
 ## Post-MVP backlog
 

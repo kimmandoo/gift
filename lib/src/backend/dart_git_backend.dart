@@ -21,6 +21,7 @@ import 'push.dart';
 import 'worktree.dart';
 import 'ignore.dart';
 import 'submodule.dart';
+import 'recovery.dart';
 
 /// Application-facing entry point for backend operations.
 ///
@@ -572,6 +573,51 @@ class DartGitBackend {
       state: _state,
       runner: _runner,
     ).getNestedRoots(repositoryId);
+  }
+
+  Future<GitReflogSnapshot> getReflog(
+    RepositoryId repositoryId, {
+    String ref = 'HEAD',
+    int limit = 100,
+  }) async {
+    final installation = await getGitInstallation();
+    return RepositoryService(
+      gitPath: installation.executablePath,
+      state: _state,
+      runner: _runner,
+    ).getReflog(repositoryId, ref: ref, limit: limit);
+  }
+
+  Future<GitRecoveryBranchPreview> previewRecoveryBranch(
+    RepositoryId repositoryId,
+    GitRecoveryBranchRequest request,
+  ) async {
+    final installation = await getGitInstallation();
+    return RepositoryService(
+      gitPath: installation.executablePath,
+      state: _state,
+      runner: _runner,
+    ).previewRecoveryBranch(repositoryId, request);
+  }
+
+  Future<GitRecoveryBranchResult> createRecoveryBranch(
+    RepositoryId repositoryId,
+    GitRecoveryBranchPreview preview,
+  ) async {
+    final installation = await getGitInstallation();
+    return RepositoryService(
+      gitPath: installation.executablePath,
+      state: _state,
+      runner: _runner,
+    ).createRecoveryBranch(repositoryId, preview);
+  }
+
+  Future<List<GitOperationRecord>> getOperationRecords(
+    RepositoryId repositoryId, {
+    int limit = 100,
+  }) async {
+    final handle = await _state.lookup(repositoryId);
+    return GitOperationHistory.shared.records(cwd: handle.root, limit: limit);
   }
 
   Future<GitStashSnapshot> getStashes(RepositoryId repositoryId) async {

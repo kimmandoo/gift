@@ -21,6 +21,7 @@ import 'push.dart';
 import 'worktree.dart';
 import 'ignore.dart';
 import 'submodule.dart';
+import 'recovery.dart';
 
 /// Adapts the UI-facing [GitGateway] contract to the Dart backend facade.
 ///
@@ -340,6 +341,31 @@ class DartGitGateway implements GitGateway, DiscardPreviewCancellationGateway {
   @override
   Future<GitNestedRootSnapshot> getNestedRoots(RepositoryId repositoryId) =>
       backend.getNestedRoots(repositoryId);
+
+  @override
+  Future<GitReflogSnapshot> getReflog(
+    RepositoryId repositoryId, {
+    String ref = 'HEAD',
+    int limit = 100,
+  }) => backend.getReflog(repositoryId, ref: ref, limit: limit);
+
+  @override
+  Future<GitRecoveryBranchPreview> previewRecoveryBranch(
+    RepositoryId repositoryId,
+    GitRecoveryBranchRequest request,
+  ) => backend.previewRecoveryBranch(repositoryId, request);
+
+  @override
+  Future<GitRecoveryBranchResult> createRecoveryBranch(
+    RepositoryId repositoryId,
+    GitRecoveryBranchPreview preview,
+  ) => backend.createRecoveryBranch(repositoryId, preview);
+
+  @override
+  Future<List<GitOperationRecord>> getOperationRecords(
+    RepositoryId repositoryId, {
+    int limit = 100,
+  }) => backend.getOperationRecords(repositoryId, limit: limit);
 
   @override
   Future<GitStashSnapshot> getStashes(RepositoryId repositoryId) =>

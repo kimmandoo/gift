@@ -5,10 +5,10 @@ This file is the handoff record for continuing work across query sessions.
 ## Current checkpoint
 
 - Date: 2026-09-03
-- Active task: None. Task 32 — Submodules and nested roots is complete; Task 33
-  Recovery diagnostics is next.
+- Active task: None. Task 33 — Recovery diagnostics is complete; Task 34
+  Repository setup is next.
 - Branch: `main`; no new branch or worktree was created.
-- Latest completed implementation commit before this task: `76f36e3`.
+- Latest completed implementation commit before this task: `47b7cf3`.
 - Completed Task 28 after recording REMOTE-BRANCH-01/02 and UPDATE-01/02,
   adding the first RED fixture, and proving the real-Git implementation GREEN.
 - Added immutable remote ref snapshots with grouped remotes, local tracking,
@@ -45,7 +45,9 @@ This file is the handoff record for continuing work across query sessions.
   compact add form, state/path/HEAD display, lock/unlock/remove/prune actions,
   dirty-removal confirmation, and opens linked roots through the workspace tab
   controller.
-- Changed files this session: `TASKS.md`, `CHANGELOG.md`,
+- Prior Task 30 changed files and verification remain recorded in the previous
+  checkpoint; this task's files and verification are listed below.
+- Changed files in the earlier Task 30 session: `TASKS.md`, `CHANGELOG.md`,
   `docs/research/jetbrains-git-mvp-behavior.md`,
   `docs/superpowers/plans/2026-09-02-gift-dart-mvp.md`, this checkpoint, the
   worktree backend contracts/adapters/service, Changes and workspace wiring,
@@ -84,8 +86,9 @@ This file is the handoff record for continuing work across query sessions.
 - Verification: `PATH=/home/mgkim/.local/flutter/bin:$PATH dart run
   tool/verify.dart` passed formatting, analysis, and all 197 Flutter tests;
   `git diff --check` passed.
-- Next action: activate Task 33, record RECOVERY scenarios, and add its first
-  failing reflog/operation-console fixture before implementation.
+- Task 33 activation recorded RECOVERY-02/03 in the behavior ledger. Its first
+  RED command failed because the typed recovery and operation-console
+  contracts did not exist; the real-Git and widget fixtures then passed.
 - Earlier Task 23 and Windows incremental-build diagnostics remain recorded in
   the plan and prior checkpoints.
 - Blockers: none.
@@ -229,9 +232,24 @@ This file is the handoff record for continuing work across query sessions.
 - Blockers: no source blocker. The Linux release build still requires the host
   `libgtk-3-dev` package, whose installation requires a sudo password
   unavailable to this session.
-- Next action: begin Task 17, partial staging, by recording hunk/line patch
-  scenarios and adding its first failing test. Keep Task 15's Linux native
-  bundle check delegated to CI while this WSL host lacks `libgtk-3-dev`.
+- Task 33 activation recorded RECOVERY-02/03 in the behavior ledger. Its first
+  RED command failed because the typed recovery and operation-console
+  contracts did not exist; the real-Git and widget fixtures then passed.
+- Task 33 added bounded reflog browsing, stale/fingerprint-bound recovery
+  branch creation, and an operation history that stores redacted argv and
+  diagnostics without stdin. The Changes actions expose the responsive
+  Recovery diagnostics dialog.
+- Changed Task 33 files: `TASKS.md`, `CHANGELOG.md`,
+  `docs/research/jetbrains-git-mvp-behavior.md`,
+  `docs/superpowers/plans/2026-09-02-gift-dart-mvp.md`, this checkpoint,
+  `lib/src/backend/{executor,recovery,git_gateway,dart_git_backend,dart_git_gateway,repository_service}.dart`,
+  `lib/src/features/repository/{recovery_dialog,changes_screen}.dart`, and
+  the related backend/widget test and gateway-stub files.
+- Verification: `PATH=/home/mgkim/.local/flutter/bin:$PATH dart run
+  tool/verify.dart` passed formatting, analysis, and all 200 Flutter tests;
+  `git diff --check` passed.
+- Next action: activate Task 34, record SETUP scenarios, and add its first
+  failing clone/init/unshallow/root-mapping fixture before implementation.
 
 ## Resume procedure
 

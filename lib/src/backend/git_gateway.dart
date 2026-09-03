@@ -19,6 +19,7 @@ import 'push.dart';
 import 'worktree.dart';
 import 'ignore.dart';
 import 'submodule.dart';
+import 'recovery.dart';
 
 /// The small API that Flutter features depend on.
 ///
@@ -223,6 +224,27 @@ abstract interface class GitGateway {
   });
 
   Future<GitNestedRootSnapshot> getNestedRoots(RepositoryId repositoryId);
+
+  Future<GitReflogSnapshot> getReflog(
+    RepositoryId repositoryId, {
+    String ref = 'HEAD',
+    int limit = 100,
+  });
+
+  Future<GitRecoveryBranchPreview> previewRecoveryBranch(
+    RepositoryId repositoryId,
+    GitRecoveryBranchRequest request,
+  );
+
+  Future<GitRecoveryBranchResult> createRecoveryBranch(
+    RepositoryId repositoryId,
+    GitRecoveryBranchPreview preview,
+  );
+
+  Future<List<GitOperationRecord>> getOperationRecords(
+    RepositoryId repositoryId, {
+    int limit = 100,
+  });
 
   Future<GitStashSnapshot> getStashes(RepositoryId repositoryId);
 

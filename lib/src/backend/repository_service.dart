@@ -25,6 +25,7 @@ import 'push.dart';
 import 'worktree.dart';
 import 'ignore.dart';
 import 'submodule.dart';
+import 'recovery.dart';
 
 /// In-memory registry for repository roots and session-local opaque IDs.
 ///
@@ -44,6 +45,7 @@ class AppState {
   final Map<String, _UpdatePreviewRecord> _updatePreviews = {};
   final Map<String, _PushPreviewRecord> _pushPreviews = {};
   final Map<String, _WorktreePreviewRecord> _worktreePreviews = {};
+  final Map<String, _RecoveryPreviewRecord> _recoveryPreviews = {};
   final Map<String, _RemoteBranchDeletePreviewRecord>
   _remoteBranchDeletePreviews = {};
   final DateTime Function() _now;
@@ -54,6 +56,7 @@ class AppState {
   static const rollbackPreviewLifetime = Duration(minutes: 2);
   static const pushPreviewLifetime = Duration(minutes: 2);
   static const worktreePreviewLifetime = Duration(minutes: 2);
+  static const recoveryPreviewLifetime = Duration(minutes: 2);
 
   RepositoryOpened register(String root) {
     final repositoryId = RepositoryId(value: _newRepositoryId());
@@ -519,6 +522,52 @@ class AppState {
 
   void consumeWorktreePreview(String token) => _worktreePreviews.remove(token);
 
+  GitBranchPreviewToken issueRecoveryPreview({
+    required RepositoryId repositoryId,
+    required GitRecoveryBranchRequest request,
+    required String fingerprint,
+  }) {
+    _recoveryPreviews.removeWhere(
+      (_, record) => !record.expiresAt.isAfter(_now()),
+    );
+    final token = _newOpaqueToken();
+    final expiresAt = _now().add(recoveryPreviewLifetime);
+    _recoveryPreviews[token] = _RecoveryPreviewRecord(
+      repositoryId: repositoryId,
+      requestKey: request.queryKey,
+      fingerprint: fingerprint,
+      expiresAt: expiresAt,
+    );
+    return GitBranchPreviewToken(value: token, expiresAt: expiresAt);
+  }
+
+  void validateRecoveryPreview({
+    required RepositoryId repositoryId,
+    required GitRecoveryBranchRequest request,
+    required String fingerprint,
+    required String token,
+  }) {
+    final record = _recoveryPreviews[token];
+    final matches =
+        record != null &&
+        record.repositoryId == repositoryId &&
+        record.requestKey == request.queryKey &&
+        record.fingerprint == fingerprint &&
+        record.expiresAt.isAfter(_now());
+    if (!matches) {
+      _recoveryPreviews.remove(token);
+      throw const GitError(
+        category: GitErrorCategory.staleRollbackPreview,
+        userMessage:
+            'This recovery preview is stale or expired. Review it again.',
+        diagnostic: 'recovery branch preview token or reflog fingerprint was missing, changed, or expired',
+        retryable: true,
+      );
+    }
+  }
+
+  void consumeRecoveryPreview(String token) => _recoveryPreviews.remove(token);
+
   String _updateRequestKey(GitUpdateProjectRequest request) =>
       '${request.strategy.name}:${request.localChanges.name}';
 
@@ -701,6 +750,20 @@ class _PushPreviewRecord {
 
 class _WorktreePreviewRecord {
   const _WorktreePreviewRecord({
+    required this.repositoryId,
+    required this.requestKey,
+    required this.fingerprint,
+    required this.expiresAt,
+  });
+
+  final RepositoryId repositoryId;
+  final String requestKey;
+  final String fingerprint;
+  final DateTime expiresAt;
+}
+
+class _RecoveryPreviewRecord {
+  const _RecoveryPreviewRecord({
     required this.repositoryId,
     required this.requestKey,
     required this.fingerprint,
@@ -1208,6 +1271,224 @@ class RepositoryService {
         ),
       ),
     );
+  }
+
+  Future<GitReflogSnapshot> getReflog(
+    RepositoryId repositoryId, {
+    String ref = 'HEAD',
+    int limit = 100,
+  }) async {
+    final handle = await state.lookup(repositoryId);
+    _validateReflogRef(ref);
+    final boundedLimit = limit.clamp(1, 500);
+    try {
+      final output = await _runner.run(
+        GitInvocation(
+          program: gitPath,
+          args: [
+            'reflog',
+            'show',
+            '--format=%H%x00%P%x00%gD%x00%aI%x00%an%x00%gs%x00',
+            '-n',
+            '$boundedLimit',
+            ref,
+          ],
+          cwd: handle.root,
+          kind: GitOperationKind.read,
+          outputPolicy: const OutputPolicy.capture(maxBytes: 2 * 1024 * 1024),
+        ),
+      );
+      late final List<GitReflogEntry> entries;
+      try {
+        entries = parseGitReflog(output.stdout);
+      } on GitReflogParseException catch (error, stackTrace) {
+        Error.throwWithStackTrace(
+          GitError(
+            category: GitErrorCategory.parseFailure,
+            userMessage: 'Git returned unreadable recovery history.',
+            diagnostic: error.message,
+            retryable: true,
+          ),
+          stackTrace,
+        );
+      }
+      return GitReflogSnapshot(
+        repositoryId: repositoryId,
+        ref: ref,
+        entries: entries,
+        fingerprint: hashGitObjectBytes(output.stdout),
+      );
+    } on GitError catch (error) {
+      // An unborn branch has no reflog yet; it is a valid empty recovery view.
+      if (error.category == GitErrorCategory.processFailed &&
+          error.exitCode == 128) {
+        return GitReflogSnapshot(
+          repositoryId: repositoryId,
+          ref: ref,
+          entries: const [],
+          fingerprint: hashGitObjectBytes(const []),
+        );
+      }
+      rethrow;
+    }
+  }
+
+  Future<GitRecoveryBranchPreview> previewRecoveryBranch(
+    RepositoryId repositoryId,
+    GitRecoveryBranchRequest request,
+  ) async {
+    final handle = await state.lookup(repositoryId);
+    _validateRecoveryOid(request.oid);
+    _validateBranchName(request.branchName);
+    await _validateBranchNameWithGit(handle, request.branchName);
+    await _ensureRecoveryBranchIsNew(handle, request.branchName);
+    final reflog = await getReflog(repositoryId);
+    if (request.reflogFingerprint != reflog.fingerprint) {
+      throw const GitError(
+        category: GitErrorCategory.staleRollbackPreview,
+        userMessage: 'The recovery history changed. Review it again.',
+        diagnostic: 'recovery request was based on a stale reflog fingerprint',
+        retryable: true,
+      );
+    }
+    final entry = reflog.entries
+        .where((candidate) => candidate.oid == request.oid)
+        .firstOrNull;
+    if (entry == null) {
+      throw const GitError(
+        category: GitErrorCategory.invalidRevision,
+        userMessage: 'That recovery entry is no longer available.',
+        diagnostic: 'requested recovery OID was absent from the current reflog',
+        retryable: true,
+      );
+    }
+    await _ensureCommitObject(handle, request.oid);
+    final token = state.issueRecoveryPreview(
+      repositoryId: repositoryId,
+      request: request,
+      fingerprint: reflog.fingerprint,
+    );
+    return GitRecoveryBranchPreview(
+      repositoryId: repositoryId,
+      request: request,
+      entry: entry,
+      fingerprint: reflog.fingerprint,
+      token: token.value,
+      expiresAt: token.expiresAt,
+    );
+  }
+
+  Future<GitRecoveryBranchResult> createRecoveryBranch(
+    RepositoryId repositoryId,
+    GitRecoveryBranchPreview preview,
+  ) => state.runMutation(repositoryId, () async {
+    final handle = await state.lookup(repositoryId);
+    final reflog = await getReflog(repositoryId);
+    state.validateRecoveryPreview(
+      repositoryId: repositoryId,
+      request: preview.request,
+      fingerprint: reflog.fingerprint,
+      token: preview.token,
+    );
+    if (preview.repositoryId != repositoryId ||
+        preview.fingerprint != reflog.fingerprint ||
+        preview.entry.oid != preview.request.oid ||
+        !reflog.entries.any((entry) => entry.oid == preview.request.oid)) {
+      state.consumeRecoveryPreview(preview.token);
+      throw const GitError(
+        category: GitErrorCategory.staleRollbackPreview,
+        userMessage: 'The recovery history changed. Review it again.',
+        diagnostic: 'recovery preview no longer matched the current reflog',
+        retryable: true,
+      );
+    }
+    _validateBranchName(preview.request.branchName);
+    await _validateBranchNameWithGit(handle, preview.request.branchName);
+    await _ensureRecoveryBranchIsNew(handle, preview.request.branchName);
+    await _ensureCommitObject(handle, preview.request.oid);
+    await _runner.run(
+      GitInvocation(
+        program: gitPath,
+        args: ['branch', preview.request.branchName, preview.request.oid],
+        cwd: handle.root,
+        kind: GitOperationKind.mutation,
+        outputPolicy: const OutputPolicy.capture(maxBytes: 128 * 1024),
+      ),
+    );
+    state.consumeRecoveryPreview(preview.token);
+    return GitRecoveryBranchResult(
+      repositoryId: repositoryId,
+      request: preview.request,
+      branchName: preview.request.branchName,
+      status: await getStatus(repositoryId),
+      reflog: await getReflog(repositoryId),
+      summary: 'Created recovery branch ${preview.request.branchName}.',
+    );
+  });
+
+  Future<void> _ensureCommitObject(RepositoryHandle handle, String oid) async {
+    try {
+      await _runner.run(
+        GitInvocation(
+          program: gitPath,
+          args: ['rev-parse', '--verify', '$oid^{commit}'],
+          cwd: handle.root,
+          kind: GitOperationKind.read,
+          outputPolicy: const OutputPolicy.capture(maxBytes: 8 * 1024),
+        ),
+      );
+    } on GitError catch (error, stackTrace) {
+      if (error.category == GitErrorCategory.processFailed) {
+        Error.throwWithStackTrace(
+          error.copyWith(
+            category: GitErrorCategory.invalidRevision,
+            userMessage: 'The recovery object is not a commit.',
+            retryable: false,
+          ),
+          stackTrace,
+        );
+      }
+      rethrow;
+    }
+  }
+
+  Future<void> _ensureRecoveryBranchIsNew(
+    RepositoryHandle handle,
+    String branchName,
+  ) async {
+    if (await _tryBranchOid(handle, branchName) != null) {
+      throw const GitError(
+        category: GitErrorCategory.invalidBranchName,
+        userMessage: 'That recovery branch already exists.',
+        diagnostic: 'recovery branch creation would overwrite an existing ref',
+        retryable: false,
+      );
+    }
+  }
+
+  void _validateRecoveryOid(String oid) {
+    if (!RegExp(r'^[0-9a-fA-F]{40,64}$').hasMatch(oid)) {
+      throw recoveryInputError(
+        'Choose a valid recovery commit.',
+        'recovery request contained a non-hex or short object ID',
+      );
+    }
+  }
+
+  void _validateReflogRef(String ref) {
+    if (ref.isEmpty ||
+        ref.startsWith('-') ||
+        ref.startsWith('/') ||
+        ref.contains('\u0000') ||
+        ref.contains('..') ||
+        ref.contains('@{') ||
+        ref.contains('//') ||
+        !RegExp(r'^[A-Za-z0-9_./-]+$').hasMatch(ref)) {
+      throw recoveryInputError(
+        'Choose a valid branch or HEAD reference.',
+        'reflog reference contained unsafe ref syntax',
+      );
+    }
   }
 
   Future<String?> _readGitlinkOid(String root, String path) async {
