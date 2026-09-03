@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:gift/src/app/pixel_theme.dart';
 import 'package:gift/src/backend/error.dart';
 import 'package:gift/src/backend/git_gateway.dart';
 import 'package:gift/src/backend/history.dart';
@@ -314,6 +315,7 @@ class _ResetDialogState extends State<ResetDialog> {
         if (_preview case final preview?)
           FilledButton.icon(
             key: const Key('execute-rollback'),
+            style: pixelProminentButtonStyle,
             onPressed: _canExecute(preview) && !_isBusy
                 ? () => unawaited(_execute(preview))
                 : null,

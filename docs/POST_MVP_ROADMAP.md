@@ -3,9 +3,9 @@
 This roadmap turns the MVP into a dependable daily Git client while preserving
 gift's clean-room workflow research and minimal 2D pixel-game interface.
 Task 15 was marked safe done under WSL because the remaining native bundle
-check is CI-only in this environment. Tasks 16 through 22 are complete;
-Tasks 23 through 25 are complete, and Tasks 26 through 35 remain planned Git
-workflow coverage.
+check is CI-only in this environment. Tasks 16 through 35 are complete;
+Tasks 36 through 39 remain planned product-readiness and visual-regression
+work.
 Do not start a later post-MVP task until its dependencies are complete and its
 visible behavior has been recorded in the behavior ledger without copying
 proprietary implementation details or assets.
@@ -19,7 +19,7 @@ proprietary implementation details or assets.
 | Inspection & local recovery | 23–27 | Diff comparison, shelves, file history, blame, reset, revert, and history rewriting |
 | Remote & repository topology | 28–34 | Remote branches, update/push safety, worktrees, ignore rules, submodules, recovery, and setup |
 | Optional integrations | 35 | GitHub/GitLab links and review handoff without coupling the core backend to a host API |
-| Product readiness | 36–38 | Large-repository resilience, accessibility, preferences, and signed releases |
+| Product readiness | 36–39 | Large-repository resilience, accessibility, preferences, signed releases, and visual-regression QA |
 
 Every task must include backend tests with isolated Git fixtures, controller
 tests for async state changes, responsive widget tests, beginner-oriented
@@ -543,3 +543,25 @@ folders.
 **Done when:** A `release-*` tag on a matching release commit creates reviewed,
 signed, checksum-verifiable artifacts and the public documentation explains
 installation and trust verification.
+
+## Task 39 — Cross-platform visual regression QA
+
+**Depends on:** Tasks 37 and 38.
+
+**Goal:** Keep released desktop surfaces visually stable across supported
+window sizes, themes, text scales, and platform font rendering.
+
+- Build deterministic UI fixture states for core screens, dialogs, progress,
+  empty, error, disabled, and destructive-confirmation surfaces.
+- Capture reviewed light/dark golden matrices at compact, standard, and wide
+  desktop sizes with supported text scales.
+- Add explicit overflow, clipping, minimum hit-area, focus-ring, and
+  button-label alignment assertions around every shared control family.
+- Separate platform font-rendering baselines and tolerances so Windows, macOS,
+  and Linux differences remain reviewed rather than silently ignored.
+- Require intentional baseline updates with a short visual-change rationale
+  and retain a manual clean-machine pass for native window chrome.
+
+**Done when:** CI rejects unreviewed layout or theme drift on every supported
+platform and the release checklist covers the representative interaction-state
+matrix.

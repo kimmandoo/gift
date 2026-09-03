@@ -696,6 +696,11 @@ system Git 2.35+.
 6. Increased label line height and primary/secondary button hit areas, then
    hardened compact action wrapping with 1.6× text-scale coverage for
    constrained hosting and conflict surfaces.
+7. Separated Push guidance from the Remote selector and locked the gap with a
+   geometry regression assertion.
+8. Applied the display title face only to selected large, workflow-defining
+   primary actions, preserving compact filled controls and the body face for
+   secondary, text, and icon controls.
 
 ## Completed follow-up: Windows setup packaging
 

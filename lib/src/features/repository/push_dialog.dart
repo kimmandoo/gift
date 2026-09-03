@@ -74,6 +74,7 @@ class _PushDialogState extends State<PushDialog> {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               _pushGuidance(),
+              const SizedBox(height: 14),
               _remoteField(),
               const SizedBox(height: 8),
               DropdownButtonFormField<GitPushTarget>(
@@ -201,6 +202,7 @@ class _PushDialogState extends State<PushDialog> {
           ),
         if (!_busy && preview?.canExecute == true)
           FilledButton(
+            style: pixelProminentButtonStyle,
             key: const Key('execute-push'),
             onPressed: _executePush,
             child: Text(

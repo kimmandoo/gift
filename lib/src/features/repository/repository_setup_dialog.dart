@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:gift/src/app/pixel_theme.dart';
 import 'package:gift/src/backend/domain.dart';
 import 'package:gift/src/backend/error.dart';
 import 'package:gift/src/backend/git_gateway.dart';
@@ -190,6 +191,7 @@ class _RepositorySetupDialogState extends State<RepositorySetupDialog> {
         alignment: Alignment.centerRight,
         child: FilledButton.icon(
           key: const Key('clone-repository'),
+          style: pixelProminentButtonStyle,
           onPressed: _isBusy ? null : _clone,
           icon: const Icon(Icons.download),
           label: const Text('Clone repository'),
@@ -223,6 +225,7 @@ class _RepositorySetupDialogState extends State<RepositorySetupDialog> {
         alignment: Alignment.centerRight,
         child: FilledButton.icon(
           key: const Key('initialize-repository'),
+          style: pixelProminentButtonStyle,
           onPressed: _isBusy ? null : _initialize,
           icon: const Icon(Icons.create_new_folder_outlined),
           label: const Text('Initialize repository'),

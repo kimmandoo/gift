@@ -7,6 +7,7 @@ import 'package:gift/src/backend/history.dart';
 import 'package:gift/src/backend/push.dart';
 import 'package:gift/src/backend/remote.dart';
 import 'package:gift/src/backend/status.dart';
+import 'package:gift/src/app/pixel_theme.dart';
 import 'package:gift/src/features/repository/push_dialog.dart';
 
 import '../../helpers/git_patch_gateway_stub.dart';
@@ -28,6 +29,7 @@ void main() {
 
     await tester.pumpWidget(
       MaterialApp(
+        theme: buildPixelTheme(),
         home: PushDialog(gateway: gateway, repository: repository),
       ),
     );
@@ -35,8 +37,9 @@ void main() {
 
     expect(find.byKey(const Key('push-guidance')), findsOneWidget);
     expect(find.text('Nothing is pushed yet'), findsOneWidget);
+    final guidance = tester.getRect(find.byKey(const Key('push-guidance')));
     final remoteLabel = tester.getRect(find.text('Remote'));
-    expect(remoteLabel.top, greaterThanOrEqualTo(0));
+    expect(remoteLabel.top, greaterThanOrEqualTo(guidance.bottom + 8));
     expect(remoteLabel.bottom, lessThanOrEqualTo(640));
     expect(find.byKey(const Key('execute-push')), findsNothing);
     await tester.tap(find.byKey(const Key('preview-push')));
@@ -64,6 +67,7 @@ void main() {
 
     await tester.pumpWidget(
       MaterialApp(
+        theme: buildPixelTheme(),
         home: PushDialog(
           gateway: _PushGateway(repository),
           repository: repository,

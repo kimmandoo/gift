@@ -146,6 +146,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
                   LayoutBuilder(
                     builder: (context, constraints) {
                       final openButton = FilledButton.icon(
+                        style: pixelProminentButtonStyle,
                         onPressed: state.canOpen && !state.isLoading
                             ? _selectAndOpen
                             : null,

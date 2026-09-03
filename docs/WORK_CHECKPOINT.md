@@ -5,11 +5,11 @@ This file is the handoff record for continuing work across query sessions.
 ## Current checkpoint
 
 - Date: 2026-09-04
-- Active task: Button redesign and silent background refresh are complete;
-  Task 36 is next.
+- Active task: Push guidance spacing, primary-action typography, and Task 39
+  planning are complete; Task 36 remains next.
 - Branch: `main`; no new branch or worktree was created.
-- Latest completed implementation commit: `201c441` (`fix(ui): polish pixel
-  controls and add Windows setup`).
+- Latest completed implementation commit: `66564e1` (`fix(ui): stabilize
+  controls and silent refresh`).
 - Completed Task 28 after recording REMOTE-BRANCH-01/02 and UPDATE-01/02,
   adding the first RED fixture, and proving the real-Git implementation GREEN.
 - Added immutable remote ref snapshots with grouped remotes, local tracking,
@@ -394,6 +394,34 @@ This file is the handoff record for continuing work across query sessions.
   the existing narrow File History and Reset contracts.
 - `flutter build windows --release` rebuilt `gift.exe` after the final spacing
   changes; the process stayed running and reported `Responding=True`.
+- Blockers: none.
+- Next action after this session commit: activate Task 36 after recording its
+  scale/resilience scenarios and first failing fixture.
+
+## Current session: Push spacing, primary typography, and Task 39
+
+- Date: 2026-09-04.
+- Changed files: `CHANGELOG.md`, `TASKS.md`,
+  `docs/{POST_MVP_ROADMAP.md,WORK_CHECKPOINT.md}`,
+  `docs/superpowers/plans/2026-09-02-gift-dart-mvp.md`,
+  `lib/src/app/pixel_theme.dart`,
+  `lib/src/features/repository/{changes_screen,comparison_dialog,hosting_dialog,push_dialog,repository_setup_dialog,reset_dialog,update_project_dialog,welcome_screen}.dart`,
+  and `test/{branding_test.dart,features/repository/push_dialog_test.dart}`.
+- Push change: inserted a fixed 14-pixel gap between the `Nothing is pushed
+  yet` guidance card and Remote selector; the narrow-window test now asserts
+  their geometry cannot overlap.
+- Button change: selected large workflow-defining primary actions use the
+  `Jersey 15` display title face, 19-pixel labels, wider horizontal padding,
+  and a 42-pixel minimum height. Compact filled buttons plus secondary, text,
+  and icon controls retain the legible UI face and compact geometry.
+- Roadmap change: added Task 39 for cross-platform visual-regression fixtures,
+  golden matrices, clipping/hit-area assertions, platform font baselines, and
+  reviewed baseline updates. Task 36 remains the next task by dependency order.
+- Verification so far: formatting and `flutter analyze` passed; focused
+  branding, app boot, and Push tests passed with 9 tests; the final complete
+  feature UI suite passed with 71 tests.
+- `flutter build windows --release` rebuilt `gift.exe`; the resulting desktop
+  process stayed running and reported `Responding=True`.
 - Blockers: none.
 - Next action after this session commit: activate Task 36 after recording its
   scale/resilience scenarios and first failing fixture.

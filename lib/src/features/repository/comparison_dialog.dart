@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:gift/src/app/pixel_theme.dart';
 import 'package:gift/src/backend/comparison.dart';
 import 'package:gift/src/backend/diff.dart';
 import 'package:gift/src/backend/domain.dart';
@@ -229,6 +230,7 @@ class _ComparisonDialogState extends State<ComparisonDialog> {
         );
         final compareButton = FilledButton.icon(
           key: const Key('compare-revisions'),
+          style: pixelProminentButtonStyle,
           onPressed: _busy ? null : _compare,
           icon: const Icon(Icons.compare_arrows),
           label: const Text('Compare'),
@@ -767,6 +769,7 @@ class _ThreeWayComparisonDialogState extends State<ThreeWayComparisonDialog> {
         );
         final button = FilledButton.icon(
           key: const Key('compare-three-way'),
+          style: pixelProminentButtonStyle,
           onPressed: _busy ? null : _compare,
           icon: const Icon(Icons.call_split),
           label: const Text('Compare'),

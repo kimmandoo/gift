@@ -3,6 +3,7 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:gift/src/app/pixel_theme.dart';
 import 'package:gift/src/backend/domain.dart';
 import 'package:gift/src/backend/error.dart';
 import 'package:gift/src/backend/git_gateway.dart';
@@ -314,6 +315,7 @@ class _HostingDialogState extends State<HostingDialog> {
             alignment: Alignment.centerRight,
             child: FilledButton.icon(
               key: const Key('build-hosting-links'),
+              style: pixelProminentButtonStyle,
               onPressed: _isBusy ? null : _buildLinks,
               icon: const Icon(Icons.link, size: 18),
               label: const Text('Build links'),

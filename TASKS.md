@@ -6,8 +6,8 @@
 
 ## Progress
 
-- **Total Tasks:** 38
-- **Completed:** 35 / 38
+- **Total Tasks:** 39
+- **Completed:** 35 / 39
 - **Current Active Task:** None. Task 36 — Scale & resilience is next.
 
 | # | Scope | Dart backend deliverables | Flutter deliverables | Status |
@@ -50,6 +50,7 @@
 | **36** | Scale & resilience | File watching, cache invalidation, process supervision | Large-repository responsiveness | ⬜ |
 | **37** | Accessibility & preferences | Versioned settings and locale-ready text contracts | Scaling, remapping, themes, and accessibility | ⬜ |
 | **38** | Public release | Signed packages, provenance, update metadata, and release checks | Installers and first-run diagnostics | ⬜ |
+| **39** | Visual regression QA | Deterministic fixture states and platform font checks | Golden matrix, overflow guards, and interaction snapshots | ⬜ |
 
 ## Completed foundations
 
@@ -570,7 +571,7 @@ verification suite passed with 206 tests. Task 36 is next.
 
 ## Post-MVP backlog
 
-Tasks 16–38 are specified in
+Tasks 16–39 are specified in
 [`docs/POST_MVP_ROADMAP.md`](docs/POST_MVP_ROADMAP.md). Start them in numeric
 order unless a task explicitly lists no dependency. Before implementation,
 move exactly one task to active, add its behavior-ledger scenarios, and record

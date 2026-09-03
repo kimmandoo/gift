@@ -25,6 +25,10 @@ void main() {
       BorderRadius.circular(4),
     );
     expect(filled.backgroundColor!.resolve(const {}), pixelMint);
+    expect(
+      pixelProminentButtonStyle.textStyle!.resolve(const {})!.fontFamily,
+      pixelDisplayFontFamily,
+    );
     expect(outlined.backgroundColor!.resolve(const {}), Colors.transparent);
     expect(outlined.foregroundColor!.resolve(const {}), pixelInk);
     expect(icon.backgroundColor!.resolve(const {}), Colors.transparent);

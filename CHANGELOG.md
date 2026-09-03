@@ -9,6 +9,11 @@
   refreshes no longer disabled or replaced the visible refresh button.
 - fix(ui): increased shared text and control breathing room and allowed compact
   action groups to wrap without clipping or horizontal overflow.
+- fix(push): separated the preflight notice from the Remote selector so their
+  surfaces and labels no longer overlap.
+- fix(ui): gave large workflow-defining primary actions the display title face
+  and a slightly larger silhouette while keeping compact controls restrained.
+- docs(roadmap): added cross-platform visual regression QA as Task 39.
 - feat(windows): added a per-user gift setup executable with Start Menu and
   uninstall registration alongside the release bundle and portable launcher.
 

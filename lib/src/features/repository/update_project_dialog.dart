@@ -163,6 +163,7 @@ class _UpdateProjectDialogState extends State<UpdateProjectDialog> {
         if (!_busy && preview?.canExecute == true)
           FilledButton(
             key: const Key('execute-update-project'),
+            style: pixelProminentButtonStyle,
             onPressed: _executeUpdate,
             child: Text(
               preview!.request.strategy == GitUpdateStrategy.resetToRemote
