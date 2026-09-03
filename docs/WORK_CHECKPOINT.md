@@ -8,28 +8,30 @@ This file is the handoff record for continuing work across query sessions.
 - Active task: Task 23, the diff and comparison workbench, is active; Task 22
   is complete and its comparison scenarios are already in the behavior ledger.
 - Branch: `main`; no new branch or worktree was created.
-- Latest commit before this implementation session: `0636c61
-  fix(build): clear stale Flutter desktop caches`.
+- Latest commit before this implementation session: `2cb7077
+  docs(checkpoint): record comparison transfer verification`.
 - History cleanup: removed the pull-request merge commit from local and remote
   `main` with a lease-protected force update; the branding commits and Task 18
   content remain in a linear history. The two remaining obsolete branding
   labels in reachable commit messages were also replaced, and the rewrite
   backup ref was removed.
-- Changed files in this session: comparison backend contracts/services,
-  reviewed transfer UI, comparison tests, `TASKS.md`, `CHANGELOG.md`,
-  `docs/POST_MVP_ROADMAP.md`, `docs/ARCHITECTURE.md`,
-  `docs/WORK_CHECKPOINT.md`, and the implementation plan.
-- Verification: focused comparison backend/UI tests, `flutter analyze`, the
-  full Flutter suite (`132` tests), and `git diff --check` passed. Native
-  Windows compilation was not available in this Linux workspace.
+- Changed files in this session: `lib/src/features/repository/changes_screen.dart`,
+  `test/features/repository/changes_screen_test.dart`, `CHANGELOG.md`, and
+  `docs/WORK_CHECKPOINT.md`.
+- Verification: focused diff UI test, the complete changes-screen test file,
+  `flutter analyze`, the full Flutter suite (`132` tests), and
+  `git diff --check` passed. Native Windows compilation was not available in
+  this Linux workspace.
 - Next action: continue Task 23 with bounded clipboard/external-text and
   three-way source contracts and fixtures. Keep Task 24 planned until those
   remaining comparison flows pass.
 - First failing signal for Task 23 remains recorded in the plan. This session's
   second RED was the missing `GitComparisonTransferAction` and
-  `DartGitBackend.applyComparison` contract. The reported Windows signal was a
-  separate cascade of missing Flutter widget and `ChangeNotifier` types from
-  incremental build output.
+  `DartGitBackend.applyComparison` contract. This UI fix first reproduced a
+  32px diff checkbox against the 24px compact target before constraining its
+  selector height. The reported Windows signal was a separate cascade of
+  missing Flutter widget and `ChangeNotifier` types from incremental build
+  output.
 - Blockers: none.
 
 ## Previous checkpoint

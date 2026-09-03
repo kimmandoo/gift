@@ -2,6 +2,8 @@
 
 ## 2026-09-03
 
+- fix(ui): aligned diff checkboxes with code-line height and removed extra
+  bottom spacing.
 - fix(build): cleared generated Flutter desktop caches before release builds
   to prevent stale frontend errors after Windows source updates.
 - docs(roadmap): expanded the JetBrains Git workflow backlog with Tasks 23–35.

@@ -732,6 +732,14 @@ void main() {
     await tester.tap(find.byKey(const ValueKey('diff-hunk-select-0')));
     await tester.pump();
 
+    expect(
+      tester.getSize(find.byKey(const ValueKey('diff-hunk-select-0'))).height,
+      lessThanOrEqualTo(24),
+    );
+    expect(
+      tester.getSize(find.byKey(const ValueKey('diff-line-select-1'))).height,
+      lessThanOrEqualTo(24),
+    );
     expect(find.byKey(const Key('stage-selected-patch')), findsOneWidget);
     await tester.ensureVisible(find.byKey(const Key('stage-selected-patch')));
     await tester.pumpAndSettle();

@@ -21,6 +21,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter/services.dart';
 import 'package:gift/src/app/pixel_theme.dart';
 
+const _diffSelectorHeight = 20.0;
+const _diffCheckboxScale = 0.8;
+
 /// Shows the repository's current changes grouped by their Git facets.
 class ChangesScreen extends StatelessWidget {
   const ChangesScreen({
@@ -1444,19 +1447,25 @@ class _ChangesScreenBodyState extends ConsumerState<_ChangesScreenBody> {
     if (line.kind == GitDiffLineKind.hunkHeader && hunkIndex != null) {
       return SizedBox(
         width: 40,
-        child: Checkbox(
-          key: ValueKey('diff-hunk-select-$hunkIndex'),
-          value: controller.isDiffHunkSelected(hunkIndex),
-          onChanged: state.isMutating
-              ? null
-              : (selected) {
-                  if (selected != null) {
-                    controller.toggleDiffHunk(hunkIndex, selected);
-                  }
-                },
-          visualDensity: VisualDensity.compact,
-          materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-          semanticLabel: 'Select hunk ${hunkIndex + 1}',
+        height: _diffSelectorHeight,
+        child: Center(
+          child: Transform.scale(
+            scale: _diffCheckboxScale,
+            child: Checkbox(
+              key: ValueKey('diff-hunk-select-$hunkIndex'),
+              value: controller.isDiffHunkSelected(hunkIndex),
+              onChanged: state.isMutating
+                  ? null
+                  : (selected) {
+                      if (selected != null) {
+                        controller.toggleDiffHunk(hunkIndex, selected);
+                      }
+                    },
+              visualDensity: VisualDensity.compact,
+              materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              semanticLabel: 'Select hunk ${hunkIndex + 1}',
+            ),
+          ),
         ),
       );
     }
@@ -1466,6 +1475,7 @@ class _ChangesScreenBodyState extends ConsumerState<_ChangesScreenBody> {
     if (!isChanged || hunkIndex == null) return const SizedBox(width: 40);
     return SizedBox(
       width: 40,
+      height: _diffSelectorHeight,
       child: Focus(
         onKeyEvent: (node, event) {
           if (event is KeyDownEvent &&
@@ -1480,23 +1490,28 @@ class _ChangesScreenBodyState extends ConsumerState<_ChangesScreenBody> {
           }
           return KeyEventResult.ignored;
         },
-        child: Checkbox(
-          key: ValueKey('diff-line-select-$lineIndex'),
-          value: controller.isDiffLineSelected(lineIndex),
-          onChanged: state.isMutating
-              ? null
-              : (selected) {
-                  if (selected != null) {
-                    controller.toggleDiffLine(
-                      lineIndex,
-                      selected,
-                      extend: _isShiftPressed,
-                    );
-                  }
-                },
-          visualDensity: VisualDensity.compact,
-          materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-          semanticLabel: 'Select changed line ${lineIndex + 1}',
+        child: Center(
+          child: Transform.scale(
+            scale: _diffCheckboxScale,
+            child: Checkbox(
+              key: ValueKey('diff-line-select-$lineIndex'),
+              value: controller.isDiffLineSelected(lineIndex),
+              onChanged: state.isMutating
+                  ? null
+                  : (selected) {
+                      if (selected != null) {
+                        controller.toggleDiffLine(
+                          lineIndex,
+                          selected,
+                          extend: _isShiftPressed,
+                        );
+                      }
+                    },
+              visualDensity: VisualDensity.compact,
+              materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              semanticLabel: 'Select changed line ${lineIndex + 1}',
+            ),
+          ),
         ),
       ),
     );
