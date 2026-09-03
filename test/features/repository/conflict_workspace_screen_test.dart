@@ -7,6 +7,7 @@ import 'package:gift/src/backend/executor.dart';
 import 'package:gift/src/backend/git_gateway.dart';
 import 'package:gift/src/features/repository/conflict_controller.dart';
 import 'package:gift/src/features/repository/conflict_workspace_screen.dart';
+import 'package:gift/src/app/pixel_theme.dart';
 
 import '../../helpers/git_patch_gateway_stub.dart';
 
@@ -80,8 +81,11 @@ void main() {
     await controller.refresh();
     await tester.binding.setSurfaceSize(const Size(360, 640));
     addTearDown(() => tester.binding.setSurfaceSize(null));
+    tester.platformDispatcher.textScaleFactorTestValue = 1.6;
+    addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
     await tester.pumpWidget(
       MaterialApp(
+        theme: buildPixelTheme(),
         home: MediaQuery(
           data: const MediaQueryData(size: Size(360, 640)),
           child: ConflictWorkspaceScreen(

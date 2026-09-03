@@ -128,15 +128,16 @@ class _HostingDialogState extends State<HostingDialog> {
                 ),
               ),
               const SizedBox(height: 12),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.end,
+              Wrap(
+                alignment: WrapAlignment.end,
+                spacing: 8,
+                runSpacing: 4,
                 children: [
                   TextButton(
                     key: const Key('refresh-hosting'),
                     onPressed: _isBusy ? null : _load,
                     child: const Text('Refresh'),
                   ),
-                  const SizedBox(width: 8),
                   TextButton(
                     key: const Key('close-hosting-dialog'),
                     onPressed: _isBusy

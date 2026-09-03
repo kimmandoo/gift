@@ -131,100 +131,108 @@ ThemeData buildPixelTheme({Brightness brightness = Brightness.dark}) {
   const buttonTextStyle = TextStyle(
     fontFamily: pixelFontFamily,
     fontSize: pixelLabelLargeSize,
-    height: 1.2,
+    height: 1.28,
     fontWeight: FontWeight.w600,
     letterSpacing: 0.05,
   );
-  final buttonShape = const RoundedRectangleBorder(
-    borderRadius: BorderRadius.zero,
+  final buttonShape = RoundedRectangleBorder(
+    borderRadius: BorderRadius.circular(4),
   );
+  const buttonPadding = EdgeInsets.symmetric(horizontal: 12, vertical: 8);
   final filledButtonStyle = ButtonStyle(
+    animationDuration: Duration.zero,
     backgroundColor: WidgetStateProperty.resolveWith((states) {
-      if (states.contains(WidgetState.disabled)) {
-        return muted.withValues(alpha: 0.2);
-      }
-      if (states.contains(WidgetState.pressed)) {
-        return primary.withValues(alpha: 0.72);
-      }
-      if (states.contains(WidgetState.hovered)) {
-        return primary.withValues(alpha: 0.88);
-      }
+      if (states.contains(WidgetState.disabled)) return panel;
       return primary;
     }),
     foregroundColor: WidgetStateProperty.resolveWith((states) {
       if (states.contains(WidgetState.disabled)) {
-        return muted.withValues(alpha: 0.62);
+        return muted.withValues(alpha: 0.58);
       }
-      return dark ? pixelCanvas : pixelLightPanel;
+      return scheme.onPrimary;
     }),
-    side: WidgetStateProperty.resolveWith((states) {
-      if (states.contains(WidgetState.disabled)) {
-        return BorderSide(color: muted.withValues(alpha: 0.35));
+    overlayColor: WidgetStateProperty.resolveWith((states) {
+      if (states.contains(WidgetState.pressed)) {
+        return ink.withValues(alpha: 0.18);
       }
-      return BorderSide(color: primary, width: 2);
+      if (states.contains(WidgetState.hovered) ||
+          states.contains(WidgetState.focused)) {
+        return Colors.white.withValues(alpha: dark ? 0.1 : 0.16);
+      }
+      return Colors.transparent;
     }),
     textStyle: const WidgetStatePropertyAll(buttonTextStyle),
-    padding: const WidgetStatePropertyAll(
-      EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-    ),
+    padding: const WidgetStatePropertyAll(buttonPadding),
     tapTargetSize: MaterialTapTargetSize.shrinkWrap,
     shape: WidgetStatePropertyAll(buttonShape),
-    minimumSize: const WidgetStatePropertyAll(Size(40, 36)),
+    minimumSize: const WidgetStatePropertyAll(Size(40, 40)),
+    elevation: const WidgetStatePropertyAll(0),
   );
   final outlinedButtonStyle = ButtonStyle(
-    backgroundColor: WidgetStateProperty.resolveWith((states) {
+    animationDuration: Duration.zero,
+    backgroundColor: const WidgetStatePropertyAll(Colors.transparent),
+    foregroundColor: WidgetStateProperty.resolveWith((states) {
       if (states.contains(WidgetState.disabled)) {
-        return Colors.transparent;
+        return muted.withValues(alpha: 0.58);
       }
+      if (states.contains(WidgetState.hovered) ||
+          states.contains(WidgetState.focused) ||
+          states.contains(WidgetState.pressed)) {
+        return primary;
+      }
+      return ink;
+    }),
+    overlayColor: WidgetStateProperty.resolveWith((states) {
       if (states.contains(WidgetState.pressed)) {
-        return primary.withValues(alpha: 0.2);
+        return primary.withValues(alpha: 0.14);
       }
       if (states.contains(WidgetState.hovered) ||
           states.contains(WidgetState.focused)) {
-        return dark ? pixelPrimaryContainer : pixelLightPrimaryContainer;
+        return primary.withValues(alpha: 0.08);
       }
       return Colors.transparent;
-    }),
-    foregroundColor: WidgetStateProperty.resolveWith((states) {
-      if (states.contains(WidgetState.disabled)) {
-        return muted.withValues(alpha: 0.62);
-      }
-      return primary;
     }),
     side: WidgetStateProperty.resolveWith((states) {
       if (states.contains(WidgetState.disabled)) {
-        return BorderSide(color: muted.withValues(alpha: 0.35));
+        return BorderSide(color: muted.withValues(alpha: 0.24));
       }
-      if (states.contains(WidgetState.focused) ||
+      if (states.contains(WidgetState.hovered) ||
+          states.contains(WidgetState.focused) ||
           states.contains(WidgetState.pressed)) {
-        return BorderSide(color: primary, width: 2);
+        return BorderSide(color: primary);
       }
-      return BorderSide(color: primary);
+      return border;
     }),
     textStyle: const WidgetStatePropertyAll(buttonTextStyle),
-    padding: const WidgetStatePropertyAll(
-      EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-    ),
+    padding: const WidgetStatePropertyAll(buttonPadding),
     tapTargetSize: MaterialTapTargetSize.shrinkWrap,
     shape: WidgetStatePropertyAll(buttonShape),
-    minimumSize: const WidgetStatePropertyAll(Size(40, 36)),
+    minimumSize: const WidgetStatePropertyAll(Size(40, 40)),
+    elevation: const WidgetStatePropertyAll(0),
   );
   final textButtonStyle = ButtonStyle(
-    backgroundColor: WidgetStateProperty.resolveWith((states) {
+    animationDuration: Duration.zero,
+    backgroundColor: const WidgetStatePropertyAll(Colors.transparent),
+    foregroundColor: WidgetStateProperty.resolveWith((states) {
+      if (states.contains(WidgetState.disabled)) {
+        return muted.withValues(alpha: 0.58);
+      }
+      if (states.contains(WidgetState.hovered) ||
+          states.contains(WidgetState.focused) ||
+          states.contains(WidgetState.pressed)) {
+        return primary;
+      }
+      return ink;
+    }),
+    overlayColor: WidgetStateProperty.resolveWith((states) {
       if (states.contains(WidgetState.pressed)) {
-        return primary.withValues(alpha: 0.2);
+        return primary.withValues(alpha: 0.12);
       }
       if (states.contains(WidgetState.hovered) ||
           states.contains(WidgetState.focused)) {
-        return dark ? pixelPrimaryContainer : pixelLightPrimaryContainer;
+        return primary.withValues(alpha: 0.07);
       }
       return Colors.transparent;
-    }),
-    foregroundColor: WidgetStateProperty.resolveWith((states) {
-      if (states.contains(WidgetState.disabled)) {
-        return muted.withValues(alpha: 0.62);
-      }
-      return primary;
     }),
     textStyle: const WidgetStatePropertyAll(buttonTextStyle),
     padding: const WidgetStatePropertyAll(
@@ -232,7 +240,8 @@ ThemeData buildPixelTheme({Brightness brightness = Brightness.dark}) {
     ),
     tapTargetSize: MaterialTapTargetSize.shrinkWrap,
     shape: WidgetStatePropertyAll(buttonShape),
-    minimumSize: const WidgetStatePropertyAll(Size(40, 36)),
+    minimumSize: const WidgetStatePropertyAll(Size(36, 36)),
+    elevation: const WidgetStatePropertyAll(0),
   );
   final base = ThemeData(
     colorScheme: scheme,
@@ -267,14 +276,14 @@ ThemeData buildPixelTheme({Brightness brightness = Brightness.dark}) {
     labelLarge: TextStyle(
       color: ink,
       fontSize: pixelLabelLargeSize,
-      height: 1.2,
+      height: 1.3,
       fontWeight: FontWeight.w600,
       letterSpacing: 0.05,
     ),
     labelSmall: TextStyle(
       color: muted,
       fontSize: pixelLabelSmallSize,
-      height: 1.25,
+      height: 1.35,
       fontWeight: FontWeight.w500,
       letterSpacing: 0.05,
     ),
@@ -401,41 +410,33 @@ ThemeData buildPixelTheme({Brightness brightness = Brightness.dark}) {
     textButtonTheme: TextButtonThemeData(style: textButtonStyle),
     iconButtonTheme: IconButtonThemeData(
       style: ButtonStyle(
-        backgroundColor: WidgetStateProperty.resolveWith((states) {
-          if (states.contains(WidgetState.pressed)) {
-            return primary.withValues(alpha: 0.2);
-          }
-          if (states.contains(WidgetState.hovered) ||
-              states.contains(WidgetState.focused)) {
-            return dark ? pixelPrimaryContainer : pixelLightPrimaryContainer;
-          }
-          return Colors.transparent;
-        }),
+        animationDuration: Duration.zero,
+        backgroundColor: const WidgetStatePropertyAll(Colors.transparent),
         foregroundColor: WidgetStateProperty.resolveWith((states) {
           if (states.contains(WidgetState.disabled)) {
-            return muted.withValues(alpha: 0.5);
+            return muted.withValues(alpha: 0.42);
           }
           if (states.contains(WidgetState.hovered) ||
-              states.contains(WidgetState.focused)) {
+              states.contains(WidgetState.focused) ||
+              states.contains(WidgetState.pressed)) {
             return primary;
           }
           return muted;
         }),
-        side: WidgetStateProperty.resolveWith((states) {
-          if (states.contains(WidgetState.disabled)) {
-            return BorderSide(color: muted.withValues(alpha: 0.25));
+        overlayColor: WidgetStateProperty.resolveWith((states) {
+          if (states.contains(WidgetState.pressed)) {
+            return primary.withValues(alpha: 0.14);
           }
           if (states.contains(WidgetState.hovered) ||
               states.contains(WidgetState.focused)) {
-            return BorderSide(color: primary);
+            return primary.withValues(alpha: 0.08);
           }
-          return BorderSide(color: muted.withValues(alpha: 0.45));
+          return Colors.transparent;
         }),
         padding: const WidgetStatePropertyAll(EdgeInsets.all(8)),
         tapTargetSize: MaterialTapTargetSize.shrinkWrap,
         shape: WidgetStatePropertyAll(buttonShape),
         minimumSize: const WidgetStatePropertyAll(Size(36, 36)),
-        maximumSize: const WidgetStatePropertyAll(Size(40, 40)),
       ),
     ),
     listTileTheme: ListTileThemeData(
@@ -447,7 +448,6 @@ ThemeData buildPixelTheme({Brightness brightness = Brightness.dark}) {
         color: ink,
         fontWeight: FontWeight.w600,
       ),
-      subtitleTextStyle: resolvedTextTheme.bodySmall?.copyWith(color: muted),
       minTileHeight: 48,
       minVerticalPadding: 6,
       contentPadding: const EdgeInsets.symmetric(horizontal: 12),
@@ -471,37 +471,36 @@ ThemeData buildPixelTheme({Brightness brightness = Brightness.dark}) {
     chipTheme: base.chipTheme.copyWith(
       backgroundColor: panel,
       selectedColor: dark ? pixelPrimaryContainer : pixelLightPrimaryContainer,
-      checkmarkColor: dark
-          ? pixelOnPrimaryContainer
-          : pixelLightOnPrimaryContainer,
+      checkmarkColor: primary,
       labelStyle: resolvedTextTheme.labelLarge,
       side: border,
-      shape: buttonShape,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
     ),
     segmentedButtonTheme: SegmentedButtonThemeData(
       style: ButtonStyle(
+        animationDuration: Duration.zero,
         backgroundColor: WidgetStateProperty.resolveWith((states) {
           if (states.contains(WidgetState.selected)) {
             return dark ? pixelPrimaryContainer : pixelLightPrimaryContainer;
           }
           if (states.contains(WidgetState.pressed)) {
-            return primary.withValues(alpha: 0.16);
+            return primary.withValues(alpha: 0.12);
           }
           return Colors.transparent;
         }),
         foregroundColor: WidgetStateProperty.resolveWith((states) {
-          if (states.contains(WidgetState.selected)) {
-            return dark
-                ? pixelOnPrimaryContainer
-                : pixelLightOnPrimaryContainer;
+          if (states.contains(WidgetState.selected) ||
+              states.contains(WidgetState.hovered) ||
+              states.contains(WidgetState.focused)) {
+            return primary;
           }
           return ink;
         }),
         side: WidgetStateProperty.resolveWith((states) {
           if (states.contains(WidgetState.selected) ||
               states.contains(WidgetState.focused)) {
-            return BorderSide(color: primary, width: 2);
+            return BorderSide(color: primary);
           }
           return border;
         }),

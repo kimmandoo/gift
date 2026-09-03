@@ -6,6 +6,7 @@ import 'package:gift/src/backend/git_gateway.dart';
 import 'package:gift/src/backend/hosting.dart';
 import 'package:gift/src/backend/status.dart';
 import 'package:gift/src/features/repository/hosting_dialog.dart';
+import 'package:gift/src/app/pixel_theme.dart';
 
 import '../../helpers/git_patch_gateway_stub.dart';
 
@@ -15,7 +16,9 @@ void main() {
   ) async {
     addTearDown(tester.view.reset);
     tester.view.physicalSize = const Size(360, 640);
-    tester.view.devicePixelRatio = 1.2;
+    tester.view.devicePixelRatio = 1;
+    tester.platformDispatcher.textScaleFactorTestValue = 1.6;
+    addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
 
     const repository = RepositoryOpened(
       repositoryId: RepositoryId(value: 'hosting-ui-repository'),
@@ -25,6 +28,7 @@ void main() {
     final copiedUrls = <String>[];
     await tester.pumpWidget(
       MaterialApp(
+        theme: buildPixelTheme(),
         home: HostingDialog(
           gateway: gateway,
           repository: repository,
@@ -41,22 +45,22 @@ void main() {
     expect(find.byKey(const Key('hosting-available')), findsOneWidget);
     await tester.drag(
       find.byKey(const Key('hosting-scroll')),
-      const Offset(0, -240),
+      const Offset(0, -600),
     );
     await tester.pumpAndSettle();
     await tester.tap(find.byKey(const Key('build-hosting-links')));
     await tester.pumpAndSettle();
     expect(find.byKey(const Key('hosting-link-results')), findsOneWidget);
     expect(find.byKey(const Key('hosting-link-commit')), findsOneWidget);
-    await tester.drag(
-      find.byKey(const Key('hosting-scroll')),
-      const Offset(0, -700),
-    );
+    await tester.ensureVisible(find.byKey(const Key('copy-hosting-commit')));
     await tester.pumpAndSettle();
     await tester.tap(find.byKey(const Key('copy-hosting-commit')));
     await tester.pumpAndSettle();
     expect(copiedUrls, hasLength(1));
-    await tester.drag(find.byType(ListView).last, const Offset(0, 2000));
+    await tester.drag(
+      find.byKey(const Key('hosting-scroll')),
+      const Offset(0, 2000),
+    );
     await tester.pumpAndSettle();
     expect(find.byKey(const Key('hosting-message')), findsOneWidget);
     await tester.tap(find.byKey(const Key('hosting-review-handoff')));

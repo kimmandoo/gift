@@ -189,10 +189,13 @@ class _ConflictWorkspaceScreenState extends State<ConflictWorkspaceScreen> {
           Text(
             count == 0 ? path : 'Conflict $selected of $count · $path',
             key: const Key('conflict-selection-label'),
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
             style: Theme.of(context).textTheme.titleMedium,
           ),
-          Row(
-            mainAxisSize: MainAxisSize.min,
+          Wrap(
+            spacing: 8,
+            runSpacing: 4,
             children: [
               OutlinedButton.icon(
                 key: const Key('previous-conflict'),
@@ -202,7 +205,6 @@ class _ConflictWorkspaceScreenState extends State<ConflictWorkspaceScreen> {
                 icon: const Icon(Icons.chevron_left),
                 label: const Text('Previous'),
               ),
-              const SizedBox(width: 8),
               OutlinedButton.icon(
                 key: const Key('next-conflict'),
                 onPressed: count > 1 && !state.isMutating

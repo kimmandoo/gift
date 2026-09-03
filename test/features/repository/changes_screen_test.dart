@@ -46,6 +46,31 @@ void main() {
     controller.dispose();
   });
 
+  test('keeps unchanged background polling visually silent', () async {
+    final repository = const RepositoryOpened(
+      repositoryId: RepositoryId(value: 'polling-repository'),
+      root: '/workspace/project',
+    );
+    final unchanged = snapshot(repository, changes: const <GitChange>[]);
+    final gateway = FakeChangesGateway(snapshots: [unchanged]);
+    final controller = ChangesController(
+      gateway: gateway,
+      repositoryId: repository.repositoryId,
+      pollInterval: const Duration(milliseconds: 20),
+    );
+    final refreshingStates = <bool>[];
+    controller.addListener(() {
+      refreshingStates.add(controller.state.isRefreshing);
+    });
+
+    controller.start();
+    await Future<void>.delayed(const Duration(milliseconds: 75));
+
+    expect(gateway.statusCalls, greaterThanOrEqualTo(2));
+    expect(refreshingStates, [true, false]);
+    controller.dispose();
+  });
+
   test('keeps a partial selection recoverable after patch rejection', () async {
     final repository = const RepositoryOpened(
       repositoryId: RepositoryId(value: 'rejected-patch-repository'),

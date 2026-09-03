@@ -1316,17 +1316,15 @@ class _ChangesScreenBodyState extends ConsumerState<_ChangesScreenBody> {
         if (controller.canStagePatch)
           FilledButton.icon(
             key: const Key('stage-selected-patch'),
-            style: _stageButtonStyle(context),
             onPressed: state.isMutating || state.isDiscardPreparing
                 ? null
                 : controller.stageSelectedPatch,
-            icon: const Icon(Icons.arrow_forward, size: 18),
+            icon: const Icon(Icons.add, size: 18),
             label: const Text('Stage selection'),
           ),
         if (controller.canUnstagePatch)
           OutlinedButton.icon(
             key: const Key('unstage-selected-patch'),
-            style: _unstageButtonStyle(context),
             onPressed: state.isMutating || state.isDiscardPreparing
                 ? null
                 : controller.unstageSelectedPatch,
@@ -1336,17 +1334,15 @@ class _ChangesScreenBodyState extends ConsumerState<_ChangesScreenBody> {
         if (controller.canStageSelected && !hasPartialStage)
           FilledButton.icon(
             key: const Key('stage-selected'),
-            style: _stageButtonStyle(context),
             onPressed: state.isMutating || state.isDiscardPreparing
                 ? null
                 : controller.stageSelected,
-            icon: const Icon(Icons.arrow_forward, size: 18),
+            icon: const Icon(Icons.add, size: 18),
             label: const Text('Stage'),
           ),
         if (controller.canUnstageSelected && !hasPartialUnstage)
           OutlinedButton.icon(
             key: const Key('unstage-selected'),
-            style: _unstageButtonStyle(context),
             onPressed: state.isMutating || state.isDiscardPreparing
                 ? null
                 : controller.unstageSelected,
@@ -1354,9 +1350,11 @@ class _ChangesScreenBodyState extends ConsumerState<_ChangesScreenBody> {
             label: const Text('Unstage'),
           ),
         if (controller.canDiscardSelected)
-          OutlinedButton.icon(
+          TextButton.icon(
             key: const Key('discard-selected'),
-            style: _discardButtonStyle(context),
+            style: TextButton.styleFrom(
+              foregroundColor: Theme.of(context).colorScheme.error,
+            ),
             onPressed: state.isMutating || state.isDiscardPreparing
                 ? null
                 : () => unawaited(_showDiscardDialog(context, controller)),
@@ -1364,36 +1362,6 @@ class _ChangesScreenBodyState extends ConsumerState<_ChangesScreenBody> {
             label: const Text('Discard'),
           ),
       ],
-    );
-  }
-
-  ButtonStyle _stageButtonStyle(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    return FilledButton.styleFrom(
-      backgroundColor: scheme.primary,
-      foregroundColor: scheme.onPrimary,
-      side: BorderSide(color: scheme.primary, width: 2),
-      elevation: 0,
-    );
-  }
-
-  ButtonStyle _unstageButtonStyle(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    return OutlinedButton.styleFrom(
-      backgroundColor: scheme.secondaryContainer,
-      foregroundColor: scheme.onSecondaryContainer,
-      side: BorderSide(color: scheme.secondary, width: 2),
-      elevation: 0,
-    );
-  }
-
-  ButtonStyle _discardButtonStyle(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    return OutlinedButton.styleFrom(
-      backgroundColor: scheme.errorContainer,
-      foregroundColor: scheme.onErrorContainer,
-      side: BorderSide(color: scheme.error, width: 2),
-      elevation: 0,
     );
   }
 

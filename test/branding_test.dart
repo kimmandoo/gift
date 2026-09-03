@@ -14,7 +14,7 @@ void main() {
     expect(find.bySemanticsLabel('GIFT pixel mascot'), findsOneWidget);
   });
 
-  test('uses square pixel button states', () {
+  test('uses a restrained pixel button hierarchy', () {
     final theme = buildPixelTheme();
     final filled = theme.filledButtonTheme.style!;
     final outlined = theme.outlinedButtonTheme.style!;
@@ -22,10 +22,12 @@ void main() {
 
     expect(
       (filled.shape!.resolve(const {})! as RoundedRectangleBorder).borderRadius,
-      BorderRadius.zero,
+      BorderRadius.circular(4),
     );
     expect(filled.backgroundColor!.resolve(const {}), pixelMint);
     expect(outlined.backgroundColor!.resolve(const {}), Colors.transparent);
-    expect(icon.side!.resolve(const {})!.color, isNot(pixelMuted));
+    expect(outlined.foregroundColor!.resolve(const {}), pixelInk);
+    expect(icon.backgroundColor!.resolve(const {}), Colors.transparent);
+    expect(icon.side, isNull);
   });
 }

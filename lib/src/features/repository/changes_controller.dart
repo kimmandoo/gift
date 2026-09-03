@@ -192,33 +192,49 @@ class ChangesController extends ChangeNotifier {
   void start() {
     if (_started || _disposed) return;
     _started = true;
-    _pollTimer = Timer.periodic(pollInterval, (_) => refresh());
+    _pollTimer = Timer.periodic(
+      pollInterval,
+      (_) => unawaited(_refresh(showProgress: false)),
+    );
     unawaited(refresh());
   }
 
-  /// Fetches status once. A second request is ignored while Git is running.
-  Future<void> refresh() async {
+  /// Fetches status once and exposes progress for an explicit user refresh.
+  Future<void> refresh() => _refresh(showProgress: true);
+
+  Future<void> _refresh({required bool showProgress}) async {
     if (_requestInFlight || _mutationInFlight || _disposed) return;
     _requestInFlight = true;
     final firstLoad = _state.snapshot == null;
-    _setState(
-      _state.copyWith(
-        clearError: true,
-        isLoading: firstLoad,
-        isRefreshing: true,
-      ),
-    );
+    final exposeProgress = firstLoad || showProgress;
+    if (exposeProgress) {
+      _setState(
+        _state.copyWith(
+          clearError: true,
+          isLoading: firstLoad,
+          isRefreshing: true,
+        ),
+      );
+    }
 
     try {
       final snapshot = await gateway.getStatus(repositoryId);
       final selectedPath = _state.selectedPath;
+      final previousSnapshot = _state.snapshot;
       final statusChanged =
-          _state.snapshot != null &&
-          _state.snapshot!.contentHash != snapshot.contentHash;
-      if (statusChanged || selectedPath == null) _lastDiffLineIndex = null;
+          previousSnapshot == null ||
+          previousSnapshot.contentHash != snapshot.contentHash;
       final selectionStillExists =
           selectedPath != null &&
           snapshot.changes.any((change) => change.path == selectedPath);
+      final selectionChanged = selectedPath != null && !selectionStillExists;
+      if (!statusChanged &&
+          !selectionChanged &&
+          !exposeProgress &&
+          _state.error == null) {
+        return;
+      }
+      if (statusChanged || selectedPath == null) _lastDiffLineIndex = null;
       if (!selectionStillExists) _diffRequest++;
       if (!selectionStillExists) _discardPreviewRequest++;
       _setState(

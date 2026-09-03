@@ -4,11 +4,12 @@ This file is the handoff record for continuing work across query sessions.
 
 ## Current checkpoint
 
-- Date: 2026-09-03
-- Active task: Post-Task-35 UI/UX audit is complete; Task 36 is next.
+- Date: 2026-09-04
+- Active task: Button redesign and silent background refresh are complete;
+  Task 36 is next.
 - Branch: `main`; no new branch or worktree was created.
-- Latest completed implementation commit: `89c06db` (`docs(workflow): record
-  launcher and label fixes`).
+- Latest completed implementation commit: `201c441` (`fix(ui): polish pixel
+  controls and add Windows setup`).
 - Completed Task 28 after recording REMOTE-BRANCH-01/02 and UPDATE-01/02,
   adding the first RED fixture, and proving the real-Git implementation GREEN.
 - Added immutable remote ref snapshots with grouped remotes, local tracking,
@@ -366,7 +367,36 @@ This file is the handoff record for continuing work across query sessions.
   installed and launched the app, registered the current-user uninstaller,
   exited, and the uninstaller removed the installed files and Start Menu entry.
 - `git diff --check` passed. No blockers.
-- Next action: inspect the final diff and commit this session.
+- Session changes were committed as `201c441`. Next action: Task 36.
+
+## Current session: button redesign and silent polling
+
+- Date: 2026-09-04.
+- Changed files: `CHANGELOG.md`,
+  `docs/superpowers/plans/2026-09-02-gift-dart-mvp.md`, this checkpoint,
+  `lib/src/app/pixel_theme.dart`,
+  `lib/src/features/repository/{changes_controller,changes_screen,conflict_workspace_screen,hosting_dialog,object_dialog}.dart`,
+  and `test/{app_boot_test.dart,branding_test.dart,features/repository/changes_screen_test.dart,features/repository/conflict_workspace_screen_test.dart,features/repository/hosting_dialog_test.dart}`.
+- UI change: replaced persistent primary-colored outlines and boxed icon
+  buttons with a restrained solid/outlined/text hierarchy, four-pixel corners,
+  borderless icon controls, and immediate interaction states. Stage is the
+  primary action, Unstage is secondary, and Discard is a lightweight
+  destructive action.
+- Refresh change: the five-second background poll no longer toggles the
+  visible refresh state and does not notify/rebuild the screen when the status
+  content hash is unchanged. Explicit refreshes still show progress.
+- Spacing change: increased shared label line heights and primary/secondary
+  button hit areas, wrapped constrained dialog action groups, bounded long
+  conflict labels, and added missing action run spacing.
+- Verification: formatting and `flutter analyze` passed; expanded button,
+  spacing, app boot, Changes behavior, and silent-polling tests passed with 25
+  tests; the final complete feature UI suite passed with 71 tests, including
+  the existing narrow File History and Reset contracts.
+- `flutter build windows --release` rebuilt `gift.exe` after the final spacing
+  changes; the process stayed running and reported `Responding=True`.
+- Blockers: none.
+- Next action after this session commit: activate Task 36 after recording its
+  scale/resilience scenarios and first failing fixture.
 
 ## Resume procedure
 

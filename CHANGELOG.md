@@ -3,8 +3,12 @@
 ## 2026-09-04
 - fix(ui): constrained repository dropdown options to one line with ellipsis
   so long branch, commit, path, and mode labels remain readable.
-- fix(ui): gave pixel buttons square themed hover, focus, pressed, and disabled
-  states, with distinct stage, unstage, and discard action treatments.
+- fix(ui): replaced the heavy boxed button treatment with a restrained
+  primary, secondary, destructive hierarchy and lightweight icon controls.
+- fix(ui): kept unchanged background status polling silent so periodic
+  refreshes no longer disabled or replaced the visible refresh button.
+- fix(ui): increased shared text and control breathing room and allowed compact
+  action groups to wrap without clipping or horizontal overflow.
 - feat(windows): added a per-user gift setup executable with Start Menu and
   uninstall registration alongside the release bundle and portable launcher.
 

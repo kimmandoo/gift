@@ -46,11 +46,11 @@ void main() {
     expect(theme.appBarTheme.titleTextStyle?.fontSize, pixelTitleLargeSize);
     expect(
       theme.filledButtonTheme.style?.minimumSize?.resolve({}),
-      const Size(40, 36),
+      const Size(40, 40),
     );
     expect(
       theme.outlinedButtonTheme.style?.minimumSize?.resolve({}),
-      const Size(40, 36),
+      const Size(40, 40),
     );
     expect(theme.colorScheme.surfaceContainerHighest, pixelPanelRaised);
     expect(light.brightness, Brightness.light);

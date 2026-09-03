@@ -336,6 +336,7 @@ class _ObjectDialogState extends State<ObjectDialog> {
             const SizedBox(height: 4),
             Wrap(
               spacing: 6,
+              runSpacing: 4,
               children: [
                 OutlinedButton(
                   key: ValueKey('inspect-tag:${tag.name}'),
@@ -436,6 +437,7 @@ class _ObjectDialogState extends State<ObjectDialog> {
             const SizedBox(height: 4),
             Wrap(
               spacing: 6,
+              runSpacing: 4,
               children: [
                 OutlinedButton(
                   key: ValueKey('rename-remote:${remote.name}'),

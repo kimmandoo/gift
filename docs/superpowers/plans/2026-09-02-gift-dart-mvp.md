@@ -683,11 +683,19 @@ system Git 2.35+.
 
 1. Standardized dropdown option rendering with one-line ellipsis behavior
    across push, update, branch, ignore, rebase, object, and commit controls.
-2. Added square pixel button states for hover, focus, pressed, and disabled
-   interactions, plus matching chip and segmented-control surfaces.
-3. Gave stage, unstage, and discard actions distinct repository-semantic
-   colors and directional icons.
-4. Added regression coverage for push dropdown labels and pixel button states.
+2. Replaced the initial heavy square-button treatment with a restrained
+   hierarchy: solid primary actions, neutral outlined secondary actions,
+   lightweight text/destructive actions, and borderless icon controls.
+3. Kept crisp zero-duration interaction feedback, small pixel-compatible
+   corners, and matching chip and segmented-control surfaces.
+4. Kept automatic status polling visually silent when repository content is
+   unchanged while preserving explicit refresh progress and changed-status
+   updates.
+5. Added regression coverage for push labels, button hierarchy, and silent
+   background polling.
+6. Increased label line height and primary/secondary button hit areas, then
+   hardened compact action wrapping with 1.6× text-scale coverage for
+   constrained hosting and conflict surfaces.
 
 ## Completed follow-up: Windows setup packaging
 
