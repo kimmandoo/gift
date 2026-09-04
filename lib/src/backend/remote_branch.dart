@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'domain.dart';
 import 'status.dart';
 
@@ -208,30 +210,57 @@ class GitUpdateProjectResult {
   bool get historyChanged => state == GitUpdateState.completed;
 }
 
-/// Parses `%(refname:short)\0%(objectname)\0%(symref:short)` rows for
-/// `refs/remotes/`. Symbolic `origin/HEAD` rows remain visible but cannot be
-/// checked out as a concrete branch.
-List<GitRemoteBranch> parseGitRemoteBranches(List<int> output) {
+/// Parses full or short remote ref rows produced by `git for-each-ref`.
+///
+/// Git normally emits name, OID, and symbolic target. The symbolic field is
+/// optional here so output that loses an empty trailing field remains usable.
+/// Configured remote names disambiguate externally-created names containing
+/// `/`; the app itself creates only simple remote names.
+List<GitRemoteBranch> parseGitRemoteBranches(
+  List<int> output, {
+  Iterable<String> remoteNames = const [],
+}) {
   final result = <GitRemoteBranch>[];
-  final text = String.fromCharCodes(output);
+  final names = remoteNames.toSet().toList()
+    ..sort((left, right) => right.length.compareTo(left.length));
+  final text = utf8.decode(output, allowMalformed: true);
   for (final rawLine in text.split('\n')) {
-    final line = rawLine.trimRight();
+    final line = rawLine.endsWith('\r')
+        ? rawLine.substring(0, rawLine.length - 1)
+        : rawLine;
     if (line.isEmpty) continue;
     final fields = line.split('\u0000');
-    if (fields.length != 3 || fields[0].isEmpty || fields[1].isEmpty) {
+    if (fields.length < 2 ||
+        fields[0].isEmpty ||
+        fields[1].isEmpty ||
+        fields.skip(3).any((field) => field.isNotEmpty)) {
       throw FormatException('Invalid Git remote branch record: $line');
     }
-    final slash = fields[0].indexOf('/');
-    if (slash <= 0 || slash == fields[0].length - 1) {
-      throw FormatException('Invalid Git remote branch name: ${fields[0]}');
+    var shortName = fields[0];
+    if (shortName.startsWith('refs/remotes/')) {
+      shortName = shortName.substring('refs/remotes/'.length);
+    } else if (shortName.startsWith('remotes/')) {
+      shortName = shortName.substring('remotes/'.length);
     }
+    final configuredRemote = names
+        .where((name) => shortName.startsWith('$name/'))
+        .firstOrNull;
+    final slash = configuredRemote == null
+        ? shortName.indexOf('/')
+        : configuredRemote.length;
+    if (slash <= 0 || slash == shortName.length - 1) {
+      throw FormatException('Invalid Git remote branch name: $shortName');
+    }
+    final remote = configuredRemote ?? shortName.substring(0, slash);
+    final branch = shortName.substring(slash + 1);
     result.add(
       GitRemoteBranch(
-        name: fields[0],
-        remote: fields[0].substring(0, slash),
-        branch: fields[0].substring(slash + 1),
+        name: shortName,
+        remote: remote,
+        branch: branch,
         oid: fields[1],
-        isSymbolicHead: fields[2].isNotEmpty,
+        isSymbolicHead:
+            (fields.length >= 3 && fields[2].isNotEmpty) || branch == 'HEAD',
       ),
     );
   }

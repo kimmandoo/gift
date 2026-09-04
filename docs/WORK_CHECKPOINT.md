@@ -5,27 +5,29 @@ This file is the handoff record for continuing work across query sessions.
 ## Current checkpoint
 
 - Date: 2026-09-04
-- Active task: The remote tracking and push UX repair is complete. The next
+- Active task: The remote branch parser hardening is complete. The next
   priority remains Task 41 — Commit context actions.
 - Branch: `main`; no new branch or worktree was created.
 - Latest implementation commit: this session’s
-  `fix(push): streamline remote branch tracking` commit.
-- This session made configured upstreams authoritative push defaults, added
-  reviewed first-push upstream linking, moved uncommon ref/force controls
-  behind Advanced push options, and displayed the exact local-to-remote
-  destination before review.
-- Branches now expose a direct push/link action for the current branch.
-  Remote operations expose remote setup, and upstream publication routes
-  through the reviewed Push flow instead of writing directly.
+  `fix(branches): recover malformed remote ref output` commit.
+- This session replaced shortened remote-ref parsing with full ref names,
+  accepted an omitted empty symbolic-ref field, decoded UTF-8 safely, and
+  resolved configured remote names before splitting branch paths.
+- A malformed primary ref format now retries with a simpler two-field
+  `for-each-ref` format. The branch workflow fails only when both independent
+  formats are unreadable, with both diagnostics retained.
 - Changed files include `CHANGELOG.md`, this checkpoint, the implementation
-  plan, push backend/service files, branch/remote/object/Changes dialogs, and
-  focused backend/widget tests.
-- Verification: the first RED push fixture failed because `setUpstream` did
-  not exist. The focused changed backend/widget suite passed all 25 tests.
-  `dart run tool/verify.dart` passed formatting for 134 files and
-  `flutter analyze`; its full test stage passed 227 tests and retained the 15
-  previously documented Windows-only newline/path/rebase fixture failures.
-  `flutter run -d windows` built, launched, and synced the desktop app.
+  plan, `lib/src/backend/{remote_branch,repository_service}.dart`, and
+  `test/backend/remote_snapshot_parse_test.dart`.
+- Verification: the first RED recovery fixture failed with
+  `Git returned an unreadable remote branch list.` The four focused
+  parser/service cases passed, including fallback recovery, full refs, CRLF,
+  optional symref fields, symbolic HEAD, and configured remote names. The
+  wider branch run passed every parser, checkout, fetch, preview, conflict,
+  and deletion path; only its two previously documented Windows CRLF content
+  assertions remained. `dart run tool/verify.dart` passed formatting for 134
+  files and `flutter analyze`, then passed 229 tests with the same 15 known
+  Windows-only newline/path/rebase fixture failures.
 - Blockers: none.
 
 ## Previous checkpoint

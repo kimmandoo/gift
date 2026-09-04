@@ -813,3 +813,16 @@ system Git 2.35+.
 5. Covered real Git upstream creation, configured-upstream precedence,
    untracked-branch defaults, compact layouts, progress, branch discovery, and
    remote setup access.
+
+## Completed follow-up: resilient remote ref parsing
+
+1. Replaced ambiguous shortened remote ref output with full
+   `refs/remotes/*` names and UTF-8 decoding.
+2. Accepted Git output that omits an empty trailing symbolic-ref field and
+   resolved externally-configured remote names against the actual remote list.
+3. Added a simpler two-field `for-each-ref` fallback so one unsupported or
+   malformed primary format no longer disables the branch workflow.
+4. Preserved a combined primary/fallback diagnostic when both formats are
+   genuinely unreadable instead of hiding repository corruption.
+5. Covered fallback recovery, full refs, CRLF, optional fields, symbolic HEAD,
+   configured remote names, and the existing unrecoverable diagnostics.

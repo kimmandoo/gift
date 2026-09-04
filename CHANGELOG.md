@@ -1,6 +1,8 @@
 # Changelog
 
 ## 2026-09-04
+- fix(branches): recovered remote branch lists through full-ref parsing and a
+  simpler fallback format instead of failing the entire branch workflow.
 - fix(push): made tracked destinations the default, linked first pushes to
   their chosen upstream, and moved uncommon ref and force controls behind an
   advanced section.

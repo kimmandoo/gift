@@ -4177,13 +4177,14 @@ class RepositoryService {
   ) async {
     final handle = await state.lookup(repositoryId);
     final status = await getStatus(repositoryId);
-    final remoteOutput = await _runner.run(
+    final remotes = await getRemotes(repositoryId);
+    var remoteOutput = await _runner.run(
       GitInvocation(
         program: gitPath,
         args: const [
           'for-each-ref',
           '--sort=refname',
-          '--format=%(refname:short)%00%(objectname)%00%(symref:short)',
+          '--format=%(refname)%00%(objectname)%00%(symref)',
           'refs/remotes/',
         ],
         cwd: handle.root,
@@ -4222,17 +4223,46 @@ class RepositoryService {
     late final List<GitRemoteBranch> remoteBranches;
     late final List<GitBranch> localBranches;
     try {
-      remoteBranches = parseGitRemoteBranches(remoteOutput.stdout);
-    } on FormatException catch (error, stackTrace) {
-      Error.throwWithStackTrace(
-        GitError(
-          category: GitErrorCategory.parseFailure,
-          userMessage: 'Git returned an unreadable remote branch list.',
-          diagnostic: 'remote refs: ${error.message}',
-          retryable: false,
-        ),
-        stackTrace,
+      remoteBranches = parseGitRemoteBranches(
+        remoteOutput.stdout,
+        remoteNames: remotes.map((remote) => remote.name),
       );
+    } on FormatException catch (primaryError, primaryStackTrace) {
+      try {
+        remoteOutput = await _runner.run(
+          GitInvocation(
+            program: gitPath,
+            args: const [
+              'for-each-ref',
+              '--sort=refname',
+              '--format=%(refname)%00%(objectname)',
+              'refs/remotes/',
+            ],
+            cwd: handle.root,
+            kind: GitOperationKind.read,
+            outputPolicy: const OutputPolicy.capture(maxBytes: 2 * 1024 * 1024),
+          ),
+        );
+        remoteBranches = parseGitRemoteBranches(
+          remoteOutput.stdout,
+          remoteNames: remotes.map((remote) => remote.name),
+        );
+      } on Object catch (fallbackError) {
+        final fallbackDiagnostic = fallbackError is GitError
+            ? fallbackError.diagnostic
+            : '$fallbackError';
+        Error.throwWithStackTrace(
+          GitError(
+            category: GitErrorCategory.parseFailure,
+            userMessage: 'Git returned an unreadable remote branch list.',
+            diagnostic:
+                'remote refs: primary=${primaryError.message}; '
+                'fallback=$fallbackDiagnostic',
+            retryable: false,
+          ),
+          primaryStackTrace,
+        );
+      }
     }
     try {
       localBranches = parseGitBranches(localOutput.stdout);
