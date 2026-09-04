@@ -7,8 +7,9 @@
 ## Progress
 
 - **Completed:** 38 / 47
-- **Current Active Task:** None. Task 37 — Accessibility & preferences is
-  complete.
+- **Current Active Task:** None. **Next priority:** Task 41 — Commit context
+  actions. Task 38 — Public release is intentionally deferred until Tasks 39
+  and 41–47 are complete.
 
 | # | Scope | Dart backend deliverables | Flutter deliverables | Status |
 |---|---|---|---|:---:|
@@ -49,10 +50,10 @@
 | **35** | Hosting integration | Optional GitHub/GitLab links and review handoff contracts | Hosting links and review entry points | ✅ |
 | **36** | Scale & resilience | File watching, cache invalidation, process supervision | Large-repository responsiveness | ✅ |
 | **37** | Accessibility & preferences | Versioned settings and locale-ready text contracts | Scaling, remapping, themes, and accessibility | ✅ |
-| **38** | Public release | Signed packages, provenance, update metadata, and release checks | Installers and first-run diagnostics | ⬜ |
-| **39** | Visual regression QA | Deterministic fixture states and platform font checks | Golden matrix, overflow guards, and interaction snapshots | ⬜ |
+| **38** | Public release | Signed packages, provenance, update metadata, and release checks | Installers and first-run diagnostics | Deferred |
+| **39** | Visual regression QA | Deterministic fixture states and platform font checks | Golden matrix, overflow guards, and interaction snapshots | Planned after Tasks 41–47 |
 | **40** | Contextual action foundation | Typed action availability, immutable targets, and preview routing | Shared secondary-click, keyboard, and overflow action menus | ✅ |
-| **41** | Commit context actions | OID-bound cherry-pick and existing history mutations | History-row action menu and prefilled previews | ⬜ |
+| **41** | Commit context actions | OID-bound cherry-pick and existing history mutations | History-row action menu and prefilled previews | Next |
 | **42** | Multi-commit operations | Ordered batch cherry-pick/revert state machine | Multi-select history actions and conflict progress | ⬜ |
 | **43** | Change and file actions | Selection-safe path operations and reveal contracts | Changes/diff/history-file context menus | ⬜ |
 | **44** | Branch and remote actions | Ref-bound operation routing and freshness checks | Local/remote branch context menus | ⬜ |
@@ -631,7 +632,9 @@ its theme, media-query, locale, and workspace boundaries.
   remote dialogs.
 Task 40 is complete. The shared action presenter and Changes row integration
 passed the full Flutter verification suite with 213 tests. Tasks 36 and 37 are
-also complete; the next unstarted task is Task 38.
+also complete; the next priority is Task 41. Tasks 41–47 remain ahead of the
+visual-regression pass in Task 39, and the signed public release in Task 38 is
+deferred until that product backlog is complete.
 
 ## Post-MVP backlog
 

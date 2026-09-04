@@ -5,29 +5,21 @@ This file is the handoff record for continuing work across query sessions.
 ## Current checkpoint
 
 - Date: 2026-09-04
-- Active task: Branch checkout/fetch verification and preferences layout repair
-  are complete and verified. No implementation task is active.
+- Active task: No implementation task is active. The next priority is Task 41
+  — Commit context actions and direct cherry-pick.
 - Branch: `main`; no new branch or worktree was created.
-- Latest completed implementation commit before this session: `b74a1a8`
-  (`fix(branches): repair remote branch fetch workflow`).
-- This session verified real-Git remote tracking branch checkout and fetch
-  behavior. The backend fixture creates, fetches, and checks out
-  `origin/feature`; the branch dialog covers local switching, remote fetch,
-  remote-only branch rendering, stale snapshot ordering, and remote actions.
-- Preferences now put explicit vertical gaps between accessibility controls,
-  repository defaults, and every shortcut field, keeping bordered inputs and
-  labels readable in compact dialogs.
-- Branch and preferences failures now open a blocking, readable error dialog
-  with selectable user-facing text and an explicit OK action. Inline error
-  state remains available after dismissal.
-- Changed files include `CHANGELOG.md`, this checkpoint,
-  `lib/src/app/{error_dialog,preferences_dialog}.dart`,
-  `lib/src/features/repository/branch_dialog.dart`, and the related tests.
-- Verification: `PATH=/home/mgkim/.local/flutter/bin:$PATH flutter test
-  test/features/repository/branch_dialog_test.dart
-  test/backend/remote_branch_test.dart test/app_preferences_test.dart` passed;
-  `PATH=/home/mgkim/.local/flutter/bin:$PATH dart run tool/verify.dart` passed
-  formatting, analysis, and all 229 tests.
+- Latest completed implementation commit before this planning session:
+  `313fb8b` (`fix(ui): space preferences and surface errors`).
+- This session deliberately moved Task 38 — Public release behind the remaining
+  product backlog. The planned order is Tasks 41–47, then Task 39 visual
+  regression QA, then Task 38 signed public release.
+- Task 38 remains a numbered scope identifier but is marked Deferred in
+  `TASKS.md`; Task 39 now depends only on Task 37 and is scheduled after
+  Tasks 41–47.
+- Changed files include `TASKS.md`, `CHANGELOG.md`,
+  `docs/POST_MVP_ROADMAP.md`, and this checkpoint.
+- Verification: the task board and roadmap now agree on Task 41 as the next
+  priority and Task 38 as the final deferred release milestone.
 - Blockers: none.
 
 ## Previous checkpoint

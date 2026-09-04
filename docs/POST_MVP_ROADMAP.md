@@ -3,11 +3,13 @@
 This roadmap turns the MVP into a dependable daily Git client while preserving
 gift's clean-room workflow research and minimal 2D pixel-game interface.
 Task 15 was marked safe done under WSL because the remaining native bundle
-check is CI-only in this environment. Tasks 16 through 35 are complete;
-Tasks 36 through 39 remain planned product-readiness work, and Tasks 40
-through 47 cover the requested desktop context-action and path-selection UX.
+check is CI-only in this environment. Tasks 16 through 37 are complete;
+Task 40 is complete, Task 41 is the next priority, and Tasks 41 through 47
+remain ahead of the visual-regression pass in Task 39. Task 38 is deliberately
+deferred until Tasks 39 and 41 through 47 are complete.
 Tasks 40 through 47 may run before Tasks 36 through 39 because their listed
-dependencies are already complete; Task 40 is the current priority.
+dependencies are already complete. Task 39 depends only on Task 37, while
+Task 38 is scheduled last for the stable product surface.
 Do not start a later post-MVP task until its dependencies are complete and its
 visible behavior has been recorded in the behavior ledger without copying
 proprietary implementation details or assets.
@@ -21,8 +23,10 @@ proprietary implementation details or assets.
 | Inspection & local recovery | 23–27 | Diff comparison, shelves, file history, blame, reset, revert, and history rewriting |
 | Remote & repository topology | 28–34 | Remote branches, update/push safety, worktrees, ignore rules, submodules, recovery, and setup |
 | Optional integrations | 35 | GitHub/GitLab links and review handoff without coupling the core backend to a host API |
-| Product readiness | 36–39 | Large-repository resilience, accessibility, preferences, signed releases, and visual-regression QA |
+| Product readiness foundation | 36–37 | Large-repository resilience and accessibility/preferences |
 | Desktop interaction UX | 40–47 | Discoverable context actions, direct cherry-pick entry points, and browse-assisted path selection |
+| Visual regression QA | 39 | Final overflow, theme, font, and interaction-state validation |
+| Public release | 38 | Signed, provenance-backed installers and update metadata after the product surface stabilizes |
 
 Every task must include backend tests with isolated Git fixtures, controller
 tests for async state changes, responsive widget tests, beginner-oriented
@@ -527,7 +531,8 @@ distinction and settings survive upgrades safely.
 
 ## Task 38 — Signed public release pipeline
 
-**Depends on:** Tasks 36 and 37.
+**Depends on:** Tasks 36 and 37. **Priority:** Deferred until Tasks 39 and
+41–47 are complete.
 
 **Goal:** Produce trustworthy installable releases rather than unsigned build
 folders.
@@ -549,10 +554,12 @@ installation and trust verification.
 
 ## Task 39 — Cross-platform visual regression QA
 
-**Depends on:** Tasks 37 and 38.
+**Depends on:** Task 37. **Priority:** Run after Tasks 41–47 and before Task
+38.
 
 **Goal:** Keep released desktop surfaces visually stable across supported
-window sizes, themes, text scales, and platform font rendering.
+window sizes, themes, text scales, and platform font rendering before the
+signed release pipeline runs.
 
 - Build deterministic UI fixture states for core screens, dialogs, progress,
   empty, error, disabled, and destructive-confirmation surfaces.

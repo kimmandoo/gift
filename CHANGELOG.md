@@ -1,6 +1,8 @@
 # Changelog
 
 ## 2026-09-04
+- docs(roadmap): deferred the public release pipeline until the remaining
+  desktop interaction UX and final visual regression pass are complete.
 - fix(branches): surfaced fetch and checkout failures in modal error feedback
   after verifying real remote refs and tracking branches.
 - fix(preferences): separated accessibility, repository, and shortcut fields
