@@ -1,6 +1,8 @@
 # Changelog
 
 ## 2026-09-04
+- fix(branches): distinguished malformed remote-ref and local-branch parser
+  failures so branch recovery diagnostics identify the actual source.
 - feat(auth): added secure Git account management, provider and host matching,
   bounded credential injection, and private-remote recovery with redacted
   diagnostics.

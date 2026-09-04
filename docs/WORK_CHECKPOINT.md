@@ -5,28 +5,21 @@ This file is the handoff record for continuing work across query sessions.
 ## Current checkpoint
 
 - Date: 2026-09-04
-- Active task: Task 38A — Credential management and private remote access is
-  complete. The next priority is Task 41 — Commit context actions.
+- Active task: The remote branch parse diagnostic fix is complete. The next
+  priority is Task 41 — Commit context actions.
 - Branch: `main`; no new branch or worktree was created.
 - Latest implementation commit: this session's
-  `feat(auth): add secure credential management` commit.
-- This session implemented separate Git account metadata and secure secrets,
-  provider/host matching for HTTPS and SSH remotes, platform secure storage,
-  askpass and SSH-key/agent injection, connection testing, revocation, and
-  redacted operation diagnostics.
-- Account management is available from Preferences. Remote, push, and clone
-  setup surfaces expose matching account selectors while public/local Git
-  workflows remain usable without an account.
-- Changed files include `TASKS.md`, `CHANGELOG.md`, `pubspec.yaml`,
-  `pubspec.lock`, `lib/main.dart`, `lib/src/app/{credentials_dialog,
-  gift_app,preferences_dialog,secure_credential_store}.dart`,
-  `lib/src/backend/{credentials,dart_git_backend,dart_git_gateway,executor,
-  push,repository_service,setup}.dart`, repository UI dialogs/screens, and
-  credential/redaction/widget tests.
-- Verification: full local verification passed `flutter pub get`, formatting
-  for `lib`, `test`, `integration_test`, and `tool` (133 files), `flutter
-  analyze`, and `flutter test` (238 tests). Focused credential, remote, push,
-  setup, preferences, and backend tests also passed.
+  `fix(branches): distinguish remote and local parser failures` commit.
+- This session separated remote-ref and local-branch parser error handling so
+  malformed local refs no longer surface as unreadable remote branch lists.
+  Diagnostics now identify the failing ref source, and regression coverage
+  locks both messages.
+- Changed files include `CHANGELOG.md`, `docs/WORK_CHECKPOINT.md`,
+  `lib/src/backend/repository_service.dart`, and
+  `test/backend/remote_snapshot_parse_test.dart`.
+- Verification: focused branch tests passed; full local verification passed
+  `flutter pub get`, formatting for `lib`, `test`, `integration_test`, and
+  `tool` (134 files), `flutter analyze`, and `flutter test` (240 tests).
 - Blockers: none.
 
 ## Previous checkpoint

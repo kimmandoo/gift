@@ -4223,13 +4223,25 @@ class RepositoryService {
     late final List<GitBranch> localBranches;
     try {
       remoteBranches = parseGitRemoteBranches(remoteOutput.stdout);
-      localBranches = parseGitBranches(localOutput.stdout);
     } on FormatException catch (error, stackTrace) {
       Error.throwWithStackTrace(
         GitError(
           category: GitErrorCategory.parseFailure,
           userMessage: 'Git returned an unreadable remote branch list.',
-          diagnostic: error.message,
+          diagnostic: 'remote refs: ${error.message}',
+          retryable: false,
+        ),
+        stackTrace,
+      );
+    }
+    try {
+      localBranches = parseGitBranches(localOutput.stdout);
+    } on FormatException catch (error, stackTrace) {
+      Error.throwWithStackTrace(
+        GitError(
+          category: GitErrorCategory.parseFailure,
+          userMessage: 'Git returned an unreadable local branch list.',
+          diagnostic: 'local refs: ${error.message}',
           retryable: false,
         ),
         stackTrace,
