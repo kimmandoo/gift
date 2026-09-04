@@ -124,6 +124,7 @@ class _RemoteDialogState extends State<RemoteDialog> {
                     overflow: TextOverflow.ellipsis,
                     style: Theme.of(context).textTheme.bodySmall,
                   ),
+                const SizedBox(height: 8),
                 Wrap(
                   spacing: 8,
                   runSpacing: 4,

@@ -5,13 +5,15 @@ This file is the handoff record for continuing work across query sessions.
 ## Current checkpoint
 
 - Date: 2026-09-04
-- Active task: Windows installer shortcut correction is verified and ready to
-  commit; no follow-up implementation task is active.
+- Active task: Task 40 contextual action foundation and its requested UI
+  spacing follow-up are complete and verified; no implementation task is
+  active.
 - Branch: `main`; no new branch or worktree was created.
-- Latest completed implementation commit: `9d39afb` (`fix(push): separate
-  remote and publish scope`).
-- Completed Task 28 after recording REMOTE-BRANCH-01/02 and UPDATE-01/02,
-  adding the first RED fixture, and proving the real-Git implementation GREEN.
+- Latest completed implementation commit before this session: `a5b3462`
+  (`fix(windows): create desktop install shortcut`).
+- This session's Task 40 and UI spacing changes are committed under
+  `feat(ui): add contextual action menus`.
+- Blockers: none.
 - Added immutable remote ref snapshots with grouped remotes, local tracking,
   tags, divergence counts, OID-bound checkout/compare entry points, and
   preview-bound remote deletion with a just-in-time published-tip check.
@@ -544,6 +546,38 @@ This file is the handoff record for continuing work across query sessions.
 - Blockers: none.
 - Next action after this session commit: activate Task 40 or another
   dependency-ready roadmap task.
+
+
+## Current session: Task 40 contextual actions and UI spacing follow-up
+
+- Date: 2026-09-04.
+- Changed files: `CHANGELOG.md`, `TASKS.md`,
+  `docs/research/jetbrains-git-mvp-behavior.md`,
+  `docs/superpowers/plans/2026-09-02-gift-dart-mvp.md`, this checkpoint,
+  `lib/src/features/repository/{context_actions,changes_screen,file_history_dialog,interactive_rebase_dialog,object_dialog,remote_dialog}.dart`,
+  and `test/features/repository/{context_action_menu_test,changes_screen_test,file_history_dialog_test}.dart`.
+- Task 40 activation recorded ACTION-01/02/03/04. The first RED command
+  `PATH=/home/mgkim/.local/flutter/bin:$PATH flutter test
+  test/features/repository/context_action_menu_test.dart` failed before
+  implementation because `context_actions.dart` and the typed presenter
+  contract did not exist.
+- Implemented immutable repository/object snapshots, typed targets,
+  availability results, route descriptors, and a shared semantic presenter
+  with secondary-click placement, Shift+F10/Menu invocation, arrow/Escape
+  navigation, edge clamping, stale-snapshot rejection, focus restoration,
+  disabled reasons, and per-change overflow routing.
+- Changes row actions route Inspect/Stage/Unstage through the existing
+  controller and Discard through the existing preview/confirmation dialog;
+  opening or dismissing a menu has no Git side effect.
+- Restored vertical spacing between File History's path controls and Follow
+  renames, line-range, and blame controls. Added the same missing breathing
+  room around interactive-rebase, object-management, and remote action groups.
+- Verification: focused context and Changes tests passed; focused
+  File History, interactive rebase, object, and remote tests passed; `dart
+  run tool/verify.dart` passed formatting, analysis, and all 213 Flutter
+  tests; `git diff --check` passed.
+- Next action: Task 41, direct commit context actions and History
+  cherry-pick discovery.
 
 ## Resume procedure
 

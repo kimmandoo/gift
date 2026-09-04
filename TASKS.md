@@ -7,9 +7,8 @@
 ## Progress
 
 - **Total Tasks:** 47
-- **Completed:** 35 / 47
-- **Current Active Task:** None. Task 40 — Contextual action foundation is
-  prioritized next.
+- **Completed:** 36 / 47
+- **Current Active Task:** None. Task 41 — Commit context actions is prioritized next.
 
 | # | Scope | Dart backend deliverables | Flutter deliverables | Status |
 |---|---|---|---|:---:|
@@ -52,7 +51,7 @@
 | **37** | Accessibility & preferences | Versioned settings and locale-ready text contracts | Scaling, remapping, themes, and accessibility | ⬜ |
 | **38** | Public release | Signed packages, provenance, update metadata, and release checks | Installers and first-run diagnostics | ⬜ |
 | **39** | Visual regression QA | Deterministic fixture states and platform font checks | Golden matrix, overflow guards, and interaction snapshots | ⬜ |
-| **40** | Contextual action foundation | Typed action availability and preview routing | Mouse, keyboard, and overflow-menu parity | ⬜ |
+| **40** | Contextual action foundation | Typed action availability, immutable targets, and preview routing | Shared secondary-click, keyboard, and overflow action menus | ✅ |
 | **41** | Commit context actions | OID-bound cherry-pick and existing history mutations | History-row action menu and prefilled previews | ⬜ |
 | **42** | Multi-commit operations | Ordered batch cherry-pick/revert state machine | Multi-select history actions and conflict progress | ⬜ |
 | **43** | Change and file actions | Selection-safe path operations and reveal contracts | Changes/diff/history-file context menus | ⬜ |
@@ -578,6 +577,25 @@ and an explicitly optional review-handoff capability are available without
 coupling local Git operations to hosting authentication. The full Flutter
 verification suite passed with 206 tests. Task 40 is now prioritized next for
 the requested desktop interaction and action-discoverability work.
+
+### ✅ Task 40: Contextual action foundation
+
+- [x] Record context-menu, keyboard invocation, disabled-reason, stale
+  selection, focus-restoration, and dismissal scenarios.
+- [x] Add the first RED shared menu-contract widget test.
+- [x] Implement one immutable typed action descriptor and availability result
+  for pointer, keyboard, overflow, and future command-search entry points.
+- [x] Route selected actions through existing preview/confirmation workflows
+  without executing Git while a menu is opened or dismissed.
+- [x] Add compact, semantic context-menu presentation with destructive grouping,
+  disabled reasons, edge clamping, and focus restoration.
+- [x] Verify pointer/keyboard/overflow parity and refresh-safe stale selection.
+- [x] Restore missing vertical spacing between File History controls and audit
+  adjacent option groups in File History, interactive rebase, object, and
+  remote dialogs.
+
+Task 40 is complete. The shared action presenter and Changes row integration
+passed the full Flutter verification suite with 213 tests. Task 41 is next.
 
 ## Post-MVP backlog
 

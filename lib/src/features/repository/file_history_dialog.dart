@@ -165,6 +165,7 @@ class _FileHistoryDialogState extends State<FileHistoryDialog> {
                   blameButton,
                 ],
               ),
+            const SizedBox(height: 8),
             Wrap(
               spacing: 4,
               runSpacing: 0,
@@ -195,7 +196,8 @@ class _FileHistoryDialogState extends State<FileHistoryDialog> {
               ],
             ),
             if (!_blameMode &&
-                (_lineStart.text.isNotEmpty || _lineEnd.text.isNotEmpty))
+                (_lineStart.text.isNotEmpty || _lineEnd.text.isNotEmpty)) ...[
+              const SizedBox(height: 8),
               Row(
                 children: [
                   Expanded(
@@ -215,7 +217,9 @@ class _FileHistoryDialogState extends State<FileHistoryDialog> {
                   ),
                 ],
               ),
-            if (_blameMode)
+            ],
+            if (_blameMode) ...[
+              const SizedBox(height: 8),
               Wrap(
                 spacing: 4,
                 children: [
@@ -245,6 +249,7 @@ class _FileHistoryDialogState extends State<FileHistoryDialog> {
                   ),
                 ],
               ),
+            ],
           ],
         );
       },

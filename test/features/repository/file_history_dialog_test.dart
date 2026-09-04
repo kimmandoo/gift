@@ -39,6 +39,13 @@ void main() {
     expect(find.text('Load history'), findsOneWidget);
     expect(find.text('Load blame'), findsOneWidget);
     expect(find.byKey(const Key('file-history-list')), findsOneWidget);
+    final blameButtonRect = tester.getRect(
+      find.byKey(const Key('load-file-blame')),
+    );
+    final followRect = tester.getRect(
+      find.byKey(const Key('file-history-follow')),
+    );
+    expect(followRect.top - blameButtonRect.bottom, greaterThanOrEqualTo(8));
     expect(
       find.byKey(const Key('file-history-entry:1234567890abcdef')),
       findsOneWidget,
@@ -91,6 +98,16 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.byKey(const Key('file-history-line-start')), findsOneWidget);
       expect(find.byKey(const Key('file-history-line-end')), findsOneWidget);
+      final lineStartRect = tester.getRect(
+        find.byKey(const Key('file-history-line-start')),
+      );
+      final followAfterRangeRect = tester.getRect(
+        find.byKey(const Key('file-history-follow')),
+      );
+      expect(
+        lineStartRect.top - followAfterRangeRect.bottom,
+        greaterThanOrEqualTo(8),
+      );
       expect(tester.takeException(), isNull);
     },
   );

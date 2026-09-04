@@ -173,6 +173,7 @@ class _InteractiveRebaseDialogState extends State<InteractiveRebaseDialog> {
                   });
                 },
         ),
+        const SizedBox(height: 8),
         CheckboxListTile(
           key: const Key('rebase-root'),
           dense: compact,
@@ -198,6 +199,7 @@ class _InteractiveRebaseDialogState extends State<InteractiveRebaseDialog> {
                 : 'Include every commit reachable from HEAD.',
           ),
         ),
+        const SizedBox(height: 8),
         Wrap(
           spacing: 8,
           runSpacing: 4,

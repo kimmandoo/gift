@@ -1,6 +1,12 @@
 # Changelog
 
 ## 2026-09-04
+- feat(ui): added shared typed contextual actions for secondary click,
+  Shift+F10/Menu, and per-row overflow entry points with stale-snapshot
+  protection and existing mutation routing.
+- fix(ui): restored vertical spacing around File History follow-renames,
+  line-range, and blame controls and separated adjacent option groups in
+  interactive rebase, object, and remote dialogs.
 - fix(ui): constrained repository dropdown options to one line with ellipsis
   so long branch, commit, path, and mode labels remain readable.
 - fix(ui): replaced the heavy boxed button treatment with a restrained

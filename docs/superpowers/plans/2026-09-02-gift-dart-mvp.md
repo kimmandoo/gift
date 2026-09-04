@@ -726,6 +726,30 @@ system Git 2.35+.
    batch history operations, and the two path-selection models can be verified
    independently.
 
+## Completed vertical: Contextual action foundation (Task 40)
+
+1. Activated Task 40 after recording shared action-descriptor,
+   secondary-click/keyboard/overflow parity, disabled-reason, stale-selection,
+   focus-restoration, dismissal, and destructive-routing scenarios as
+   ACTION-01/02/03/04.
+2. The first RED fixture
+   `test/features/repository/context_action_menu_test.dart` failed before
+   implementation because the typed presenter contract did not exist.
+3. Implemented immutable repository/object snapshots, typed action targets,
+   availability results, route descriptors, and a shared presenter with
+   secondary-click placement, Shift+F10/Menu invocation, arrow/Escape menu
+   behavior, semantic labels, edge clamping, stale selection rejection, and
+   focus restoration.
+4. Added a per-change overflow affordance in Changes. Inspect, stage, unstage,
+   and discard actions use the existing controller and discard confirmation
+   paths; menu presentation never runs Git or creates a preview.
+5. Added pointer, keyboard, overflow, disabled-reason, focus, stale-refresh,
+   edge-clamping, and Changes routing coverage. Formatting, analysis, and the
+   full Flutter verification suite passed with 213 tests.
+6. Audited compact dialog control spacing and added explicit vertical gaps for
+   File History follow-renames/line/blame controls, interactive rebase
+   options, object-management options, and remote actions.
+
 ## Completed follow-up: visible push progress
 
 1. Added a pixel-themed transfer card that appears as soon as the reviewed push

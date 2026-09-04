@@ -12,6 +12,7 @@ import 'package:gift/src/backend/status.dart';
 import 'package:gift/src/features/repository/changes_controller.dart';
 import 'package:gift/src/features/repository/changes_screen.dart';
 import 'package:gift/src/app/pixel_theme.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -781,6 +782,56 @@ void main() {
     expect(tester.takeException(), isNull);
     controller.dispose();
   });
+  testWidgets(
+    'opens stable change actions and routes Stage through controller',
+    (tester) async {
+      final repository = const RepositoryOpened(
+        repositoryId: RepositoryId(value: 'context-change-repository'),
+        root: '/workspace/project',
+      );
+      final gateway = FakeChangesGateway(
+        snapshots: [
+          snapshot(repository, changes: [change('lib/app.dart')]),
+        ],
+      );
+      final controller = ChangesController(
+        gateway: gateway,
+        repositoryId: repository.repositoryId,
+        pollInterval: const Duration(hours: 1),
+      );
+      await controller.refresh();
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: ChangesScreen(
+            gateway: gateway,
+            repository: repository,
+            controller: controller,
+            autoInitialize: false,
+          ),
+        ),
+      );
+      final row = find.byKey(const ValueKey('unstaged:lib/app.dart'));
+      expect(
+        find.byKey(const ValueKey('change-actions:lib/app.dart')),
+        findsOneWidget,
+      );
+      final gesture = await tester.startGesture(
+        tester.getCenter(row),
+        buttons: kSecondaryMouseButton,
+      );
+      await gesture.up();
+      await tester.pumpAndSettle();
+
+      expect(find.text('Stage'), findsOneWidget);
+      expect(find.text('Discard'), findsOneWidget);
+      await tester.tap(find.text('Stage'));
+      await tester.pumpAndSettle();
+
+      expect(gateway.stageCalls, 1);
+      controller.dispose();
+    },
+  );
 }
 
 GitChange change(String path) {

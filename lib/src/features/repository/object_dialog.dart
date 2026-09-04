@@ -175,6 +175,7 @@ class _ObjectDialogState extends State<ObjectDialog> {
             );
           },
         ),
+        const SizedBox(height: 8),
         CheckboxListTile(
           key: const Key('stash-include-untracked'),
           value: _includeUntracked,
@@ -287,6 +288,7 @@ class _ObjectDialogState extends State<ObjectDialog> {
             ),
           ],
         ),
+        const SizedBox(height: 8),
         CheckboxListTile(
           key: const Key('tag-annotated'),
           value: _annotated,
@@ -297,6 +299,7 @@ class _ObjectDialogState extends State<ObjectDialog> {
           controlAffinity: ListTileControlAffinity.leading,
           title: const Text('Annotated tag'),
         ),
+        if (_annotated) const SizedBox(height: 8),
         if (_annotated)
           TextField(
             key: const Key('tag-message'),

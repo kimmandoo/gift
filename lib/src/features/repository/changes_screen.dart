@@ -12,6 +12,7 @@ import 'package:gift/src/backend/remote_branch.dart';
 import 'package:gift/src/backend/reset.dart';
 import 'package:gift/src/backend/push.dart';
 import 'package:gift/src/backend/status.dart';
+import 'package:gift/src/features/repository/context_actions.dart';
 import 'package:gift/src/features/repository/changes_controller.dart';
 import 'package:gift/src/features/repository/branch_dialog.dart';
 import 'package:gift/src/features/repository/history_screen.dart';
@@ -1070,20 +1071,140 @@ class _ChangesScreenBodyState extends ConsumerState<_ChangesScreenBody> {
     ChangesState state,
   ) {
     final selected = state.selectedPath == change.path;
-    return ListTile(
-      key: ValueKey('${group.name}:${change.path}'),
-      dense: true,
-      selected: selected,
-      leading: _statusBadge(context, change),
-      title: Text(change.path, overflow: TextOverflow.ellipsis),
-      subtitle: change.originalPath == null
-          ? null
-          : Text(
-              'from ${change.originalPath}',
-              overflow: TextOverflow.ellipsis,
-            ),
-      onTap: () => unawaited(_activeController.selectChange(change)),
+    final actionSnapshot = _changeActionSnapshot(change, state);
+    return ContextActionMenu(
+      snapshot: actionSnapshot,
+      actions: _changeActions(change, state, actionSnapshot),
+      onAction: _handleChangeAction,
+      child: ListTile(
+        key: ValueKey('${group.name}:${change.path}'),
+        dense: true,
+        selected: selected,
+        leading: _statusBadge(context, change),
+        title: Text(change.path, overflow: TextOverflow.ellipsis),
+        subtitle: change.originalPath == null
+            ? null
+            : Text(
+                'from ${change.originalPath}',
+                overflow: TextOverflow.ellipsis,
+              ),
+        trailing: ContextActionMenuButton(
+          key: ValueKey('change-actions:${change.path}'),
+        ),
+        onTap: () => unawaited(_activeController.selectChange(change)),
+      ),
     );
+  }
+
+  ContextActionSnapshot _changeActionSnapshot(
+    GitChange change,
+    ChangesState state,
+  ) {
+    final status = state.snapshot!;
+    return ContextActionSnapshot(
+      repository: widget.repository,
+      target: ContextActionTarget.change(path: change.path),
+      fingerprint:
+          '${status.generation}:${status.contentHash}:${change.path}:'
+          '${change.indexStatus}:${change.worktreeStatus}',
+    );
+  }
+
+  List<ContextActionDescriptor> _changeActions(
+    GitChange change,
+    ChangesState state,
+    ContextActionSnapshot snapshot,
+  ) {
+    final disabledReason = state.isMutating || state.isDiscardPreparing
+        ? 'Git is already running.'
+        : null;
+    final actions = <ContextActionDescriptor>[
+      ContextActionDescriptor(
+        id: ContextActionId.inspect,
+        label: 'Inspect',
+        icon: Icons.visibility_outlined,
+        group: ContextActionGroup.inspect,
+        route: ContextActionRoute.inspect,
+        snapshot: snapshot,
+      ),
+    ];
+    if (!change.isConflicted && (change.isUntracked || change.isUnstaged)) {
+      actions.add(
+        ContextActionDescriptor(
+          id: ContextActionId.stage,
+          label: 'Stage',
+          icon: Icons.add,
+          group: ContextActionGroup.workflow,
+          route: ContextActionRoute.stage,
+          snapshot: snapshot,
+          enabled: disabledReason == null,
+          disabledReason: disabledReason,
+        ),
+      );
+    }
+    if (!change.isConflicted && change.isStaged && !change.isUntracked) {
+      actions.add(
+        ContextActionDescriptor(
+          id: ContextActionId.unstage,
+          label: 'Unstage',
+          icon: Icons.undo,
+          group: ContextActionGroup.workflow,
+          route: ContextActionRoute.unstage,
+          snapshot: snapshot,
+          enabled: disabledReason == null,
+          disabledReason: disabledReason,
+        ),
+      );
+    }
+    if (!change.isConflicted && !change.isUntracked && change.isUnstaged) {
+      actions.add(
+        ContextActionDescriptor(
+          id: ContextActionId.discard,
+          label: 'Discard',
+          icon: Icons.delete_outline,
+          group: ContextActionGroup.destructive,
+          route: ContextActionRoute.discard,
+          snapshot: snapshot,
+          enabled: disabledReason == null,
+          disabledReason: disabledReason,
+        ),
+      );
+    }
+    return actions;
+  }
+
+  Future<void> _handleChangeAction(ContextActionDescriptor action) async {
+    final currentState = _activeController.state;
+    final currentSnapshot = currentState.snapshot;
+    if (currentSnapshot == null ||
+        action.snapshot.repository != widget.repository ||
+        action.snapshot.target.kind != ContextActionTargetKind.change) {
+      return;
+    }
+    GitChange? current;
+    for (final change in currentSnapshot.changes) {
+      if (change.path == action.snapshot.target.identity) {
+        current = change;
+        break;
+      }
+    }
+    if (current == null) return;
+    final currentActionSnapshot = _changeActionSnapshot(current, currentState);
+    if (currentActionSnapshot != action.snapshot) return;
+
+    switch (action.route) {
+      case ContextActionRoute.inspect:
+        await _activeController.selectChange(current);
+      case ContextActionRoute.stage:
+        _activeController.selectPath(current.path);
+        await _activeController.stageSelected();
+      case ContextActionRoute.unstage:
+        _activeController.selectPath(current.path);
+        await _activeController.unstageSelected();
+      case ContextActionRoute.discard:
+        _activeController.selectPath(current.path);
+        await _showDiscardDialog(context, _activeController);
+    }
   }
 
   Widget _statusBadge(BuildContext context, GitChange change) {
