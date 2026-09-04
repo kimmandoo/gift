@@ -1,6 +1,8 @@
 # Changelog
 
 ## 2026-09-04
+- fix(branches): made remote fetching visible, cancellable, and reliable on
+  compact dialogs, including fresh remote-only branch results.
 - feat(resilience): added debounced repository watching, bounded diff paging,
   cache invalidation, and process-tree cleanup diagnostics.
 - feat(accessibility): added versioned preferences for scale, motion, contrast,

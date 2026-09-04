@@ -5,39 +5,28 @@ This file is the handoff record for continuing work across query sessions.
 ## Current checkpoint
 
 - Date: 2026-09-04
-- Active task: Task 36 Scale & resilience and Task 37 Accessibility &
-  preferences are complete and verified. No implementation task is active.
+- Active task: Remote branch fetch workflow repair is complete and
+  verified. No implementation task is active.
 - Branch: `main`; no new branch or worktree was created.
-- Latest completed implementation commit before this session: `a5b3462`
-  (`fix(windows): create desktop install shortcut`).
-- This session added the Task 36 resilience foundation, Task 37 preference
-  surface, and the requested remote-branch fetch affordance.
-- Task 36 now watches repository metadata with a debounced coordinator and
-  low-frequency fallback, coalesces refreshes, bounds diff caching/rendering,
-  exposes deliberate diff paging, and records cancellation/timeout outcomes
-  after bounded process-tree cleanup.
-- Task 37 now persists validated version-1 preferences with legacy theme
-  migration and corrupt-data recovery. UI scale, reduced motion, high
-  contrast, color-safe graph colors, refresh policy, default branch/remote,
-  English-first labels, semantic controls, and configurable shortcuts flow
-  through the app and workspace boundaries.
-- Branch browsing now shows a visible fetch affordance, fetches every
-  configured remote, refreshes remote-tracking refs, and explains an empty
-  remote cache instead of hiding the section.
-- Changed files include `TASKS.md`, `CHANGELOG.md`,
-  `docs/research/jetbrains-git-mvp-behavior.md`,
-  `docs/superpowers/plans/2026-09-02-gift-dart-mvp.md`, this checkpoint,
-  `lib/src/app/{app_preferences,app_strings,gift_app,pixel_theme,preferences_dialog}.dart`,
-  `lib/src/backend/executor.dart`,
-  `lib/src/features/repository/{repository_refresh_coordinator,changes_controller,changes_screen,history_screen,workspace_screen,branch_dialog,remote_dialog}.dart`,
-  and their focused tests.
-- Verification:
-  `flutter test test/features/repository/repository_refresh_coordinator_test.dart
-  test/features/repository/changes_screen_test.dart
-  test/backend/dart_git_backend_test.dart` passed 43 tests;
-  focused Task 37 and repository UI tests passed 49 tests;
-  `PATH=/home/mgkim/.local/flutter/bin:$PATH dart run tool/verify.dart`
-  passed formatting, analysis, and all 224 Flutter tests.
+- Latest completed implementation commit before this bug-fix session:
+  `c546f18` (`feat(app): add resilient repository and accessibility controls`).
+- This session repaired the branch browser's remote-fetch workflow. The RED
+  widget regression showed that the compact dialog exposed only an unclear
+  overlay affordance and did not render the fetched remote-only branch.
+- The fetch action is now a visible title button at normal widths and a
+  compact accessible icon at narrow widths. It shows deterministic progress,
+  status, and cancellation controls without pushing the branch list below
+  the dialog actions.
+- Remote fetching now awaits the refreshed remote-branch snapshot and guards
+  asynchronous reads with a generation counter, so a stale initial read
+  cannot overwrite freshly fetched remote-tracking refs.
+- Changed files include `CHANGELOG.md`, this checkpoint,
+  `lib/src/features/repository/branch_dialog.dart`, and
+  `test/features/repository/branch_dialog_test.dart`.
+- Verification: `flutter test test/features/repository/branch_dialog_test.dart`
+  passed 7 tests, including compact fetch visibility, remote-only branch
+  rendering, and stale-snapshot ordering; `PATH=/home/mgkim/.local/flutter/bin:$PATH
+  dart run tool/verify.dart` passed formatting, analysis, and all 226 tests.
 - Blockers: none.
 
 ## Previous checkpoint

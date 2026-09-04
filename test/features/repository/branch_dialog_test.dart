@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:gift/src/backend/branch.dart';
 import 'package:gift/src/backend/commit.dart';
 import 'package:gift/src/backend/discard.dart';
@@ -192,6 +194,132 @@ void main() {
     expect(gateway.fetchCalls, ['origin']);
   });
 
+  testWidgets('fetches and renders remote-only branches from the browser', (
+    tester,
+  ) async {
+    addTearDown(tester.view.reset);
+    tester.view.physicalSize = const Size(420, 640);
+    tester.view.devicePixelRatio = 1;
+    final repository = const RepositoryOpened(
+      repositoryId: RepositoryId(value: 'remote-only-branch-repository'),
+      root: '/workspace/project',
+    );
+    final status = GitStatusSnapshot(
+      repositoryId: repository.repositoryId,
+      root: repository.root,
+      branch: const GitBranchStatus(head: 'main'),
+      changes: const [],
+      contentHash: 'remote-only',
+      generation: 1,
+    );
+    final remoteBranch = GitRemoteBranch(
+      name: 'origin/remote-only',
+      remote: 'origin',
+      branch: 'remote-only',
+      oid: 'b' * 40,
+    );
+    final gateway = FakeBranchGateway(
+      branches: const [GitBranch(name: 'main', isCurrent: true)],
+      action: GitBranchActionResult(
+        repositoryId: repository.repositoryId,
+        branchName: 'main',
+        status: status,
+      ),
+      remoteSnapshot: GitRemoteBranchSnapshot(
+        repositoryId: repository.repositoryId,
+        fingerprint: 'before-fetch',
+        currentBranch: 'main',
+        branches: const [],
+      ),
+      remoteSnapshotAfterFetch: GitRemoteBranchSnapshot(
+        repositoryId: repository.repositoryId,
+        fingerprint: 'after-fetch',
+        currentBranch: 'main',
+        branches: [remoteBranch],
+      ),
+    );
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: BranchDialog(gateway: gateway, repository: repository),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Fetch remotes'), findsOneWidget);
+    await tester.tap(find.byKey(const Key('fetch-remote-branches')));
+    await tester.pumpAndSettle();
+
+    expect(gateway.fetchCalls, ['origin']);
+    expect(find.text('origin/remote-only'), findsOneWidget);
+  });
+
+  testWidgets('keeps a fresh remote snapshot over a stale read', (
+    tester,
+  ) async {
+    final firstSnapshot = Completer<GitRemoteBranchSnapshot>();
+    final repository = const RepositoryOpened(
+      repositoryId: RepositoryId(value: 'remote-snapshot-race-repository'),
+      root: '/workspace/project',
+    );
+    final status = GitStatusSnapshot(
+      repositoryId: repository.repositoryId,
+      root: repository.root,
+      branch: const GitBranchStatus(head: 'main'),
+      changes: const [],
+      contentHash: 'remote-race',
+      generation: 1,
+    );
+    final remoteBranch = GitRemoteBranch(
+      name: 'origin/remote-only',
+      remote: 'origin',
+      branch: 'remote-only',
+      oid: 'c' * 40,
+    );
+    final stale = GitRemoteBranchSnapshot(
+      repositoryId: repository.repositoryId,
+      fingerprint: 'stale',
+      currentBranch: 'main',
+      branches: const [],
+    );
+    final fresh = GitRemoteBranchSnapshot(
+      repositoryId: repository.repositoryId,
+      fingerprint: 'fresh',
+      currentBranch: 'main',
+      branches: [remoteBranch],
+    );
+    final gateway = FakeBranchGateway(
+      branches: const [GitBranch(name: 'main', isCurrent: true)],
+      action: GitBranchActionResult(
+        repositoryId: repository.repositoryId,
+        branchName: 'main',
+        status: status,
+      ),
+      remoteSnapshot: stale,
+      remoteSnapshotAfterFetch: fresh,
+      remoteSnapshotReader: (read) =>
+          read == 1 ? firstSnapshot.future : Future.value(fresh),
+    );
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: BranchDialog(gateway: gateway, repository: repository),
+        ),
+      ),
+    );
+    await tester.pump();
+    await tester.tap(find.byKey(const Key('fetch-remote-branches')));
+    await tester.pumpAndSettle();
+    expect(find.text('origin/remote-only'), findsOneWidget);
+
+    firstSnapshot.complete(stale);
+    await tester.pumpAndSettle();
+    expect(find.text('origin/remote-only'), findsOneWidget);
+  });
+
   testWidgets('shows remote branches as checkout and compare actions', (
     tester,
   ) async {
@@ -339,6 +467,8 @@ class FakeBranchGateway with GitPatchGatewayStub implements GitGateway {
     this.preview,
     this.operationResult,
     this.remoteSnapshot,
+    this.remoteSnapshotAfterFetch,
+    this.remoteSnapshotReader,
     this.remoteDeletePreview,
     this.remoteDeleteResult,
     this.remotes = const [GitRemote(name: 'origin')],
@@ -349,6 +479,8 @@ class FakeBranchGateway with GitPatchGatewayStub implements GitGateway {
   final GitBranchOperationPreview? preview;
   final GitBranchOperationResult? operationResult;
   final GitRemoteBranchSnapshot? remoteSnapshot;
+  final GitRemoteBranchSnapshot? remoteSnapshotAfterFetch;
+  final Future<GitRemoteBranchSnapshot> Function(int)? remoteSnapshotReader;
   final GitRemoteBranchDeletePreview? remoteDeletePreview;
   final GitRemoteBranchActionResult? remoteDeleteResult;
   final List<GitRemote> remotes;
@@ -365,7 +497,11 @@ class FakeBranchGateway with GitPatchGatewayStub implements GitGateway {
   @override
   Future<GitRemoteBranchSnapshot> getRemoteBranchSnapshot(
     RepositoryId repositoryId,
-  ) async => remoteSnapshot!;
+  ) async =>
+      remoteSnapshotReader?.call(fetchCalls.length + 1) ??
+      (fetchCalls.isEmpty
+          ? remoteSnapshot!
+          : remoteSnapshotAfterFetch ?? remoteSnapshot!);
 
   @override
   Future<GitBranchActionResult> checkoutRemoteBranch(
