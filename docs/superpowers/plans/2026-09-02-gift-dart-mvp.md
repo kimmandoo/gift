@@ -796,3 +796,20 @@ system Git 2.35+.
 3. Added an explicit `Cancel push` action that remains available until the
    gateway operation returns, with regression coverage for cancellation and
    result rendering.
+
+## Completed follow-up: remote tracking and intuitive push
+
+1. Made the current branch’s configured upstream the authoritative default
+   push destination, ahead of repository preferences and generic remote order.
+2. Added reviewed first-push linking so an untracked local branch can publish
+   to a chosen remote branch and establish its upstream in the same safe
+   operation.
+3. Kept the normal push surface focused on the local-to-remote destination and
+   tracking state; selected commits, tags, alternate branch names, and
+   force-with-lease now live under explicit advanced options.
+4. Exposed push/link from the current branch row, remote configuration and
+   upstream management from Remote operations, and routed object-management
+   publication through the same reviewed push flow.
+5. Covered real Git upstream creation, configured-upstream precedence,
+   untracked-branch defaults, compact layouts, progress, branch discovery, and
+   remote setup access.

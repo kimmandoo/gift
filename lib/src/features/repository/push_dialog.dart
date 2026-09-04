@@ -11,6 +11,7 @@ import 'package:gift/src/backend/history.dart';
 import 'package:gift/src/backend/push.dart';
 import 'package:gift/src/backend/remote.dart';
 import 'package:gift/src/backend/remote_branch.dart';
+import 'package:gift/src/backend/status.dart';
 import 'package:gift/src/features/repository/update_project_dialog.dart';
 
 /// Reviews a bounded push scope before publishing it to a remote.
@@ -21,12 +22,14 @@ class PushDialog extends StatefulWidget {
     required this.repository,
     this.initialRemote,
     this.credentialStore,
+    this.preferredRemote,
   });
 
   final GitGateway gateway;
   final RepositoryOpened repository;
   final GitCredentialStore? credentialStore;
   final String? initialRemote;
+  final String? preferredRemote;
 
   @override
   State<PushDialog> createState() => _PushDialogState();
@@ -42,11 +45,13 @@ class _PushDialogState extends State<PushDialog> {
   String? _remote;
   String? _selectedCommit;
   String? _expectedRemoteOid;
+  GitBranchStatus? _branchStatus;
   GitPushPreview? _preview;
   GitPushResult? _result;
   GitError? _error;
   GitCancellationToken? _cancellation;
   var _forceWithLease = false;
+  var _setUpstream = false;
   var _busy = false;
 
   @override
@@ -88,97 +93,10 @@ class _PushDialogState extends State<PushDialog> {
               const SizedBox(height: 14),
               _remoteField(),
               _credentialField(),
+              const SizedBox(height: 10),
+              _trackingCard(),
               const SizedBox(height: 8),
-              DropdownButtonFormField<GitPushTarget>(
-                key: const Key('push-target'),
-                initialValue: _target,
-                isExpanded: true,
-                decoration: const InputDecoration(
-                  labelText: 'Publish scope',
-                  helperText:
-                      'Only the reviewed branch, commit, or tags are sent.',
-                ),
-                items: [
-                  for (final target in GitPushTarget.values)
-                    DropdownMenuItem(
-                      value: target,
-                      child: pixelDropdownText(_targetLabel(target)),
-                    ),
-                ],
-                onChanged: _busy
-                    ? null
-                    : (value) {
-                        if (value == null) return;
-                        setState(() {
-                          _target = value;
-                          _selectedCommit = null;
-                          _preview = null;
-                          _result = null;
-                        });
-                      },
-              ),
-              if (_target != GitPushTarget.allTags) ...[
-                const SizedBox(height: 8),
-                TextFormField(
-                  key: const Key('push-target-branch'),
-                  controller: _branchController,
-                  enabled: !_busy,
-                  decoration: const InputDecoration(
-                    labelText: 'Target branch',
-                    helperText: 'Defaults to the current local branch.',
-                  ),
-                  onChanged: (_) =>
-                      setState(() => _invalidateReview(clearRemoteTip: true)),
-                ),
-              ],
-              if (_target == GitPushTarget.selectedCommit) ...[
-                const SizedBox(height: 8),
-                DropdownButtonFormField<String>(
-                  key: const Key('push-selected-commit'),
-                  initialValue: _selectedCommit,
-                  isExpanded: true,
-                  decoration: const InputDecoration(
-                    labelText: 'Push up to commit',
-                    helperText:
-                        'The selected commit becomes the remote branch tip.',
-                  ),
-                  items: [
-                    for (final commit in _commits)
-                      DropdownMenuItem(
-                        value: commit.oid,
-                        child: pixelDropdownText(
-                          '${commit.shortOid} ${commit.subject}',
-                        ),
-                      ),
-                  ],
-                  onChanged: _busy
-                      ? null
-                      : (value) => setState(() {
-                          _selectedCommit = value;
-                          _preview = null;
-                          _result = null;
-                        }),
-                ),
-              ],
-              const SizedBox(height: 4),
-              CheckboxListTile(
-                key: const Key('push-force-with-lease'),
-                value: _forceWithLease,
-                dense: true,
-                contentPadding: EdgeInsets.zero,
-                controlAffinity: ListTileControlAffinity.leading,
-                title: const Text('Force-with-lease'),
-                subtitle: const Text(
-                  'Replace history only after the reviewed remote tip matches.',
-                ),
-                onChanged: _busy
-                    ? null
-                    : (value) => setState(() {
-                        _forceWithLease = value ?? false;
-                        _preview = null;
-                        _result = null;
-                      }),
-              ),
+              _advancedOptions(),
               if (_error case final error?) ...[
                 const SizedBox(height: 8),
                 _messageCard(
@@ -230,40 +148,48 @@ class _PushDialogState extends State<PushDialog> {
     );
   }
 
-  Widget _pushGuidance() => Card(
-    key: const Key('push-guidance'),
-    child: Padding(
-      padding: const EdgeInsets.all(12),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Icon(
-            Icons.info_outline,
-            size: 20,
-            color: Theme.of(context).colorScheme.primary,
-          ),
-          const SizedBox(width: 10),
-          const Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Text(
-                  'Nothing is pushed yet',
-                  style: TextStyle(fontWeight: FontWeight.w700),
-                ),
-                SizedBox(height: 4),
-                Text(
-                  'Choose what to publish, then select Review changes. '
-                  'The app checks commits, files, and the remote tip. '
-                  'Only the final Push button sends data.',
-                ),
-              ],
+  Widget _pushGuidance() {
+    final branch = _branchStatus?.head;
+    final upstream = _branchStatus?.upstream;
+    final title = branch == null || branch == '(detached)'
+        ? 'Review a push destination'
+        : upstream == null
+        ? 'Publish and link $branch'
+        : 'Push $branch to $upstream';
+    return Card(
+      key: const Key('push-guidance'),
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Icon(
+              Icons.info_outline,
+              size: 20,
+              color: Theme.of(context).colorScheme.primary,
             ),
-          ),
-        ],
+            const SizedBox(width: 10),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Text(
+                    title,
+                    style: const TextStyle(fontWeight: FontWeight.w700),
+                  ),
+                  const SizedBox(height: 4),
+                  const Text(
+                    'Review shows exactly what will be sent. '
+                    'Only the final Push button changes the remote.',
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
-    ),
-  );
+    );
+  }
 
   Widget _pushProgressCard() {
     final preview = _preview;
@@ -332,15 +258,176 @@ class _PushDialogState extends State<PushDialog> {
             child: pixelDropdownText(remote.name),
           ),
       ],
-      onChanged: _busy
-          ? null
-          : (value) {
-              setState(() {
-                _remote = value;
-                _credentialId = null;
-                _invalidateReview(clearRemoteTip: true);
-              });
-            },
+      onChanged: _busy ? null : _selectRemote,
+    );
+  }
+
+  Widget _trackingCard() {
+    final status = _branchStatus;
+    final remote = _remote;
+    if (status == null || remote == null) return const SizedBox.shrink();
+    final branch = status.head;
+    final remoteBranch = _branchController.text.trim();
+    if (_target == GitPushTarget.allTags) {
+      return const Card(
+        key: Key('push-destination'),
+        child: Padding(
+          padding: EdgeInsets.all(12),
+          child: Text('Destination: all selected tags on the chosen remote'),
+        ),
+      );
+    }
+    final destination =
+        '$remote/${remoteBranch.isEmpty ? branch ?? '' : remoteBranch}';
+    final currentUpstream = status.upstream;
+    final canLink =
+        _target == GitPushTarget.currentBranch &&
+        branch != null &&
+        branch != '(detached)' &&
+        destination != currentUpstream;
+    return Card(
+      key: const Key('push-destination'),
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Text(
+              '${branch ?? 'Detached HEAD'} → $destination',
+              style: Theme.of(context).textTheme.titleSmall,
+            ),
+            const SizedBox(height: 4),
+            if (currentUpstream == destination)
+              Text('Linked upstream: $currentUpstream')
+            else if (_target != GitPushTarget.currentBranch)
+              const Text('This advanced push does not change branch tracking.')
+            else
+              Text(
+                currentUpstream == null
+                    ? 'This local branch is not linked to a remote branch yet.'
+                    : 'Current upstream: $currentUpstream',
+              ),
+            if (canLink)
+              CheckboxListTile(
+                key: const Key('push-set-upstream'),
+                value: _setUpstream,
+                contentPadding: EdgeInsets.zero,
+                controlAffinity: ListTileControlAffinity.leading,
+                title: Text('Use $destination as this branch’s upstream'),
+                subtitle: const Text(
+                  'Future push, pull, and ahead/behind status will use this link.',
+                ),
+                onChanged: _busy
+                    ? null
+                    : (value) => setState(() {
+                        _setUpstream = value ?? false;
+                        _invalidateReview(clearRemoteTip: true);
+                      }),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _advancedOptions() {
+    return ExpansionTile(
+      key: const Key('push-advanced-options'),
+      tilePadding: EdgeInsets.zero,
+      childrenPadding: const EdgeInsets.only(bottom: 4),
+      title: const Text('Advanced push options'),
+      subtitle: const Text('Different branch, selected commit, tags, or force'),
+      children: [
+        DropdownButtonFormField<GitPushTarget>(
+          key: const Key('push-target'),
+          initialValue: _target,
+          isExpanded: true,
+          decoration: const InputDecoration(
+            labelText: 'Publish scope',
+            helperText: 'The current branch is the safe default.',
+          ),
+          items: [
+            for (final target in GitPushTarget.values)
+              DropdownMenuItem(
+                value: target,
+                child: pixelDropdownText(_targetLabel(target)),
+              ),
+          ],
+          onChanged: _busy
+              ? null
+              : (value) {
+                  if (value == null) return;
+                  setState(() {
+                    _target = value;
+                    _selectedCommit = null;
+                    _setUpstream =
+                        value == GitPushTarget.currentBranch &&
+                        _branchStatus?.upstream == null;
+                    _invalidateReview(clearRemoteTip: true);
+                  });
+                },
+        ),
+        if (_target != GitPushTarget.allTags) ...[
+          const SizedBox(height: 8),
+          TextFormField(
+            key: const Key('push-target-branch'),
+            controller: _branchController,
+            enabled: !_busy,
+            decoration: const InputDecoration(
+              labelText: 'Remote branch',
+              helperText: 'The branch name that will be created or updated.',
+            ),
+            onChanged: (_) =>
+                setState(() => _invalidateReview(clearRemoteTip: true)),
+          ),
+        ],
+        if (_target == GitPushTarget.selectedCommit) ...[
+          const SizedBox(height: 8),
+          DropdownButtonFormField<String>(
+            key: const Key('push-selected-commit'),
+            initialValue: _selectedCommit,
+            isExpanded: true,
+            decoration: const InputDecoration(
+              labelText: 'Push up to commit',
+              helperText: 'The selected commit becomes the remote branch tip.',
+            ),
+            items: [
+              for (final commit in _commits)
+                DropdownMenuItem(
+                  value: commit.oid,
+                  child: pixelDropdownText(
+                    '${commit.shortOid} ${commit.subject}',
+                  ),
+                ),
+            ],
+            onChanged: _busy
+                ? null
+                : (value) => setState(() {
+                    _selectedCommit = value;
+                    _preview = null;
+                    _result = null;
+                  }),
+          ),
+        ],
+        const SizedBox(height: 4),
+        CheckboxListTile(
+          key: const Key('push-force-with-lease'),
+          value: _forceWithLease,
+          contentPadding: EdgeInsets.zero,
+          controlAffinity: ListTileControlAffinity.leading,
+          title: const Text('Force-with-lease'),
+          subtitle: const Text(
+            'Replace history only if the reviewed remote tip is unchanged.',
+          ),
+          onChanged: _busy
+              ? null
+              : (value) => setState(() {
+                  _forceWithLease = value ?? false;
+                  _preview = null;
+                  _result = null;
+                }),
+        ),
+      ],
     );
   }
 
@@ -455,6 +542,10 @@ class _PushDialogState extends State<PushDialog> {
             ),
             const SizedBox(height: 10),
             Text('Destination: $destination'),
+            if (preview.request.setUpstream)
+              Text(
+                'After push: ${preview.currentBranch} will track $destination',
+              ),
             if (preview.request.target != GitPushTarget.allTags)
               Text(
                 'Commits to publish: ${preview.commits.length} commit(s), '
@@ -543,6 +634,41 @@ class _PushDialogState extends State<PushDialog> {
     ),
   );
 
+  void _selectRemote(String? remote) {
+    if (remote == null) return;
+    final status = _branchStatus;
+    final tracking = _trackingDestination(status, _remotes ?? const []);
+    setState(() {
+      _remote = remote;
+      _credentialId = null;
+      if (tracking != null && tracking.$1 == remote) {
+        _branchController.text = tracking.$2;
+        _setUpstream = false;
+      } else if (status?.head case final branch?) {
+        if (branch != '(detached)') _branchController.text = branch;
+        _setUpstream = status?.upstream == null;
+      }
+      _invalidateReview(clearRemoteTip: true);
+    });
+  }
+
+  (String, String)? _trackingDestination(
+    GitBranchStatus? status,
+    List<GitRemote> remotes,
+  ) {
+    final upstream = status?.upstream;
+    if (upstream == null || upstream.isEmpty) return null;
+    final names = remotes.map((remote) => remote.name).toList()
+      ..sort((left, right) => right.length.compareTo(left.length));
+    for (final name in names) {
+      final prefix = '$name/';
+      if (upstream.startsWith(prefix) && upstream.length > prefix.length) {
+        return (name, upstream.substring(prefix.length));
+      }
+    }
+    return null;
+  }
+
   Future<void> _load() async {
     try {
       final remotes = await widget.gateway.getRemotes(
@@ -570,17 +696,32 @@ class _PushDialogState extends State<PushDialog> {
         // A repository without commits can still review a tag/branch action.
       }
       if (!mounted) return;
+      final tracking = _trackingDestination(status.branch, remotes);
+      final candidates = [
+        tracking?.$1,
+        widget.initialRemote,
+        widget.preferredRemote,
+        'origin',
+      ];
+      final selectedRemote = candidates
+          .whereType<String>()
+          .where((name) => remotes.any((remote) => remote.name == name))
+          .firstOrNull;
+      final selectedBranch = tracking != null && tracking.$1 == selectedRemote
+          ? tracking.$2
+          : status.branch.head;
       setState(() {
         _accounts = accounts;
         _remotes = remotes;
-        _remote = remotes.isEmpty
-            ? null
-            : remotes.any((remote) => remote.name == widget.initialRemote)
-            ? widget.initialRemote
-            : remotes.first.name;
+        _remote = remotes.isEmpty ? null : selectedRemote ?? remotes.first.name;
+        _branchStatus = status.branch;
+        _setUpstream =
+            status.branch.head != null &&
+            !status.branch.isDetached &&
+            tracking == null;
         _commits = history?.commits ?? const [];
-        if (_branchController.text.isEmpty && status.branch.head != null) {
-          _branchController.text = status.branch.head!;
+        if (selectedBranch != null) {
+          _branchController.text = selectedBranch;
         }
       });
     } on GitError catch (error) {
@@ -611,6 +752,7 @@ class _PushDialogState extends State<PushDialog> {
               ? null
               : _branchController.text.trim(),
           commitOid: _selectedCommit,
+          setUpstream: _setUpstream && _target == GitPushTarget.currentBranch,
           forceWithLease: _forceWithLease,
           expectedRemoteOid: _forceWithLease ? _expectedRemoteOid : null,
           credentialId: _credentialId,

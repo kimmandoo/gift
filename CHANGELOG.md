@@ -1,6 +1,11 @@
 # Changelog
 
 ## 2026-09-04
+- fix(push): made tracked destinations the default, linked first pushes to
+  their chosen upstream, and moved uncommon ref and force controls behind an
+  advanced section.
+- fix(remotes): exposed remote setup and branch tracking from the remote and
+  branch workflows and routed branch publication through reviewed push.
 - fix(branches): distinguished malformed remote-ref and local-branch parser
   failures so branch recovery diagnostics identify the actual source.
 - feat(auth): added secure Git account management, provider and host matching,

@@ -51,6 +51,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.byKey(const ValueKey('fetch:origin')), findsOneWidget);
+    expect(find.byKey(const Key('manage-remotes')), findsOneWidget);
     await tester.tap(find.byKey(const ValueKey('fetch:origin')));
     await tester.pump();
     expect(find.byKey(const Key('remote-progress')), findsOneWidget);

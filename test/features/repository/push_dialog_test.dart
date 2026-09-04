@@ -38,14 +38,22 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.byKey(const Key('push-guidance')), findsOneWidget);
-    expect(find.text('Nothing is pushed yet'), findsOneWidget);
+    expect(find.text('Publish and link main'), findsOneWidget);
     final guidance = tester.getRect(find.byKey(const Key('push-guidance')));
     final remote = tester.getRect(find.byKey(const Key('push-remote')));
-    final scope = tester.getRect(find.byKey(const Key('push-target')));
+    final destination = tester.getRect(
+      find.byKey(const Key('push-destination')),
+    );
     expect(remote.top, greaterThanOrEqualTo(guidance.bottom + 8));
-    expect(scope.top, greaterThanOrEqualTo(remote.bottom + 8));
+    expect(destination.top, greaterThanOrEqualTo(remote.bottom + 8));
     expect(remote.bottom, lessThanOrEqualTo(640));
     expect(find.byKey(const Key('execute-push')), findsNothing);
+    expect(
+      tester
+          .widget<CheckboxListTile>(find.byKey(const Key('push-set-upstream')))
+          .value,
+      isTrue,
+    );
     await tester.tap(find.byKey(const Key('preview-push')));
     await tester.pumpAndSettle();
     expect(find.byKey(const Key('push-preview')), findsOneWidget);
@@ -57,6 +65,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(gateway.executedRequest?.confirmationToken, 'push-token');
+    expect(gateway.executedRequest?.setUpstream, isTrue);
     expect(tester.takeException(), isNull);
   });
 
@@ -120,6 +129,9 @@ void main() {
     );
     await tester.pumpAndSettle();
 
+    await tester.ensureVisible(find.byKey(const Key('push-advanced-options')));
+    await tester.tap(find.byKey(const Key('push-advanced-options')));
+    await tester.pumpAndSettle();
     await tester.ensureVisible(find.byKey(const Key('push-target')));
     await tester.tap(find.byKey(const Key('push-target')));
     await tester.pumpAndSettle();
@@ -140,27 +152,81 @@ void main() {
     expect(commitLabel.maxLines, 1);
     expect(commitLabel.overflow, TextOverflow.ellipsis);
   });
+  testWidgets('uses the configured upstream before a preferred remote', (
+    tester,
+  ) async {
+    addTearDown(tester.view.reset);
+    tester.view.physicalSize = const Size(420, 700);
+    tester.view.devicePixelRatio = 1;
+    final repository = const RepositoryOpened(
+      repositoryId: RepositoryId(value: 'tracked-push-repository'),
+      root: '/workspace/project',
+    );
+    final gateway = _PushGateway(
+      repository,
+      remotes: const [
+        GitRemote(name: 'backup'),
+        GitRemote(name: 'origin'),
+      ],
+      branchStatus: GitBranchStatus(
+        head: 'feature',
+        oid: 'a' * 40,
+        upstream: 'origin/review/feature',
+        ahead: 2,
+      ),
+    );
+
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: buildPixelTheme(),
+        home: PushDialog(
+          gateway: gateway,
+          repository: repository,
+          preferredRemote: 'backup',
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Push feature to origin/review/feature'), findsOneWidget);
+    expect(find.text('feature → origin/review/feature'), findsOneWidget);
+    expect(find.text('Linked upstream: origin/review/feature'), findsOneWidget);
+    expect(find.byKey(const Key('push-set-upstream')), findsNothing);
+
+    await tester.tap(find.byKey(const Key('preview-push')));
+    await tester.pumpAndSettle();
+    expect(gateway.previewedRequest?.remote, 'origin');
+    expect(gateway.previewedRequest?.branch, 'review/feature');
+    expect(gateway.previewedRequest?.setUpstream, isFalse);
+  });
 }
 
 class _PushGateway with GitPatchGatewayStub implements GitGateway {
-  _PushGateway(this.repository);
+  _PushGateway(
+    this.repository, {
+    this.remotes = const [GitRemote(name: 'origin')],
+    GitBranchStatus? branchStatus,
+  }) : branchStatus =
+           branchStatus ?? GitBranchStatus(head: 'main', oid: 'a' * 40);
 
   final RepositoryOpened repository;
+  final List<GitRemote> remotes;
+  final GitBranchStatus branchStatus;
+  GitPushRequest? previewedRequest;
   GitPushRequest? executedRequest;
   Completer<void>? executionGate;
   GitCancellationToken? executionCancellationToken;
 
   @override
-  Future<List<GitRemote>> getRemotes(RepositoryId repositoryId) async => const [
-    GitRemote(name: 'origin'),
-  ];
+  Future<List<GitRemote>> getRemotes(RepositoryId repositoryId) async =>
+      remotes;
 
   @override
   Future<GitStatusSnapshot> getStatus(RepositoryId repositoryId) async =>
       GitStatusSnapshot(
         repositoryId: repositoryId,
         root: repository.root,
-        branch: GitBranchStatus(head: 'main', oid: 'a' * 40),
+        branch: branchStatus,
         changes: const [],
         contentHash: 'status',
         generation: 1,
@@ -194,25 +260,28 @@ class _PushGateway with GitPatchGatewayStub implements GitGateway {
   Future<GitPushPreview> previewPush(
     RepositoryId repositoryId,
     GitPushRequest request,
-  ) async => GitPushPreview(
-    repositoryId: repositoryId,
-    request: request,
-    remote: 'origin',
-    currentBranch: 'main',
-    targetBranch: 'main',
-    localHead: 'a' * 40,
-    targetOid: 'a' * 40,
-    remoteHead: 'b' * 40,
-    commits: [GitPushCommit(oid: 'a' * 40, subject: 'Publish this')],
-    changedPaths: const ['README.md'],
-    tags: const [],
-    dirtyWorktree: false,
-    protectedBranch: false,
-    requiresConfirmation: false,
-    fingerprint: 'fingerprint',
-    token: 'push-token',
-    expiresAt: DateTime.now().add(const Duration(minutes: 1)),
-  );
+  ) async {
+    previewedRequest = request;
+    return GitPushPreview(
+      repositoryId: repositoryId,
+      request: request,
+      remote: request.remote,
+      currentBranch: branchStatus.head ?? '',
+      targetBranch: request.branch ?? branchStatus.head ?? '',
+      localHead: 'a' * 40,
+      targetOid: 'a' * 40,
+      remoteHead: 'b' * 40,
+      commits: [GitPushCommit(oid: 'a' * 40, subject: 'Publish this')],
+      changedPaths: const ['README.md'],
+      tags: const [],
+      dirtyWorktree: false,
+      protectedBranch: false,
+      requiresConfirmation: false,
+      fingerprint: 'fingerprint',
+      token: 'push-token',
+      expiresAt: DateTime.now().add(const Duration(minutes: 1)),
+    );
+  }
 
   @override
   Future<GitPushResult> executePush(

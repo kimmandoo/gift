@@ -8,6 +8,7 @@ import 'package:gift/src/backend/git_gateway.dart';
 import 'package:gift/src/backend/remote.dart';
 import 'package:gift/src/backend/push.dart';
 import 'package:gift/src/features/repository/push_dialog.dart';
+import 'package:gift/src/features/repository/object_dialog.dart';
 import 'package:flutter/material.dart';
 
 /// Shows remotes and keeps one cancellable synchronization operation visible.
@@ -97,6 +98,12 @@ class _RemoteDialogState extends State<RemoteDialog> {
             onPressed: _cancellationToken?.cancel,
             child: const Text('Cancel operation'),
           ),
+        if (!busy)
+          OutlinedButton(
+            key: const Key('manage-remotes'),
+            onPressed: _manageRemotes,
+            child: const Text('Remote setup'),
+          ),
         TextButton(
           onPressed: busy ? null : () => Navigator.of(context).pop(),
           child: const Text('Close'),
@@ -179,6 +186,19 @@ class _RemoteDialogState extends State<RemoteDialog> {
         );
       },
     );
+  }
+
+  Future<void> _manageRemotes() async {
+    await showDialog<void>(
+      context: context,
+      builder: (_) => ObjectDialog(
+        gateway: widget.gateway,
+        repository: widget.repository,
+        initialTabIndex: 2,
+      ),
+    );
+    if (!mounted) return;
+    await _loadRemotes();
   }
 
   Future<void> _openPushReview(BuildContext context, String remote) async {

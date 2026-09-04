@@ -237,6 +237,49 @@ void main() {
       );
     },
   );
+  test(
+    'publishes an untracked branch and links its chosen destination',
+    () async {
+      final fixture = await _createFixture('gift-push-link-');
+      addTearDown(() => fixture.root.delete(recursive: true));
+      await _git(fixture.repository.path, ['switch', '--create', 'feature']);
+      await _commitLocal(
+        fixture.repository,
+        'feature',
+        'feature.txt',
+        'feature\n',
+      );
+      final backend = DartGitBackend();
+      final opened = await backend.openRepository(fixture.repository.path);
+
+      final preview = await backend.previewPush(
+        opened.repositoryId,
+        const GitPushRequest(
+          remote: 'origin',
+          branch: 'review/feature',
+          setUpstream: true,
+        ),
+      );
+      expect(preview.canExecute, isTrue);
+
+      final result = await backend.executePush(
+        opened.repositoryId,
+        preview.request,
+      );
+      final upstream = await backend.getUpstream(opened.repositoryId);
+
+      expect(result.state, GitPushState.completed);
+      expect(upstream.remote, 'origin');
+      expect(upstream.remoteBranch, 'review/feature');
+      expect(
+        await _gitOutput(fixture.remote.path, [
+          'rev-parse',
+          'refs/heads/review/feature',
+        ]),
+        preview.localHead,
+      );
+    },
+  );
 }
 
 class _PushFixture {

@@ -8,6 +8,8 @@ import 'package:gift/src/backend/executor.dart';
 import 'package:gift/src/backend/git_gateway.dart';
 import 'package:gift/src/backend/objects.dart';
 import 'package:gift/src/backend/remote.dart';
+import 'package:gift/src/backend/push.dart';
+import 'package:gift/src/features/repository/push_dialog.dart';
 
 /// Focused object-management workflows for stashes, tags, remotes, and
 /// upstream tracking. Every destructive action shows the backend preview
@@ -17,10 +19,12 @@ class ObjectDialog extends StatefulWidget {
     super.key,
     required this.gateway,
     required this.repository,
-  });
+    this.initialTabIndex = 0,
+  }) : assert(initialTabIndex >= 0 && initialTabIndex < 4);
 
   final GitGateway gateway;
   final RepositoryOpened repository;
+  final int initialTabIndex;
 
   @override
   State<ObjectDialog> createState() => _ObjectDialogState();
@@ -72,7 +76,13 @@ class _ObjectDialogState extends State<ObjectDialog> {
       ),
       title: Row(
         children: [
-          const Expanded(child: Text('Git objects')),
+          Expanded(
+            child: Text(
+              widget.initialTabIndex >= 2
+                  ? 'Remotes & tracking'
+                  : 'Git objects',
+            ),
+          ),
           if (_busy)
             const SizedBox(
               width: 18,
@@ -88,6 +98,7 @@ class _ObjectDialogState extends State<ObjectDialog> {
             ? const Center(child: CircularProgressIndicator())
             : DefaultTabController(
                 length: 4,
+                initialIndex: widget.initialTabIndex,
                 child: Column(
                   children: [
                     if (_error case final error?) _errorBanner(error),
@@ -536,7 +547,7 @@ class _ObjectDialogState extends State<ObjectDialog> {
             FilledButton(
               key: const Key('publish-branch'),
               onPressed: _busy ? null : () => _publishBranch(selected!),
-              child: const Text('Publish branch'),
+              child: const Text('Review push & link'),
             ),
             OutlinedButton(
               key: const Key('set-upstream'),
@@ -554,7 +565,8 @@ class _ObjectDialogState extends State<ObjectDialog> {
         ),
         const SizedBox(height: 8),
         Text(
-          'Publish uses git push --set-upstream and updates ahead/behind after success.',
+          'Review uses the same safe Push flow. Set upstream links an existing '
+          'same-name remote branch without pushing.',
           style: Theme.of(context).textTheme.bodySmall,
         ),
       ],
@@ -823,9 +835,18 @@ class _ObjectDialogState extends State<ObjectDialog> {
   Future<void> _unsetUpstream() =>
       _run(() => widget.gateway.unsetUpstream(widget.repository.repositoryId));
 
-  Future<void> _publishBranch(String remote) => _run(
-    () => widget.gateway.publishBranch(widget.repository.repositoryId, remote),
-  );
+  Future<void> _publishBranch(String remote) async {
+    final result = await showDialog<GitPushResult>(
+      context: context,
+      builder: (_) => PushDialog(
+        gateway: widget.gateway,
+        repository: widget.repository,
+        initialRemote: remote,
+      ),
+    );
+    if (!mounted || result == null) return;
+    await _load();
+  }
 
   Future<GitObjectPreview?> _preview(
     Future<GitObjectPreview> Function() action,

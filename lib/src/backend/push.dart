@@ -15,6 +15,7 @@ class GitPushRequest {
     this.branch,
     this.commitOid,
     this.tagNames = const [],
+    this.setUpstream = false,
     this.forceWithLease = false,
     this.expectedRemoteOid,
     this.confirmationToken,
@@ -26,6 +27,7 @@ class GitPushRequest {
   final String? branch;
   final String? commitOid;
   final List<String> tagNames;
+  final bool setUpstream;
   final bool forceWithLease;
   final String? expectedRemoteOid;
   final String? confirmationToken;
@@ -37,6 +39,7 @@ class GitPushRequest {
     branch ?? '',
     commitOid ?? '',
     ...tagNames,
+    setUpstream,
     forceWithLease,
     expectedRemoteOid ?? '',
     credentialId ?? '',
@@ -49,6 +52,7 @@ class GitPushRequest {
         branch: branch,
         commitOid: commitOid,
         tagNames: tagNames,
+        setUpstream: setUpstream,
         forceWithLease: forceWithLease,
         expectedRemoteOid: expectedRemoteOid,
         confirmationToken: confirmationToken ?? this.confirmationToken,

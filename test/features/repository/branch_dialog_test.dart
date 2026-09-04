@@ -60,7 +60,8 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('feature/demo'), findsOneWidget);
-    expect(find.text('Current branch'), findsOneWidget);
+    expect(find.text('Current · not linked to a remote'), findsOneWidget);
+    expect(find.byKey(const Key('push-current-branch')), findsOneWidget);
     expect(tester.takeException(), isNull);
     await tester.tap(find.byKey(const ValueKey('branch:feature/demo')));
     await tester.pumpAndSettle();

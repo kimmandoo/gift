@@ -5,21 +5,27 @@ This file is the handoff record for continuing work across query sessions.
 ## Current checkpoint
 
 - Date: 2026-09-04
-- Active task: The remote branch parse diagnostic fix is complete. The next
-  priority is Task 41 — Commit context actions.
+- Active task: The remote tracking and push UX repair is complete. The next
+  priority remains Task 41 — Commit context actions.
 - Branch: `main`; no new branch or worktree was created.
-- Latest implementation commit: this session's
-  `fix(branches): distinguish remote and local parser failures` commit.
-- This session separated remote-ref and local-branch parser error handling so
-  malformed local refs no longer surface as unreadable remote branch lists.
-  Diagnostics now identify the failing ref source, and regression coverage
-  locks both messages.
-- Changed files include `CHANGELOG.md`, `docs/WORK_CHECKPOINT.md`,
-  `lib/src/backend/repository_service.dart`, and
-  `test/backend/remote_snapshot_parse_test.dart`.
-- Verification: focused branch tests passed; full local verification passed
-  `flutter pub get`, formatting for `lib`, `test`, `integration_test`, and
-  `tool` (134 files), `flutter analyze`, and `flutter test` (240 tests).
+- Latest implementation commit: this session’s
+  `fix(push): streamline remote branch tracking` commit.
+- This session made configured upstreams authoritative push defaults, added
+  reviewed first-push upstream linking, moved uncommon ref/force controls
+  behind Advanced push options, and displayed the exact local-to-remote
+  destination before review.
+- Branches now expose a direct push/link action for the current branch.
+  Remote operations expose remote setup, and upstream publication routes
+  through the reviewed Push flow instead of writing directly.
+- Changed files include `CHANGELOG.md`, this checkpoint, the implementation
+  plan, push backend/service files, branch/remote/object/Changes dialogs, and
+  focused backend/widget tests.
+- Verification: the first RED push fixture failed because `setUpstream` did
+  not exist. The focused changed backend/widget suite passed all 25 tests.
+  `dart run tool/verify.dart` passed formatting for 134 files and
+  `flutter analyze`; its full test stage passed 227 tests and retained the 15
+  previously documented Windows-only newline/path/rebase fixture failures.
+  `flutter run -d windows` built, launched, and synced the desktop app.
 - Blockers: none.
 
 ## Previous checkpoint

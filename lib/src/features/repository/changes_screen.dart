@@ -299,7 +299,7 @@ class _ChangesScreenBodyState extends ConsumerState<_ChangesScreenBody> {
               _menuItem(
                 _ChangesMenuAction.objects,
                 Icons.inventory_2_outlined,
-                'Git objects',
+                'Stashes, tags & remote setup',
               ),
               _menuItem(
                 _ChangesMenuAction.comparison,
@@ -1567,6 +1567,8 @@ class _ChangesScreenBodyState extends ConsumerState<_ChangesScreenBody> {
         gateway: widget.gateway,
         repository: widget.repository,
         preferredBranch: preferences?.defaultBranch,
+        preferredRemote: preferences?.defaultRemote,
+        credentialStore: widget.credentialStore,
       ),
     );
     if (!context.mounted || result == null) return;
@@ -1616,6 +1618,9 @@ class _ChangesScreenBodyState extends ConsumerState<_ChangesScreenBody> {
         gateway: widget.gateway,
         repository: widget.repository,
         credentialStore: widget.credentialStore,
+        preferredRemote: AppPreferencesScope.maybeOf(context)
+            ?.preferences
+            .defaultRemote,
       ),
     );
     if (!context.mounted || result == null) return;

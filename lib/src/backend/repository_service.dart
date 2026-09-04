@@ -5941,7 +5941,12 @@ class RepositoryService {
       request: request,
       state: GitPushState.completed,
       status: after,
-      summary: _objectSummary(output, 'The selected changes were pushed.'),
+      summary: _objectSummary(
+        output,
+        request.setUpstream
+            ? 'The current branch was pushed and linked to ${inspection.remote}/${inspection.targetBranch}.'
+            : 'The selected changes were pushed.',
+      ),
     );
   });
 
@@ -5969,6 +5974,11 @@ class RepositoryService {
       if (request.forceWithLease) {
         blockingMessage.add(
           'Force-with-lease is available for branches, not tags.',
+        );
+      }
+      if (request.setUpstream) {
+        blockingMessage.add(
+          'Remote tracking can be linked only when pushing the current branch.',
         );
       }
       final tagSnapshot = await getTags(repositoryId);
@@ -6055,6 +6065,11 @@ class RepositoryService {
           }
         }
       }
+    }
+    if (request.setUpstream && request.target != GitPushTarget.currentBranch) {
+      blockingMessage.add(
+        'Remote tracking can be linked only when pushing the current branch.',
+      );
     }
     if (targetBranch.isNotEmpty &&
         currentBranch.isNotEmpty &&
@@ -6264,8 +6279,11 @@ class RepositoryService {
       'push',
       if (preview.request.forceWithLease)
         '--force-with-lease=refs/heads/${preview.targetBranch}:${preview.remoteHead}',
+      if (preview.request.setUpstream) '--set-upstream',
       preview.remote,
-      '${preview.targetOid}:refs/heads/${preview.targetBranch}',
+      preview.request.setUpstream
+          ? 'refs/heads/${preview.currentBranch}:refs/heads/${preview.targetBranch}'
+          : '${preview.targetOid}:refs/heads/${preview.targetBranch}',
     ];
   }
 

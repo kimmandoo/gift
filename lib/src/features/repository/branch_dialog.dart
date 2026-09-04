@@ -4,13 +4,16 @@ import 'package:flutter/material.dart';
 import 'package:gift/src/app/error_dialog.dart';
 import 'package:gift/src/app/pixel_theme.dart';
 
+import 'package:gift/src/backend/credentials.dart';
 import 'package:gift/src/backend/branch.dart';
 import 'package:gift/src/backend/domain.dart';
 import 'package:gift/src/backend/error.dart';
 import 'package:gift/src/backend/executor.dart';
 import 'package:gift/src/backend/git_gateway.dart';
 import 'package:gift/src/backend/remote_branch.dart';
+import 'package:gift/src/backend/push.dart';
 import 'package:gift/src/features/repository/comparison_dialog.dart';
+import 'package:gift/src/features/repository/push_dialog.dart';
 
 /// A small branch popup that keeps branch work separate from the Changes list.
 class BranchDialog extends StatefulWidget {
@@ -19,11 +22,15 @@ class BranchDialog extends StatefulWidget {
     required this.gateway,
     required this.repository,
     this.preferredBranch,
+    this.preferredRemote,
+    this.credentialStore,
   });
 
   final GitGateway gateway;
   final RepositoryOpened repository;
   final String? preferredBranch;
+  final String? preferredRemote;
+  final GitCredentialStore? credentialStore;
 
   @override
   State<BranchDialog> createState() => _BranchDialogState();
@@ -220,13 +227,22 @@ class _BranchDialogState extends State<BranchDialog> {
               title: Text(branch.name),
               subtitle: Text(
                 branch.isCurrent
-                    ? 'Current branch'
+                    ? branch.hasUpstream
+                          ? 'Current · tracks ${branch.upstream}'
+                          : 'Current · not linked to a remote'
                     : branch.hasUpstream
                     ? 'Tracks ${branch.upstream}'
                     : 'Local branch',
               ),
               trailing: branch.isCurrent
-                  ? const Text('HEAD')
+                  ? IconButton(
+                      key: const Key('push-current-branch'),
+                      tooltip: branch.hasUpstream
+                          ? 'Push current branch'
+                          : 'Publish and link current branch',
+                      onPressed: _isMutating ? null : _openCurrentBranchPush,
+                      icon: const Icon(Icons.cloud_upload_outlined),
+                    )
                   : PopupMenuButton<String>(
                       key: ValueKey('branch-actions:${branch.name}'),
                       tooltip: 'Branch actions',
@@ -671,6 +687,21 @@ class _BranchDialogState extends State<BranchDialog> {
     await _runAction(
       () => widget.gateway.switchBranch(widget.repository.repositoryId, name),
     );
+  }
+
+  Future<void> _openCurrentBranchPush() async {
+    final result = await showDialog<GitPushResult>(
+      context: context,
+      builder: (_) => PushDialog(
+        gateway: widget.gateway,
+        repository: widget.repository,
+        preferredRemote: widget.preferredRemote,
+        credentialStore: widget.credentialStore,
+      ),
+    );
+    if (!mounted || result == null) return;
+    setState(() => _fetchStatus = result.summary);
+    await _loadBranches();
   }
 
   Future<void> _checkoutRemoteBranch(GitRemoteBranch branch) async {
