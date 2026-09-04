@@ -4,27 +4,25 @@ This file is the handoff record for continuing work across query sessions.
 
 ## Current checkpoint
 
-- Date: 2026-09-04
-- Active task: Git account manager UX refinement is complete and ready to
-  commit.
+- Date: 2026-09-05
+- Active task: Task 41 is complete and ready to commit; Task 42 is the next
+  active task.
 - Branch: `main`; no new branch or worktree was created.
 - Latest implementation commit before this session:
-  `743ae7e fix(branches): recover malformed remote ref output`.
-- This session changed the credential manager from an always-open form into a
-  focused account list with host grouping, account search, compact row actions,
-  secure-storage guidance, responsive add/edit fields, and clearer connection
-  test guidance.
-- Changed files include `CHANGELOG.md`, this checkpoint, the implementation
-  plan, `lib/src/app/credentials_dialog.dart`, and
-  `test/app/credentials_dialog_test.dart`.
-- Verification: `flutter test
-  test/app/credentials_dialog_test.dart test/backend/credentials_test.dart
-  test/app_preferences_test.dart` passed all 15 tests. `flutter analyze`
-  reported no issues, `git diff --check` passed, and `flutter run -d windows`
-  built `build/windows/x64/runner/Debug/gift.exe`, synced files to the Windows
-  device, and reached the Flutter run command prompt before supervised
-  shutdown.
-- Exact next action: commit the credential UX changes.
+  `1f8be0d fix(auth): improve Git account manager UX`.
+- This session added OID-bound commit context actions to History, direct branch
+  creation at a selected full OID, and deep links into existing cherry-pick,
+  rollback, tag, and comparison workflows.
+- Changed files include `TASKS.md`, `CHANGELOG.md`, the behavior ledger,
+  implementation plan, the branch gateway/backend/service, context actions,
+  History, branch/object/reset dialogs, the Changes route switch, and focused
+  backend/history test helpers and tests.
+- Verification: `flutter test --no-pub
+  test/features/repository/history_screen_test.dart` passed all 9 tests.
+  `flutter test --no-pub test/backend/advanced_branch_test.dart` passed all 8
+  tests. Earlier RED confirmed the missing History menu before implementation.
+- Exact next action: commit the completed Task 41 changes, then record Task 42
+  scenarios and its first RED selection test.
 - Blockers: none.
 
 ## Previous checkpoint

@@ -74,6 +74,12 @@ mixin GitPatchGatewayStub {
     String name,
   ) => throw UnimplementedError();
 
+  Future<GitBranchActionResult> createBranchAtCommit(
+    RepositoryId repositoryId,
+    String name,
+    String commitOid,
+  ) => throw UnimplementedError();
+
   Future<GitBranchActionResult> switchBranch(
     RepositoryId repositoryId,
     String name,

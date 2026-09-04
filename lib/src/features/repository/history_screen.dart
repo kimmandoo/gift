@@ -10,6 +10,11 @@ import 'package:gift/src/backend/reset.dart';
 import 'package:gift/src/features/repository/history_controller.dart';
 import 'package:gift/src/features/repository/interactive_rebase_dialog.dart';
 import 'package:gift/src/features/repository/reset_dialog.dart';
+import 'package:gift/src/features/repository/branch_dialog.dart';
+import 'package:gift/src/features/repository/comparison_dialog.dart';
+import 'package:gift/src/features/repository/context_actions.dart';
+import 'package:gift/src/features/repository/object_dialog.dart';
+import 'package:gift/src/backend/branch.dart';
 import 'package:gift/src/features/repository/hosting_dialog.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -438,101 +443,376 @@ class _HistoryScreenState extends State<HistoryScreen> {
           );
         }
         final commit = page.commits[index];
+        final actionSnapshot = _commitActionSnapshot(page, commit);
         final scheme = Theme.of(context).colorScheme;
         final selected = state.selectedOid == commit.oid;
         final rowSurface = selected
             ? scheme.surfaceContainerHighest
             : Theme.of(context).scaffoldBackgroundColor;
-        return InkWell(
-          key: ValueKey('commit:${commit.oid}'),
-          onTap: () => _controller.selectCommit(commit),
-          child: Container(
-            constraints: const BoxConstraints(minHeight: 72),
-            decoration: BoxDecoration(
-              color: rowSurface,
-              border: Border(
-                bottom: BorderSide(
-                  color: scheme.outline.withValues(alpha: 0.16),
+        return ContextActionMenu(
+          key: ValueKey('commit-action-menu:${commit.oid}'),
+          snapshot: actionSnapshot,
+          actions: _commitActions(commit, state, actionSnapshot),
+          onAction: _handleCommitAction,
+          child: InkWell(
+            key: ValueKey('commit:${commit.oid}'),
+            onTap: () => _controller.selectCommit(commit),
+            child: Container(
+              constraints: const BoxConstraints(minHeight: 72),
+              decoration: BoxDecoration(
+                color: rowSurface,
+                border: Border(
+                  bottom: BorderSide(
+                    color: scheme.outline.withValues(alpha: 0.16),
+                  ),
+                  left: selected
+                      ? BorderSide(color: scheme.primary, width: 2)
+                      : BorderSide.none,
                 ),
-                left: selected
-                    ? BorderSide(color: scheme.primary, width: 2)
-                    : BorderSide.none,
               ),
-            ),
-            padding: const EdgeInsets.only(right: 12),
-            child: Row(
-              children: [
-                Semantics(
-                  container: true,
-                  explicitChildNodes: true,
-                  image: true,
-                  label:
-                      'Commit graph · lane ${commit.lane + 1} of ${commit.laneCount}'
-                      '${commit.parents.length > 1 ? ' · merge commit' : ''}',
-                  child: SizedBox(
-                    width: graphWidth,
-                    height: 72,
-                    child: CustomPaint(
-                      key: ValueKey('graph:${commit.oid}'),
-                      painter: _CommitGraphPainter(
-                        lane: commit.lane,
-                        laneCount: maxLaneCount,
-                        segments: commit.graphSegments,
-                        hasIncoming: commit.graphHasIncoming,
-                        parentCount: commit.parents.length,
-                        isSelected: selected,
-                        colors: [
-                          scheme.primary,
-                          scheme.secondary,
-                          scheme.tertiary,
-                          scheme.error,
-                        ],
-                        surface: rowSurface,
-                        outline: scheme.outline,
+              padding: const EdgeInsets.only(right: 4),
+              child: Row(
+                children: [
+                  Semantics(
+                    container: true,
+                    explicitChildNodes: true,
+                    image: true,
+                    label:
+                        'Commit graph · lane ${commit.lane + 1} of ${commit.laneCount}'
+                        '${commit.parents.length > 1 ? ' · merge commit' : ''}',
+                    child: SizedBox(
+                      width: graphWidth,
+                      height: 72,
+                      child: CustomPaint(
+                        key: ValueKey('graph:${commit.oid}'),
+                        painter: _CommitGraphPainter(
+                          lane: commit.lane,
+                          laneCount: maxLaneCount,
+                          segments: commit.graphSegments,
+                          hasIncoming: commit.graphHasIncoming,
+                          parentCount: commit.parents.length,
+                          isSelected: selected,
+                          colors: [
+                            scheme.primary,
+                            scheme.secondary,
+                            scheme.tertiary,
+                            scheme.error,
+                          ],
+                          surface: rowSurface,
+                          outline: scheme.outline,
+                        ),
                       ),
                     ),
                   ),
-                ),
-                Expanded(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        commit.subject.isEmpty
-                            ? '(no subject)'
-                            : commit.subject,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        style: Theme.of(context).textTheme.bodyMedium
-                            ?.copyWith(fontWeight: FontWeight.w600),
-                      ),
-                      const SizedBox(height: 3),
-                      Text(
-                        '${commit.authorName} · ${_formatDate(commit.authoredAt)} · ${commit.shortOid}',
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: Theme.of(context).textTheme.labelSmall,
-                      ),
-                      if (commit.refs.isNotEmpty)
+                  Expanded(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
                         Text(
-                          commit.refs.map((ref) => ref.shortName).join(', '),
+                          commit.subject.isEmpty
+                              ? '(no subject)'
+                              : commit.subject,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: Theme.of(context).textTheme.bodyMedium
+                              ?.copyWith(fontWeight: FontWeight.w600),
+                        ),
+                        const SizedBox(height: 3),
+                        Text(
+                          '${commit.authorName} · ${_formatDate(commit.authoredAt)} · ${commit.shortOid}',
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: Theme.of(context).textTheme.labelSmall
-                              ?.copyWith(
-                                color: Theme.of(context).colorScheme.primary,
-                              ),
+                          style: Theme.of(context).textTheme.labelSmall,
                         ),
-                    ],
+                        if (commit.refs.isNotEmpty)
+                          Text(
+                            commit.refs.map((ref) => ref.shortName).join(', '),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: Theme.of(context).textTheme.labelSmall
+                                ?.copyWith(
+                                  color: Theme.of(context).colorScheme.primary,
+                                ),
+                          ),
+                      ],
+                    ),
                   ),
-                ),
-              ],
+                  ContextActionMenuButton(
+                    key: ValueKey('commit-actions:${commit.oid}'),
+                  ),
+                ],
+              ),
             ),
           ),
         );
       },
     );
+  }
+
+  ContextActionSnapshot _commitActionSnapshot(
+    GitHistoryPage page,
+    GitCommit commit,
+  ) {
+    final cursor = page.nextCursor;
+    final snapshotIdentity = [
+      cursor?.queryKey ?? '',
+      cursor?.position ?? page.offset + page.commits.length,
+      ...(cursor?.snapshotTips ?? page.commits.map((value) => value.oid)),
+      commit.oid,
+    ].join('|');
+    return ContextActionSnapshot(
+      repository: widget.repository,
+      target: ContextActionTarget.commit(
+        oid: commit.oid,
+        label: commit.subject.isEmpty ? '(no subject)' : commit.subject,
+      ),
+      fingerprint: snapshotIdentity,
+    );
+  }
+
+  List<ContextActionDescriptor> _commitActions(
+    GitCommit commit,
+    HistoryState state,
+    ContextActionSnapshot snapshot,
+  ) {
+    final mutationReason = state.isLoading ? 'History is refreshing.' : null;
+    ContextActionDescriptor action({
+      required ContextActionId id,
+      required String label,
+      required IconData icon,
+      required ContextActionGroup group,
+      required ContextActionRoute route,
+      bool enabled = true,
+      String? disabledReason,
+    }) {
+      return ContextActionDescriptor(
+        id: id,
+        label: label,
+        icon: icon,
+        group: group,
+        route: route,
+        snapshot: snapshot,
+        enabled: enabled,
+        disabledReason: disabledReason,
+      );
+    }
+
+    return [
+      action(
+        id: ContextActionId.inspect,
+        label: 'Inspect',
+        icon: Icons.visibility_outlined,
+        group: ContextActionGroup.inspect,
+        route: ContextActionRoute.inspect,
+      ),
+      action(
+        id: ContextActionId.compare,
+        label: 'Compare with HEAD',
+        icon: Icons.compare_arrows,
+        group: ContextActionGroup.inspect,
+        route: ContextActionRoute.compare,
+      ),
+      action(
+        id: ContextActionId.copyFullHash,
+        label: 'Copy full hash',
+        icon: Icons.copy,
+        group: ContextActionGroup.inspect,
+        route: ContextActionRoute.copyFullHash,
+      ),
+      action(
+        id: ContextActionId.copyShortHash,
+        label: 'Copy short hash',
+        icon: Icons.content_copy,
+        group: ContextActionGroup.inspect,
+        route: ContextActionRoute.copyShortHash,
+      ),
+      action(
+        id: ContextActionId.cherryPick,
+        label: 'Cherry-pick onto current branch',
+        icon: Icons.merge_type,
+        group: ContextActionGroup.workflow,
+        route: ContextActionRoute.cherryPick,
+        enabled: mutationReason == null,
+        disabledReason: mutationReason,
+      ),
+      action(
+        id: ContextActionId.createBranch,
+        label: 'Create branch here',
+        icon: Icons.call_split,
+        group: ContextActionGroup.workflow,
+        route: ContextActionRoute.createBranch,
+        enabled: mutationReason == null,
+        disabledReason: mutationReason,
+      ),
+      action(
+        id: ContextActionId.createTag,
+        label: 'Create tag here',
+        icon: Icons.local_offer_outlined,
+        group: ContextActionGroup.workflow,
+        route: ContextActionRoute.createTag,
+        enabled: mutationReason == null,
+        disabledReason: mutationReason,
+      ),
+      action(
+        id: ContextActionId.revert,
+        label: 'Revert commit',
+        icon: Icons.undo,
+        group: ContextActionGroup.destructive,
+        route: ContextActionRoute.revert,
+        enabled: mutationReason == null,
+        disabledReason: mutationReason,
+      ),
+      action(
+        id: ContextActionId.reset,
+        label: 'Reset current branch here',
+        icon: Icons.history_toggle_off,
+        group: ContextActionGroup.destructive,
+        route: ContextActionRoute.reset,
+        enabled: mutationReason == null,
+        disabledReason: mutationReason,
+      ),
+    ];
+  }
+
+  Future<void> _handleCommitAction(ContextActionDescriptor action) async {
+    if (action.snapshot.target.kind != ContextActionTargetKind.commit) return;
+    final commitOid = action.snapshot.target.identity;
+    switch (action.route) {
+      case ContextActionRoute.inspect:
+        await _inspectCommit(commitOid);
+      case ContextActionRoute.compare:
+        await _openCommitComparison(commitOid);
+      case ContextActionRoute.copyFullHash:
+        await _copyCommitHash(commitOid, short: false);
+      case ContextActionRoute.copyShortHash:
+        await _copyCommitHash(commitOid, short: true);
+      case ContextActionRoute.cherryPick:
+        await _openCommitCherryPick(commitOid);
+      case ContextActionRoute.revert:
+        await _openCommitRevert(commitOid);
+      case ContextActionRoute.createBranch:
+        await _openCreateBranch(commitOid);
+      case ContextActionRoute.createTag:
+        await _openCreateTag(commitOid);
+      case ContextActionRoute.reset:
+        await _openCommitReset(commitOid);
+      case ContextActionRoute.stage ||
+          ContextActionRoute.unstage ||
+          ContextActionRoute.discard:
+        return;
+    }
+  }
+
+  Future<void> _inspectCommit(String commitOid) async {
+    final current = _controller.state.page?.commits
+        .where((commit) => commit.oid == commitOid)
+        .firstOrNull;
+    if (current != null) {
+      _controller.selectCommit(current);
+      return;
+    }
+    try {
+      final commit = await widget.gateway.getCommit(
+        widget.repository.repositoryId,
+        commitOid,
+      );
+      if (mounted) _controller.selectCommit(commit);
+    } on GitError catch (error) {
+      if (mounted) _showActionMessage(error.userMessage);
+    }
+  }
+
+  Future<void> _openCommitCherryPick(String commitOid) async {
+    await showDialog<void>(
+      context: context,
+      builder: (_) => BranchDialog(
+        gateway: widget.gateway,
+        repository: widget.repository,
+        initialOperation: GitBranchOperation.cherryPick,
+        initialOperationSource: commitOid,
+      ),
+    );
+    if (mounted) await _controller.refresh();
+  }
+
+  Future<void> _openCommitRevert(String commitOid) async {
+    final result = await showDialog<GitHistoryRollbackResult>(
+      context: context,
+      builder: (_) => ResetDialog(
+        gateway: widget.gateway,
+        repository: widget.repository,
+        initialAction: GitHistoryRollbackAction.revert,
+        initialRevisions: [commitOid],
+      ),
+    );
+    if (mounted && result != null) await _controller.refresh();
+  }
+
+  Future<void> _openCreateBranch(String commitOid) async {
+    final result = await showDialog<GitBranchActionResult>(
+      context: context,
+      builder: (_) => BranchDialog(
+        gateway: widget.gateway,
+        repository: widget.repository,
+        initialCreateCommitOid: commitOid,
+      ),
+    );
+    if (mounted && result != null) await _controller.refresh();
+  }
+
+  Future<void> _openCreateTag(String commitOid) async {
+    await showDialog<void>(
+      context: context,
+      builder: (_) => ObjectDialog(
+        gateway: widget.gateway,
+        repository: widget.repository,
+        initialTabIndex: 1,
+        initialTagTarget: commitOid,
+      ),
+    );
+    if (mounted) await _controller.refresh();
+  }
+
+  Future<void> _openCommitReset(String commitOid) async {
+    final result = await showDialog<GitHistoryRollbackResult>(
+      context: context,
+      builder: (_) => ResetDialog(
+        gateway: widget.gateway,
+        repository: widget.repository,
+        initialAction: GitHistoryRollbackAction.reset,
+        initialTargetRevision: commitOid,
+      ),
+    );
+    if (mounted && result != null) await _controller.refresh();
+  }
+
+  Future<void> _openCommitComparison(String commitOid) async {
+    await showDialog<void>(
+      context: context,
+      builder: (_) => ComparisonDialog(
+        gateway: widget.gateway,
+        repository: widget.repository,
+        initialLeft: commitOid,
+        initialRight: 'HEAD',
+      ),
+    );
+  }
+
+  Future<void> _copyCommitHash(String commitOid, {required bool short}) async {
+    final value = short && commitOid.length > 7
+        ? commitOid.substring(0, 7)
+        : commitOid;
+    await Clipboard.setData(ClipboardData(text: value));
+    if (mounted) {
+      _showActionMessage(short ? 'Short hash copied.' : 'Full hash copied.');
+    }
+  }
+
+  void _showActionMessage(String message) {
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(SnackBar(content: Text(message)));
   }
 
   Widget _commitDetails(BuildContext context, HistoryState state) {

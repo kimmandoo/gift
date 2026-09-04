@@ -787,6 +787,20 @@ system Git 2.35+.
    File History follow-renames/line/blame controls, interactive rebase
    options, object-management options, and remote actions.
 
+## Completed vertical: Commit context actions and direct cherry-pick (Task 41)
+
+1. Activated Task 41 after recording History commit-menu identity, reviewed
+   routing, and refresh-staleness scenarios as ACTION-05/06.
+2. Added an OID-bound History commit-row menu with inspect, compare, copy,
+   cherry-pick, revert, branch, tag, and reset entry points.
+3. Added direct branch creation at a full commit OID without switching the
+   current branch, and deep-linked the existing preview-first dialogs for
+   cherry-pick, rollback, tag, and comparison.
+4. Kept Git mutations behind existing preview/confirmation flows and bound
+   menu descriptors to the repository snapshot and full commit OID.
+5. Covered the menu inventory, cherry-pick prefill, refreshed copy binding, and
+   exact branch-ref creation in focused widget and real-Git tests.
+
 ## Completed follow-up: visible push progress
 
 1. Added a pixel-themed transfer card that appears as soon as the reviewed push

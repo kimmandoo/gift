@@ -13,10 +13,16 @@ class ResetDialog extends StatefulWidget {
     super.key,
     required this.gateway,
     required this.repository,
+    this.initialAction,
+    this.initialTargetRevision,
+    this.initialRevisions = const [],
   });
 
   final GitGateway gateway;
   final RepositoryOpened repository;
+  final GitHistoryRollbackAction? initialAction;
+  final String? initialTargetRevision;
+  final List<String> initialRevisions;
 
   @override
   State<ResetDialog> createState() => _ResetDialogState();
@@ -42,8 +48,14 @@ class _ResetDialogState extends State<ResetDialog> {
   @override
   void initState() {
     super.initState();
-    _targetController = TextEditingController(text: 'HEAD^');
-    _revisionsController = TextEditingController();
+    _targetController = TextEditingController(
+      text: widget.initialTargetRevision ?? 'HEAD^',
+    );
+    _revisionsController = TextEditingController(
+      text: widget.initialRevisions.join(' '),
+    );
+    if (widget.initialAction case final action?) _action = action;
+    if (widget.initialTargetRevision != null) _targetEditedByUser = true;
     unawaited(_loadRecentTargetCommits());
   }
 

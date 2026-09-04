@@ -14,6 +14,7 @@ import 'package:gift/src/features/repository/history_controller.dart';
 import 'package:gift/src/features/repository/history_screen.dart';
 import 'package:gift/src/app/pixel_theme.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import '../../helpers/git_patch_gateway_stub.dart';
@@ -82,6 +83,193 @@ void main() {
     controller.dispose();
   });
 
+  testWidgets('exposes OID-bound actions from each History commit row', (
+    tester,
+  ) async {
+    final repository = const RepositoryOpened(
+      repositoryId: RepositoryId(value: 'history-actions-repository'),
+      root: '/workspace/project',
+    );
+    final commit = makeCommit('d' * 40, 'Context actions');
+    final gateway = FakeHistoryGateway(
+      pages: {
+        0: GitHistoryPage(
+          repositoryId: repository.repositoryId,
+          commits: [commit],
+          offset: 0,
+          limit: 1,
+          hasMore: false,
+        ),
+      },
+    );
+    final controller = HistoryController(
+      gateway: gateway,
+      repositoryId: repository.repositoryId,
+      pageSize: 1,
+    );
+    await controller.refresh();
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: HistoryScreen(
+          gateway: gateway,
+          repository: repository,
+          controller: controller,
+          autoInitialize: false,
+        ),
+      ),
+    );
+    await tester.pump();
+
+    await tester.tap(find.byKey(ValueKey('commit-actions:${commit.oid}')));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Cherry-pick onto current branch'), findsOneWidget);
+    expect(find.text('Revert commit'), findsOneWidget);
+    expect(find.text('Create branch here'), findsOneWidget);
+    expect(find.text('Create tag here'), findsOneWidget);
+    expect(find.text('Compare with HEAD'), findsOneWidget);
+    expect(find.text('Reset current branch here'), findsOneWidget);
+    expect(find.text('Copy full hash'), findsOneWidget);
+    expect(find.text('Copy short hash'), findsOneWidget);
+    controller.dispose();
+  });
+
+  testWidgets('prefills cherry-pick with the full OID and current branch', (
+    tester,
+  ) async {
+    final repository = const RepositoryOpened(
+      repositoryId: RepositoryId(value: 'history-cherry-pick-repository'),
+      root: '/workspace/project',
+    );
+    final commit = makeCommit('e' * 40, 'Cherry-pick source');
+    final gateway = FakeHistoryGateway(
+      pages: {
+        0: GitHistoryPage(
+          repositoryId: repository.repositoryId,
+          commits: [commit],
+          offset: 0,
+          limit: 1,
+          hasMore: false,
+        ),
+      },
+      branches: const [GitBranch(name: 'main', isCurrent: true)],
+    );
+    final controller = HistoryController(
+      gateway: gateway,
+      repositoryId: repository.repositoryId,
+      pageSize: 1,
+    );
+    await controller.refresh();
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: HistoryScreen(
+          gateway: gateway,
+          repository: repository,
+          controller: controller,
+          autoInitialize: false,
+        ),
+      ),
+    );
+    await tester.pump();
+    await tester.tap(find.byKey(ValueKey('commit-actions:${commit.oid}')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Cherry-pick onto current branch'));
+    await tester.pumpAndSettle();
+
+    expect(
+      tester
+          .widget<TextField>(find.byKey(const Key('advanced-branch-source')))
+          .controller
+          ?.text,
+      commit.oid,
+    );
+    expect(
+      tester
+          .widget<TextField>(find.byKey(const Key('advanced-branch-target')))
+          .controller
+          ?.text,
+      'main',
+    );
+    await tester.tap(find.text('Close').last);
+    await tester.pumpAndSettle();
+    controller.dispose();
+  });
+
+  testWidgets('copy actions use the full OID from the refreshed row', (
+    tester,
+  ) async {
+    final repository = const RepositoryOpened(
+      repositoryId: RepositoryId(value: 'history-copy-repository'),
+      root: '/workspace/project',
+    );
+    final first = makeCommit('f' * 40, 'First selected commit');
+    final second = makeCommit('a' * 40, 'Refreshed selected commit');
+    final copiedValues = <String>[];
+    final messenger =
+        TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger;
+    messenger.setMockMethodCallHandler(SystemChannels.platform, (call) async {
+      if (call.method == 'Clipboard.setData') {
+        final arguments = Map<Object?, Object?>.from(call.arguments as Map);
+        copiedValues.add(arguments['text'] as String);
+      }
+      return null;
+    });
+    addTearDown(
+      () => messenger.setMockMethodCallHandler(SystemChannels.platform, null),
+    );
+    final gateway = FakeHistoryGateway(
+      pages: {
+        0: GitHistoryPage(
+          repositoryId: repository.repositoryId,
+          commits: [first],
+          offset: 0,
+          limit: 1,
+          hasMore: false,
+        ),
+      },
+    );
+    final controller = HistoryController(
+      gateway: gateway,
+      repositoryId: repository.repositoryId,
+      pageSize: 1,
+    );
+    await controller.refresh();
+    await tester.pumpWidget(
+      MaterialApp(
+        home: HistoryScreen(
+          gateway: gateway,
+          repository: repository,
+          controller: controller,
+          autoInitialize: false,
+        ),
+      ),
+    );
+    await tester.pump();
+
+    await tester.tap(find.byKey(ValueKey('commit-actions:${first.oid}')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Copy full hash'));
+    await tester.pumpAndSettle();
+    expect(copiedValues, [first.oid]);
+
+    gateway.pages[0] = GitHistoryPage(
+      repositoryId: repository.repositoryId,
+      commits: [second],
+      offset: 0,
+      limit: 1,
+      hasMore: false,
+    );
+    await controller.refresh();
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(ValueKey('commit-actions:${second.oid}')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Copy short hash'));
+    await tester.pumpAndSettle();
+    expect(copiedValues, [first.oid, second.oid.substring(0, 7)]);
+    controller.dispose();
+  });
   testWidgets('stacks the history workspace at a narrow window width', (
     tester,
   ) async {
@@ -450,6 +638,7 @@ class FakeHistoryGateway with GitPatchGatewayStub implements GitGateway {
     this.filesByCommit = const {},
     this.diffsByPath = const {},
     this.filesResponse,
+    this.branches = const [],
   });
 
   final Map<int, GitHistoryPage> pages;
@@ -458,6 +647,7 @@ class FakeHistoryGateway with GitPatchGatewayStub implements GitGateway {
   final Map<String, GitCommitDiff> diffsByPath;
   final Future<List<GitCommitFileChange>> Function(String commitOid)?
   filesResponse;
+  final List<GitBranch> branches;
   final historyCalls = <int>[];
 
   @override
@@ -535,10 +725,9 @@ class FakeHistoryGateway with GitPatchGatewayStub implements GitGateway {
     String message, {
     GitCommitOptions options = const GitCommitOptions(),
   }) => throw UnimplementedError();
-
   @override
-  Future<List<GitBranch>> getBranches(RepositoryId repositoryId) =>
-      throw UnimplementedError();
+  Future<List<GitBranch>> getBranches(RepositoryId repositoryId) async =>
+      branches;
 
   @override
   Future<GitBranchActionResult> createBranch(

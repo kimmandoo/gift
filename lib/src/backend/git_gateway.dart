@@ -135,6 +135,13 @@ abstract interface class GitGateway {
     String name,
   );
 
+  /// Creates a ref at the exact reviewed commit without switching HEAD.
+  Future<GitBranchActionResult> createBranchAtCommit(
+    RepositoryId repositoryId,
+    String name,
+    String commitOid,
+  );
+
   Future<GitBranchActionResult> switchBranch(
     RepositoryId repositoryId,
     String name,

@@ -6,10 +6,10 @@
 
 ## Progress
 
-- **Completed:** 39 / 48
-- **Current Active Task:** None. **Next priority:** Task 41 — Commit
-  context actions. Then Tasks 42–47, Task 39 visual regression QA, and finally
-  Task 38 public release.
+- **Completed:** 40 / 48
+- **Current Active Task:** Task 42 — Ordered multi-commit operations.
+  **Next priority:** complete Task 42, then Tasks 43–47, Task 39 visual
+  regression QA, and finally Task 38 public release.
 
 | # | Scope | Dart backend deliverables | Flutter deliverables | Status |
 |---|---|---|---|:---:|
@@ -54,7 +54,7 @@
 | **38** | Public release | Signed packages, provenance, update metadata, and release checks | Installers and first-run diagnostics | Deferred until Tasks 38A, 39, and 41–47 |
 | **39** | Visual regression QA | Deterministic fixture states and platform font checks | Golden matrix, overflow guards, and interaction snapshots | Planned after Tasks 38A and 41–47 |
 | **40** | Contextual action foundation | Typed action availability, immutable targets, and preview routing | Shared secondary-click, keyboard, and overflow action menus | ✅ |
-| **41** | Commit context actions | OID-bound cherry-pick and existing history mutations | History-row action menu and prefilled previews | Next |
+| **41** | Commit context actions | OID-bound cherry-pick and existing history mutations | History-row action menu and prefilled previews | ✅ |
 | **42** | Multi-commit operations | Ordered batch cherry-pick/revert state machine | Multi-select history actions and conflict progress | ⬜ |
 | **43** | Change and file actions | Selection-safe path operations and reveal contracts | Changes/diff/history-file context menus | ⬜ |
 | **44** | Branch and remote actions | Ref-bound operation routing and freshness checks | Local/remote branch context menus | ⬜ |
@@ -633,15 +633,25 @@ its theme, media-query, locale, and workspace boundaries.
   remote dialogs.
 Task 40 is complete. The shared action presenter and Changes row integration
 passed the full Flutter verification suite with 213 tests. Tasks 36 and 37 are
-also complete; the next priority is Task 38A for secure private-remote access.
-Tasks 41–47 follow, then Task 39 visual-regression QA, and Task 38 signed
-public release remains deferred until that product backlog is complete.
+also complete.
 
+### ✅ Task 41: Commit context actions and direct cherry-pick
+
+- [x] Record ACTION-05/06 History commit-menu identity and stale-refresh
+  scenarios.
+- [x] Add the first RED History commit-row action-menu test.
+- [x] Add OID-bound branch creation and deep-link existing cherry-pick,
+  rollback, tag, and comparison workflows.
+- [x] Present copy, inspect, compare, and reviewed history mutations from the
+  shared context-action menu.
+- [x] Verify every action remains bound to the full commit OID after refresh.
+
+Task 41 is complete. Task 42 is now active; Tasks 36–40 are complete.
 ## Post-MVP backlog
 
 Tasks 16–47 and Task 38A are specified in
 [`docs/POST_MVP_ROADMAP.md`](docs/POST_MVP_ROADMAP.md). Start them in dependency
-order. Task 38A is now the next priority; Tasks 41–47 remain ahead of Task 39,
+order. Task 42 is now the next priority; Tasks 41–47 remain ahead of Task 39,
 and Task 38 is deferred until credential management, UX, and visual regression
 are complete. Before implementation, move exactly one task to active, add its
 behavior-ledger scenarios, and record the first failing test in the checkpoint.

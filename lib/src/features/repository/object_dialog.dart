@@ -20,11 +20,13 @@ class ObjectDialog extends StatefulWidget {
     required this.gateway,
     required this.repository,
     this.initialTabIndex = 0,
+    this.initialTagTarget,
   }) : assert(initialTabIndex >= 0 && initialTabIndex < 4);
 
   final GitGateway gateway;
   final RepositoryOpened repository;
   final int initialTabIndex;
+  final String? initialTagTarget;
 
   @override
   State<ObjectDialog> createState() => _ObjectDialogState();
@@ -51,6 +53,7 @@ class _ObjectDialogState extends State<ObjectDialog> {
   @override
   void initState() {
     super.initState();
+    _tagTarget.text = widget.initialTagTarget ?? '';
     unawaited(_load());
   }
 

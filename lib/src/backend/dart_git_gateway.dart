@@ -217,6 +217,13 @@ class DartGitGateway
   ) => backend.createBranch(repositoryId, name);
 
   @override
+  Future<GitBranchActionResult> createBranchAtCommit(
+    RepositoryId repositoryId,
+    String name,
+    String commitOid,
+  ) => backend.createBranchAtCommit(repositoryId, name, commitOid);
+
+  @override
   Future<GitBranchActionResult> switchBranch(
     RepositoryId repositoryId,
     String name,

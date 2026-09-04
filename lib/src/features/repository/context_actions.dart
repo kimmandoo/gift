@@ -65,11 +65,37 @@ class ContextActionSnapshot {
           other.fingerprint == fingerprint;
 }
 
-enum ContextActionId { inspect, stage, unstage, discard }
+enum ContextActionId {
+  inspect,
+  stage,
+  unstage,
+  discard,
+  cherryPick,
+  revert,
+  createBranch,
+  createTag,
+  compare,
+  reset,
+  copyFullHash,
+  copyShortHash,
+}
 
 enum ContextActionGroup { inspect, workflow, destructive }
 
-enum ContextActionRoute { inspect, stage, unstage, discard }
+enum ContextActionRoute {
+  inspect,
+  stage,
+  unstage,
+  discard,
+  cherryPick,
+  revert,
+  createBranch,
+  createTag,
+  compare,
+  reset,
+  copyFullHash,
+  copyShortHash,
+}
 
 /// One item in a context menu, including its availability and reviewed route.
 /// The result of evaluating whether a descriptor can run against its snapshot.

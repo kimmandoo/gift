@@ -1206,6 +1206,8 @@ class _ChangesScreenBodyState extends ConsumerState<_ChangesScreenBody> {
       case ContextActionRoute.discard:
         _activeController.selectPath(current.path);
         await _showDiscardDialog(context, _activeController);
+      default:
+        return;
     }
   }
 

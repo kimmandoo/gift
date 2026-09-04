@@ -1,5 +1,9 @@
 # Changelog
 
+## 2026-09-05
+- feat(history): exposed OID-bound commit context actions and direct
+  cherry-pick entry points.
+
 ## 2026-09-04
 - fix(auth): improved Git account management with searchable host groups,
   clearer secure-storage guidance, and focused add/edit flows.

@@ -334,6 +334,19 @@ class DartGitBackend {
     ).createBranch(repositoryId, name);
   }
 
+  Future<GitBranchActionResult> createBranchAtCommit(
+    RepositoryId repositoryId,
+    String name,
+    String commitOid,
+  ) async {
+    final installation = await getGitInstallation();
+    return RepositoryService(
+      gitPath: installation.executablePath,
+      state: _state,
+      runner: _runner,
+    ).createBranchAtCommit(repositoryId, name, commitOid);
+  }
+
   Future<GitBranchActionResult> switchBranch(
     RepositoryId repositoryId,
     String name,

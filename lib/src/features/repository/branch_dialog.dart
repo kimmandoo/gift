@@ -24,6 +24,10 @@ class BranchDialog extends StatefulWidget {
     this.preferredBranch,
     this.preferredRemote,
     this.credentialStore,
+    this.initialOperation,
+    this.initialOperationSource,
+    this.initialOperationTarget,
+    this.initialCreateCommitOid,
   });
 
   final GitGateway gateway;
@@ -31,6 +35,10 @@ class BranchDialog extends StatefulWidget {
   final String? preferredBranch;
   final String? preferredRemote;
   final GitCredentialStore? credentialStore;
+  final GitBranchOperation? initialOperation;
+  final String? initialOperationSource;
+  final String? initialOperationTarget;
+  final String? initialCreateCommitOid;
 
   @override
   State<BranchDialog> createState() => _BranchDialogState();
@@ -58,6 +66,12 @@ class _BranchDialogState extends State<BranchDialog> {
   @override
   void initState() {
     super.initState();
+    if (widget.initialOperation case final operation?) {
+      _operation = operation;
+      _advancedVisible = true;
+    }
+    _operationSourceController.text = widget.initialOperationSource ?? '';
+    _operationTargetController.text = widget.initialOperationTarget ?? '';
     _loadBranches();
   }
 
@@ -136,6 +150,16 @@ class _BranchDialogState extends State<BranchDialog> {
               onChanged: (_) => setState(() {}),
               onSubmitted: (_) => _createBranch(),
             ),
+            if (widget.initialCreateCommitOid case final commitOid?)
+              Padding(
+                padding: const EdgeInsets.only(top: 6),
+                child: Text(
+                  'Starting commit: $commitOid',
+                  key: const Key('branch-create-target'),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
             const SizedBox(height: 12),
             if (_isLoading) const LinearProgressIndicator(),
             if (_isMutating)
@@ -601,6 +625,13 @@ class _BranchDialogState extends State<BranchDialog> {
       setState(() {
         _branches = branches;
         _isLoading = false;
+        if (_operationTargetController.text.trim().isEmpty &&
+            _operation != GitBranchOperation.rename &&
+            _operation != GitBranchOperation.delete) {
+          _operationTargetController.text =
+              branches.where((branch) => branch.isCurrent).firstOrNull?.name ??
+              '';
+        }
       });
       await _loadRemoteBranches();
     } on GitError catch (error) {
@@ -677,8 +708,18 @@ class _BranchDialogState extends State<BranchDialog> {
   Future<void> _createBranch() async {
     final name = _nameController.text.trim();
     if (name.isEmpty || _isMutating) return;
+    final commitOid = widget.initialCreateCommitOid;
     await _runAction(
-      () => widget.gateway.createBranch(widget.repository.repositoryId, name),
+      commitOid == null
+          ? () => widget.gateway.createBranch(
+              widget.repository.repositoryId,
+              name,
+            )
+          : () => widget.gateway.createBranchAtCommit(
+              widget.repository.repositoryId,
+              name,
+              commitOid,
+            ),
     );
   }
 

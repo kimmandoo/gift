@@ -62,6 +62,37 @@ void main() {
     },
   );
 
+  test('creates a branch at a full commit OID without switching the current branch', () async {
+    await withTempDirectory((directory) async {
+      await createRepository(directory.path);
+      await File('${directory.path}/second.txt').writeAsString('second\n');
+      await runGit(directory.path, ['add', '--', 'second.txt']);
+      await runGit(directory.path, ['commit', '-m', 'second']);
+      final selectedOid = await runGit(directory.path, ['rev-parse', 'HEAD^']);
+
+      final backend = DartGitBackend();
+      final opened = await backend.openRepository(directory.path);
+      final result = await backend.createBranchAtCommit(
+        opened.repositoryId,
+        'from-selected-commit',
+        selectedOid,
+      );
+
+      expect(result.branchName, 'from-selected-commit');
+      expect(
+        await runGit(directory.path, ['rev-parse', '--abbrev-ref', 'HEAD']),
+        'main',
+      );
+      expect(
+        await runGit(directory.path, [
+          'rev-parse',
+          'refs/heads/from-selected-commit',
+        ]),
+        selectedOid,
+      );
+    });
+  });
+
   test('rejects a stale preview before deleting an unmerged branch', () async {
     await withTempDirectory((directory) async {
       await createRepository(directory.path);

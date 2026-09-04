@@ -4744,6 +4744,43 @@ class RepositoryService {
     String name,
   ) => _runBranchAction(repositoryId, name, const ['switch', '--create']);
 
+  /// Creates a branch ref at the selected full commit ID without changing
+  /// the current branch. The commit is resolved again immediately before
+  /// mutation so the command cannot accidentally use a visible row index or
+  /// abbreviated display value.
+  Future<GitBranchActionResult> createBranchAtCommit(
+    RepositoryId repositoryId,
+    String name,
+    String commitOid,
+  ) async {
+    _validateBranchName(name);
+    _validateFullCommitOid(commitOid);
+    return state.runMutation(repositoryId, () async {
+      final handle = await state.lookup(repositoryId);
+      await _validateBranchNameWithGit(handle, name);
+      final targetOid = await _resolveCommit(handle, commitOid);
+      try {
+        await _runner.run(
+          GitInvocation(
+            program: gitPath,
+            args: ['branch', name, targetOid],
+            cwd: handle.root,
+            kind: GitOperationKind.mutation,
+            outputPolicy: const OutputPolicy.capture(maxBytes: 128 * 1024),
+          ),
+        );
+      } on GitError catch (error, stackTrace) {
+        Error.throwWithStackTrace(_mapBranchError(error), stackTrace);
+      }
+      final status = await getStatus(repositoryId);
+      return GitBranchActionResult(
+        repositoryId: repositoryId,
+        branchName: name,
+        status: status,
+      );
+    });
+  }
+
   Future<GitBranchActionResult> switchBranch(
     RepositoryId repositoryId,
     String name,
@@ -5527,6 +5564,18 @@ class RepositoryService {
     GitBranchOperation.rebase => 'rebase',
     GitBranchOperation.cherryPick => 'cherry-pick',
   };
+
+  void _validateFullCommitOid(String value) {
+    if (!RegExp(r'^[0-9a-fA-F]{40}$').hasMatch(value)) {
+      throw const GitError(
+        category: GitErrorCategory.invalidRevision,
+        userMessage: 'The selected commit ID is invalid.',
+        diagnostic:
+            'commit context action did not supply a full hexadecimal OID',
+        retryable: false,
+      );
+    }
+  }
 
   String _requiredBranchName(String? value, String label) {
     if (value == null || value.isEmpty) {
