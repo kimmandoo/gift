@@ -5,6 +5,7 @@ import 'package:gift/src/features/repository/changes_screen.dart';
 import 'package:gift/src/features/repository/workspace_controller.dart';
 import 'package:gift/src/app/app_preferences.dart';
 import 'package:gift/src/backend/credentials.dart';
+import 'package:gift/src/app/repository_credential_store.dart';
 
 /// The tab shell that keeps one Changes screen alive for every open repository.
 ///
@@ -18,12 +19,14 @@ class WorkspaceScreen extends StatefulWidget {
     required this.onWorkspaceEmpty,
     this.autoInitialize = true,
     this.credentialStore,
+    this.repositoryCredentialStore,
   });
 
   final WorkspaceController controller;
   final Future<void> Function(int? replaceIndex) onOpenRepository;
   final VoidCallback onWorkspaceEmpty;
   final GitCredentialStore? credentialStore;
+  final RepositoryCredentialStore? repositoryCredentialStore;
   final bool autoInitialize;
 
   @override
@@ -111,6 +114,7 @@ class _WorkspaceScreenState extends State<WorkspaceScreen> {
         },
         autoInitialize: widget.autoInitialize,
         credentialStore: widget.credentialStore,
+        repositoryCredentialStore: widget.repositoryCredentialStore,
       );
     }
     return _UnavailableWorkspaceTab(

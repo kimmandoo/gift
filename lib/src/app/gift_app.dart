@@ -7,6 +7,7 @@ import 'package:gift/src/backend/dart_git_gateway.dart';
 import 'package:gift/src/backend/git_gateway.dart';
 import 'package:gift/src/app/secure_credential_store.dart';
 import 'package:gift/src/backend/credentials.dart';
+import 'package:gift/src/app/repository_credential_store.dart';
 import 'package:gift/src/features/repository/recent_repository_store.dart';
 import 'package:gift/src/features/repository/welcome_screen.dart';
 import 'package:gift/src/features/repository/workspace_controller.dart';
@@ -40,8 +41,9 @@ class GiftApp extends StatefulWidget {
 class _GiftAppState extends State<GiftApp> {
   late GiftPreferences _preferences;
   late final GitGateway _gateway;
-  late final RecentRepositoryStore _recentStore;
   late final GitCredentialStore _credentialStore;
+  late final RepositoryCredentialStore _repositoryCredentialStore;
+  late final RecentRepositoryStore _recentStore;
   late final WorkspaceController _workspaceController;
   late final bool _ownsWorkspaceController;
 
@@ -60,6 +62,9 @@ class _GiftAppState extends State<GiftApp> {
         (widget.preferences == null
             ? InMemoryGitCredentialStore()
             : SecureGitCredentialStore(preferences: widget.preferences!));
+    _repositoryCredentialStore = widget.preferences == null
+        ? RepositoryCredentialStore.inMemory()
+        : RepositoryCredentialStore(widget.preferences!);
     _gateway =
         widget.gateway ??
         DartGitGateway(
@@ -144,6 +149,10 @@ class _GiftAppState extends State<GiftApp> {
             gateway: _gateway,
             recentStore: _recentStore,
             credentialStore: _credentialStore,
+            repositoryCredentialStore: _repositoryCredentialStore,
+            oauthGateway: _gateway is GitCredentialOAuthGateway
+                ? _gateway as GitCredentialOAuthGateway
+                : null,
             workspaceController: _workspaceController,
             preferences: widget.preferences,
             autoInitialize: widget.autoInitialize,

@@ -402,6 +402,7 @@ class DartGitBackend {
     RepositoryId repositoryId,
     String remote, {
     GitCancellationToken? cancellationToken,
+    String? credentialId,
   }) async {
     final installation = await getGitInstallation();
     return RepositoryService(
@@ -409,13 +410,19 @@ class DartGitBackend {
       state: _state,
       runner: _runner,
       credentialResolver: _credentialResolver,
-    ).fetch(repositoryId, remote, cancellationToken: cancellationToken);
+    ).fetch(
+      repositoryId,
+      remote,
+      cancellationToken: cancellationToken,
+      credentialId: credentialId,
+    );
   }
 
   Future<GitRemoteOperationResult> pull(
     RepositoryId repositoryId,
     String remote, {
     GitCancellationToken? cancellationToken,
+    String? credentialId,
   }) async {
     final installation = await getGitInstallation();
     return RepositoryService(
@@ -423,13 +430,19 @@ class DartGitBackend {
       state: _state,
       runner: _runner,
       credentialResolver: _credentialResolver,
-    ).pull(repositoryId, remote, cancellationToken: cancellationToken);
+    ).pull(
+      repositoryId,
+      remote,
+      cancellationToken: cancellationToken,
+      credentialId: credentialId,
+    );
   }
 
   Future<GitRemoteOperationResult> push(
     RepositoryId repositoryId,
     String remote, {
     GitCancellationToken? cancellationToken,
+    String? credentialId,
   }) async {
     final installation = await getGitInstallation();
     return RepositoryService(
@@ -437,7 +450,12 @@ class DartGitBackend {
       state: _state,
       runner: _runner,
       credentialResolver: _credentialResolver,
-    ).push(repositoryId, remote, cancellationToken: cancellationToken);
+    ).push(
+      repositoryId,
+      remote,
+      cancellationToken: cancellationToken,
+      credentialId: credentialId,
+    );
   }
 
   Future<GitPushPreview> previewPush(
@@ -670,6 +688,18 @@ class DartGitBackend {
       runner: _runner,
       credentialResolver: _credentialResolver,
     ).testCredential(remoteUrl, accountId: accountId);
+  }
+
+  Future<GitCredentialOAuthResult> loginWithBrowser(
+    GitCredentialProvider provider,
+  ) async {
+    final installation = await getGitInstallation();
+    return RepositoryService(
+      gitPath: installation.executablePath,
+      state: _state,
+      runner: _runner,
+      credentialResolver: _credentialResolver,
+    ).loginWithBrowser(provider);
   }
 
   Future<GitRepositorySetupResult> initRepository(

@@ -2,15 +2,26 @@ import 'dart:async';
 
 import 'package:file_selector/file_selector.dart';
 import 'package:flutter/material.dart';
+import 'package:gift/src/app/git_provider_mark.dart';
+import 'package:gift/src/app/repository_credential_store.dart';
 import 'package:gift/src/backend/credentials.dart';
 import 'package:gift/src/backend/error.dart';
 
 class CredentialsDialog extends StatefulWidget {
-  const CredentialsDialog({super.key, required this.store, this.tester});
+  const CredentialsDialog({
+    super.key,
+    required this.store,
+    this.tester,
+    this.oauthGateway,
+    this.repositoryRoot,
+    this.repositoryCredentialStore,
+  });
 
   final GitCredentialStore store;
   final GitCredentialTestGateway? tester;
-
+  final GitCredentialOAuthGateway? oauthGateway;
+  final String? repositoryRoot;
+  final RepositoryCredentialStore? repositoryCredentialStore;
   @override
   State<CredentialsDialog> createState() => _CredentialsDialogState();
 }
@@ -25,6 +36,7 @@ class _CredentialsDialogState extends State<CredentialsDialog> {
   final _searchController = TextEditingController();
 
   List<GitCredentialAccount>? _accounts;
+  Set<String> _repositoryAccountIds = {};
   String? _editingId;
   GitCredentialProvider _provider = GitCredentialProvider.generic;
   GitCredentialKind _kind = GitCredentialKind.httpsToken;
@@ -69,7 +81,21 @@ class _CredentialsDialogState extends State<CredentialsDialog> {
             color: Theme.of(context).colorScheme.primary,
           ),
           const SizedBox(width: 10),
-          const Expanded(child: Text('Git accounts')),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text('Git accounts'),
+                if (widget.repositoryRoot case final root?)
+                  Text(
+                    'For repository: $root',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: Theme.of(context).textTheme.bodySmall,
+                  ),
+              ],
+            ),
+          ),
           if (accounts != null)
             Text(
               '${accounts.length} saved',
@@ -93,11 +119,19 @@ class _CredentialsDialogState extends State<CredentialsDialog> {
                 padding: EdgeInsets.all(24),
                 child: Center(child: CircularProgressIndicator()),
               )
-            else if (accounts.isEmpty)
-              _emptyState()
-            else ...[
+            else if (accounts.isEmpty) ...[
+              _emptyState(),
+              if (widget.oauthGateway != null) ...[
+                const SizedBox(height: 12),
+                _oauthActions(),
+              ],
+            ] else ...[
               _accountToolbar(accounts.length),
               const SizedBox(height: 12),
+              if (widget.oauthGateway != null) ...[
+                const SizedBox(height: 12),
+                _oauthActions(),
+              ],
               if (visibleAccounts.isEmpty)
                 _noSearchResults()
               else
@@ -105,7 +139,11 @@ class _CredentialsDialogState extends State<CredentialsDialog> {
                   visibleAccounts,
                 ).entries) ...[
                   _hostHeader(entry.key, entry.value.length),
-                  for (final account in entry.value) _accountTile(account),
+                  for (var index = 0; index < entry.value.length; index++) ...[
+                    _accountTile(entry.value[index]),
+                    if (index < entry.value.length - 1)
+                      const SizedBox(height: 8),
+                  ],
                   const SizedBox(height: 10),
                 ],
             ],
@@ -281,6 +319,53 @@ class _CredentialsDialogState extends State<CredentialsDialog> {
     ],
   );
 
+  Widget _oauthActions() => Card(
+    color: Theme.of(context).colorScheme.surfaceContainerHigh,
+    child: Padding(
+      padding: const EdgeInsets.all(12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('Web sign-in', style: Theme.of(context).textTheme.titleSmall),
+          const SizedBox(height: 4),
+          const Text(
+            'Uses Git Credential Manager to complete OAuth in your browser; '
+            'GIFT never receives or stores the token.',
+          ),
+          const SizedBox(height: 10),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              OutlinedButton.icon(
+                key: const Key('oauth-github'),
+                onPressed: _busy
+                    ? null
+                    : () => _loginWithBrowser(GitCredentialProvider.github),
+                icon: const GitProviderMark(
+                  provider: GitCredentialProvider.github,
+                  size: 24,
+                ),
+                label: const Text('Sign in with GitHub'),
+              ),
+              OutlinedButton.icon(
+                key: const Key('oauth-gitlab'),
+                onPressed: _busy
+                    ? null
+                    : () => _loginWithBrowser(GitCredentialProvider.gitlab),
+                icon: const GitProviderMark(
+                  provider: GitCredentialProvider.gitlab,
+                  size: 24,
+                ),
+                label: const Text('Sign in with GitLab'),
+              ),
+            ],
+          ),
+        ],
+      ),
+    ),
+  );
+
   Widget _noSearchResults() => Card(
     child: Padding(
       padding: const EdgeInsets.all(16),
@@ -335,12 +420,7 @@ class _CredentialsDialogState extends State<CredentialsDialog> {
       color: account.id == _editingId ? scheme.primaryContainer : null,
       child: ListTile(
         onTap: _busy ? null : () => _edit(account),
-        leading: Icon(
-          _kindIcon(account.kind),
-          color: account.id == _editingId
-              ? scheme.onPrimaryContainer
-              : scheme.primary,
-        ),
+        leading: GitProviderMark(provider: account.provider),
         title: Row(
           children: [
             Expanded(
@@ -349,6 +429,11 @@ class _CredentialsDialogState extends State<CredentialsDialog> {
             if (account.isDefault)
               const Chip(
                 label: Text('Default'),
+                visualDensity: VisualDensity.compact,
+              ),
+            if (_repositoryAccountIds.contains(account.id))
+              const Chip(
+                label: Text('This repo'),
                 visualDensity: VisualDensity.compact,
               ),
           ],
@@ -364,6 +449,10 @@ class _CredentialsDialogState extends State<CredentialsDialog> {
             switch (action) {
               case _AccountAction.setDefault:
                 unawaited(_setDefault(account));
+              case _AccountAction.setForRepository:
+                unawaited(_setForRepository(account));
+              case _AccountAction.clearForRepository:
+                unawaited(_clearForRepository(account));
               case _AccountAction.edit:
                 _edit(account);
               case _AccountAction.remove:
@@ -378,6 +467,26 @@ class _CredentialsDialogState extends State<CredentialsDialog> {
                 child: const _AccountMenuLabel(
                   icon: Icons.star_border,
                   label: 'Use as default',
+                ),
+              ),
+            if (widget.repositoryCredentialStore != null &&
+                widget.repositoryRoot != null &&
+                !_repositoryAccountIds.contains(account.id))
+              PopupMenuItem(
+                key: ValueKey('credential-repository:${account.id}'),
+                value: _AccountAction.setForRepository,
+                child: const _AccountMenuLabel(
+                  icon: Icons.folder_special_outlined,
+                  label: 'Use for this repository',
+                ),
+              ),
+            if (_repositoryAccountIds.contains(account.id))
+              PopupMenuItem(
+                key: ValueKey('credential-repository-clear:${account.id}'),
+                value: _AccountAction.clearForRepository,
+                child: const _AccountMenuLabel(
+                  icon: Icons.folder_off_outlined,
+                  label: 'Clear repository choice',
                 ),
               ),
             PopupMenuItem(
@@ -497,8 +606,7 @@ class _CredentialsDialogState extends State<CredentialsDialog> {
             isExpanded: true,
             decoration: const InputDecoration(
               labelText: 'Credential type',
-              helperText:
-                  'Use HTTPS tokens for HTTPS remotes and SSH for SSH remotes.',
+              helperText: 'Use HTTPS tokens, browser OAuth, or SSH for matching remotes.',
               isDense: true,
             ),
             items: GitCredentialKind.values
@@ -566,7 +674,17 @@ class _CredentialsDialogState extends State<CredentialsDialog> {
               ],
             ),
           ],
-          if (_kind != GitCredentialKind.sshAgent) ...[
+          if (_kind == GitCredentialKind.webOAuth) ...[
+            const SizedBox(height: 10),
+            Text(
+              'Browser sign-in uses Git Credential Manager. No token is '
+              'stored in GIFT; the installed helper supplies authentication '
+              'when Git connects over HTTPS.',
+              style: Theme.of(context).textTheme.bodySmall,
+            ),
+          ],
+          if (_kind == GitCredentialKind.httpsToken ||
+              _kind == GitCredentialKind.sshKey) ...[
             const SizedBox(height: 10),
             TextField(
               key: const Key('credential-secret'),
@@ -655,14 +773,9 @@ class _CredentialsDialogState extends State<CredentialsDialog> {
     for (final account in accounts) {
       groups.putIfAbsent(account.host, () => []).add(account);
     }
+
     return groups;
   }
-
-  IconData _kindIcon(GitCredentialKind kind) => switch (kind) {
-    GitCredentialKind.httpsToken => Icons.http_outlined,
-    GitCredentialKind.sshKey => Icons.vpn_key_outlined,
-    GitCredentialKind.sshAgent => Icons.memory_outlined,
-  };
 
   void _openNew() {
     _resetForm();
@@ -690,9 +803,18 @@ class _CredentialsDialogState extends State<CredentialsDialog> {
   Future<void> _load() async {
     try {
       final accounts = await widget.store.listAccounts();
+      final repositoryIds =
+          widget.repositoryRoot == null ||
+              widget.repositoryCredentialStore == null
+          ? <String>{}
+          : widget.repositoryCredentialStore!
+                .accountsFor(widget.repositoryRoot!)
+                .values
+                .toSet();
       if (mounted) {
         setState(() {
           _accounts = accounts;
+          _repositoryAccountIds = repositoryIds;
           if (_editingId == null) _showForm = accounts.isEmpty;
         });
       }
@@ -700,6 +822,52 @@ class _CredentialsDialogState extends State<CredentialsDialog> {
       if (mounted) setState(() => _error = error.userMessage);
     } on Object {
       if (mounted) setState(() => _error = 'Accounts could not be loaded.');
+    }
+  }
+
+  Future<void> _loginWithBrowser(GitCredentialProvider provider) async {
+    final gateway = widget.oauthGateway;
+    if (gateway == null) return;
+    setState(() {
+      _busy = true;
+      _error = null;
+      _message = null;
+    });
+    try {
+      final result = await gateway.loginWithBrowser(provider);
+      final account = await widget.store.saveAccount(
+        GitCredentialAccount(
+          id: _newAccountId(),
+          provider: result.provider,
+          host: result.host,
+          accountName: result.accountName,
+          kind: GitCredentialKind.webOAuth,
+          isDefault: false,
+          createdAt: DateTime.now(),
+          updatedAt: DateTime.now(),
+        ),
+      );
+      if (widget.repositoryRoot != null &&
+          widget.repositoryCredentialStore != null) {
+        await widget.repositoryCredentialStore!.setAccountId(
+          widget.repositoryRoot!,
+          account.host,
+          account.id,
+        );
+      }
+      await _load();
+      if (mounted) {
+        setState(
+          () => _message =
+              'Signed in with ${_providerLabel(result.provider)} in your browser.',
+        );
+      }
+    } on GitError catch (error) {
+      if (mounted) setState(() => _error = error.userMessage);
+    } on Object {
+      if (mounted) setState(() => _error = 'Browser sign-in failed.');
+    } finally {
+      if (mounted) setState(() => _busy = false);
     }
   }
 
@@ -782,6 +950,7 @@ class _CredentialsDialogState extends State<CredentialsDialog> {
       final saved = await widget.store.saveAccount(
         account,
         secret: secret.isEmpty ? null : secret,
+        clearSecret: _kind == GitCredentialKind.webOAuth,
       );
       if (_isDefault) await widget.store.setDefault(saved.host, saved.id);
       await _load();
@@ -860,6 +1029,55 @@ class _CredentialsDialogState extends State<CredentialsDialog> {
     }
   }
 
+  Future<void> _setForRepository(GitCredentialAccount account) async {
+    final store = widget.repositoryCredentialStore;
+    final root = widget.repositoryRoot;
+    if (store == null || root == null) return;
+    setState(() {
+      _busy = true;
+      _error = null;
+    });
+    try {
+      await store.setAccountId(root, account.host, account.id);
+      await _load();
+      if (mounted) {
+        setState(
+          () => _message =
+              '${account.accountName} is selected for this repository.',
+        );
+      }
+    } on Object {
+      if (mounted) {
+        setState(() => _error = 'The repository account could not be changed.');
+      }
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  Future<void> _clearForRepository(GitCredentialAccount account) async {
+    final store = widget.repositoryCredentialStore;
+    final root = widget.repositoryRoot;
+    if (store == null || root == null) return;
+    setState(() {
+      _busy = true;
+      _error = null;
+    });
+    try {
+      await store.setAccountId(root, account.host, null);
+      await _load();
+      if (mounted) {
+        setState(() => _message = 'The repository account choice was cleared.');
+      }
+    } on Object {
+      if (mounted) {
+        setState(() => _error = 'The repository account could not be cleared.');
+      }
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
   Future<void> _remove(GitCredentialAccount account) async {
     final remove = await showDialog<bool>(
       context: context,
@@ -887,6 +1105,11 @@ class _CredentialsDialogState extends State<CredentialsDialog> {
       _error = null;
     });
     try {
+      final repositoryStore = widget.repositoryCredentialStore;
+      final repositoryRoot = widget.repositoryRoot;
+      if (repositoryStore != null && repositoryRoot != null) {
+        await repositoryStore.setAccountId(repositoryRoot, account.host, null);
+      }
       await widget.store.removeAccount(account.id);
       await _load();
       if (_editingId == account.id) {
@@ -923,11 +1146,18 @@ String _providerLabel(GitCredentialProvider provider) => switch (provider) {
 
 String _kindShortLabel(GitCredentialKind kind) => switch (kind) {
   GitCredentialKind.httpsToken => 'HTTPS token',
+  GitCredentialKind.webOAuth => 'Web OAuth',
   GitCredentialKind.sshKey => 'SSH key',
   GitCredentialKind.sshAgent => 'SSH agent',
 };
 
-enum _AccountAction { setDefault, edit, remove }
+enum _AccountAction {
+  setDefault,
+  setForRepository,
+  clearForRepository,
+  edit,
+  remove,
+}
 
 class _AccountMenuLabel extends StatelessWidget {
   const _AccountMenuLabel({required this.icon, required this.label});
@@ -943,6 +1173,7 @@ class _AccountMenuLabel extends StatelessWidget {
 
 String _kindLabel(GitCredentialKind kind) => switch (kind) {
   GitCredentialKind.httpsToken => 'HTTPS personal access token',
+  GitCredentialKind.webOAuth => 'Web OAuth via Git Credential Manager',
   GitCredentialKind.sshKey => 'SSH private-key path',
   GitCredentialKind.sshAgent => 'SSH agent',
 };

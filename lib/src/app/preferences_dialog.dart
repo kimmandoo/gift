@@ -11,6 +11,7 @@ class PreferencesDialog extends StatefulWidget {
     super.key,
     this.credentialStore,
     this.tester,
+    this.oauthGateway,
     required this.preferences,
     required this.onSave,
   });
@@ -19,6 +20,7 @@ class PreferencesDialog extends StatefulWidget {
   final Future<void> Function(GiftPreferences) onSave;
   final GitCredentialStore? credentialStore;
   final GitCredentialTestGateway? tester;
+  final GitCredentialOAuthGateway? oauthGateway;
 
   @override
   State<PreferencesDialog> createState() => _PreferencesDialogState();
@@ -194,6 +196,7 @@ class _PreferencesDialogState extends State<PreferencesDialog> {
                         builder: (_) => CredentialsDialog(
                           store: store,
                           tester: widget.tester,
+                          oauthGateway: widget.oauthGateway,
                         ),
                       ),
                 icon: const Icon(Icons.key_outlined),

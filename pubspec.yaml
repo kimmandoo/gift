@@ -72,6 +72,9 @@ flutter:
       fonts:
         - asset: assets/fonts/Jersey15-Regular.ttf
 
+    - family: Noto Sans KR
+      fonts:
+        - asset: assets/fonts/NotoSansKR-Variable.ttf
   # To add assets to your application, add an assets section, like this:
   # assets:
   #   - images/a_dot_burr.jpeg

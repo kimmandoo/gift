@@ -3,6 +3,7 @@ import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:gift/src/app/secure_credential_store.dart';
+import 'package:gift/src/app/repository_credential_store.dart';
 import 'package:gift/src/backend/executor.dart';
 import 'package:gift/src/backend/repository_service.dart';
 import 'package:gift/src/backend/error.dart';
@@ -128,6 +129,68 @@ void main() {
     expect(secure.values, isEmpty);
     expect(await store.listAccounts(), isEmpty);
   });
+
+  test('stores repository-specific account choices without secrets', () async {
+    SharedPreferences.setMockInitialValues({});
+    final preferences = await SharedPreferences.getInstance();
+    final store = RepositoryCredentialStore(preferences);
+
+    await store.setAccountId('C:/work/app', 'GitHub.com', 'work');
+
+    expect(store.accountIdFor('C:/work/app', 'github.com'), 'work');
+    expect(store.accountIdFor('C:/other/app', 'github.com'), isNull);
+    expect(
+      preferences.getString(RepositoryCredentialStore.storageKey),
+      isNot(contains('token')),
+    );
+    await store.setAccountId('C:/work/app', 'github.com', null);
+    expect(store.accountIdFor('C:/work/app', 'github.com'), isNull);
+  });
+
+  test('resolves browser OAuth accounts without a token', () async {
+    final store = InMemoryGitCredentialStore(
+      records: [
+        GitCredentialRecord(
+          account: account(
+            id: 'browser',
+            host: 'github.com',
+            accountName: 'GitHub browser',
+            kind: GitCredentialKind.webOAuth,
+          ),
+        ),
+      ],
+    );
+
+    final auth = await StoreGitCredentialResolver(store)
+        .resolve('https://github.com/org/repo.git', accountId: 'browser');
+
+    expect(auth, isNotNull);
+    expect(auth!.environment, isEmpty);
+    await auth.cleanup();
+  });
+
+  test(
+    'starts provider browser sign-in through Git Credential Manager',
+    () async {
+      final runner = _RecordingRunner();
+      final result = await RepositoryService(
+        gitPath: 'git',
+        state: AppState(),
+        runner: runner,
+      ).loginWithBrowser(GitCredentialProvider.github);
+
+      expect(result.host, 'github.com');
+      expect(runner.invocations.single.args, [
+        'credential-manager',
+        'github',
+        'login',
+      ]);
+      expect(
+        runner.invocations.single.environment?['GCM_INTERACTIVE'],
+        'Always',
+      );
+    },
+  );
 
   test('cleans askpass helpers after use', () async {
     final auth = await StoreGitCredentialResolver(

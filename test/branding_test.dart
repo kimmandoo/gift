@@ -39,4 +39,17 @@ void main() {
     expect(icon.backgroundColor!.resolve(const {}), Colors.transparent);
     expect(icon.side, isNull);
   });
+
+  test('configures a bundled Korean font fallback', () {
+    final theme = buildPixelTheme();
+
+    expect(
+      theme.textTheme.bodyMedium?.fontFamilyFallback,
+      contains(pixelKoreanFontFamily),
+    );
+    expect(
+      theme.textTheme.headlineMedium?.fontFamilyFallback,
+      contains(pixelKoreanFontFamily),
+    );
+  });
 }

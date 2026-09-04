@@ -82,6 +82,66 @@ void main() {
     expect(gateway.historyCalls, [0, 1]);
     controller.dispose();
   });
+  testWidgets('separates changed file rows with visible breathing room', (
+    tester,
+  ) async {
+    final repository = const RepositoryOpened(
+      repositoryId: RepositoryId(value: 'history-file-spacing-repository'),
+      root: '/workspace/project',
+    );
+    final commit = makeCommit('j' * 40, 'File spacing');
+    final firstFile = const GitCommitFileChange(
+      status: GitCommitFileStatus.modified,
+      path: 'lib/first.dart',
+    );
+    final secondFile = const GitCommitFileChange(
+      status: GitCommitFileStatus.modified,
+      path: 'lib/second.dart',
+    );
+    final gateway = FakeHistoryGateway(
+      pages: {
+        0: GitHistoryPage(
+          repositoryId: repository.repositoryId,
+          commits: [commit],
+          offset: 0,
+          limit: 1,
+          hasMore: false,
+        ),
+      },
+      filesByCommit: {
+        commit.oid: [firstFile, secondFile],
+      },
+    );
+    final controller = HistoryController(
+      gateway: gateway,
+      repositoryId: repository.repositoryId,
+      pageSize: 1,
+    );
+    await controller.refresh();
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: HistoryScreen(
+          gateway: gateway,
+          repository: repository,
+          controller: controller,
+          autoInitialize: false,
+        ),
+      ),
+    );
+    await tester.tap(find.byKey(ValueKey('commit:${commit.oid}')));
+    await tester.pump();
+
+    final firstTile = find.byKey(const Key('commit-file:lib/first.dart'));
+    final secondTile = find.byKey(const Key('commit-file:lib/second.dart'));
+    expect(firstTile, findsOneWidget);
+    expect(secondTile, findsOneWidget);
+    expect(
+      tester.getTopLeft(secondTile).dy - tester.getBottomLeft(firstTile).dy,
+      greaterThanOrEqualTo(8),
+    );
+    controller.dispose();
+  });
 
   testWidgets('exposes OID-bound actions from each History commit row', (
     tester,
@@ -310,6 +370,12 @@ void main() {
     await tester.pump();
 
     expect(find.byKey(const Key('history-selection-summary')), findsOneWidget);
+    expect(find.byKey(const Key('history-select-mode')), findsOneWidget);
+    expect(find.byKey(ValueKey('commit-select:${first.oid}')), findsNothing);
+    await tester.tap(find.byKey(const Key('history-select-mode')));
+    await tester.pump();
+    expect(find.byKey(ValueKey('commit-select:${first.oid}')), findsOneWidget);
+    expect(find.text('Select commits for batch actions'), findsOneWidget);
     await tester.tap(find.byKey(ValueKey('commit-select:${first.oid}')));
     await tester.tap(find.byKey(ValueKey('commit-select:${third.oid}')));
     await tester.pump();

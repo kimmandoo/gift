@@ -386,7 +386,8 @@ class _RepositorySetupDialogState extends State<RepositorySetupDialog> {
           (account) =>
               account.host == endpoint.host &&
               (endpoint.transport == GitRemoteTransport.https
-                  ? account.kind == GitCredentialKind.httpsToken
+                  ? account.kind == GitCredentialKind.httpsToken ||
+                        account.kind == GitCredentialKind.webOAuth
                   : account.kind == GitCredentialKind.sshKey ||
                         account.kind == GitCredentialKind.sshAgent),
         )

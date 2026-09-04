@@ -8,7 +8,7 @@ import 'error.dart';
 /// not need a provider-specific URL convention.
 enum GitCredentialProvider { github, gitlab, generic }
 
-enum GitCredentialKind { httpsToken, sshKey, sshAgent }
+enum GitCredentialKind { httpsToken, webOAuth, sshKey, sshAgent }
 
 enum GitRemoteTransport { https, ssh, other }
 
@@ -182,6 +182,26 @@ abstract interface class GitCredentialTestGateway {
   });
 }
 
+class GitCredentialOAuthResult {
+  const GitCredentialOAuthResult({
+    required this.provider,
+    required this.host,
+    required this.accountName,
+  });
+
+  final GitCredentialProvider provider;
+  final String host;
+  final String accountName;
+}
+
+/// Optional gateway capability for browser-based sign-in. The actual OAuth
+/// exchange is delegated to the installed Git Credential Manager.
+abstract interface class GitCredentialOAuthGateway {
+  Future<GitCredentialOAuthResult> loginWithBrowser(
+    GitCredentialProvider provider,
+  );
+}
+
 /// The process runner consumes this object for one invocation only. The
 /// secret is held in the child environment and never in argv or a Git config
 /// file. [cleanup] removes the temporary askpass helper after Git exits.
@@ -279,6 +299,8 @@ class StoreGitCredentialResolver implements GitCredentialResolver {
               : 'git',
           secret: secret,
         );
+      case (GitRemoteTransport.https, GitCredentialKind.webOAuth):
+        return GitCredentialAuth(environment: const <String, String>{});
       case (GitRemoteTransport.ssh, GitCredentialKind.sshKey):
         final keyPath = selected.sshKeyPath?.trim() ?? '';
         if (keyPath.isEmpty) {
@@ -322,7 +344,9 @@ class StoreGitCredentialResolver implements GitCredentialResolver {
       return false;
     }
     return switch (endpoint.transport) {
-      GitRemoteTransport.https => account.kind == GitCredentialKind.httpsToken,
+      GitRemoteTransport.https =>
+        account.kind == GitCredentialKind.httpsToken ||
+            account.kind == GitCredentialKind.webOAuth,
       GitRemoteTransport.ssh =>
         account.kind == GitCredentialKind.sshKey ||
             account.kind == GitCredentialKind.sshAgent,

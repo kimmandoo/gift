@@ -187,7 +187,10 @@ class _RecoveryDialogState extends State<RecoveryDialog> {
         const SizedBox(height: 6),
         if (_operations.isEmpty)
           const Text('No operations were recorded for this root.'),
-        for (final operation in _operations) _operationTile(operation),
+        for (var index = 0; index < _operations.length; index++) ...[
+          _operationTile(_operations[index]),
+          if (index < _operations.length - 1) const SizedBox(height: 6),
+        ],
         const SizedBox(height: 8),
         Text(
           'Operation records omit stdin and redact credential-like values. They are kept only for this app process.',

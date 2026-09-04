@@ -8,6 +8,7 @@ import 'package:gift/src/backend/git_gateway.dart';
 import 'package:gift/src/backend/remote.dart';
 import 'package:gift/src/backend/push.dart';
 import 'package:gift/src/features/repository/push_dialog.dart';
+import 'package:gift/src/app/repository_credential_store.dart';
 import 'package:gift/src/features/repository/object_dialog.dart';
 import 'package:flutter/material.dart';
 
@@ -18,6 +19,7 @@ class RemoteDialog extends StatefulWidget {
     required this.gateway,
     required this.repository,
     this.credentialStore,
+    this.repositoryCredentialStore,
     this.initialOperation,
     this.preferredRemote,
   });
@@ -27,7 +29,7 @@ class RemoteDialog extends StatefulWidget {
   final GitRemoteOperation? initialOperation;
   final String? preferredRemote;
   final GitCredentialStore? credentialStore;
-
+  final RepositoryCredentialStore? repositoryCredentialStore;
   @override
   State<RemoteDialog> createState() => _RemoteDialogState();
 }
@@ -128,8 +130,9 @@ class _RemoteDialogState extends State<RemoteDialog> {
         if (right.name == preferred) return 1;
         return 0;
       });
-    return ListView.builder(
+    return ListView.separated(
       itemCount: orderedRemotes.length,
+      separatorBuilder: (_, _) => const SizedBox(height: 8),
       itemBuilder: (context, index) {
         final remote = orderedRemotes[index];
         final disabled = _runningOperation != null;
@@ -209,6 +212,7 @@ class _RemoteDialogState extends State<RemoteDialog> {
         repository: widget.repository,
         initialRemote: remote,
         credentialStore: widget.credentialStore,
+        repositoryCredentialStore: widget.repositoryCredentialStore,
       ),
     );
     if (!context.mounted || result == null) return;
@@ -240,6 +244,10 @@ class _RemoteDialogState extends State<RemoteDialog> {
       );
     }
     final selected =
+        widget.repositoryCredentialStore?.accountIdFor(
+          widget.repository.root,
+          endpoint.host,
+        ) ??
         _selectedByHost[endpoint.host] ??
         accounts.where((account) => account.isDefault).firstOrNull?.id ??
         '';
@@ -248,7 +256,9 @@ class _RemoteDialogState extends State<RemoteDialog> {
       key: ValueKey('credential-selector:${remote.name}'),
       initialValue: values.contains(selected) ? selected : '',
       decoration: InputDecoration(
-        labelText: 'Account for ${endpoint.host}',
+        labelText: widget.repositoryCredentialStore == null
+            ? 'Account for ${endpoint.host}'
+            : 'Account for ${endpoint.host} in this repository',
         isDense: true,
       ),
       items: [
@@ -265,7 +275,7 @@ class _RemoteDialogState extends State<RemoteDialog> {
       onChanged: disabled
           ? null
           : (value) {
-              if (value == null || value.isEmpty) return;
+              if (value == null) return;
               unawaited(_selectAccount(endpoint.host, value));
             },
     );
@@ -279,7 +289,8 @@ class _RemoteDialogState extends State<RemoteDialog> {
           (account) =>
               account.host == endpoint.host &&
               (endpoint.transport == GitRemoteTransport.https
-                  ? account.kind == GitCredentialKind.httpsToken
+                  ? account.kind == GitCredentialKind.httpsToken ||
+                        account.kind == GitCredentialKind.webOAuth
                   : account.kind == GitCredentialKind.sshKey ||
                         account.kind == GitCredentialKind.sshAgent),
         )
@@ -311,8 +322,25 @@ class _RemoteDialogState extends State<RemoteDialog> {
     final store = widget.credentialStore;
     if (store == null) return;
     try {
-      await store.setDefault(host, accountId);
-      if (mounted) setState(() => _selectedByHost[host] = accountId);
+      final repositoryStore = widget.repositoryCredentialStore;
+      if (repositoryStore != null) {
+        await repositoryStore.setAccountId(
+          widget.repository.root,
+          host,
+          accountId.isEmpty ? null : accountId,
+        );
+      } else if (accountId.isNotEmpty) {
+        await store.setDefault(host, accountId);
+      }
+      if (mounted) {
+        setState(() {
+          if (accountId.isEmpty) {
+            _selectedByHost.remove(host);
+          } else {
+            _selectedByHost[host] = accountId;
+          }
+        });
+      }
     } on GitError catch (error) {
       if (mounted) setState(() => _error = error);
     }
@@ -338,6 +366,22 @@ class _RemoteDialogState extends State<RemoteDialog> {
     }
   }
 
+  String? _credentialIdForRemote(String remoteName) {
+    final remote = _remotes
+        ?.where((candidate) => candidate.name == remoteName)
+        .firstOrNull;
+    final url = widget.initialOperation == GitRemoteOperation.push
+        ? remote?.pushUrl ?? remote?.fetchUrl
+        : remote?.fetchUrl ?? remote?.pushUrl;
+    final endpoint = url == null ? null : parseGitRemoteEndpoint(url);
+    if (endpoint == null) return null;
+    return widget.repositoryCredentialStore?.accountIdFor(
+          widget.repository.root,
+          endpoint.host,
+        ) ??
+        _selectedByHost[endpoint.host];
+  }
+
   Future<void> _run(String remote, GitRemoteOperation operation) async {
     final token = GitCancellationToken();
     setState(() {
@@ -347,17 +391,37 @@ class _RemoteDialogState extends State<RemoteDialog> {
       _error = null;
     });
     try {
+      final credentialGateway = widget.gateway is GitCredentialRemoteGateway
+          ? widget.gateway as GitCredentialRemoteGateway
+          : null;
+      final credentialId = _credentialIdForRemote(remote);
       final result = switch (operation) {
-        GitRemoteOperation.fetch => await widget.gateway.fetch(
-          widget.repository.repositoryId,
-          remote,
-          cancellationToken: token,
-        ),
-        GitRemoteOperation.pull => await widget.gateway.pull(
-          widget.repository.repositoryId,
-          remote,
-          cancellationToken: token,
-        ),
+        GitRemoteOperation.fetch =>
+          credentialGateway == null
+              ? await widget.gateway.fetch(
+                  widget.repository.repositoryId,
+                  remote,
+                  cancellationToken: token,
+                )
+              : await credentialGateway.fetchWithCredential(
+                  widget.repository.repositoryId,
+                  remote,
+                  cancellationToken: token,
+                  credentialId: credentialId,
+                ),
+        GitRemoteOperation.pull =>
+          credentialGateway == null
+              ? await widget.gateway.pull(
+                  widget.repository.repositoryId,
+                  remote,
+                  cancellationToken: token,
+                )
+              : await credentialGateway.pullWithCredential(
+                  widget.repository.repositoryId,
+                  remote,
+                  cancellationToken: token,
+                  credentialId: credentialId,
+                ),
         GitRemoteOperation.push => throw StateError(
           'Push must be opened through the review dialog.',
         ),

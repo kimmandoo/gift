@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:gift/src/backend/credentials.dart';
+import 'package:gift/src/app/repository_credential_store.dart';
 import 'package:flutter/material.dart';
 import 'package:gift/src/app/pixel_theme.dart';
 import 'package:gift/src/backend/domain.dart';
@@ -22,12 +23,14 @@ class PushDialog extends StatefulWidget {
     required this.repository,
     this.initialRemote,
     this.credentialStore,
+    this.repositoryCredentialStore,
     this.preferredRemote,
   });
 
   final GitGateway gateway;
   final RepositoryOpened repository;
   final GitCredentialStore? credentialStore;
+  final RepositoryCredentialStore? repositoryCredentialStore;
   final String? initialRemote;
   final String? preferredRemote;
 
@@ -448,7 +451,8 @@ class _PushDialogState extends State<PushDialog> {
           (account) =>
               account.host == endpoint.host &&
               (endpoint.transport == GitRemoteTransport.https
-                  ? account.kind == GitCredentialKind.httpsToken
+                  ? account.kind == GitCredentialKind.httpsToken ||
+                        account.kind == GitCredentialKind.webOAuth
                   : account.kind == GitCredentialKind.sshKey ||
                         account.kind == GitCredentialKind.sshAgent),
         )
@@ -458,14 +462,24 @@ class _PushDialogState extends State<PushDialog> {
         'No matching account for ${endpoint.host}; public or ambient authentication remains available.',
       );
     }
+    final repositorySelection = widget.repositoryCredentialStore?.accountIdFor(
+      widget.repository.root,
+      endpoint.host,
+    );
     final values = <String>['', ...accounts.map((account) => account.id)];
-    final selected = values.contains(_credentialId) ? _credentialId! : '';
+    final selected = values.contains(_credentialId)
+        ? _credentialId!
+        : values.contains(repositorySelection)
+        ? repositorySelection!
+        : '';
     return DropdownButtonFormField<String>(
       key: const Key('push-credential'),
       initialValue: selected,
       isExpanded: true,
       decoration: InputDecoration(
-        labelText: 'Push account for ${endpoint.host}',
+        labelText: widget.repositoryCredentialStore == null
+            ? 'Push account for ${endpoint.host}'
+            : 'Push account for ${endpoint.host} in this repository',
         isDense: true,
       ),
       items: [
@@ -488,14 +502,20 @@ class _PushDialogState extends State<PushDialog> {
   Future<void> _selectCredential(String host, String? accountId) async {
     final store = widget.credentialStore;
     if (accountId == null) return;
-    if (accountId.isEmpty) {
-      if (mounted) setState(() => _credentialId = null);
-      return;
-    }
-    if (store == null) return;
     try {
-      await store.setDefault(host, accountId);
-      if (mounted) setState(() => _credentialId = accountId);
+      final repositoryStore = widget.repositoryCredentialStore;
+      if (repositoryStore != null) {
+        await repositoryStore.setAccountId(
+          widget.repository.root,
+          host,
+          accountId.isEmpty ? null : accountId,
+        );
+      } else if (accountId.isNotEmpty) {
+        await store?.setDefault(host, accountId);
+      }
+      if (mounted) {
+        setState(() => _credentialId = accountId.isEmpty ? null : accountId);
+      }
     } on GitError catch (error) {
       if (mounted) setState(() => _error = error);
     }
@@ -634,13 +654,26 @@ class _PushDialogState extends State<PushDialog> {
     ),
   );
 
+  String? _storedCredentialForRemote(String remoteName) {
+    final remote = _remotes
+        ?.where((candidate) => candidate.name == remoteName)
+        .firstOrNull;
+    final url = remote?.pushUrl ?? remote?.fetchUrl;
+    final endpoint = url == null ? null : parseGitRemoteEndpoint(url);
+    if (endpoint == null) return null;
+    return widget.repositoryCredentialStore?.accountIdFor(
+      widget.repository.root,
+      endpoint.host,
+    );
+  }
+
   void _selectRemote(String? remote) {
     if (remote == null) return;
     final status = _branchStatus;
     final tracking = _trackingDestination(status, _remotes ?? const []);
     setState(() {
       _remote = remote;
-      _credentialId = null;
+      _credentialId = _storedCredentialForRemote(remote);
       if (tracking != null && tracking.$1 == remote) {
         _branchController.text = tracking.$2;
         _setUpstream = false;
@@ -755,7 +788,7 @@ class _PushDialogState extends State<PushDialog> {
           setUpstream: _setUpstream && _target == GitPushTarget.currentBranch,
           forceWithLease: _forceWithLease,
           expectedRemoteOid: _forceWithLease ? _expectedRemoteOid : null,
-          credentialId: _credentialId,
+          credentialId: _credentialId ?? _storedCredentialForRemote(remote),
         ),
       );
       if (!mounted) return;

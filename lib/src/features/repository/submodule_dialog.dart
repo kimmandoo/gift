@@ -170,8 +170,10 @@ class _SubmoduleDialogState extends State<SubmoduleDialog> {
         if (roots.isNotEmpty) ...[
           Text('Nested roots', style: Theme.of(context).textTheme.titleSmall),
           const SizedBox(height: 6),
-          for (final root in roots) _rootTile(context, root),
-          const SizedBox(height: 12),
+          for (var index = 0; index < roots.length; index++) ...[
+            _rootTile(context, roots[index]),
+            if (index < roots.length - 1) const SizedBox(height: 6),
+          ],
         ],
         if (modules.isNotEmpty)
           Text('Submodules', style: Theme.of(context).textTheme.titleSmall),

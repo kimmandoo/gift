@@ -11,6 +11,7 @@ import 'package:gift/src/app/preferences_dialog.dart';
 import 'package:gift/src/backend/git_gateway.dart';
 import 'package:gift/src/backend/domain.dart';
 import 'package:gift/src/backend/credentials.dart';
+import 'package:gift/src/app/repository_credential_store.dart';
 import 'package:file_selector/file_selector.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -22,6 +23,8 @@ class WelcomeScreen extends StatefulWidget {
     required this.gateway,
     required this.recentStore,
     this.credentialStore,
+    this.repositoryCredentialStore,
+    this.oauthGateway,
     this.preferences,
     this.selectDirectory,
     this.selectExecutable,
@@ -32,6 +35,8 @@ class WelcomeScreen extends StatefulWidget {
   final GitGateway gateway;
   final RecentRepositoryStore recentStore;
   final GitCredentialStore? credentialStore;
+  final RepositoryCredentialStore? repositoryCredentialStore;
+  final GitCredentialOAuthGateway? oauthGateway;
   final SharedPreferences? preferences;
   final Future<String?> Function()? selectDirectory;
   final Future<String?> Function()? selectExecutable;
@@ -93,6 +98,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
         onOpenRepository: _selectAndOpen,
         onWorkspaceEmpty: _repositoryController.closeRepository,
         credentialStore: widget.credentialStore,
+        repositoryCredentialStore: widget.repositoryCredentialStore,
       );
     }
     if (state.openedRepository case final opened?) {
@@ -101,6 +107,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
         repository: opened,
         onBack: _repositoryController.closeRepository,
         credentialStore: widget.credentialStore,
+        repositoryCredentialStore: widget.repositoryCredentialStore,
       );
     }
     return Scaffold(
@@ -297,6 +304,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
         tester: widget.gateway is GitCredentialTestGateway
             ? widget.gateway as GitCredentialTestGateway
             : null,
+        oauthGateway: widget.oauthGateway,
       ),
     );
   }

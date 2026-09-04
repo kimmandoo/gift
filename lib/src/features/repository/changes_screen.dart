@@ -37,6 +37,8 @@ import 'package:flutter/services.dart';
 import 'package:gift/src/app/pixel_theme.dart';
 import 'package:gift/src/app/app_preferences.dart';
 import 'package:gift/src/backend/credentials.dart';
+import 'package:gift/src/app/credentials_dialog.dart';
+import 'package:gift/src/app/repository_credential_store.dart';
 
 const _diffSelectorHeight = 20.0;
 const _diffCheckboxScale = 0.8;
@@ -52,6 +54,7 @@ class ChangesScreen extends StatelessWidget {
     this.onBack,
     this.onOpenRepository,
     this.credentialStore,
+    this.repositoryCredentialStore,
     this.autoInitialize = true,
   });
 
@@ -62,6 +65,7 @@ class ChangesScreen extends StatelessWidget {
   final VoidCallback? onBack;
   final Future<void> Function(RepositoryOpened repository)? onOpenRepository;
   final GitCredentialStore? credentialStore;
+  final RepositoryCredentialStore? repositoryCredentialStore;
   final bool autoInitialize;
 
   @override
@@ -78,6 +82,7 @@ class ChangesScreen extends StatelessWidget {
         onOpenRepository: onOpenRepository,
         autoInitialize: autoInitialize,
         credentialStore: credentialStore,
+        repositoryCredentialStore: repositoryCredentialStore,
       ),
     );
   }
@@ -91,6 +96,7 @@ class _ChangesScreenBody extends ConsumerStatefulWidget {
     this.historyController,
     this.onBack,
     this.credentialStore,
+    this.repositoryCredentialStore,
     this.onOpenRepository,
     required this.autoInitialize,
   });
@@ -102,6 +108,7 @@ class _ChangesScreenBody extends ConsumerStatefulWidget {
   final VoidCallback? onBack;
   final Future<void> Function(RepositoryOpened repository)? onOpenRepository;
   final GitCredentialStore? credentialStore;
+  final RepositoryCredentialStore? repositoryCredentialStore;
   final bool autoInitialize;
 
   @override
@@ -218,6 +225,9 @@ class _ChangesScreenBodyState extends ConsumerState<_ChangesScreenBody> {
                 case _ChangesMenuAction.remotes:
                   unawaited(_openRemotes(context));
                   break;
+                case _ChangesMenuAction.gitAccounts:
+                  unawaited(_openGitAccounts(context));
+                  break;
                 case _ChangesMenuAction.push:
                   unawaited(_openPush(context));
                   break;
@@ -328,6 +338,11 @@ class _ChangesScreenBodyState extends ConsumerState<_ChangesScreenBody> {
               ),
               const PopupMenuDivider(),
               _menuHeading(context, 'REPOSITORY TOOLS'),
+              _menuItem(
+                _ChangesMenuAction.gitAccounts,
+                Icons.key_outlined,
+                'Git accounts for this repository',
+              ),
               _menuItem(
                 _ChangesMenuAction.worktrees,
                 Icons.account_tree_outlined,
@@ -1048,8 +1063,16 @@ class _ChangesScreenBodyState extends ConsumerState<_ChangesScreenBody> {
         for (final section in sections)
           if (section.changes.isNotEmpty) ...[
             _sectionHeader(context, section.title, section.changes.length),
-            for (final change in section.changes)
-              _changeTile(context, change, section.group, state),
+            for (var index = 0; index < section.changes.length; index++) ...[
+              _changeTile(
+                context,
+                section.changes[index],
+                section.group,
+                state,
+              ),
+              if (index < section.changes.length - 1) const SizedBox(height: 4),
+            ],
+            const SizedBox(height: 8),
           ],
       ],
     );
@@ -1571,6 +1594,7 @@ class _ChangesScreenBodyState extends ConsumerState<_ChangesScreenBody> {
         preferredBranch: preferences?.defaultBranch,
         preferredRemote: preferences?.defaultRemote,
         credentialStore: widget.credentialStore,
+        repositoryCredentialStore: widget.repositoryCredentialStore,
       ),
     );
     if (!context.mounted || result == null) return;
@@ -1587,6 +1611,25 @@ class _ChangesScreenBodyState extends ConsumerState<_ChangesScreenBody> {
     );
   }
 
+  Future<void> _openGitAccounts(BuildContext context) async {
+    final store = widget.credentialStore;
+    if (store == null) return;
+    await showDialog<void>(
+      context: context,
+      builder: (_) => CredentialsDialog(
+        store: store,
+        oauthGateway: widget.gateway is GitCredentialOAuthGateway
+            ? widget.gateway as GitCredentialOAuthGateway
+            : null,
+        tester: widget.gateway is GitCredentialTestGateway
+            ? widget.gateway as GitCredentialTestGateway
+            : null,
+        repositoryRoot: widget.repository.root,
+        repositoryCredentialStore: widget.repositoryCredentialStore,
+      ),
+    );
+  }
+
   Future<void> _openRemotes(BuildContext context) async {
     final preferences = AppPreferencesScope.maybeOf(context)?.preferences;
     final result = await showDialog<Object?>(
@@ -1596,6 +1639,7 @@ class _ChangesScreenBodyState extends ConsumerState<_ChangesScreenBody> {
         repository: widget.repository,
         preferredRemote: preferences?.defaultRemote,
         credentialStore: widget.credentialStore,
+        repositoryCredentialStore: widget.repositoryCredentialStore,
       ),
     );
     if (!context.mounted || result == null) return;
@@ -1620,6 +1664,7 @@ class _ChangesScreenBodyState extends ConsumerState<_ChangesScreenBody> {
         gateway: widget.gateway,
         repository: widget.repository,
         credentialStore: widget.credentialStore,
+        repositoryCredentialStore: widget.repositoryCredentialStore,
         preferredRemote: AppPreferencesScope.maybeOf(context)
             ?.preferences
             .defaultRemote,
@@ -2130,6 +2175,7 @@ String _cleanupLabel(GitCommitCleanupMode mode) => switch (mode) {
 
 enum _ChangesMenuAction {
   remotes,
+  gitAccounts,
   push,
   updateProject,
   branches,

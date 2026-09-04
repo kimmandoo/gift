@@ -204,9 +204,10 @@ class _ObjectDialogState extends State<ObjectDialog> {
         Expanded(
           child: stashes.isEmpty
               ? const Center(child: Text('No stashes found.'))
-              : ListView.builder(
+              : ListView.separated(
                   key: const Key('stash-list'),
                   itemCount: stashes.length,
+                  separatorBuilder: (_, _) => const SizedBox(height: 8),
                   itemBuilder: (context, index) => _stashCard(stashes[index]),
                 ),
         ),
@@ -328,9 +329,10 @@ class _ObjectDialogState extends State<ObjectDialog> {
         Expanded(
           child: tags.isEmpty
               ? const Center(child: Text('No tags found.'))
-              : ListView.builder(
+              : ListView.separated(
                   key: const Key('tag-list'),
                   itemCount: tags.length,
+                  separatorBuilder: (_, _) => const SizedBox(height: 8),
                   itemBuilder: (context, index) => _tagCard(tags[index]),
                 ),
         ),
@@ -422,9 +424,10 @@ class _ObjectDialogState extends State<ObjectDialog> {
         Expanded(
           child: remotes.isEmpty
               ? const Center(child: Text('No remotes are configured.'))
-              : ListView.builder(
+              : ListView.separated(
                   key: const Key('remote-list'),
                   itemCount: remotes.length,
+                  separatorBuilder: (_, _) => const SizedBox(height: 8),
                   itemBuilder: (context, index) => _remoteCard(remotes[index]),
                 ),
         ),

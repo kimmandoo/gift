@@ -34,7 +34,9 @@ class DartGitGateway
     implements
         GitGateway,
         DiscardPreviewCancellationGateway,
-        GitCredentialTestGateway {
+        GitCredentialTestGateway,
+        GitCredentialOAuthGateway,
+        GitCredentialRemoteGateway {
   DartGitGateway({
     DartGitBackend? backend,
     GitCredentialResolver? credentialResolver,
@@ -276,6 +278,45 @@ class DartGitGateway
       backend.push(repositoryId, remote, cancellationToken: cancellationToken);
 
   @override
+  Future<GitRemoteOperationResult> fetchWithCredential(
+    RepositoryId repositoryId,
+    String remote, {
+    GitCancellationToken? cancellationToken,
+    String? credentialId,
+  }) => backend.fetch(
+    repositoryId,
+    remote,
+    cancellationToken: cancellationToken,
+    credentialId: credentialId,
+  );
+
+  @override
+  Future<GitRemoteOperationResult> pullWithCredential(
+    RepositoryId repositoryId,
+    String remote, {
+    GitCancellationToken? cancellationToken,
+    String? credentialId,
+  }) => backend.pull(
+    repositoryId,
+    remote,
+    cancellationToken: cancellationToken,
+    credentialId: credentialId,
+  );
+
+  @override
+  Future<GitRemoteOperationResult> pushWithCredential(
+    RepositoryId repositoryId,
+    String remote, {
+    GitCancellationToken? cancellationToken,
+    String? credentialId,
+  }) => backend.push(
+    repositoryId,
+    remote,
+    cancellationToken: cancellationToken,
+    credentialId: credentialId,
+  );
+
+  @override
   Future<GitPushPreview> previewPush(
     RepositoryId repositoryId,
     GitPushRequest request,
@@ -397,6 +438,10 @@ class DartGitGateway
     required String accountId,
   }) => backend.testCredential(remoteUrl, accountId: accountId);
 
+  @override
+  Future<GitCredentialOAuthResult> loginWithBrowser(
+    GitCredentialProvider provider,
+  ) => backend.loginWithBrowser(provider);
   @override
   Future<GitRepositorySetupResult> initRepository(
     GitInitRequest request, {

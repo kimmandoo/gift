@@ -45,6 +45,30 @@ void main() {
     );
   });
 
+  testWidgets('creates a browser OAuth account without storing a token', (
+    tester,
+  ) async {
+    final store = InMemoryGitCredentialStore();
+    await tester.pumpWidget(
+      MaterialApp(
+        home: CredentialsDialog(
+          store: store,
+          oauthGateway: _FakeOAuthGateway(),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byKey(const Key('oauth-github')));
+    await tester.pumpAndSettle();
+
+    final saved = (await store.listAccounts()).single;
+    expect(saved.provider, GitCredentialProvider.github);
+    expect(saved.kind, GitCredentialKind.webOAuth);
+    expect(await store.readSecret(saved.id), isNull);
+    expect(find.text('Signed in with GitHub in your browser.'), findsOneWidget);
+  });
+
   testWidgets('searches accounts and keeps add flow out of the list', (
     tester,
   ) async {
@@ -167,4 +191,17 @@ void main() {
     expect(find.text('Edit account'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
+}
+
+class _FakeOAuthGateway implements GitCredentialOAuthGateway {
+  @override
+  Future<GitCredentialOAuthResult> loginWithBrowser(
+    GitCredentialProvider provider,
+  ) async => GitCredentialOAuthResult(
+    provider: provider,
+    host: provider == GitCredentialProvider.github
+        ? 'github.com'
+        : 'gitlab.com',
+    accountName: '${provider.name} browser account',
+  );
 }

@@ -638,3 +638,28 @@ abstract interface class GitGateway {
 abstract interface class DiscardPreviewCancellationGateway {
   Future<void> cancelDiscardPreview(DiscardPreview preview);
 }
+
+/// Optional capability used by remote dialogs that select an account for one
+/// repository without changing the host-wide default.
+abstract interface class GitCredentialRemoteGateway {
+  Future<GitRemoteOperationResult> fetchWithCredential(
+    RepositoryId repositoryId,
+    String remote, {
+    GitCancellationToken? cancellationToken,
+    String? credentialId,
+  });
+
+  Future<GitRemoteOperationResult> pullWithCredential(
+    RepositoryId repositoryId,
+    String remote, {
+    GitCancellationToken? cancellationToken,
+    String? credentialId,
+  });
+
+  Future<GitRemoteOperationResult> pushWithCredential(
+    RepositoryId repositoryId,
+    String remote, {
+    GitCancellationToken? cancellationToken,
+    String? credentialId,
+  });
+}

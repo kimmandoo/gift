@@ -52,6 +52,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
   late final TextEditingController _beforeController;
   late final FocusNode _searchFocusNode;
   final _selectedDiffKey = GlobalKey();
+  bool _selectionMode = false;
 
   @override
   void initState() {
@@ -94,6 +95,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
   Widget build(BuildContext context) {
     final state = _controller.state;
     final page = state.page;
+    final selectionMode = _selectionMode || state.selectedOids.isNotEmpty;
     final scaffold = Scaffold(
       appBar: AppBar(
         leading: IconButton(
@@ -136,6 +138,14 @@ class _HistoryScreenState extends State<HistoryScreen> {
                 : () => unawaited(_openHosting(context, state)),
             icon: const Icon(Icons.link_outlined),
           ),
+          IconButton(
+            key: const Key('history-select-mode'),
+            tooltip: selectionMode ? 'Exit commit selection' : 'Select commits',
+            onPressed: selectionMode
+                ? _exitSelectionMode
+                : () => setState(() => _selectionMode = true),
+            icon: Icon(selectionMode ? Icons.close : Icons.playlist_add_check),
+          ),
           const PixelThemeToggle(),
           IconButton(
             tooltip: 'Refresh history',
@@ -157,13 +167,13 @@ class _HistoryScreenState extends State<HistoryScreen> {
             _filtersPanel(context),
             if (state.isLoading) const LinearProgressIndicator(),
             if (state.error case final error?) _errorBanner(context, error),
-            _batchSelectionBar(context, state),
+            _batchSelectionBar(context, state, selectionMode),
             Expanded(
               child: page == null
                   ? state.error != null
                         ? _emptyError(state.error!)
                         : const Center(child: CircularProgressIndicator())
-                  : _historyLayout(context, page, state),
+                  : _historyLayout(context, page, state, selectionMode),
             ),
             if (page != null)
               Container(
@@ -202,9 +212,13 @@ class _HistoryScreenState extends State<HistoryScreen> {
     );
   }
 
-  Widget _batchSelectionBar(BuildContext context, HistoryState state) {
+  Widget _batchSelectionBar(
+    BuildContext context,
+    HistoryState state,
+    bool selectionMode,
+  ) {
     final count = state.selectedOids.length;
-    if (count == 0) {
+    if (!selectionMode) {
       return SizedBox.shrink(
         key: const Key('history-selection-summary'),
         child: const Text('0 commits selected'),
@@ -221,6 +235,11 @@ class _HistoryScreenState extends State<HistoryScreen> {
         runSpacing: 6,
         children: [
           Text('$count commits selected'),
+          if (count == 0)
+            Text(
+              'Select commits for batch actions',
+              style: Theme.of(context).textTheme.labelSmall,
+            ),
           if (count > 0) ...[
             TextButton(
               key: const Key('history-clear-selection'),
@@ -241,9 +260,19 @@ class _HistoryScreenState extends State<HistoryScreen> {
               child: const Text('Revert selected'),
             ),
           ],
+          TextButton(
+            key: const Key('history-selection-done'),
+            onPressed: _exitSelectionMode,
+            child: const Text('Done'),
+          ),
         ],
       ),
     );
+  }
+
+  void _exitSelectionMode() {
+    _controller.clearCommitSelection();
+    if (mounted) setState(() => _selectionMode = false);
   }
 
   Future<void> _openHistoryBatch(GitHistoryBatchAction action) async {
@@ -438,6 +467,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
     BuildContext context,
     GitHistoryPage page,
     HistoryState state,
+    bool selectionMode,
   ) {
     return LayoutBuilder(
       builder: (context, constraints) {
@@ -447,7 +477,12 @@ class _HistoryScreenState extends State<HistoryScreen> {
             children: [
               SizedBox(
                 height: constraints.maxHeight * 0.45,
-                child: _commitList(context, page, state),
+                child: _commitList(
+                  context,
+                  page,
+                  state,
+                  selectionMode: selectionMode,
+                ),
               ),
               const Divider(height: 1),
               Expanded(child: _commitDetails(context, state)),
@@ -460,7 +495,12 @@ class _HistoryScreenState extends State<HistoryScreen> {
           children: [
             SizedBox(
               width: listWidth,
-              child: _commitList(context, page, state),
+              child: _commitList(
+                context,
+                page,
+                state,
+                selectionMode: selectionMode,
+              ),
             ),
             const VerticalDivider(width: 1),
             Expanded(child: _commitDetails(context, state)),
@@ -473,8 +513,9 @@ class _HistoryScreenState extends State<HistoryScreen> {
   Widget _commitList(
     BuildContext context,
     GitHistoryPage page,
-    HistoryState state,
-  ) {
+    HistoryState state, {
+    required bool selectionMode,
+  }) {
     if (page.commits.isEmpty) {
       return const Center(child: Text('No commits yet.'));
     }
@@ -511,6 +552,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
         final actionSnapshot = _commitActionSnapshot(page, commit);
         final scheme = Theme.of(context).colorScheme;
         final selected = state.selectedOid == commit.oid;
+        final batchSelected = state.selectedOids.contains(commit.oid);
         final rowSurface = selected
             ? scheme.surfaceContainerHighest
             : Theme.of(context).scaffoldBackgroundColor;
@@ -538,18 +580,22 @@ class _HistoryScreenState extends State<HistoryScreen> {
               padding: const EdgeInsets.only(right: 4),
               child: Row(
                 children: [
-                  IconButton(
-                    key: ValueKey('commit-select:${commit.oid}'),
-                    tooltip: state.selectedOids.contains(commit.oid)
-                        ? 'Deselect commit'
-                        : 'Select commit',
-                    onPressed: () => _controller.toggleCommitSelection(commit),
-                    icon: Icon(
-                      state.selectedOids.contains(commit.oid)
-                          ? Icons.check_box
-                          : Icons.check_box_outline_blank,
+                  if (selectionMode)
+                    IconButton(
+                      key: ValueKey('commit-select:${commit.oid}'),
+                      tooltip: batchSelected
+                          ? 'Deselect commit'
+                          : 'Select commit',
+                      onPressed: () =>
+                          _controller.toggleCommitSelection(commit),
+                      icon: Icon(
+                        batchSelected
+                            ? Icons.radio_button_checked
+                            : Icons.radio_button_unchecked,
+                        size: 20,
+                        color: batchSelected ? scheme.primary : null,
+                      ),
                     ),
-                  ),
                   Semantics(
                     container: true,
                     explicitChildNodes: true,
@@ -998,15 +1044,21 @@ class _HistoryScreenState extends State<HistoryScreen> {
               else if (state.commitFiles!.isEmpty)
                 const Text('No changed files.')
               else
-                for (final file in state.commitFiles!) ...[
-                  _commitFileTile(context, file, state),
-                  if (state.selectedPath == file.path) ...[
+                for (
+                  var index = 0;
+                  index < state.commitFiles!.length;
+                  index++
+                ) ...[
+                  _commitFileTile(context, state.commitFiles![index], state),
+                  if (state.selectedPath == state.commitFiles![index].path) ...[
                     const SizedBox(height: 8),
                     KeyedSubtree(
                       key: _selectedDiffKey,
                       child: _selectedCommitFileDiff(context, state),
                     ),
                   ],
+                  if (index < state.commitFiles!.length - 1)
+                    const SizedBox(height: 8),
                 ],
             ],
           ),

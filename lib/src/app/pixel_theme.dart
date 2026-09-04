@@ -2,6 +2,13 @@ import 'package:flutter/material.dart';
 
 const pixelFontFamily = 'Atkinson Hyperlegible Next';
 const pixelDisplayFontFamily = 'Jersey 15';
+const pixelKoreanFontFamily = 'Noto Sans KR';
+const pixelFontFallbackFamilies = <String>[
+  pixelKoreanFontFamily,
+  'Malgun Gothic',
+  'Segoe UI',
+];
+
 const pixelCanvas = Color(0xFF0D1117);
 const pixelPanel = Color(0xFF151B23);
 const pixelPanelRaised = Color(0xFF202938);
@@ -145,11 +152,13 @@ ThemeData buildPixelTheme({
   );
   final buttonTextStyle = TextStyle(
     fontFamily: pixelFontFamily,
+    fontFamilyFallback: pixelFontFallbackFamilies,
     fontSize: pixelLabelLargeSize * scale,
     height: 1.28,
     fontWeight: FontWeight.w600,
     letterSpacing: 0.05,
   );
+
   final buttonShape = RoundedRectangleBorder(
     borderRadius: BorderRadius.circular(4),
   );
@@ -264,9 +273,11 @@ ThemeData buildPixelTheme({
     brightness: brightness,
     useMaterial3: true,
     fontFamily: pixelFontFamily,
+    fontFamilyFallback: pixelFontFallbackFamilies,
     scaffoldBackgroundColor: canvas,
     canvasColor: canvas,
   );
+
   final textTheme = base.textTheme.copyWith(
     bodyLarge: TextStyle(
       color: ink,
@@ -335,18 +346,28 @@ ThemeData buildPixelTheme({
     ),
   );
   final resolvedTextTheme = textTheme
-      .apply(fontFamily: pixelFontFamily)
+      .apply(
+        fontFamily: pixelFontFamily,
+        fontFamilyFallback: pixelFontFallbackFamilies,
+      )
       .copyWith(
-        headlineSmall: textTheme.headlineSmall,
-        headlineMedium: textTheme.headlineMedium,
+        headlineSmall: textTheme.headlineSmall?.copyWith(
+          fontFamilyFallback: pixelFontFallbackFamilies,
+        ),
+        headlineMedium: textTheme.headlineMedium?.copyWith(
+          fontFamilyFallback: pixelFontFallbackFamilies,
+        ),
       );
+
   return base.copyWith(
     textTheme: resolvedTextTheme,
     primaryTextTheme: base.primaryTextTheme.apply(
       fontFamily: pixelFontFamily,
+      fontFamilyFallback: pixelFontFallbackFamilies,
       bodyColor: ink,
       displayColor: ink,
     ),
+
     dividerTheme: DividerThemeData(
       color: border.color,
       thickness: highContrast ? 1.5 : 1,
@@ -359,12 +380,14 @@ ThemeData buildPixelTheme({
       centerTitle: false,
       titleTextStyle: TextStyle(
         fontFamily: pixelDisplayFontFamily,
+        fontFamilyFallback: pixelFontFallbackFamilies,
         color: ink,
         fontSize: pixelTitleLargeSize * scale,
         height: 1.15,
         fontWeight: FontWeight.w400,
         letterSpacing: 0.2,
       ),
+
       toolbarHeight: 52,
       actionsPadding: const EdgeInsets.only(right: 8),
     ),
@@ -385,9 +408,11 @@ ThemeData buildPixelTheme({
       titleTextStyle: TextStyle(
         color: ink,
         fontFamily: pixelDisplayFontFamily,
+        fontFamilyFallback: pixelFontFallbackFamilies,
         fontSize: pixelHeadlineSmallSize * scale,
         height: 1.15,
       ),
+
       contentTextStyle: resolvedTextTheme.bodyMedium,
     ),
     popupMenuTheme: PopupMenuThemeData(
@@ -402,8 +427,13 @@ ThemeData buildPixelTheme({
     ),
     snackBarTheme: SnackBarThemeData(
       backgroundColor: raised,
-      contentTextStyle: TextStyle(color: ink, fontFamily: pixelFontFamily),
+      contentTextStyle: TextStyle(
+        color: ink,
+        fontFamily: pixelFontFamily,
+        fontFamilyFallback: pixelFontFallbackFamilies,
+      ),
     ),
+
     inputDecorationTheme: InputDecorationTheme(
       filled: true,
       fillColor: canvas,
@@ -413,16 +443,31 @@ ThemeData buildPixelTheme({
         borderRadius: BorderRadius.zero,
         borderSide: BorderSide(color: primary, width: 2),
       ),
-      labelStyle: TextStyle(color: muted),
+      labelStyle: TextStyle(
+        color: muted,
+        fontFamilyFallback: pixelFontFallbackFamilies,
+      ),
       floatingLabelStyle: TextStyle(
         color: primary,
+        fontFamilyFallback: pixelFontFallbackFamilies,
         fontSize: pixelLabelLargeSize * scale,
         height: 1.55,
         fontWeight: FontWeight.w600,
       ),
-      hintStyle: TextStyle(color: muted),
-      helperStyle: TextStyle(color: muted, height: 1.45),
-      errorStyle: TextStyle(color: scheme.error, height: 1.45),
+      hintStyle: TextStyle(
+        color: muted,
+        fontFamilyFallback: pixelFontFallbackFamilies,
+      ),
+      helperStyle: TextStyle(
+        color: muted,
+        fontFamilyFallback: pixelFontFallbackFamilies,
+        height: 1.45,
+      ),
+      errorStyle: TextStyle(
+        color: scheme.error,
+        fontFamilyFallback: pixelFontFallbackFamilies,
+        height: 1.45,
+      ),
       contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
     ),
     filledButtonTheme: FilledButtonThemeData(style: filledButtonStyle),

@@ -6661,6 +6661,48 @@ class RepositoryService {
     }
   }
 
+  Future<GitCredentialOAuthResult> loginWithBrowser(
+    GitCredentialProvider provider,
+  ) async {
+    final host = switch (provider) {
+      GitCredentialProvider.github => 'github.com',
+      GitCredentialProvider.gitlab => 'gitlab.com',
+      GitCredentialProvider.generic => throw credentialInputError(
+        'Browser sign-in is available for GitHub and GitLab only.',
+        'generic Git credential provider has no OAuth host',
+      ),
+    };
+    try {
+      await _runner.run(
+        GitInvocation(
+          program: gitPath,
+          args: ['credential-manager', provider.name, 'login'],
+          cwd: Directory.current.path,
+          kind: GitOperationKind.remote,
+          outputPolicy: const OutputPolicy.capture(maxBytes: 128 * 1024),
+          environment: const {'GCM_INTERACTIVE': 'Always'},
+        ),
+      );
+    } on GitError catch (error, stackTrace) {
+      Error.throwWithStackTrace(
+        GitError(
+          category: error.category,
+          userMessage: 'Browser sign-in could not be completed. Install Git Credential Manager or use a token.',
+          diagnostic: error.diagnostic,
+          retryable: true,
+          exitCode: error.exitCode,
+        ),
+        stackTrace,
+      );
+    }
+    return GitCredentialOAuthResult(
+      provider: provider,
+      host: host,
+      accountName:
+          '${provider == GitCredentialProvider.github ? 'GitHub' : 'GitLab'} browser account',
+    );
+  }
+
   /// Resolves only the selected remote's web identity. The configured remote
   /// may contain credentials, so the raw value never crosses this boundary.
   Future<GitHostingSnapshot> getHostingRepository(
@@ -6737,33 +6779,39 @@ class RepositoryService {
     RepositoryId repositoryId,
     String remote, {
     GitCancellationToken? cancellationToken,
+    String? credentialId,
   }) => _runRemote(
     repositoryId,
     remote,
     GitRemoteOperation.fetch,
     cancellationToken: cancellationToken,
+    credentialId: credentialId,
   );
 
   Future<GitRemoteOperationResult> pull(
     RepositoryId repositoryId,
     String remote, {
     GitCancellationToken? cancellationToken,
+    String? credentialId,
   }) => _runRemote(
     repositoryId,
     remote,
     GitRemoteOperation.pull,
     cancellationToken: cancellationToken,
+    credentialId: credentialId,
   );
 
   Future<GitRemoteOperationResult> push(
     RepositoryId repositoryId,
     String remote, {
     GitCancellationToken? cancellationToken,
+    String? credentialId,
   }) => _runRemote(
     repositoryId,
     remote,
     GitRemoteOperation.push,
     cancellationToken: cancellationToken,
+    credentialId: credentialId,
   );
 
   /// Captures the exact branch/tag scope and remote tip that the user is
@@ -8608,6 +8656,7 @@ class RepositoryService {
     String remote,
     GitRemoteOperation operation, {
     GitCancellationToken? cancellationToken,
+    String? credentialId,
   }) async {
     _validateRemoteName(remote);
     return state.runMutation(repositoryId, () async {
@@ -8641,6 +8690,7 @@ class RepositoryService {
           remoteUrl: operation == GitRemoteOperation.push
               ? remoteConfig?.pushUrl ?? remoteConfig?.fetchUrl
               : remoteConfig?.fetchUrl ?? remoteConfig?.pushUrl,
+          credentialId: credentialId,
         );
       } on GitError catch (error, stackTrace) {
         Error.throwWithStackTrace(_mapRemoteError(error), stackTrace);

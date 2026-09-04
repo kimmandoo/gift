@@ -14,6 +14,7 @@ import 'package:gift/src/backend/remote_branch.dart';
 import 'package:gift/src/backend/push.dart';
 import 'package:gift/src/features/repository/comparison_dialog.dart';
 import 'package:gift/src/features/repository/push_dialog.dart';
+import 'package:gift/src/app/repository_credential_store.dart';
 
 /// A small branch popup that keeps branch work separate from the Changes list.
 class BranchDialog extends StatefulWidget {
@@ -24,6 +25,7 @@ class BranchDialog extends StatefulWidget {
     this.preferredBranch,
     this.preferredRemote,
     this.credentialStore,
+    this.repositoryCredentialStore,
     this.initialOperation,
     this.initialOperationSource,
     this.initialOperationTarget,
@@ -35,6 +37,7 @@ class BranchDialog extends StatefulWidget {
   final String? preferredBranch;
   final String? preferredRemote;
   final GitCredentialStore? credentialStore;
+  final RepositoryCredentialStore? repositoryCredentialStore;
   final GitBranchOperation? initialOperation;
   final String? initialOperationSource;
   final String? initialOperationTarget;
@@ -675,12 +678,33 @@ class _BranchDialogState extends State<BranchDialog> {
       final remotes = await widget.gateway.getRemotes(
         widget.repository.repositoryId,
       );
+      final credentialGateway = widget.gateway is GitCredentialRemoteGateway
+          ? widget.gateway as GitCredentialRemoteGateway
+          : null;
       for (final remote in remotes) {
-        await widget.gateway.fetch(
-          widget.repository.repositoryId,
-          remote.name,
-          cancellationToken: cancellation,
-        );
+        final endpoint = remote.fetchUrl == null
+            ? null
+            : parseGitRemoteEndpoint(remote.fetchUrl!);
+        final credentialId = endpoint == null
+            ? null
+            : widget.repositoryCredentialStore?.accountIdFor(
+                widget.repository.root,
+                endpoint.host,
+              );
+        if (credentialGateway == null) {
+          await widget.gateway.fetch(
+            widget.repository.repositoryId,
+            remote.name,
+            cancellationToken: cancellation,
+          );
+        } else {
+          await credentialGateway.fetchWithCredential(
+            widget.repository.repositoryId,
+            remote.name,
+            cancellationToken: cancellation,
+            credentialId: credentialId,
+          );
+        }
       }
       await _loadBranches();
       if (mounted) {
@@ -738,6 +762,7 @@ class _BranchDialogState extends State<BranchDialog> {
         repository: widget.repository,
         preferredRemote: widget.preferredRemote,
         credentialStore: widget.credentialStore,
+        repositoryCredentialStore: widget.repositoryCredentialStore,
       ),
     );
     if (!mounted || result == null) return;

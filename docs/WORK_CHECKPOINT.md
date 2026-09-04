@@ -5,34 +5,42 @@ This file is the handoff record for continuing work across query sessions.
 ## Current checkpoint
 
 - Date: 2026-09-05
-- Active task: Task 42 is complete; Task 43 is the next priority.
-- Branch: `main`; Task 42 implementation is committed at the current HEAD.
-- Latest Task 42 implementation commit subject:
-  `feat(history): add ordered multi-commit operations`.
-- Task 42 added ordered non-contiguous History selection, full-OID batch
-  previews for cherry-pick and revert, combined path impact, duplicate and
-  containment guards, merge-mainline review, dirty/in-progress blocking,
-  one-commit-at-a-time execution, cancellation, conflict progress, and
-  token/fingerprint-bound recovery.
-- Changed implementation files: `lib/src/backend/history_batch.dart`,
-  `lib/src/backend/{git_gateway,dart_git_backend,dart_git_gateway,
-  repository_service}.dart`, `lib/src/features/repository/{history_controller,
-  history_screen,history_batch_dialog}.dart`, and the related backend/widget
-  tests and gateway stub.
-- Changed documentation files: `TASKS.md`, `CHANGELOG.md`,
-  `docs/POST_MVP_ROADMAP.md`, the implementation plan, and this checkpoint.
-- Verification so far: focused real-Git batch tests passed 8 tests, the
-  History widget suite passed 11 tests, the batch dialog suite passed 1 test,
-  `flutter analyze` reported no issues, and `git diff --check` passed.
-  `dart run tool/verify.dart` also passed formatting and analysis, but its full
-  Windows Flutter suite failed 15 pre-existing platform-sensitive tests:
-  CRLF/UTF-8/path-separator assertions, interactive-rebase failures, and one
-  submodule cleanup timeout. No Task42 test failed in that run.
-- Exact next action: start Task 43 by activating its behavior-ledger
-  scenarios and first RED test; do not infer Task 42 completion from the
-  commit alone.
-- Blockers: no Task42 source blocker. Full repository verification remains
-  red on this Windows host for the unrelated failures listed above.
+- Active task: the requested History, typography, spacing, and Git account
+  follow-up is complete; Task 43 remains the next backlog priority.
+- Branch: `main`; the latest committed base is
+  `251494e feat(history): add ordered multi-commit operations`.
+- Follow-up behavior: History commit selectors now appear only in an explicit
+  selection mode; changed-file rows have an 8 px gap; crowded repository
+  lists/dialogs use consistent 4–8 px separation without changing their
+  scroll ownership.
+- Follow-up behavior: Noto Sans KR is bundled as a Korean fallback, with
+  license attribution; the existing English locale remains unchanged.
+- Follow-up behavior: GitHub/GitLab browser sign-in delegates OAuth to
+  Git Credential Manager, stores a token-free Web OAuth account record, shows
+  GH/GL provider marks, and persists host/account choices per repository.
+- Changed implementation files: `lib/src/app/{credentials_dialog,
+  gift_app,git_provider_mark,pixel_theme,preferences_dialog,
+  repository_credential_store}.dart`, `lib/src/backend/{credentials,
+  dart_git_backend,dart_git_gateway,git_gateway,repository_service}.dart`,
+  and the affected repository screens/dialogs under
+  `lib/src/features/repository/`.
+- Changed assets/docs/tests: `assets/fonts/{NotoSansKR-Variable.ttf,
+  NOTO-SANS-KR-OFL.txt}`, `pubspec.yaml`, `THIRD_PARTY_NOTICES.md`,
+  `CHANGELOG.md`, and the focused credential, branding, and History tests.
+- Verification: `flutter analyze` passed; the focused 48-test UI/backend suite
+  passed; `flutter build windows --debug` produced
+  `build/windows/x64/runner/Debug/gift.exe`; the packaged
+  `assets/fonts/NotoSansKR-Variable.ttf` was present.
+- Desktop visual note: the built executable launched in a smoke process, but
+  browser attachment timed out on this Windows host, so screenshot-level
+  visual inspection was unavailable.
+- Known repository verification limitation: the full suite retains the 15
+  previously documented Windows-sensitive backend fixture failures involving
+  newline/path normalization, interactive rebase, and submodule cleanup.
+- Exact next action: commit this follow-up and checkpoint together; on a later
+  session, resume Task 43 from its first RED behavior-ledger scenario.
+- Blockers: no source blocker. The unrelated generated Flutter plugin files
+  were already modified before this follow-up and remain untouched.
 
 ## Previous checkpoint
 

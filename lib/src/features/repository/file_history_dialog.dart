@@ -281,11 +281,12 @@ class _FileHistoryDialogState extends State<FileHistoryDialog> {
         child: Text('No revisions were found for this path.'),
       );
     }
-    return ListView.builder(
+    return ListView.separated(
       key: const Key('file-history-list'),
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
       itemCount: history.entries.length,
+      separatorBuilder: (_, _) => const SizedBox(height: 6),
       itemBuilder: (context, index) =>
           _historyTile(context, history.entries[index]),
     );
@@ -315,11 +316,12 @@ class _FileHistoryDialogState extends State<FileHistoryDialog> {
     if (blame.lines.isEmpty) {
       return const Center(child: Text('No blame lines were found.'));
     }
-    return ListView.builder(
+    return ListView.separated(
       key: const Key('blame-list'),
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
       itemCount: blame.lines.length,
+      separatorBuilder: (_, _) => const SizedBox(height: 6),
       itemBuilder: (context, index) {
         final line = blame.lines[index];
         return ListTile(
