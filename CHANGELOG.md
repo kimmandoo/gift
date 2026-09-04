@@ -1,6 +1,8 @@
 # Changelog
 
 ## 2026-09-04
+- fix(auth): improved Git account management with searchable host groups,
+  clearer secure-storage guidance, and focused add/edit flows.
 - fix(branches): recovered remote branch lists through full-ref parsing and a
   simpler fallback format instead of failing the entire branch workflow.
 - fix(push): made tracked destinations the default, linked first pushes to

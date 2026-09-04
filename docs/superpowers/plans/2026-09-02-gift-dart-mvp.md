@@ -826,3 +826,14 @@ system Git 2.35+.
    genuinely unreadable instead of hiding repository corruption.
 5. Covered fallback recovery, full refs, CRLF, optional fields, symbolic HEAD,
    configured remote names, and the existing unrecoverable diagnostics.
+
+## Completed follow-up: Git account manager UX
+
+1. Replaced the always-open credential form with a focused account list; the
+   form opens only for the first account, a new account, or an edit.
+2. Grouped saved accounts by host, added searchable account filtering, and
+   moved row actions into a compact account-action menu.
+3. Added clearer security, provider, credential-type, secret-preservation,
+   default-account, and connection-test guidance without exposing secrets.
+4. Added responsive host/name fields, compact editor coverage, and interaction
+   tests for filtering, adding, and editing accounts.

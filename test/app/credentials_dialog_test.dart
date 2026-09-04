@@ -44,4 +44,127 @@ void main() {
       'private-token',
     );
   });
+
+  testWidgets('searches accounts and keeps add flow out of the list', (
+    tester,
+  ) async {
+    await tester.binding.setSurfaceSize(const Size(720, 900));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+    final store = InMemoryGitCredentialStore(
+      records: [
+        GitCredentialRecord(
+          account: GitCredentialAccount(
+            id: 'work',
+            provider: GitCredentialProvider.github,
+            host: 'github.com',
+            accountName: 'Work GitHub',
+            kind: GitCredentialKind.httpsToken,
+            username: 'git',
+            isDefault: true,
+          ),
+          secret: 'work-token',
+        ),
+        GitCredentialRecord(
+          account: GitCredentialAccount(
+            id: 'personal',
+            provider: GitCredentialProvider.gitlab,
+            host: 'gitlab.com',
+            accountName: 'Personal GitLab',
+            kind: GitCredentialKind.httpsToken,
+            username: 'git',
+          ),
+          secret: 'personal-token',
+        ),
+      ],
+    );
+    await tester.pumpWidget(MaterialApp(home: CredentialsDialog(store: store)));
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const Key('credential-editor')), findsNothing);
+    expect(find.text('2 saved'), findsOneWidget);
+    expect(find.text('Work GitHub'), findsOneWidget);
+    await tester.scrollUntilVisible(
+      find.text('Personal GitLab'),
+      200,
+      scrollable: find.byType(Scrollable).first,
+    );
+    expect(find.text('Personal GitLab'), findsOneWidget);
+
+    await tester.enterText(
+      find.byKey(const Key('credential-search')),
+      'gitlab',
+    );
+    await tester.pump();
+    expect(find.text('Personal GitLab'), findsOneWidget);
+    expect(find.text('Work GitHub'), findsNothing);
+
+    await tester.scrollUntilVisible(
+      find.byKey(const Key('credential-new')),
+      200,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await tester.tap(find.byKey(const Key('credential-new')));
+    await tester.pump();
+    expect(find.byKey(const Key('credential-editor')), findsOneWidget);
+    expect(
+      find.descendant(
+        of: find.byKey(const Key('credential-editor')),
+        matching: find.text('Add account'),
+      ),
+      findsOneWidget,
+    );
+    await tester.tap(find.byKey(const Key('credential-cancel')));
+    await tester.pump();
+    expect(find.byKey(const Key('credential-editor')), findsNothing);
+  });
+
+  testWidgets('opens a compact editor from an account row', (tester) async {
+    await tester.binding.setSurfaceSize(const Size(420, 760));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+    final store = InMemoryGitCredentialStore(
+      records: [
+        GitCredentialRecord(
+          account: GitCredentialAccount(
+            id: 'work',
+            provider: GitCredentialProvider.github,
+            host: 'github.com',
+            accountName: 'Work GitHub',
+            kind: GitCredentialKind.httpsToken,
+            username: 'git',
+          ),
+          secret: 'work-token',
+        ),
+      ],
+    );
+    await tester.pumpWidget(
+      MediaQuery(
+        data: const MediaQueryData(textScaler: TextScaler.linear(1.2)),
+        child: MaterialApp(home: CredentialsDialog(store: store)),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.scrollUntilVisible(
+      find.text('Work GitHub'),
+      200,
+      scrollable: find.byType(Scrollable).first,
+    );
+    expect(find.byKey(const Key('credential-actions:work')), findsOneWidget);
+    final accountTile = tester.widget<ListTile>(
+      find.ancestor(
+        of: find.text('Work GitHub'),
+        matching: find.byType(ListTile),
+      ),
+    );
+    accountTile.onTap!();
+    await tester.pump();
+    await tester.scrollUntilVisible(
+      find.byKey(const Key('credential-editor')),
+      200,
+      scrollable: find.byType(Scrollable).first,
+    );
+    expect(find.byKey(const Key('credential-editor')), findsOneWidget);
+    expect(find.text('Edit account'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
 }

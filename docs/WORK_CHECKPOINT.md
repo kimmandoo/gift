@@ -5,29 +5,26 @@ This file is the handoff record for continuing work across query sessions.
 ## Current checkpoint
 
 - Date: 2026-09-04
-- Active task: The remote branch parser hardening is complete. The next
-  priority remains Task 41 — Commit context actions.
+- Active task: Git account manager UX refinement is complete and ready to
+  commit.
 - Branch: `main`; no new branch or worktree was created.
-- Latest implementation commit: this session’s
-  `fix(branches): recover malformed remote ref output` commit.
-- This session replaced shortened remote-ref parsing with full ref names,
-  accepted an omitted empty symbolic-ref field, decoded UTF-8 safely, and
-  resolved configured remote names before splitting branch paths.
-- A malformed primary ref format now retries with a simpler two-field
-  `for-each-ref` format. The branch workflow fails only when both independent
-  formats are unreadable, with both diagnostics retained.
+- Latest implementation commit before this session:
+  `743ae7e fix(branches): recover malformed remote ref output`.
+- This session changed the credential manager from an always-open form into a
+  focused account list with host grouping, account search, compact row actions,
+  secure-storage guidance, responsive add/edit fields, and clearer connection
+  test guidance.
 - Changed files include `CHANGELOG.md`, this checkpoint, the implementation
-  plan, `lib/src/backend/{remote_branch,repository_service}.dart`, and
-  `test/backend/remote_snapshot_parse_test.dart`.
-- Verification: the first RED recovery fixture failed with
-  `Git returned an unreadable remote branch list.` The four focused
-  parser/service cases passed, including fallback recovery, full refs, CRLF,
-  optional symref fields, symbolic HEAD, and configured remote names. The
-  wider branch run passed every parser, checkout, fetch, preview, conflict,
-  and deletion path; only its two previously documented Windows CRLF content
-  assertions remained. `dart run tool/verify.dart` passed formatting for 134
-  files and `flutter analyze`, then passed 229 tests with the same 15 known
-  Windows-only newline/path/rebase fixture failures.
+  plan, `lib/src/app/credentials_dialog.dart`, and
+  `test/app/credentials_dialog_test.dart`.
+- Verification: `flutter test
+  test/app/credentials_dialog_test.dart test/backend/credentials_test.dart
+  test/app_preferences_test.dart` passed all 15 tests. `flutter analyze`
+  reported no issues, `git diff --check` passed, and `flutter run -d windows`
+  built `build/windows/x64/runner/Debug/gift.exe`, synced files to the Windows
+  device, and reached the Flutter run command prompt before supervised
+  shutdown.
+- Exact next action: commit the credential UX changes.
 - Blockers: none.
 
 ## Previous checkpoint
