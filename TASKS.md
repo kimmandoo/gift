@@ -55,7 +55,7 @@
 | **39** | Visual regression QA | Deterministic fixture states and platform font checks | Golden matrix, overflow guards, and interaction snapshots | Planned after Tasks 38A and 41–47 |
 | **40** | Contextual action foundation | Typed action availability, immutable targets, and preview routing | Shared secondary-click, keyboard, and overflow action menus | ✅ |
 | **41** | Commit context actions | OID-bound cherry-pick and existing history mutations | History-row action menu and prefilled previews | ✅ |
-| **42** | Multi-commit operations | Ordered batch cherry-pick/revert state machine | Multi-select history actions and conflict progress | ⬜ |
+| **42** | Multi-commit operations | Ordered batch cherry-pick/revert state machine | Multi-select history actions and conflict progress | Next |
 | **43** | Change and file actions | Selection-safe path operations and reveal contracts | Changes/diff/history-file context menus | ⬜ |
 | **44** | Branch and remote actions | Ref-bound operation routing and freshness checks | Local/remote branch context menus | ⬜ |
 | **45** | Workspace context actions | Root-bound tab and recent-repository operations | Tab/recent/nested-root context menus | ⬜ |
@@ -647,6 +647,20 @@ also complete.
 - [x] Verify every action remains bound to the full commit OID after refresh.
 
 Task 41 is complete. Task 42 is now active; Tasks 36–40 are complete.
+
+### 🚧 Task 42: Ordered multi-commit operations
+
+- [x] Record ACTION-07/08 History multi-selection, ordering, partial-progress,
+  and recovery scenarios.
+- [x] Add the first RED non-contiguous selection test.
+- [ ] Add exact OID-sequence previews for batch cherry-pick and revert.
+- [ ] Execute reviewed commits one at a time with explicit progress and
+  conflict recovery.
+- [ ] Verify refresh, duplicate, containment, merge-mainline, cancellation,
+  and stale-selection behavior.
+
+Task 42 is active. Tasks 43–47 follow it; Task 39 remains after those tasks.
+
 ## Post-MVP backlog
 
 Tasks 16–47 and Task 38A are specified in

@@ -270,6 +270,56 @@ void main() {
     expect(copiedValues, [first.oid, second.oid.substring(0, 7)]);
     controller.dispose();
   });
+  testWidgets('supports keyboard-accessible non-contiguous selection', (
+    tester,
+  ) async {
+    final repository = const RepositoryOpened(
+      repositoryId: RepositoryId(value: 'history-batch-selection-repository'),
+      root: '/workspace/project',
+    );
+    final first = makeCommit('1' * 40, 'First batch commit');
+    final second = makeCommit('2' * 40, 'Second batch commit');
+    final third = makeCommit('3' * 40, 'Third batch commit');
+    final gateway = FakeHistoryGateway(
+      pages: {
+        0: GitHistoryPage(
+          repositoryId: repository.repositoryId,
+          commits: [first, second, third],
+          offset: 0,
+          limit: 3,
+          hasMore: false,
+        ),
+      },
+    );
+    final controller = HistoryController(
+      gateway: gateway,
+      repositoryId: repository.repositoryId,
+      pageSize: 3,
+    );
+    await controller.refresh();
+    await tester.pumpWidget(
+      MaterialApp(
+        home: HistoryScreen(
+          gateway: gateway,
+          repository: repository,
+          controller: controller,
+          autoInitialize: false,
+        ),
+      ),
+    );
+    await tester.pump();
+
+    expect(find.byKey(const Key('history-selection-summary')), findsOneWidget);
+    await tester.tap(find.byKey(ValueKey('commit-select:${first.oid}')));
+    await tester.tap(find.byKey(ValueKey('commit-select:${third.oid}')));
+    await tester.pump();
+    expect(find.text('2 commits selected'), findsOneWidget);
+    expect(find.byKey(const Key('history-clear-selection')), findsOneWidget);
+    await tester.tap(find.byKey(const Key('history-clear-selection')));
+    await tester.pump();
+    expect(find.text('0 commits selected'), findsOneWidget);
+    controller.dispose();
+  });
   testWidgets('stacks the history workspace at a narrow window width', (
     tester,
   ) async {

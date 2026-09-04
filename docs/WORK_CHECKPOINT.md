@@ -5,24 +5,29 @@ This file is the handoff record for continuing work across query sessions.
 ## Current checkpoint
 
 - Date: 2026-09-05
-- Active task: Task 41 is complete and ready to commit; Task 42 is the next
-  active task.
+- Active task: Task 42 contract phase; Task 41 is complete in commit
+  `9718629`.
 - Branch: `main`; no new branch or worktree was created.
-- Latest implementation commit before this session:
-  `1f8be0d fix(auth): improve Git account manager UX`.
-- This session added OID-bound commit context actions to History, direct branch
-  creation at a selected full OID, and deep links into existing cherry-pick,
-  rollback, tag, and comparison workflows.
-- Changed files include `TASKS.md`, `CHANGELOG.md`, the behavior ledger,
-  implementation plan, the branch gateway/backend/service, context actions,
-  History, branch/object/reset dialogs, the Changes route switch, and focused
-  backend/history test helpers and tests.
-- Verification: `flutter test --no-pub
-  test/features/repository/history_screen_test.dart` passed all 9 tests.
-  `flutter test --no-pub test/backend/advanced_branch_test.dart` passed all 8
-  tests. Earlier RED confirmed the missing History menu before implementation.
-- Exact next action: commit the completed Task 41 changes, then record Task 42
-  scenarios and its first RED selection test.
+- Latest implementation commit before this task:
+  `9718629 feat(history): add commit context actions`.
+- Task 41 delivered the History commit-row action menu, full-OID binding,
+  direct branch creation at a selected commit, and deep links into existing
+  reviewed mutation dialogs.
+- Task 42 added ACTION-07/08 for non-contiguous selection, deterministic OID
+  ordering, batch preview facts, partial progress, conflict recovery, and
+  stale selection handling.
+- Changed files for the Task 42 start include `TASKS.md`, the behavior ledger,
+  the implementation plan, this checkpoint, and the first RED History widget
+  test.
+- Verification carried forward: the Task 41 History widget suite passed all 9
+  tests, the advanced branch suite passed all 8 tests, `flutter analyze`
+  reported no issues, and `git diff --check` passed before the Task 42 RED
+  fixture was added. `flutter test --no-pub --plain-name
+  "supports keyboard-accessible non-contiguous selection"
+  test/features/repository/history_screen_test.dart` now fails at the missing
+  `history-selection-summary` key, as intended.
+- Exact next action: implement the immutable full-OID selection model while
+  preserving the single-selection details workflow.
 - Blockers: none.
 
 ## Previous checkpoint

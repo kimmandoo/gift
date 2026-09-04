@@ -801,6 +801,17 @@ system Git 2.35+.
 5. Covered the menu inventory, cherry-pick prefill, refreshed copy binding, and
    exact branch-ref creation in focused widget and real-Git tests.
 
+## Active vertical: Ordered multi-commit operations (Task 42)
+
+1. Activated Task 42 after completing Task 41's OID-bound commit actions and
+   direct cherry-pick entry points.
+2. The first RED fixture is
+   `test/features/repository/history_screen_test.dart`: it expects explicit
+   non-contiguous commit selection and currently fails because History only
+   supports one selected commit.
+3. Preserve the existing single-selection details workflow and execute
+   batch operations one reviewed full OID at a time.
+
 ## Completed follow-up: visible push progress
 
 1. Added a pixel-themed transfer card that appears as soon as the reviewed push
