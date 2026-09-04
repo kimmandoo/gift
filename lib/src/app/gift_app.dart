@@ -5,6 +5,8 @@ import 'package:gift/src/app/app_preferences.dart';
 import 'package:gift/src/app/pixel_theme.dart';
 import 'package:gift/src/backend/dart_git_gateway.dart';
 import 'package:gift/src/backend/git_gateway.dart';
+import 'package:gift/src/app/secure_credential_store.dart';
+import 'package:gift/src/backend/credentials.dart';
 import 'package:gift/src/features/repository/recent_repository_store.dart';
 import 'package:gift/src/features/repository/welcome_screen.dart';
 import 'package:gift/src/features/repository/workspace_controller.dart';
@@ -19,6 +21,7 @@ class GiftApp extends StatefulWidget {
     this.workspaceController,
     this.preferences,
     this.autoInitialize = false,
+    this.credentialStore,
   });
 
   static const themeModeKey = 'theme_mode';
@@ -27,6 +30,7 @@ class GiftApp extends StatefulWidget {
   final RecentRepositoryStore? recentStore;
   final WorkspaceController? workspaceController;
   final SharedPreferences? preferences;
+  final GitCredentialStore? credentialStore;
   final bool autoInitialize;
 
   @override
@@ -37,6 +41,7 @@ class _GiftAppState extends State<GiftApp> {
   late GiftPreferences _preferences;
   late final GitGateway _gateway;
   late final RecentRepositoryStore _recentStore;
+  late final GitCredentialStore _credentialStore;
   late final WorkspaceController _workspaceController;
   late final bool _ownsWorkspaceController;
 
@@ -50,7 +55,16 @@ class _GiftAppState extends State<GiftApp> {
     if (widget.preferences != null && loaded.needsRewrite) {
       unawaited(_preferences.save(widget.preferences!));
     }
-    _gateway = widget.gateway ?? DartGitGateway();
+    _credentialStore =
+        widget.credentialStore ??
+        (widget.preferences == null
+            ? InMemoryGitCredentialStore()
+            : SecureGitCredentialStore(preferences: widget.preferences!));
+    _gateway =
+        widget.gateway ??
+        DartGitGateway(
+          credentialResolver: StoreGitCredentialResolver(_credentialStore),
+        );
     _recentStore =
         widget.recentStore ??
         (widget.preferences == null
@@ -129,6 +143,7 @@ class _GiftAppState extends State<GiftApp> {
           child: WelcomeScreen(
             gateway: _gateway,
             recentStore: _recentStore,
+            credentialStore: _credentialStore,
             workspaceController: _workspaceController,
             preferences: widget.preferences,
             autoInitialize: widget.autoInitialize,

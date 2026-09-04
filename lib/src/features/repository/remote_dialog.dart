@@ -1,3 +1,6 @@
+import 'dart:async';
+
+import 'package:gift/src/backend/credentials.dart';
 import 'package:gift/src/backend/domain.dart';
 import 'package:gift/src/backend/error.dart';
 import 'package:gift/src/backend/executor.dart';
@@ -13,6 +16,7 @@ class RemoteDialog extends StatefulWidget {
     super.key,
     required this.gateway,
     required this.repository,
+    this.credentialStore,
     this.initialOperation,
     this.preferredRemote,
   });
@@ -21,6 +25,7 @@ class RemoteDialog extends StatefulWidget {
   final RepositoryOpened repository;
   final GitRemoteOperation? initialOperation;
   final String? preferredRemote;
+  final GitCredentialStore? credentialStore;
 
   @override
   State<RemoteDialog> createState() => _RemoteDialogState();
@@ -31,12 +36,15 @@ class _RemoteDialogState extends State<RemoteDialog> {
   GitError? _error;
   GitRemoteOperation? _runningOperation;
   String? _runningRemote;
+  List<GitCredentialAccount>? _accounts;
+  final Map<String, String> _selectedByHost = {};
   GitCancellationToken? _cancellationToken;
 
   @override
   void initState() {
     super.initState();
     _loadRemotes();
+    unawaited(_loadAccounts());
   }
 
   @override
@@ -134,6 +142,7 @@ class _RemoteDialogState extends State<RemoteDialog> {
                     overflow: TextOverflow.ellipsis,
                     style: Theme.of(context).textTheme.bodySmall,
                   ),
+                _credentialSelector(remote),
                 const SizedBox(height: 8),
                 Wrap(
                   spacing: 8,
@@ -179,10 +188,114 @@ class _RemoteDialogState extends State<RemoteDialog> {
         gateway: widget.gateway,
         repository: widget.repository,
         initialRemote: remote,
+        credentialStore: widget.credentialStore,
       ),
     );
     if (!context.mounted || result == null) return;
     Navigator.of(context).pop(result);
+  }
+
+  Widget _credentialSelector(GitRemote remote) {
+    final store = widget.credentialStore;
+    final disabled = _runningOperation != null;
+    final url = widget.initialOperation == GitRemoteOperation.push
+        ? remote.pushUrl ?? remote.fetchUrl
+        : remote.fetchUrl ?? remote.pushUrl;
+    final endpoint = url == null ? null : parseGitRemoteEndpoint(url);
+    if (store == null ||
+        endpoint == null ||
+        endpoint.transport == GitRemoteTransport.other) {
+      return const SizedBox.shrink();
+    }
+    final accounts = _matchingAccounts(endpoint);
+    if (_accounts == null) {
+      return const LinearProgressIndicator(
+        key: Key('credential-selector-loading'),
+      );
+    }
+    if (accounts.isEmpty) {
+      return Text(
+        'No matching account for ${endpoint.host}; Git will use public or ambient authentication.',
+        key: ValueKey('credential-selector-empty:${remote.name}'),
+      );
+    }
+    final selected =
+        _selectedByHost[endpoint.host] ??
+        accounts.where((account) => account.isDefault).firstOrNull?.id ??
+        '';
+    final values = <String>['', ...accounts.map((account) => account.id)];
+    return DropdownButtonFormField<String>(
+      key: ValueKey('credential-selector:${remote.name}'),
+      initialValue: values.contains(selected) ? selected : '',
+      decoration: InputDecoration(
+        labelText: 'Account for ${endpoint.host}',
+        isDense: true,
+      ),
+      items: [
+        const DropdownMenuItem(
+          value: '',
+          child: Text('Automatic / no account'),
+        ),
+        for (final account in accounts)
+          DropdownMenuItem(
+            value: account.id,
+            child: Text(account.accountName, overflow: TextOverflow.ellipsis),
+          ),
+      ],
+      onChanged: disabled
+          ? null
+          : (value) {
+              if (value == null || value.isEmpty) return;
+              unawaited(_selectAccount(endpoint.host, value));
+            },
+    );
+  }
+
+  List<GitCredentialAccount> _matchingAccounts(GitRemoteEndpoint endpoint) {
+    final accounts = _accounts;
+    if (accounts == null) return const [];
+    return accounts
+        .where(
+          (account) =>
+              account.host == endpoint.host &&
+              (endpoint.transport == GitRemoteTransport.https
+                  ? account.kind == GitCredentialKind.httpsToken
+                  : account.kind == GitCredentialKind.sshKey ||
+                        account.kind == GitCredentialKind.sshAgent),
+        )
+        .toList(growable: false);
+  }
+
+  Future<void> _loadAccounts() async {
+    final store = widget.credentialStore;
+    if (store == null) return;
+    try {
+      final accounts = await store.listAccounts();
+      if (!mounted) return;
+      setState(() {
+        _accounts = accounts;
+        _selectedByHost
+          ..clear()
+          ..addEntries(
+            accounts
+                .where((account) => account.isDefault)
+                .map((account) => MapEntry(account.host, account.id)),
+          );
+      });
+    } on Object {
+      if (mounted) setState(() => _accounts = const []);
+    }
+  }
+
+  Future<void> _selectAccount(String host, String accountId) async {
+    final store = widget.credentialStore;
+    if (store == null) return;
+    try {
+      await store.setDefault(host, accountId);
+      if (mounted) setState(() => _selectedByHost[host] = accountId);
+    } on GitError catch (error) {
+      if (mounted) setState(() => _error = error);
+    }
   }
 
   Future<void> _loadRemotes() async {

@@ -5,25 +5,28 @@ This file is the handoff record for continuing work across query sessions.
 ## Current checkpoint
 
 - Date: 2026-09-04
-- Active task: No implementation task is active. The next priority is Task
-  38A — Credential management and private remote access.
+- Active task: Task 38A — Credential management and private remote access is
+  complete. The next priority is Task 41 — Commit context actions.
 - Branch: `main`; no new branch or worktree was created.
-- Latest completed implementation commit before this planning session:
-  `5fcb40f` (`docs(roadmap): defer public release priority`).
-- This session inserted Task 38A to make private GitHub, GitLab, self-hosted,
-  HTTPS, and SSH remotes usable through managed credentials before visual QA
-  and public release.
-- Task 38A covers secure platform storage, host/account matching, HTTPS
-  personal-access-token and SSH agent/key selection, bounded Git auth
-  injection, connection tests, revocation, failure recovery, and redacted
-  diagnostics. Task 35 remains link-focused until this task is implemented.
-- The planned order is Task 38A, Tasks 41–47, Task 39 visual regression QA,
-  then Task 38 signed public release.
-- Changed files include `TASKS.md`, `CHANGELOG.md`,
-  `docs/POST_MVP_ROADMAP.md`, and this checkpoint.
-- Verification: the task board and roadmap agree on Task 38A as the next
-  priority and Task 38 as the final deferred release milestone; `git diff
-  --check` passed.
+- Latest implementation commit: this session's
+  `feat(auth): add secure credential management` commit.
+- This session implemented separate Git account metadata and secure secrets,
+  provider/host matching for HTTPS and SSH remotes, platform secure storage,
+  askpass and SSH-key/agent injection, connection testing, revocation, and
+  redacted operation diagnostics.
+- Account management is available from Preferences. Remote, push, and clone
+  setup surfaces expose matching account selectors while public/local Git
+  workflows remain usable without an account.
+- Changed files include `TASKS.md`, `CHANGELOG.md`, `pubspec.yaml`,
+  `pubspec.lock`, `lib/main.dart`, `lib/src/app/{credentials_dialog,
+  gift_app,preferences_dialog,secure_credential_store}.dart`,
+  `lib/src/backend/{credentials,dart_git_backend,dart_git_gateway,executor,
+  push,repository_service,setup}.dart`, repository UI dialogs/screens, and
+  credential/redaction/widget tests.
+- Verification: full local verification passed `flutter pub get`, formatting
+  for `lib`, `test`, `integration_test`, and `tool` (133 files), `flutter
+  analyze`, and `flutter test` (238 tests). Focused credential, remote, push,
+  setup, preferences, and backend tests also passed.
 - Blockers: none.
 
 ## Previous checkpoint

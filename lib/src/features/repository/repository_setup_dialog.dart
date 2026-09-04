@@ -5,6 +5,7 @@ import 'package:gift/src/backend/domain.dart';
 import 'package:gift/src/backend/error.dart';
 import 'package:gift/src/backend/git_gateway.dart';
 import 'package:gift/src/backend/setup.dart';
+import 'package:gift/src/backend/credentials.dart';
 
 /// Provides clone/init actions for Welcome and shallow-history/root mapping
 /// actions for an already opened repository. All path and branch validation
@@ -13,9 +14,11 @@ class RepositorySetupDialog extends StatefulWidget {
   const RepositorySetupDialog({
     super.key,
     required this.gateway,
+    this.credentialStore,
     this.repository,
   });
 
+  final GitCredentialStore? credentialStore;
   final GitGateway gateway;
   final RepositoryOpened? repository;
 
@@ -35,12 +38,15 @@ class _RepositorySetupDialogState extends State<RepositorySetupDialog> {
   GitError? _error;
   String? _message;
   var _isBusy = false;
+  List<GitCredentialAccount>? _accounts;
+  String? _credentialId;
   var _recursive = false;
 
   @override
   void initState() {
     super.initState();
     _rootPathController.text = widget.repository?.root ?? '';
+    unawaited(_loadAccounts());
   }
 
   @override
@@ -150,11 +156,13 @@ class _RepositorySetupDialogState extends State<RepositorySetupDialog> {
     key: const Key('clone-view'),
     children: [
       _field(
+        onChanged: (_) => setState(() => _credentialId = null),
         key: const Key('clone-source'),
         controller: _sourceController,
         label: 'Source URL or local path',
         hint: 'https://host.example/team/project.git',
       ),
+      _credentialSelector(context),
       const SizedBox(height: 8),
       _field(
         key: const Key('clone-destination'),
@@ -296,11 +304,13 @@ class _RepositorySetupDialogState extends State<RepositorySetupDialog> {
     required String label,
     required String hint,
     TextInputType? keyboardType,
+    ValueChanged<String>? onChanged,
   }) => TextField(
     key: key,
     controller: controller,
     enabled: !_isBusy,
     keyboardType: keyboardType,
+    onChanged: onChanged,
     decoration: InputDecoration(
       labelText: label,
       hintText: hint,
@@ -308,6 +318,107 @@ class _RepositorySetupDialogState extends State<RepositorySetupDialog> {
       isDense: true,
     ),
   );
+
+  Widget _credentialSelector(BuildContext context) {
+    final store = widget.credentialStore;
+    final endpoint = parseGitRemoteEndpoint(_sourceController.text.trim());
+    if (store == null ||
+        endpoint == null ||
+        endpoint.transport == GitRemoteTransport.other) {
+      return const SizedBox.shrink();
+    }
+    final accounts = _matchingAccounts(endpoint);
+    if (_accounts == null) {
+      return const LinearProgressIndicator(
+        key: Key('clone-credential-loading'),
+      );
+    }
+    if (accounts.isEmpty) {
+      return Padding(
+        padding: const EdgeInsets.only(top: 8),
+        child: Text(
+          'No matching account for ${endpoint.host}; public or ambient authentication remains available.',
+          key: const Key('clone-credential-empty'),
+        ),
+      );
+    }
+    final values = <String>['', ...accounts.map((account) => account.id)];
+    final selected =
+        _credentialId != null &&
+            values.contains(_credentialId) &&
+            accounts.any((account) => account.id == _credentialId)
+        ? _credentialId!
+        : '';
+    return Padding(
+      padding: const EdgeInsets.only(top: 8),
+      child: DropdownButtonFormField<String>(
+        key: const Key('clone-credential'),
+        initialValue: selected,
+        decoration: InputDecoration(
+          labelText: 'Clone account for ${endpoint.host}',
+          isDense: true,
+        ),
+        items: [
+          const DropdownMenuItem(
+            value: '',
+            child: Text('Automatic / no account'),
+          ),
+          for (final account in accounts)
+            DropdownMenuItem(
+              value: account.id,
+              child: Text(account.accountName),
+            ),
+        ],
+        onChanged: _isBusy
+            ? null
+            : (value) {
+                unawaited(_selectAccount(endpoint.host, value));
+              },
+      ),
+    );
+  }
+
+  List<GitCredentialAccount> _matchingAccounts(GitRemoteEndpoint endpoint) {
+    final accounts = _accounts;
+    if (accounts == null) return const [];
+    return accounts
+        .where(
+          (account) =>
+              account.host == endpoint.host &&
+              (endpoint.transport == GitRemoteTransport.https
+                  ? account.kind == GitCredentialKind.httpsToken
+                  : account.kind == GitCredentialKind.sshKey ||
+                        account.kind == GitCredentialKind.sshAgent),
+        )
+        .toList(growable: false);
+  }
+
+  Future<void> _loadAccounts() async {
+    final store = widget.credentialStore;
+    if (store == null) return;
+    try {
+      final accounts = await store.listAccounts();
+      if (mounted) setState(() => _accounts = accounts);
+    } on Object {
+      if (mounted) setState(() => _accounts = const []);
+    }
+  }
+
+  Future<void> _selectAccount(String host, String? accountId) async {
+    final store = widget.credentialStore;
+    if (accountId == null) return;
+    if (accountId.isEmpty) {
+      if (mounted) setState(() => _credentialId = null);
+      return;
+    }
+    if (store == null) return;
+    try {
+      await store.setDefault(host, accountId);
+      if (mounted) setState(() => _credentialId = accountId);
+    } on GitError catch (error) {
+      if (mounted) setState(() => _error = error);
+    }
+  }
 
   Future<void> _clone() async {
     final depthText = _depthController.text.trim();
@@ -322,6 +433,7 @@ class _RepositorySetupDialogState extends State<RepositorySetupDialog> {
               : _cloneBranchController.text.trim(),
           depth: depth,
           recursive: _recursive,
+          credentialId: _credentialId,
         ),
       );
       if (mounted) Navigator.of(context).pop(result.repository);

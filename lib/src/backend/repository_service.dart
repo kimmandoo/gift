@@ -28,6 +28,7 @@ import 'submodule.dart';
 import 'recovery.dart';
 import 'setup.dart';
 import 'hosting.dart';
+import 'credentials.dart';
 
 /// In-memory registry for repository roots and session-local opaque IDs.
 ///
@@ -804,13 +805,45 @@ class RepositoryService {
     required this.state,
     ProcessGitRunner? runner,
     GitShelfStore? shelfStore,
+    GitCredentialResolver? credentialResolver,
   }) : _runner = runner ?? const ProcessGitRunner(),
-       _shelfStore = shelfStore ?? const FileGitShelfStore();
+       _shelfStore = shelfStore ?? const FileGitShelfStore(),
+       _credentialResolver =
+           credentialResolver ?? const NoopGitCredentialResolver();
 
   final String gitPath;
   final ProcessGitRunner _runner;
   final GitShelfStore _shelfStore;
+  final GitCredentialResolver _credentialResolver;
   final AppState state;
+
+  Future<ProcessOutput> _runWithCredentials({
+    required String cwd,
+    required List<String> args,
+    required GitOperationKind kind,
+    required int maxBytes,
+    GitCancellationToken? cancellationToken,
+    Map<String, String>? environment,
+    String? remoteUrl,
+    String? credentialId,
+  }) async {
+    final auth = remoteUrl == null
+        ? null
+        : await _credentialResolver.resolve(remoteUrl, accountId: credentialId);
+    return _runner.run(
+      GitInvocation(
+        program: gitPath,
+        args: args,
+        cwd: cwd,
+        kind: kind,
+        outputPolicy: OutputPolicy.capture(maxBytes: maxBytes),
+        cancellationToken: cancellationToken,
+        environment: {...?auth?.environment, ...?environment},
+        sensitiveValues: auth?.sensitiveValues ?? const <String>[],
+        cleanup: auth?.cleanup,
+      ),
+    );
+  }
 
   Future<RepositoryOpened> openRepository(String path) async {
     // Step 1: resolve the user's selection before passing it to Git.
@@ -910,19 +943,55 @@ class RepositoryService {
     if (depth case final value?) args.addAll(['--depth', '$value']);
     if (request.recursive) args.add('--recurse-submodules');
     args.addAll([source, destination]);
-    await _runner.run(
-      GitInvocation(
-        program: gitPath,
-        args: args,
-        cwd: directory.parent.path,
-        kind: GitOperationKind.remote,
-        outputPolicy: const OutputPolicy.capture(maxBytes: 4 * 1024 * 1024),
-        cancellationToken: cancellationToken,
-      ),
+    await _runWithCredentials(
+      cwd: directory.parent.path,
+      args: args,
+      kind: GitOperationKind.remote,
+      maxBytes: 4 * 1024 * 1024,
+      cancellationToken: cancellationToken,
+      remoteUrl: source,
+      credentialId: request.credentialId,
     );
     return GitRepositorySetupResult(
       repository: await openRepository(destination),
       summary: 'Cloned repository into $destination.',
+    );
+  }
+
+  Future<GitCredentialTestResult> testCredential(
+    String remoteUrl, {
+    required String accountId,
+  }) async {
+    final endpoint = parseGitRemoteEndpoint(remoteUrl);
+    if (endpoint == null || endpoint.transport == GitRemoteTransport.other) {
+      throw credentialInputError(
+        'Enter an HTTPS or SSH remote URL to test this account.',
+        'credential connection test received an unsupported remote',
+      );
+    }
+    late final ProcessOutput output;
+    try {
+      output = await _runWithCredentials(
+        cwd: Directory.current.path,
+        args: ['ls-remote', '--refs', remoteUrl],
+        kind: GitOperationKind.remote,
+        maxBytes: 512 * 1024,
+        remoteUrl: remoteUrl,
+        credentialId: accountId,
+      );
+    } on GitError catch (error, stackTrace) {
+      Error.throwWithStackTrace(_mapRemoteError(error), stackTrace);
+    }
+    final referenceCount = utf8
+        .decode(output.stdout, allowMalformed: true)
+        .split('\n')
+        .where((line) => line.trim().isNotEmpty)
+        .length;
+    return GitCredentialTestResult(
+      host: endpoint.host,
+      referenceCount: referenceCount,
+      summary:
+          'Connected to ${endpoint.host}; found $referenceCount remote reference${referenceCount == 1 ? '' : 's'}.',
     );
   }
 
@@ -989,16 +1058,17 @@ class RepositoryService {
       );
     }
     final wasShallow = shallow == 'true';
+    final unshallowRemoteUrl = wasShallow
+        ? _findRemote(await getRemotes(repositoryId), 'origin')?.fetchUrl
+        : null;
     if (wasShallow) {
-      await _runner.run(
-        GitInvocation(
-          program: gitPath,
-          args: const ['fetch', '--unshallow'],
-          cwd: handle.root,
-          kind: GitOperationKind.remote,
-          outputPolicy: const OutputPolicy.capture(maxBytes: 4 * 1024 * 1024),
-          cancellationToken: cancellationToken,
-        ),
+      await _runWithCredentials(
+        cwd: handle.root,
+        args: const ['fetch', '--unshallow'],
+        kind: GitOperationKind.remote,
+        maxBytes: 4 * 1024 * 1024,
+        cancellationToken: cancellationToken,
+        remoteUrl: unshallowRemoteUrl,
       );
     }
     final status = await getStatus(repositoryId);
@@ -4361,7 +4431,13 @@ class RepositoryService {
     );
     final remote = current.remote;
     final branchName = current.branch;
-    final publishedOid = await _readRemoteBranchOid(handle, remote, branchName);
+    final remoteConfig = _findRemote(await getRemotes(repositoryId), remote);
+    final publishedOid = await _readRemoteBranchOid(
+      handle,
+      remote,
+      branchName,
+      remoteUrl: remoteConfig?.pushUrl ?? remoteConfig?.fetchUrl,
+    );
     if (publishedOid != preview.oid) {
       throw const GitError(
         category: GitErrorCategory.staleRemoteRef,
@@ -4373,23 +4449,19 @@ class RepositoryService {
     }
     late final ProcessOutput output;
     try {
-      output = await _runner.run(
-        GitInvocation(
-          program: gitPath,
-          args: ['push', remote, '--delete', branchName],
-          cwd: handle.root,
-          kind: GitOperationKind.remote,
-          outputPolicy: const OutputPolicy.capture(maxBytes: 512 * 1024),
-        ),
+      output = await _runObjectCommand(
+        handle,
+        ['push', remote, '--delete', branchName],
+        kind: GitOperationKind.remote,
+        maxBytes: 512 * 1024,
+        remoteUrl: remoteConfig?.pushUrl ?? remoteConfig?.fetchUrl,
       );
-      await _runner.run(
-        GitInvocation(
-          program: gitPath,
-          args: ['fetch', '--prune', remote],
-          cwd: handle.root,
-          kind: GitOperationKind.remote,
-          outputPolicy: const OutputPolicy.capture(maxBytes: 512 * 1024),
-        ),
+      await _runObjectCommand(
+        handle,
+        ['fetch', '--prune', remote],
+        kind: GitOperationKind.remote,
+        maxBytes: 512 * 1024,
+        remoteUrl: remoteConfig?.fetchUrl ?? remoteConfig?.pushUrl,
       );
     } on GitError catch (error, stackTrace) {
       Error.throwWithStackTrace(_mapRemoteError(error), stackTrace);
@@ -5521,19 +5593,20 @@ class RepositoryService {
   Future<String> _readRemoteBranchOid(
     RepositoryHandle handle,
     String remote,
-    String branch,
-  ) async {
+    String branch, {
+    String? remoteUrl,
+    String? credentialId,
+  }) async {
     _validateRemoteName(remote);
     _validateBranchName(branch);
     try {
-      final output = await _runner.run(
-        GitInvocation(
-          program: gitPath,
-          args: ['ls-remote', '--refs', remote, 'refs/heads/$branch'],
-          cwd: handle.root,
-          kind: GitOperationKind.read,
-          outputPolicy: const OutputPolicy.capture(maxBytes: 16 * 1024),
-        ),
+      final output = await _runWithCredentials(
+        cwd: handle.root,
+        args: ['ls-remote', '--refs', remote, 'refs/heads/$branch'],
+        kind: GitOperationKind.read,
+        maxBytes: 16 * 1024,
+        credentialId: credentialId,
+        remoteUrl: remoteUrl,
       );
       final fields = utf8
           .decode(output.stdout, allowMalformed: true)
@@ -5807,18 +5880,21 @@ class RepositoryService {
       state.consumePushPreview(token);
     }
     final handle = await state.lookup(repositoryId);
+    final remoteConfig = _findRemote(
+      await getRemotes(repositoryId),
+      request.remote,
+    );
     final args = _pushArgs(inspection);
     late final ProcessOutput output;
     try {
-      output = await _runner.run(
-        GitInvocation(
-          program: gitPath,
-          args: args,
-          cwd: handle.root,
-          kind: GitOperationKind.remote,
-          outputPolicy: const OutputPolicy.capture(maxBytes: 2 * 1024 * 1024),
-          cancellationToken: cancellationToken,
-        ),
+      output = await _runWithCredentials(
+        cwd: handle.root,
+        args: args,
+        kind: GitOperationKind.remote,
+        maxBytes: 2 * 1024 * 1024,
+        cancellationToken: cancellationToken,
+        remoteUrl: remoteConfig?.pushUrl ?? remoteConfig?.fetchUrl,
+        credentialId: request.credentialId,
       );
     } on GitError catch (error, stackTrace) {
       final mapped = _mapPushError(error, request.forceWithLease);
@@ -5864,7 +5940,8 @@ class RepositoryService {
     _validateRemoteName(request.remote);
     final handle = await state.lookup(repositoryId);
     final remotes = await getRemotes(repositoryId);
-    if (_findRemote(remotes, request.remote) == null) {
+    final remoteConfig = _findRemote(remotes, request.remote);
+    if (remoteConfig == null) {
       throw _objectNotFound('remote', request.remote);
     }
     final status = await getStatus(repositoryId);
@@ -5974,6 +6051,8 @@ class RepositoryService {
         handle,
         request.remote,
         targetBranch,
+        remoteUrl: remoteConfig.pushUrl ?? remoteConfig.fetchUrl,
+        credentialId: request.credentialId,
       );
     }
     final protectedBranch = _isProtectedPushBranch(targetBranch);
@@ -6141,10 +6220,18 @@ class RepositoryService {
   Future<String?> _tryReadRemoteBranchOid(
     RepositoryHandle handle,
     String remote,
-    String branch,
-  ) async {
+    String branch, {
+    String? remoteUrl,
+    String? credentialId,
+  }) async {
     try {
-      return await _readRemoteBranchOid(handle, remote, branch);
+      return await _readRemoteBranchOid(
+        handle,
+        remote,
+        branch,
+        remoteUrl: remoteUrl,
+        credentialId: credentialId,
+      );
     } on GitError catch (error) {
       if (error.category == GitErrorCategory.remoteBranchNotFound) return null;
       rethrow;
@@ -7201,6 +7288,7 @@ class RepositoryService {
     return state.runMutation(repositoryId, () async {
       final handle = await state.lookup(repositoryId);
       final remotes = await getRemotes(repositoryId);
+      final selectedRemote = _findRemote(remotes, remote);
       if (_findRemote(remotes, remote) == null) {
         throw _objectNotFound('remote', remote);
       }
@@ -7213,6 +7301,7 @@ class RepositoryService {
           kind: GitOperationKind.remote,
           maxBytes: 2 * 1024 * 1024,
           cancellationToken: cancellationToken,
+          remoteUrl: selectedRemote?.pushUrl ?? selectedRemote?.fetchUrl,
         );
       } on GitError catch (error, stackTrace) {
         Error.throwWithStackTrace(_mapRemoteError(error), stackTrace);
@@ -7419,6 +7508,9 @@ class RepositoryService {
       }
       await _validateBranchNameWithGit(handle, selectedBranch);
       final remotes = await getRemotes(repositoryId);
+      final selectedRemote = remote == null
+          ? null
+          : _findRemote(remotes, remote);
       if (action != GitUpstreamAction.unset &&
           (remote == null || _findRemote(remotes, remote) == null)) {
         throw _objectNotFound('remote', remote ?? '');
@@ -7450,6 +7542,9 @@ class RepositoryService {
               ? GitOperationKind.remote
               : GitOperationKind.mutation,
           maxBytes: 2 * 1024 * 1024,
+          remoteUrl: action == GitUpstreamAction.publish
+              ? selectedRemote?.pushUrl ?? selectedRemote?.fetchUrl
+              : null,
         );
       } on GitError catch (error, stackTrace) {
         Error.throwWithStackTrace(
@@ -7500,15 +7595,16 @@ class RepositoryService {
     GitOperationKind kind = GitOperationKind.mutation,
     int maxBytes = 512 * 1024,
     GitCancellationToken? cancellationToken,
-  }) => _runner.run(
-    GitInvocation(
-      program: gitPath,
-      args: args,
-      cwd: handle.root,
-      kind: kind,
-      outputPolicy: OutputPolicy.capture(maxBytes: maxBytes),
-      cancellationToken: cancellationToken,
-    ),
+    String? remoteUrl,
+    String? credentialId,
+  }) => _runWithCredentials(
+    cwd: handle.root,
+    args: args,
+    kind: kind,
+    maxBytes: maxBytes,
+    cancellationToken: cancellationToken,
+    remoteUrl: remoteUrl,
+    credentialId: credentialId,
   );
 
   Future<String> _resolveObjectCommit(
@@ -7568,6 +7664,7 @@ class RepositoryService {
     _validateRemoteName(remote);
     return state.runMutation(repositoryId, () async {
       final handle = await state.lookup(repositoryId);
+      final remoteConfig = _findRemote(await getRemotes(repositoryId), remote);
       final status = await getStatus(repositoryId);
       final branch = status.branch.head;
       if ((operation == GitRemoteOperation.pull ||
@@ -7587,15 +7684,15 @@ class RepositoryService {
       };
       late final ProcessOutput output;
       try {
-        output = await _runner.run(
-          GitInvocation(
-            program: gitPath,
-            args: args,
-            cwd: handle.root,
-            kind: GitOperationKind.remote,
-            outputPolicy: const OutputPolicy.capture(maxBytes: 2 * 1024 * 1024),
-            cancellationToken: cancellationToken,
-          ),
+        output = await _runWithCredentials(
+          cwd: handle.root,
+          args: args,
+          kind: GitOperationKind.remote,
+          maxBytes: 2 * 1024 * 1024,
+          cancellationToken: cancellationToken,
+          remoteUrl: operation == GitRemoteOperation.push
+              ? remoteConfig?.pushUrl ?? remoteConfig?.fetchUrl
+              : remoteConfig?.fetchUrl ?? remoteConfig?.pushUrl,
         );
       } on GitError catch (error, stackTrace) {
         Error.throwWithStackTrace(_mapRemoteError(error), stackTrace);

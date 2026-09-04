@@ -9,6 +9,7 @@ class GitCloneRequest {
     this.branch,
     this.depth,
     this.recursive = false,
+    this.credentialId,
   });
 
   final String source;
@@ -16,9 +17,16 @@ class GitCloneRequest {
   final String? branch;
   final int? depth;
   final bool recursive;
+  final String? credentialId;
 
-  String get queryKey =>
-      [source, destination, branch ?? '', depth ?? '', recursive].join('|');
+  String get queryKey => [
+    source,
+    destination,
+    branch ?? '',
+    depth ?? '',
+    recursive,
+    credentialId ?? '',
+  ].join('|');
 }
 
 class GitInitRequest {

@@ -24,6 +24,7 @@ import 'submodule.dart';
 import 'recovery.dart';
 import 'setup.dart';
 import 'hosting.dart';
+import 'credentials.dart';
 
 /// Application-facing entry point for backend operations.
 ///
@@ -35,10 +36,13 @@ class DartGitBackend {
     AppState? state,
     ProcessGitRunner? runner,
     GitShelfStore? shelfStore,
+    GitCredentialResolver? credentialResolver,
   }) : _installationService = installationService ?? GitInstallationService(),
        _state = state ?? AppState(),
        _runner = runner ?? const ProcessGitRunner(),
-       _shelfStore = shelfStore ?? const FileGitShelfStore();
+       _shelfStore = shelfStore ?? const FileGitShelfStore(),
+       _credentialResolver =
+           credentialResolver ?? const NoopGitCredentialResolver();
 
   static const version = '1.0.0';
 
@@ -46,6 +50,7 @@ class DartGitBackend {
   final AppState _state;
   final ProcessGitRunner _runner;
   final GitShelfStore _shelfStore;
+  final GitCredentialResolver _credentialResolver;
 
   Health health() => const Health(product: 'gift', coreVersion: version);
 
@@ -284,6 +289,7 @@ class DartGitBackend {
       gitPath: installation.executablePath,
       state: _state,
       runner: _runner,
+      credentialResolver: _credentialResolver,
     ).deleteRemoteBranch(repositoryId, preview);
   }
 
@@ -388,6 +394,7 @@ class DartGitBackend {
       gitPath: installation.executablePath,
       state: _state,
       runner: _runner,
+      credentialResolver: _credentialResolver,
     ).fetch(repositoryId, remote, cancellationToken: cancellationToken);
   }
 
@@ -401,6 +408,7 @@ class DartGitBackend {
       gitPath: installation.executablePath,
       state: _state,
       runner: _runner,
+      credentialResolver: _credentialResolver,
     ).pull(repositoryId, remote, cancellationToken: cancellationToken);
   }
 
@@ -414,6 +422,7 @@ class DartGitBackend {
       gitPath: installation.executablePath,
       state: _state,
       runner: _runner,
+      credentialResolver: _credentialResolver,
     ).push(repositoryId, remote, cancellationToken: cancellationToken);
   }
 
@@ -439,6 +448,7 @@ class DartGitBackend {
       gitPath: installation.executablePath,
       state: _state,
       runner: _runner,
+      credentialResolver: _credentialResolver,
     ).executePush(repositoryId, request, cancellationToken: cancellationToken);
   }
 
@@ -631,7 +641,21 @@ class DartGitBackend {
       gitPath: installation.executablePath,
       state: _state,
       runner: _runner,
+      credentialResolver: _credentialResolver,
     ).cloneRepository(request, cancellationToken: cancellationToken);
+  }
+
+  Future<GitCredentialTestResult> testCredential(
+    String remoteUrl, {
+    required String accountId,
+  }) async {
+    final installation = await getGitInstallation();
+    return RepositoryService(
+      gitPath: installation.executablePath,
+      state: _state,
+      runner: _runner,
+      credentialResolver: _credentialResolver,
+    ).testCredential(remoteUrl, accountId: accountId);
   }
 
   Future<GitRepositorySetupResult> initRepository(
@@ -655,6 +679,7 @@ class DartGitBackend {
       gitPath: installation.executablePath,
       state: _state,
       runner: _runner,
+      credentialResolver: _credentialResolver,
     ).unshallowRepository(repositoryId, cancellationToken: cancellationToken);
   }
 
@@ -971,6 +996,7 @@ class DartGitBackend {
       gitPath: installation.executablePath,
       state: _state,
       runner: _runner,
+      credentialResolver: _credentialResolver,
     ).pushTag(
       repositoryId,
       remote,
@@ -1029,6 +1055,7 @@ class DartGitBackend {
       gitPath: installation.executablePath,
       state: _state,
       runner: _runner,
+      credentialResolver: _credentialResolver,
     ).publishBranch(repositoryId, remote, branch: branch);
   }
 

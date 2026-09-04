@@ -66,11 +66,16 @@ class GitInvocation {
     this.cancellationToken,
     this.timeout,
     Map<String, String>? environment,
+    Iterable<String> sensitiveValues = const <String>[],
+    this.cleanup,
   }) : args = List.unmodifiable(args),
        stdin = stdin == null ? null : List<int>.unmodifiable(stdin),
        environment = environment == null
            ? null
-           : Map<String, String>.unmodifiable(environment);
+           : Map<String, String>.unmodifiable(environment),
+       sensitiveValues = List.unmodifiable(
+         sensitiveValues.where((value) => value.isNotEmpty),
+       );
 
   final String program;
   final List<String> args;
@@ -81,6 +86,8 @@ class GitInvocation {
   final GitCancellationToken? cancellationToken;
   final Duration? timeout;
   final Map<String, String>? environment;
+  final List<String> sensitiveValues;
+  final Future<void> Function()? cleanup;
 }
 
 /// A bounded, credential-safe record of one Git process invocation. Stdin is
@@ -148,15 +155,27 @@ class GitOperationHistory {
       GitOperationRecord(
         startedAt: startedAt,
         duration: duration,
-        program: redactBytes(utf8.encode(invocation.program)),
+        succeeded: succeeded,
+        exitCode: exitCode,
+        program: redactBytes(
+          utf8.encode(invocation.program),
+          sensitiveValues: invocation.sensitiveValues,
+        ),
         args: [
-          for (final arg in invocation.args) _redactOperationArgument(arg),
+          for (final arg in invocation.args)
+            _redactOperationArgument(
+              arg,
+              sensitiveValues: invocation.sensitiveValues,
+            ),
         ],
         cwd: invocation.cwd,
         kind: invocation.kind,
-        succeeded: succeeded,
-        exitCode: exitCode,
-        diagnostic: _boundOperationText(redactBytes(utf8.encode(diagnostic))),
+        diagnostic: _boundOperationText(
+          redactBytes(
+            utf8.encode(diagnostic),
+            sensitiveValues: invocation.sensitiveValues,
+          ),
+        ),
         stdinBytes: invocation.stdin?.length ?? 0,
         outcome:
             outcome ??
@@ -199,7 +218,10 @@ class ProcessGitRunner {
         duration: stopwatch.elapsed,
         succeeded: true,
         exitCode: output.exitCode,
-        diagnostic: redactBytes(output.stderr),
+        diagnostic: redactBytes(
+          output.stderr,
+          sensitiveValues: invocation.sensitiveValues,
+        ),
         outcome: GitOperationOutcome.completed,
       );
       return output;
@@ -214,6 +236,13 @@ class ProcessGitRunner {
         outcome: _operationOutcome(error),
       );
       rethrow;
+    } finally {
+      try {
+        await invocation.cleanup?.call();
+      } on Object {
+        // Temporary auth helpers are best-effort cleanup. The Git result is
+        // more useful than replacing it with a cleanup failure.
+      }
     }
   }
 
@@ -322,7 +351,10 @@ class ProcessGitRunner {
       throw GitError(
         category: GitErrorCategory.processFailed,
         userMessage: 'Git reported an error.',
-        diagnostic: redactBytes(stderr.bytes),
+        diagnostic: redactBytes(
+          stderr.bytes,
+          sensitiveValues: invocation.sensitiveValues,
+        ),
         retryable: false,
         exitCode: exitCode,
       );
@@ -421,8 +453,14 @@ GitOperationOutcome _operationOutcome(Object error) {
   return GitOperationOutcome.failed;
 }
 
-String _redactOperationArgument(String value) {
-  var redacted = redactBytes(utf8.encode(value));
+String _redactOperationArgument(
+  String value, {
+  Iterable<String> sensitiveValues = const <String>[],
+}) {
+  var redacted = redactBytes(
+    utf8.encode(value),
+    sensitiveValues: sensitiveValues,
+  );
   redacted = redacted.replaceAllMapped(
     RegExp(
       r'(access[_-]?token|refresh[_-]?token|password|passwd|secret|token)([=:])[^\s&]+',
@@ -526,8 +564,16 @@ GitError _spawnError(String program, ProcessException error) {
 
 String redactRemote(String remote) => redactBytes(utf8.encode(remote));
 
-String redactBytes(List<int> input) {
+String redactBytes(
+  List<int> input, {
+  Iterable<String> sensitiveValues = const <String>[],
+}) {
   var value = utf8.decode(input, allowMalformed: true);
+  final values = sensitiveValues.where((secret) => secret.isNotEmpty).toList()
+    ..sort((left, right) => right.length.compareTo(left.length));
+  for (final secret in values) {
+    value = value.replaceAll(secret, '***');
+  }
   value = value.replaceAllMapped(
     RegExp(r"""([A-Za-z][A-Za-z0-9+.-]*://)[^/\s?#"']*@"""),
     (match) => '${match.group(1)}***@',

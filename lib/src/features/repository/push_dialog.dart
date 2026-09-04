@@ -1,3 +1,6 @@
+import 'dart:async';
+
+import 'package:gift/src/backend/credentials.dart';
 import 'package:flutter/material.dart';
 import 'package:gift/src/app/pixel_theme.dart';
 import 'package:gift/src/backend/domain.dart';
@@ -17,10 +20,12 @@ class PushDialog extends StatefulWidget {
     required this.gateway,
     required this.repository,
     this.initialRemote,
+    this.credentialStore,
   });
 
   final GitGateway gateway;
   final RepositoryOpened repository;
+  final GitCredentialStore? credentialStore;
   final String? initialRemote;
 
   @override
@@ -29,6 +34,8 @@ class PushDialog extends StatefulWidget {
 
 class _PushDialogState extends State<PushDialog> {
   final _branchController = TextEditingController();
+  List<GitCredentialAccount> _accounts = const [];
+  String? _credentialId;
   GitPushTarget _target = GitPushTarget.currentBranch;
   List<GitRemote>? _remotes;
   List<GitCommit> _commits = const [];
@@ -80,6 +87,7 @@ class _PushDialogState extends State<PushDialog> {
               ],
               const SizedBox(height: 14),
               _remoteField(),
+              _credentialField(),
               const SizedBox(height: 8),
               DropdownButtonFormField<GitPushTarget>(
                 key: const Key('push-target'),
@@ -329,10 +337,81 @@ class _PushDialogState extends State<PushDialog> {
           : (value) {
               setState(() {
                 _remote = value;
+                _credentialId = null;
                 _invalidateReview(clearRemoteTip: true);
               });
             },
     );
+  }
+
+  Widget _credentialField() {
+    final store = widget.credentialStore;
+    final remote = _remotes
+        ?.where((candidate) => candidate.name == _remote)
+        .firstOrNull;
+    final url = remote?.pushUrl ?? remote?.fetchUrl;
+    final endpoint = url == null ? null : parseGitRemoteEndpoint(url);
+    if (store == null ||
+        endpoint == null ||
+        endpoint.transport == GitRemoteTransport.other) {
+      return const SizedBox.shrink();
+    }
+    final accounts = _accounts
+        .where(
+          (account) =>
+              account.host == endpoint.host &&
+              (endpoint.transport == GitRemoteTransport.https
+                  ? account.kind == GitCredentialKind.httpsToken
+                  : account.kind == GitCredentialKind.sshKey ||
+                        account.kind == GitCredentialKind.sshAgent),
+        )
+        .toList(growable: false);
+    if (accounts.isEmpty) {
+      return Text(
+        'No matching account for ${endpoint.host}; public or ambient authentication remains available.',
+      );
+    }
+    final values = <String>['', ...accounts.map((account) => account.id)];
+    final selected = values.contains(_credentialId) ? _credentialId! : '';
+    return DropdownButtonFormField<String>(
+      key: const Key('push-credential'),
+      initialValue: selected,
+      isExpanded: true,
+      decoration: InputDecoration(
+        labelText: 'Push account for ${endpoint.host}',
+        isDense: true,
+      ),
+      items: [
+        const DropdownMenuItem(
+          value: '',
+          child: Text('Automatic / no account'),
+        ),
+        for (final account in accounts)
+          DropdownMenuItem(
+            value: account.id,
+            child: Text(account.accountName, overflow: TextOverflow.ellipsis),
+          ),
+      ],
+      onChanged: _busy
+          ? null
+          : (value) => unawaited(_selectCredential(endpoint.host, value)),
+    );
+  }
+
+  Future<void> _selectCredential(String host, String? accountId) async {
+    final store = widget.credentialStore;
+    if (accountId == null) return;
+    if (accountId.isEmpty) {
+      if (mounted) setState(() => _credentialId = null);
+      return;
+    }
+    if (store == null) return;
+    try {
+      await store.setDefault(host, accountId);
+      if (mounted) setState(() => _credentialId = accountId);
+    } on GitError catch (error) {
+      if (mounted) setState(() => _error = error);
+    }
   }
 
   Widget _previewCard(GitPushPreview preview) {
@@ -469,6 +548,15 @@ class _PushDialogState extends State<PushDialog> {
       final remotes = await widget.gateway.getRemotes(
         widget.repository.repositoryId,
       );
+      var accounts = const <GitCredentialAccount>[];
+      final store = widget.credentialStore;
+      if (store != null) {
+        try {
+          accounts = await store.listAccounts();
+        } on Object {
+          // Account discovery must not make local push review unavailable.
+        }
+      }
       final status = await widget.gateway.getStatus(
         widget.repository.repositoryId,
       );
@@ -483,6 +571,7 @@ class _PushDialogState extends State<PushDialog> {
       }
       if (!mounted) return;
       setState(() {
+        _accounts = accounts;
         _remotes = remotes;
         _remote = remotes.isEmpty
             ? null
@@ -524,6 +613,7 @@ class _PushDialogState extends State<PushDialog> {
           commitOid: _selectedCommit,
           forceWithLease: _forceWithLease,
           expectedRemoteOid: _forceWithLease ? _expectedRemoteOid : null,
+          credentialId: _credentialId,
         ),
       );
       if (!mounted) return;

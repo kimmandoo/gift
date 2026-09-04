@@ -10,6 +10,7 @@ import 'package:gift/src/app/app_preferences.dart';
 import 'package:gift/src/app/preferences_dialog.dart';
 import 'package:gift/src/backend/git_gateway.dart';
 import 'package:gift/src/backend/domain.dart';
+import 'package:gift/src/backend/credentials.dart';
 import 'package:file_selector/file_selector.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -20,6 +21,7 @@ class WelcomeScreen extends StatefulWidget {
     super.key,
     required this.gateway,
     required this.recentStore,
+    this.credentialStore,
     this.preferences,
     this.selectDirectory,
     this.selectExecutable,
@@ -29,6 +31,7 @@ class WelcomeScreen extends StatefulWidget {
 
   final GitGateway gateway;
   final RecentRepositoryStore recentStore;
+  final GitCredentialStore? credentialStore;
   final SharedPreferences? preferences;
   final Future<String?> Function()? selectDirectory;
   final Future<String?> Function()? selectExecutable;
@@ -89,6 +92,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
         controller: workspace,
         onOpenRepository: _selectAndOpen,
         onWorkspaceEmpty: _repositoryController.closeRepository,
+        credentialStore: widget.credentialStore,
       );
     }
     if (state.openedRepository case final opened?) {
@@ -96,6 +100,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
         gateway: widget.gateway,
         repository: opened,
         onBack: _repositoryController.closeRepository,
+        credentialStore: widget.credentialStore,
       );
     }
     return Scaffold(
@@ -288,6 +293,10 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
       builder: (_) => PreferencesDialog(
         preferences: scope.preferences,
         onSave: scope.update,
+        credentialStore: widget.credentialStore,
+        tester: widget.gateway is GitCredentialTestGateway
+            ? widget.gateway as GitCredentialTestGateway
+            : null,
       ),
     );
   }
@@ -318,7 +327,10 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
   Future<void> _showRepositorySetup() async {
     final repository = await showDialog<RepositoryOpened>(
       context: context,
-      builder: (_) => RepositorySetupDialog(gateway: widget.gateway),
+      builder: (_) => RepositorySetupDialog(
+        gateway: widget.gateway,
+        credentialStore: widget.credentialStore,
+      ),
     );
     if (!mounted || repository == null) return;
     await _openPath(repository.root);

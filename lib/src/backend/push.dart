@@ -18,6 +18,7 @@ class GitPushRequest {
     this.forceWithLease = false,
     this.expectedRemoteOid,
     this.confirmationToken,
+    this.credentialId,
   });
 
   final String remote;
@@ -28,6 +29,7 @@ class GitPushRequest {
   final bool forceWithLease;
   final String? expectedRemoteOid;
   final String? confirmationToken;
+  final String? credentialId;
 
   String get queryKey => [
     remote,
@@ -37,18 +39,21 @@ class GitPushRequest {
     ...tagNames,
     forceWithLease,
     expectedRemoteOid ?? '',
+    credentialId ?? '',
   ].join('|');
 
-  GitPushRequest copyWith({String? confirmationToken}) => GitPushRequest(
-    remote: remote,
-    target: target,
-    branch: branch,
-    commitOid: commitOid,
-    tagNames: tagNames,
-    forceWithLease: forceWithLease,
-    expectedRemoteOid: expectedRemoteOid,
-    confirmationToken: confirmationToken ?? this.confirmationToken,
-  );
+  GitPushRequest copyWith({String? confirmationToken, String? credentialId}) =>
+      GitPushRequest(
+        remote: remote,
+        target: target,
+        branch: branch,
+        commitOid: commitOid,
+        tagNames: tagNames,
+        forceWithLease: forceWithLease,
+        expectedRemoteOid: expectedRemoteOid,
+        confirmationToken: confirmationToken ?? this.confirmationToken,
+        credentialId: credentialId ?? this.credentialId,
+      );
 }
 
 class GitPushCommit {

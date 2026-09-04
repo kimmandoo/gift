@@ -24,13 +24,21 @@ import 'submodule.dart';
 import 'recovery.dart';
 import 'setup.dart';
 import 'hosting.dart';
+import 'credentials.dart';
 
 /// Adapts the UI-facing [GitGateway] contract to the Dart backend facade.
 ///
 /// Keeping this class thin makes it obvious where the UI/backend boundary is.
-class DartGitGateway implements GitGateway, DiscardPreviewCancellationGateway {
-  DartGitGateway({DartGitBackend? backend})
-    : backend = backend ?? DartGitBackend();
+class DartGitGateway
+    implements
+        GitGateway,
+        DiscardPreviewCancellationGateway,
+        GitCredentialTestGateway {
+  DartGitGateway({
+    DartGitBackend? backend,
+    GitCredentialResolver? credentialResolver,
+  }) : backend =
+           backend ?? DartGitBackend(credentialResolver: credentialResolver);
 
   final DartGitBackend backend;
 
@@ -374,6 +382,12 @@ class DartGitGateway implements GitGateway, DiscardPreviewCancellationGateway {
     GitCloneRequest request, {
     GitCancellationToken? cancellationToken,
   }) => backend.cloneRepository(request, cancellationToken: cancellationToken);
+
+  @override
+  Future<GitCredentialTestResult> testCredential(
+    String remoteUrl, {
+    required String accountId,
+  }) => backend.testCredential(remoteUrl, accountId: accountId);
 
   @override
   Future<GitRepositorySetupResult> initRepository(

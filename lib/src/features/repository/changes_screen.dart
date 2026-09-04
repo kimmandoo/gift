@@ -36,6 +36,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter/services.dart';
 import 'package:gift/src/app/pixel_theme.dart';
 import 'package:gift/src/app/app_preferences.dart';
+import 'package:gift/src/backend/credentials.dart';
 
 const _diffSelectorHeight = 20.0;
 const _diffCheckboxScale = 0.8;
@@ -50,6 +51,7 @@ class ChangesScreen extends StatelessWidget {
     this.historyController,
     this.onBack,
     this.onOpenRepository,
+    this.credentialStore,
     this.autoInitialize = true,
   });
 
@@ -59,6 +61,7 @@ class ChangesScreen extends StatelessWidget {
   final HistoryController? historyController;
   final VoidCallback? onBack;
   final Future<void> Function(RepositoryOpened repository)? onOpenRepository;
+  final GitCredentialStore? credentialStore;
   final bool autoInitialize;
 
   @override
@@ -74,6 +77,7 @@ class ChangesScreen extends StatelessWidget {
         onBack: onBack,
         onOpenRepository: onOpenRepository,
         autoInitialize: autoInitialize,
+        credentialStore: credentialStore,
       ),
     );
   }
@@ -86,6 +90,7 @@ class _ChangesScreenBody extends ConsumerStatefulWidget {
     this.controller,
     this.historyController,
     this.onBack,
+    this.credentialStore,
     this.onOpenRepository,
     required this.autoInitialize,
   });
@@ -96,6 +101,7 @@ class _ChangesScreenBody extends ConsumerStatefulWidget {
   final HistoryController? historyController;
   final VoidCallback? onBack;
   final Future<void> Function(RepositoryOpened repository)? onOpenRepository;
+  final GitCredentialStore? credentialStore;
   final bool autoInitialize;
 
   @override
@@ -1585,6 +1591,7 @@ class _ChangesScreenBodyState extends ConsumerState<_ChangesScreenBody> {
         gateway: widget.gateway,
         repository: widget.repository,
         preferredRemote: preferences?.defaultRemote,
+        credentialStore: widget.credentialStore,
       ),
     );
     if (!context.mounted || result == null) return;
@@ -1605,8 +1612,11 @@ class _ChangesScreenBodyState extends ConsumerState<_ChangesScreenBody> {
   Future<void> _openPush(BuildContext context) async {
     final result = await showDialog<GitPushResult>(
       context: context,
-      builder: (_) =>
-          PushDialog(gateway: widget.gateway, repository: widget.repository),
+      builder: (_) => PushDialog(
+        gateway: widget.gateway,
+        repository: widget.repository,
+        credentialStore: widget.credentialStore,
+      ),
     );
     if (!context.mounted || result == null) return;
     await _activeController.refresh();
@@ -1765,6 +1775,7 @@ class _ChangesScreenBodyState extends ConsumerState<_ChangesScreenBody> {
       builder: (_) => RepositorySetupDialog(
         gateway: widget.gateway,
         repository: widget.repository,
+        credentialStore: widget.credentialStore,
       ),
     );
     if (!context.mounted) return;

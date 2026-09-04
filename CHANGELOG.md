@@ -1,6 +1,9 @@
 # Changelog
 
 ## 2026-09-04
+- feat(auth): added secure Git account management, provider and host matching,
+  bounded credential injection, and private-remote recovery with redacted
+  diagnostics.
 - docs(roadmap): inserted credential management before visual QA and public
   release so private remotes have a secure account path.
 - docs(roadmap): deferred the public release pipeline until the remaining

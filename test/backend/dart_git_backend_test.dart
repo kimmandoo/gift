@@ -47,6 +47,13 @@ void main() {
       'https://***@example.com/org/repo.git',
     );
     expect(redactRemote('token=one password=two'), 'token=*** password=***');
+    expect(
+      redactBytes(
+        utf8.encode('Authorization: Bearer private-token'),
+        sensitiveValues: const ['private-token'],
+      ),
+      'Authorization: Bearer ***',
+    );
   });
 
   test('starts the Dart backend and reports health', () {

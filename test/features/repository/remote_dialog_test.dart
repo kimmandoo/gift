@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:gift/src/backend/credentials.dart';
 import 'package:gift/src/backend/branch.dart';
 import 'package:gift/src/backend/commit.dart';
 import 'package:gift/src/backend/discard.dart';
@@ -107,6 +108,45 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.byKey(const Key('push-dialog')), findsOneWidget);
     expect(gateway.pushCalls, 0);
+  });
+  testWidgets('shows the matching host account selector', (tester) async {
+    final repository = const RepositoryOpened(
+      repositoryId: RepositoryId(value: 'credential-remote-repository'),
+      root: '/workspace/project',
+    );
+    final gateway = FakeRemoteGateway(repository);
+    final store = InMemoryGitCredentialStore(
+      records: [
+        GitCredentialRecord(
+          account: const GitCredentialAccount(
+            id: 'work',
+            provider: GitCredentialProvider.generic,
+            host: 'example.test',
+            accountName: 'Work account',
+            kind: GitCredentialKind.httpsToken,
+          ),
+          secret: 'token',
+        ),
+      ],
+    );
+    await tester.pumpWidget(
+      MaterialApp(
+        home: RemoteDialog(
+          gateway: gateway,
+          repository: repository,
+          credentialStore: store,
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const Key('credential-selector:origin')), findsOneWidget);
+    await tester.tap(find.byKey(const Key('credential-selector:origin')));
+    await tester.pump();
+    await tester.tap(find.text('Work account').last);
+    await tester.pumpAndSettle();
+
+    expect((await store.listAccounts()).single.isDefault, isTrue);
   });
 }
 

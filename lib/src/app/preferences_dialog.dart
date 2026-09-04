@@ -1,3 +1,5 @@
+import 'package:gift/src/app/credentials_dialog.dart';
+import 'package:gift/src/backend/credentials.dart';
 import 'package:flutter/material.dart';
 import 'package:gift/src/app/app_preferences.dart';
 import 'package:gift/src/app/app_strings.dart';
@@ -7,12 +9,16 @@ import 'package:gift/src/backend/error.dart';
 class PreferencesDialog extends StatefulWidget {
   const PreferencesDialog({
     super.key,
+    this.credentialStore,
+    this.tester,
     required this.preferences,
     required this.onSave,
   });
 
   final GiftPreferences preferences;
   final Future<void> Function(GiftPreferences) onSave;
+  final GitCredentialStore? credentialStore;
+  final GitCredentialTestGateway? tester;
 
   @override
   State<PreferencesDialog> createState() => _PreferencesDialogState();
@@ -178,6 +184,21 @@ class _PreferencesDialogState extends State<PreferencesDialog> {
                 hintText: 'origin',
               ),
             ),
+            if (widget.credentialStore case final store?)
+              OutlinedButton.icon(
+                key: const Key('manage-git-accounts'),
+                onPressed: _saving
+                    ? null
+                    : () => showDialog<void>(
+                        context: context,
+                        builder: (_) => CredentialsDialog(
+                          store: store,
+                          tester: widget.tester,
+                        ),
+                      ),
+                icon: const Icon(Icons.key_outlined),
+                label: const Text('Manage Git accounts'),
+              ),
             const SizedBox(height: 16),
             Text(
               GiftStrings.shortcuts,

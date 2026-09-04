@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:gift/src/backend/domain.dart';
 import 'package:gift/src/backend/executor.dart';
+import 'package:gift/src/backend/credentials.dart';
 import 'package:gift/src/backend/git_gateway.dart';
 import 'package:gift/src/backend/setup.dart';
 import 'package:gift/src/features/repository/repository_setup_dialog.dart';
@@ -38,6 +39,44 @@ void main() {
     expect(find.text('Selected folder'), findsOneWidget);
     expect(find.text('1 Git root found'), findsOneWidget);
     expect(tester.takeException(), isNull);
+  });
+  testWidgets('shows an account selector for a clone remote', (tester) async {
+    final store = InMemoryGitCredentialStore(
+      records: [
+        GitCredentialRecord(
+          account: const GitCredentialAccount(
+            id: 'clone-work',
+            provider: GitCredentialProvider.generic,
+            host: 'example.test',
+            accountName: 'Clone work',
+            kind: GitCredentialKind.httpsToken,
+          ),
+          secret: 'clone-token',
+        ),
+      ],
+    );
+    await tester.pumpWidget(
+      MaterialApp(
+        home: RepositorySetupDialog(
+          gateway: _SetupGateway(),
+          credentialStore: store,
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.enterText(
+      find.byKey(const Key('clone-source')),
+      'https://example.test/team/repo.git',
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const Key('clone-credential')), findsOneWidget);
+    await tester.tap(find.byKey(const Key('clone-credential')));
+    await tester.pump();
+    await tester.tap(find.text('Clone work').last);
+    await tester.pumpAndSettle();
+
+    expect((await store.listAccounts()).single.isDefault, isTrue);
   });
 }
 
