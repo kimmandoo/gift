@@ -5,21 +5,25 @@ This file is the handoff record for continuing work across query sessions.
 ## Current checkpoint
 
 - Date: 2026-09-04
-- Active task: No implementation task is active. The next priority is Task 41
-  — Commit context actions and direct cherry-pick.
+- Active task: No implementation task is active. The next priority is Task
+  38A — Credential management and private remote access.
 - Branch: `main`; no new branch or worktree was created.
 - Latest completed implementation commit before this planning session:
-  `313fb8b` (`fix(ui): space preferences and surface errors`).
-- This session deliberately moved Task 38 — Public release behind the remaining
-  product backlog. The planned order is Tasks 41–47, then Task 39 visual
-  regression QA, then Task 38 signed public release.
-- Task 38 remains a numbered scope identifier but is marked Deferred in
-  `TASKS.md`; Task 39 now depends only on Task 37 and is scheduled after
-  Tasks 41–47.
+  `5fcb40f` (`docs(roadmap): defer public release priority`).
+- This session inserted Task 38A to make private GitHub, GitLab, self-hosted,
+  HTTPS, and SSH remotes usable through managed credentials before visual QA
+  and public release.
+- Task 38A covers secure platform storage, host/account matching, HTTPS
+  personal-access-token and SSH agent/key selection, bounded Git auth
+  injection, connection tests, revocation, failure recovery, and redacted
+  diagnostics. Task 35 remains link-focused until this task is implemented.
+- The planned order is Task 38A, Tasks 41–47, Task 39 visual regression QA,
+  then Task 38 signed public release.
 - Changed files include `TASKS.md`, `CHANGELOG.md`,
   `docs/POST_MVP_ROADMAP.md`, and this checkpoint.
-- Verification: the task board and roadmap now agree on Task 41 as the next
-  priority and Task 38 as the final deferred release milestone.
+- Verification: the task board and roadmap agree on Task 38A as the next
+  priority and Task 38 as the final deferred release milestone; `git diff
+  --check` passed.
 - Blockers: none.
 
 ## Previous checkpoint

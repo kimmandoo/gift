@@ -6,10 +6,10 @@
 
 ## Progress
 
-- **Completed:** 38 / 47
-- **Current Active Task:** None. **Next priority:** Task 41 — Commit context
-  actions. Task 38 — Public release is intentionally deferred until Tasks 39
-  and 41–47 are complete.
+- **Completed:** 38 / 48
+- **Current Active Task:** None. **Next priority:** Task 38A — Credential
+  management and private remote access. Then Tasks 41–47, Task 39 visual
+  regression QA, and finally Task 38 public release.
 
 | # | Scope | Dart backend deliverables | Flutter deliverables | Status |
 |---|---|---|---|:---:|
@@ -50,10 +50,11 @@
 | **35** | Hosting integration | Optional GitHub/GitLab links and review handoff contracts | Hosting links and review entry points | ✅ |
 | **36** | Scale & resilience | File watching, cache invalidation, process supervision | Large-repository responsiveness | ✅ |
 | **37** | Accessibility & preferences | Versioned settings and locale-ready text contracts | Scaling, remapping, themes, and accessibility | ✅ |
-| **38** | Public release | Signed packages, provenance, update metadata, and release checks | Installers and first-run diagnostics | Deferred |
-| **39** | Visual regression QA | Deterministic fixture states and platform font checks | Golden matrix, overflow guards, and interaction snapshots | Planned after Tasks 41–47 |
+| **38A** | Credential management | Secure provider/account credentials, host matching, and Git auth injection | Account manager, credential test, and private-remote recovery | Next |
+| **38** | Public release | Signed packages, provenance, update metadata, and release checks | Installers and first-run diagnostics | Deferred until Tasks 38A, 39, and 41–47 |
+| **39** | Visual regression QA | Deterministic fixture states and platform font checks | Golden matrix, overflow guards, and interaction snapshots | Planned after Tasks 38A and 41–47 |
 | **40** | Contextual action foundation | Typed action availability, immutable targets, and preview routing | Shared secondary-click, keyboard, and overflow action menus | ✅ |
-| **41** | Commit context actions | OID-bound cherry-pick and existing history mutations | History-row action menu and prefilled previews | Next |
+| **41** | Commit context actions | OID-bound cherry-pick and existing history mutations | History-row action menu and prefilled previews | After Task 38A |
 | **42** | Multi-commit operations | Ordered batch cherry-pick/revert state machine | Multi-select history actions and conflict progress | ⬜ |
 | **43** | Change and file actions | Selection-safe path operations and reveal contracts | Changes/diff/history-file context menus | ⬜ |
 | **44** | Branch and remote actions | Ref-bound operation routing and freshness checks | Local/remote branch context menus | ⬜ |
@@ -632,15 +633,15 @@ its theme, media-query, locale, and workspace boundaries.
   remote dialogs.
 Task 40 is complete. The shared action presenter and Changes row integration
 passed the full Flutter verification suite with 213 tests. Tasks 36 and 37 are
-also complete; the next priority is Task 41. Tasks 41–47 remain ahead of the
-visual-regression pass in Task 39, and the signed public release in Task 38 is
-deferred until that product backlog is complete.
+also complete; the next priority is Task 38A for secure private-remote access.
+Tasks 41–47 follow, then Task 39 visual-regression QA, and Task 38 signed
+public release remains deferred until that product backlog is complete.
 
 ## Post-MVP backlog
 
-Tasks 16–47 are specified in
+Tasks 16–47 and Task 38A are specified in
 [`docs/POST_MVP_ROADMAP.md`](docs/POST_MVP_ROADMAP.md). Start them in dependency
-order. Tasks 40–47 do not depend on Tasks 36–39 and are explicitly prioritized
-before resuming product-readiness work. Before implementation, move exactly
-one task to active, add its behavior-ledger scenarios, and record
-the first failing test in the checkpoint.
+order. Task 38A is now the next priority; Tasks 41–47 remain ahead of Task 39,
+and Task 38 is deferred until credential management, UX, and visual regression
+are complete. Before implementation, move exactly one task to active, add its
+behavior-ledger scenarios, and record the first failing test in the checkpoint.

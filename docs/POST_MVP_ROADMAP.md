@@ -4,11 +4,12 @@ This roadmap turns the MVP into a dependable daily Git client while preserving
 gift's clean-room workflow research and minimal 2D pixel-game interface.
 Task 15 was marked safe done under WSL because the remaining native bundle
 check is CI-only in this environment. Tasks 16 through 37 are complete;
-Task 40 is complete, Task 41 is the next priority, and Tasks 41 through 47
-remain ahead of the visual-regression pass in Task 39. Task 38 is deliberately
-deferred until Tasks 39 and 41 through 47 are complete.
+Task 40 is complete, Task 38A is the next priority for private-remote access,
+Tasks 41 through 47 follow, Task 39 is the final visual-regression pass, and
+Task 38 is the deferred signed public release milestone.
 Tasks 40 through 47 may run before Tasks 36 through 39 because their listed
-dependencies are already complete. Task 39 depends only on Task 37, while
+dependencies are already complete. Task 38A uses the completed remote, hosting,
+and process-safety foundations; Task 39 follows the product UX backlog, while
 Task 38 is scheduled last for the stable product surface.
 Do not start a later post-MVP task until its dependencies are complete and its
 visible behavior has been recorded in the behavior ledger without copying
@@ -24,6 +25,7 @@ proprietary implementation details or assets.
 | Remote & repository topology | 28–34 | Remote branches, update/push safety, worktrees, ignore rules, submodules, recovery, and setup |
 | Optional integrations | 35 | GitHub/GitLab links and review handoff without coupling the core backend to a host API |
 | Product readiness foundation | 36–37 | Large-repository resilience and accessibility/preferences |
+| Credential and account access | 38A | Secure GitHub, GitLab, self-hosted, HTTPS, and SSH authentication |
 | Desktop interaction UX | 40–47 | Discoverable context actions, direct cherry-pick entry points, and browse-assisted path selection |
 | Visual regression QA | 39 | Final overflow, theme, font, and interaction-state validation |
 | Public release | 38 | Signed, provenance-backed installers and update metadata after the product surface stabilizes |
@@ -529,10 +531,49 @@ identity or keyboard-first workflow.
 **Done when:** The entire core workflow is usable without a mouse or color
 distinction and settings survive upgrades safely.
 
+Credential lifecycle is intentionally deferred to Task 38A so the hosting
+adapter can remain link-focused while private Git remotes gain a dedicated,
+secure account-management boundary.
+
+## Task 38A — Credential management and private remote access
+
+**Depends on:** Tasks 3, 12, 22, 28, 29, 34, 35, 36, and 37.
+
+**Goal:** Make private GitHub, GitLab, self-hosted, and other Git remotes
+usable without placing credentials in repository URLs, process arguments, logs,
+or ordinary application storage.
+
+- Model accounts and credentials separately from repository remotes, with
+  explicit host/provider matching for GitHub, GitLab, self-hosted GitLab, and
+  generic HTTPS or SSH hosts.
+- Add account management for add, edit, remove, select, validate, revoke, and
+  connection-test flows; explain authentication-required, invalid, expired,
+  revoked, and host-mismatch failures.
+- Store secrets only through platform secure storage such as Windows
+  Credential Manager, macOS Keychain, or Linux Secret Service/libsecret; never
+  persist raw secrets in `SharedPreferences`, repository config, URLs, logs,
+  operation records, crash data, or analytics.
+- Support HTTPS personal-access-token credentials and SSH key/agent
+  selection without copying private key material into app-managed storage.
+- Inject credentials into clone, fetch, pull, push, and publish operations
+  through a bounded askpass/credential-helper boundary; keep cancellation,
+  timeout, redaction, and child-process cleanup guarantees intact.
+- Provide a clear account/credential selector from remote and repository setup
+  surfaces while keeping local Git workflows available when no account is
+  configured.
+- Cover provider and host matching, multiple accounts, secure-store failures,
+  revoked credentials, private remote access, credential-helper invocation,
+  cancellation, and redacted diagnostics with isolated fixtures.
+
+**Done when:** A user can add a supported account, test it, select it for a
+private remote, clone/fetch/pull/push successfully, remove or revoke it, and
+recover from authentication failure without a secret reaching argv, URLs,
+ordinary app storage, logs, or operation history.
+
 ## Task 38 — Signed public release pipeline
 
-**Depends on:** Tasks 36 and 37. **Priority:** Deferred until Tasks 39 and
-41–47 are complete.
+**Depends on:** Tasks 36, 37, and 38A. **Priority:** Deferred until Task 39
+and Tasks 41–47 are complete.
 
 **Goal:** Produce trustworthy installable releases rather than unsigned build
 folders.
@@ -554,8 +595,8 @@ installation and trust verification.
 
 ## Task 39 — Cross-platform visual regression QA
 
-**Depends on:** Task 37. **Priority:** Run after Tasks 41–47 and before Task
-38.
+**Depends on:** Task 37 and Task 38A. **Priority:** Run after Tasks 41–47 and
+before Task 38.
 
 **Goal:** Keep released desktop surfaces visually stable across supported
 window sizes, themes, text scales, and platform font rendering before the

@@ -1,6 +1,8 @@
 # Changelog
 
 ## 2026-09-04
+- docs(roadmap): inserted credential management before visual QA and public
+  release so private remotes have a secure account path.
 - docs(roadmap): deferred the public release pipeline until the remaining
   desktop interaction UX and final visual regression pass are complete.
 - fix(branches): surfaced fetch and checkout failures in modal error feedback
