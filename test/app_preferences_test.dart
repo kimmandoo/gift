@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:gift/src/app/app_preferences.dart';
 import 'package:gift/src/app/preferences_dialog.dart';
+import 'package:gift/src/backend/error.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
@@ -108,5 +109,87 @@ void main() {
     expect(saved?.highContrast, isTrue);
     expect(saved?.shortcut('refresh'), 'ctrl+alt+r');
     expect(find.text('Open preferences'), findsOneWidget);
+  });
+
+  testWidgets('keeps preference fields separated in a compact dialog', (
+    tester,
+  ) async {
+    addTearDown(tester.view.reset);
+    tester.view.physicalSize = const Size(360, 640);
+    tester.view.devicePixelRatio = 1;
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: Builder(
+            builder: (context) => TextButton(
+              onPressed: () => showDialog<void>(
+                context: context,
+                builder: (_) => PreferencesDialog(
+                  preferences: GiftPreferences.defaults,
+                  onSave: (_) async {},
+                ),
+              ),
+              child: const Text('Open preferences'),
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.tap(find.text('Open preferences'));
+    await tester.pumpAndSettle();
+
+    final list = find.byType(Scrollable);
+    await tester.scrollUntilVisible(
+      find.byKey(const Key('preference-default-remote')),
+      200,
+      scrollable: list,
+    );
+    final branchRect = tester.getRect(
+      find.byKey(const Key('preference-default-branch')),
+    );
+    final remoteRect = tester.getRect(
+      find.byKey(const Key('preference-default-remote')),
+    );
+    expect(remoteRect.top - branchRect.bottom, greaterThanOrEqualTo(12));
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('shows preference save failures in a modal error popup', (
+    tester,
+  ) async {
+    const failure = GitError(
+      category: GitErrorCategory.permissionDenied,
+      userMessage: 'Preferences could not be written.',
+      diagnostic: 'test save failure',
+      retryable: true,
+    );
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: Builder(
+            builder: (context) => TextButton(
+              onPressed: () => showDialog<void>(
+                context: context,
+                builder: (_) => PreferencesDialog(
+                  preferences: GiftPreferences.defaults,
+                  onSave: (_) async => throw failure,
+                ),
+              ),
+              child: const Text('Open preferences'),
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.tap(find.text('Open preferences'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('save-preferences')));
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const Key('error-popup')), findsOneWidget);
+    expect(find.text(failure.userMessage), findsOneWidget);
+    await tester.tap(find.byKey(const Key('dismiss-error-popup')));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('save-preferences')), findsOneWidget);
   });
 }

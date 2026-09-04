@@ -5,28 +5,29 @@ This file is the handoff record for continuing work across query sessions.
 ## Current checkpoint
 
 - Date: 2026-09-04
-- Active task: Remote branch fetch workflow repair is complete and
-  verified. No implementation task is active.
+- Active task: Branch checkout/fetch verification and preferences layout repair
+  are complete and verified. No implementation task is active.
 - Branch: `main`; no new branch or worktree was created.
-- Latest completed implementation commit before this bug-fix session:
-  `c546f18` (`feat(app): add resilient repository and accessibility controls`).
-- This session repaired the branch browser's remote-fetch workflow. The RED
-  widget regression showed that the compact dialog exposed only an unclear
-  overlay affordance and did not render the fetched remote-only branch.
-- The fetch action is now a visible title button at normal widths and a
-  compact accessible icon at narrow widths. It shows deterministic progress,
-  status, and cancellation controls without pushing the branch list below
-  the dialog actions.
-- Remote fetching now awaits the refreshed remote-branch snapshot and guards
-  asynchronous reads with a generation counter, so a stale initial read
-  cannot overwrite freshly fetched remote-tracking refs.
+- Latest completed implementation commit before this session: `b74a1a8`
+  (`fix(branches): repair remote branch fetch workflow`).
+- This session verified real-Git remote tracking branch checkout and fetch
+  behavior. The backend fixture creates, fetches, and checks out
+  `origin/feature`; the branch dialog covers local switching, remote fetch,
+  remote-only branch rendering, stale snapshot ordering, and remote actions.
+- Preferences now put explicit vertical gaps between accessibility controls,
+  repository defaults, and every shortcut field, keeping bordered inputs and
+  labels readable in compact dialogs.
+- Branch and preferences failures now open a blocking, readable error dialog
+  with selectable user-facing text and an explicit OK action. Inline error
+  state remains available after dismissal.
 - Changed files include `CHANGELOG.md`, this checkpoint,
-  `lib/src/features/repository/branch_dialog.dart`, and
-  `test/features/repository/branch_dialog_test.dart`.
-- Verification: `flutter test test/features/repository/branch_dialog_test.dart`
-  passed 7 tests, including compact fetch visibility, remote-only branch
-  rendering, and stale-snapshot ordering; `PATH=/home/mgkim/.local/flutter/bin:$PATH
-  dart run tool/verify.dart` passed formatting, analysis, and all 226 tests.
+  `lib/src/app/{error_dialog,preferences_dialog}.dart`,
+  `lib/src/features/repository/branch_dialog.dart`, and the related tests.
+- Verification: `PATH=/home/mgkim/.local/flutter/bin:$PATH flutter test
+  test/features/repository/branch_dialog_test.dart
+  test/backend/remote_branch_test.dart test/app_preferences_test.dart` passed;
+  `PATH=/home/mgkim/.local/flutter/bin:$PATH dart run tool/verify.dart` passed
+  formatting, analysis, and all 229 tests.
 - Blockers: none.
 
 ## Previous checkpoint

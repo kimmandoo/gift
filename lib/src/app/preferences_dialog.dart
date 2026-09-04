@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:gift/src/app/app_preferences.dart';
 import 'package:gift/src/app/app_strings.dart';
+import 'package:gift/src/app/error_dialog.dart';
+import 'package:gift/src/backend/error.dart';
 
 class PreferencesDialog extends StatefulWidget {
   const PreferencesDialog({
@@ -102,6 +104,7 @@ class _PreferencesDialogState extends State<PreferencesDialog> {
               ),
             ),
             Text('${_uiScale.toStringAsFixed(1)}x'),
+            const SizedBox(height: 12),
             SwitchListTile(
               key: const Key('preference-reduced-motion'),
               title: const Text(GiftStrings.reducedMotion),
@@ -113,6 +116,7 @@ class _PreferencesDialogState extends State<PreferencesDialog> {
                   ? null
                   : (value) => setState(() => _reducedMotion = value),
             ),
+            const SizedBox(height: 8),
             SwitchListTile(
               key: const Key('preference-high-contrast'),
               title: const Text(GiftStrings.highContrast),
@@ -121,6 +125,7 @@ class _PreferencesDialogState extends State<PreferencesDialog> {
                   ? null
                   : (value) => setState(() => _highContrast = value),
             ),
+            const SizedBox(height: 8),
             SwitchListTile(
               key: const Key('preference-color-safe-graph'),
               title: const Text(GiftStrings.colorSafeGraph),
@@ -132,6 +137,7 @@ class _PreferencesDialogState extends State<PreferencesDialog> {
                   ? null
                   : (value) => setState(() => _colorSafeGraph = value),
             ),
+            const SizedBox(height: 12),
             DropdownButtonFormField<int>(
               key: const Key('preference-refresh-policy'),
               initialValue: _refreshSeconds,
@@ -163,6 +169,7 @@ class _PreferencesDialogState extends State<PreferencesDialog> {
                 hintText: 'main',
               ),
             ),
+            const SizedBox(height: 12),
             TextField(
               key: const Key('preference-default-remote'),
               controller: _defaultRemoteController,
@@ -176,7 +183,7 @@ class _PreferencesDialogState extends State<PreferencesDialog> {
               GiftStrings.shortcuts,
               style: Theme.of(context).textTheme.titleSmall,
             ),
-            for (final entry in _shortcutControllers.entries)
+            for (final entry in _shortcutControllers.entries) ...[
               TextField(
                 key: ValueKey('preference-shortcut-${entry.key}'),
                 controller: entry.value,
@@ -198,6 +205,8 @@ class _PreferencesDialogState extends State<PreferencesDialog> {
                   },
                 ),
               ),
+              const SizedBox(height: 12),
+            ],
             if (_error case final error?)
               Padding(
                 padding: const EdgeInsets.only(top: 12),
@@ -235,9 +244,9 @@ class _PreferencesDialogState extends State<PreferencesDialog> {
         .map((entry) => entry.key)
         .toList(growable: false);
     if (invalid.isNotEmpty) {
-      setState(() {
-        _error = 'Invalid shortcut: ${invalid.join(', ')}.';
-      });
+      final message = 'Invalid shortcut: ${invalid.join(', ')}.';
+      setState(() => _error = message);
+      await showGiftErrorDialog(context, message);
       return;
     }
     final next = widget.preferences.copyWith(
@@ -253,17 +262,36 @@ class _PreferencesDialogState extends State<PreferencesDialog> {
       refreshInterval: Duration(seconds: _refreshSeconds),
     );
     if (next.shortcutConflicts.isNotEmpty) {
-      setState(() {
-        _error =
-            '${GiftStrings.shortcutConflict}${next.shortcutConflicts.keys.join(', ')}.';
-      });
+      final message =
+          '${GiftStrings.shortcutConflict}${next.shortcutConflicts.keys.join(', ')}.';
+      setState(() => _error = message);
+      await showGiftErrorDialog(context, message);
       return;
     }
     setState(() {
       _saving = true;
       _error = null;
     });
-    await widget.onSave(next);
+    try {
+      await widget.onSave(next);
+    } on GitError catch (error) {
+      if (!mounted) return;
+      setState(() {
+        _saving = false;
+        _error = error.userMessage;
+      });
+      await showGiftErrorDialog(context, error.userMessage);
+      return;
+    } on Object {
+      if (!mounted) return;
+      const message = 'Preferences could not be saved. Try again.';
+      setState(() {
+        _saving = false;
+        _error = message;
+      });
+      await showGiftErrorDialog(context, message);
+      return;
+    }
     if (mounted) Navigator.of(context).pop();
   }
 }

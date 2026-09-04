@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:gift/src/app/error_dialog.dart';
 import 'package:gift/src/app/pixel_theme.dart';
 
 import 'package:gift/src/backend/branch.dart';
@@ -460,7 +461,10 @@ class _BranchDialogState extends State<BranchDialog> {
       if (!mounted) return;
       setState(() => _operationPreview = preview);
     } on GitError catch (error) {
-      if (mounted) setState(() => _error = error);
+      if (mounted) {
+        setState(() => _error = error);
+        await _showErrorPopup(error.userMessage);
+      }
     } finally {
       if (mounted) {
         setState(() {
@@ -521,7 +525,10 @@ class _BranchDialogState extends State<BranchDialog> {
       });
       await _loadBranches();
     } on GitError catch (error) {
-      if (mounted) setState(() => _error = error);
+      if (mounted) {
+        setState(() => _error = error);
+        await _showErrorPopup(error.userMessage);
+      }
     } finally {
       _operationCancellation = null;
       if (mounted) {
@@ -586,6 +593,7 @@ class _BranchDialogState extends State<BranchDialog> {
         _error = error;
         _isLoading = false;
       });
+      await _showErrorPopup(error.userMessage);
     }
   }
 
@@ -597,6 +605,10 @@ class _BranchDialogState extends State<BranchDialog> {
       );
       if (!mounted || generation != _remoteLoadGeneration) return;
       setState(() => _remoteSnapshot = snapshot);
+    } on GitError catch (error) {
+      if (!mounted || generation != _remoteLoadGeneration) return;
+      setState(() => _error = error);
+      await _showErrorPopup(error.userMessage);
     } on Object {
       // Older/focused test gateways and repositories without remote refs keep
       // the local branch browser usable when the optional remote read fails.
@@ -638,6 +650,7 @@ class _BranchDialogState extends State<BranchDialog> {
           _error = error;
           _fetchStatus = null;
         });
+        await _showErrorPopup(error.userMessage);
       }
     } finally {
       _operationCancellation = null;
@@ -723,10 +736,18 @@ class _BranchDialogState extends State<BranchDialog> {
       );
       if (mounted) Navigator.of(context).pop(result);
     } on GitError catch (error) {
-      if (mounted) setState(() => _error = error);
+      if (mounted) {
+        setState(() => _error = error);
+        await _showErrorPopup(error.userMessage);
+      }
     } finally {
       if (mounted) setState(() => _isMutating = false);
     }
+  }
+
+  Future<void> _showErrorPopup(String message) async {
+    if (!mounted) return;
+    await showGiftErrorDialog(context, message);
   }
 
   Future<void> _runAction(
@@ -743,6 +764,7 @@ class _BranchDialogState extends State<BranchDialog> {
     } on GitError catch (error) {
       if (!mounted) return;
       setState(() => _error = error);
+      await _showErrorPopup(error.userMessage);
     } finally {
       if (mounted) setState(() => _isMutating = false);
     }

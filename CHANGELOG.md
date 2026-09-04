@@ -1,6 +1,10 @@
 # Changelog
 
 ## 2026-09-04
+- fix(branches): surfaced fetch and checkout failures in modal error feedback
+  after verifying real remote refs and tracking branches.
+- fix(preferences): separated accessibility, repository, and shortcut fields
+  to prevent compact-dialog text overlap.
 - fix(branches): made remote fetching visible, cancellable, and reliable on
   compact dialogs, including fresh remote-only branch results.
 - feat(resilience): added debounced repository watching, bounded diff paging,

@@ -5,6 +5,7 @@ import 'package:gift/src/backend/commit.dart';
 import 'package:gift/src/backend/discard.dart';
 import 'package:gift/src/backend/diff.dart';
 import 'package:gift/src/backend/domain.dart';
+import 'package:gift/src/backend/error.dart';
 import 'package:gift/src/backend/executor.dart';
 import 'package:gift/src/backend/git_gateway.dart';
 import 'package:gift/src/backend/history.dart';
@@ -192,6 +193,64 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(gateway.fetchCalls, ['origin']);
+  });
+
+  testWidgets('shows remote fetch failures in a modal error popup', (
+    tester,
+  ) async {
+    addTearDown(tester.view.reset);
+    tester.view.physicalSize = const Size(420, 640);
+    tester.view.devicePixelRatio = 1;
+    final repository = const RepositoryOpened(
+      repositoryId: RepositoryId(value: 'remote-fetch-error-repository'),
+      root: '/workspace/project',
+    );
+    final status = GitStatusSnapshot(
+      repositoryId: repository.repositoryId,
+      root: repository.root,
+      branch: const GitBranchStatus(head: 'main'),
+      changes: const [],
+      contentHash: 'remote-fetch-error',
+      generation: 1,
+    );
+    final gateway = FakeBranchGateway(
+      branches: const [GitBranch(name: 'main', isCurrent: true)],
+      action: GitBranchActionResult(
+        repositoryId: repository.repositoryId,
+        branchName: 'main',
+        status: status,
+      ),
+      fetchError: const GitError(
+        category: GitErrorCategory.processFailed,
+        userMessage: 'Remote fetch failed.',
+        diagnostic: 'test fetch failure',
+        retryable: true,
+      ),
+    );
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: BranchDialog(gateway: gateway, repository: repository),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('fetch-remote-branches')));
+    await tester.pumpAndSettle();
+
+    expect(gateway.fetchCalls, ['origin']);
+    expect(find.byKey(const Key('error-popup')), findsOneWidget);
+    expect(
+      find.descendant(
+        of: find.byKey(const Key('error-popup')),
+        matching: find.text('Remote fetch failed.'),
+      ),
+      findsOneWidget,
+    );
+    await tester.tap(find.byKey(const Key('dismiss-error-popup')));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('branch-error')), findsOneWidget);
   });
 
   testWidgets('fetches and renders remote-only branches from the browser', (
@@ -471,6 +530,7 @@ class FakeBranchGateway with GitPatchGatewayStub implements GitGateway {
     this.remoteSnapshotReader,
     this.remoteDeletePreview,
     this.remoteDeleteResult,
+    this.fetchError,
     this.remotes = const [GitRemote(name: 'origin')],
   });
 
@@ -483,6 +543,7 @@ class FakeBranchGateway with GitPatchGatewayStub implements GitGateway {
   final Future<GitRemoteBranchSnapshot> Function(int)? remoteSnapshotReader;
   final GitRemoteBranchDeletePreview? remoteDeletePreview;
   final GitRemoteBranchActionResult? remoteDeleteResult;
+  final GitError? fetchError;
   final List<GitRemote> remotes;
   String? switchedTo;
   String? checkedOutRemote;
@@ -616,6 +677,7 @@ class FakeBranchGateway with GitPatchGatewayStub implements GitGateway {
     GitCancellationToken? cancellationToken,
   }) async {
     fetchCalls.add(remote);
+    if (fetchError != null) throw fetchError!;
     return GitRemoteOperationResult(
       repositoryId: repositoryId,
       remote: remote,
