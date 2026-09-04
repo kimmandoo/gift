@@ -13,6 +13,7 @@ import 'diff.dart';
 import 'error.dart';
 import 'executor.dart';
 import 'history.dart';
+import 'history_batch.dart';
 import 'interactive_rebase.dart';
 import 'remote.dart';
 import 'remote_branch.dart';
@@ -42,6 +43,8 @@ class AppState {
   final Map<String, _DiscardPreviewRecord> _discardPreviews = {};
   final Map<String, _BranchPreviewRecord> _branchPreviews = {};
   final Map<String, _ObjectPreviewRecord> _objectPreviews = {};
+  final Map<String, _HistoryBatchPreviewRecord> _batchPreviews = {};
+  final Map<String, _HistoryBatchContinuationRecord> _batchContinuations = {};
   final Map<String, _HistoryRollbackPreviewRecord> _rollbackPreviews = {};
   final Map<String, _InteractiveRebasePreviewRecord>
   _interactiveRebasePreviews = {};
@@ -57,6 +60,7 @@ class AppState {
   static const branchPreviewLifetime = Duration(minutes: 2);
   static const objectPreviewLifetime = Duration(minutes: 2);
   static const rollbackPreviewLifetime = Duration(minutes: 2);
+  static const batchPreviewLifetime = Duration(minutes: 2);
   static const pushPreviewLifetime = Duration(minutes: 2);
   static const worktreePreviewLifetime = Duration(minutes: 2);
   static const recoveryPreviewLifetime = Duration(minutes: 2);
@@ -339,6 +343,111 @@ class AppState {
 
   void consumeHistoryRollbackPreview(String token) {
     _rollbackPreviews.remove(token);
+  }
+
+  GitBranchPreviewToken issueHistoryBatchPreview({
+    required RepositoryId repositoryId,
+    required GitHistoryBatchRequest request,
+    required String fingerprint,
+  }) {
+    _batchPreviews.removeWhere(
+      (_, record) => !record.expiresAt.isAfter(_now()),
+    );
+    final token = _newOpaqueToken();
+    final expiresAt = _now().add(batchPreviewLifetime);
+    _batchPreviews[token] = _HistoryBatchPreviewRecord(
+      repositoryId: repositoryId,
+      requestKey: request.queryKey,
+      fingerprint: fingerprint,
+      expiresAt: expiresAt,
+    );
+    return GitBranchPreviewToken(value: token, expiresAt: expiresAt);
+  }
+
+  void validateHistoryBatchPreview({
+    required RepositoryId repositoryId,
+    required GitHistoryBatchPreview preview,
+    required String fingerprint,
+  }) {
+    final token = preview.token;
+    final record = token == null ? null : _batchPreviews[token];
+    final matches =
+        record != null &&
+        record.repositoryId == repositoryId &&
+        record.repositoryId == preview.repositoryId &&
+        record.requestKey == preview.request.queryKey &&
+        record.fingerprint == fingerprint &&
+        record.expiresAt.isAfter(_now());
+    if (!matches) {
+      if (token != null) _batchPreviews.remove(token);
+      throw const GitError(
+        category: GitErrorCategory.staleRollbackPreview,
+        userMessage: 'This batch preview is stale or expired. Review it again.',
+        diagnostic: 'history batch preview token or repository fingerprint was missing, changed, or expired',
+        retryable: true,
+      );
+    }
+  }
+
+  void consumeHistoryBatchPreview(String token) {
+    _batchPreviews.remove(token);
+  }
+
+  String issueHistoryBatchContinuation({
+    required RepositoryId repositoryId,
+    required String requestKey,
+    required String fingerprint,
+    required List<String> completedOids,
+    required List<String> skippedOids,
+    required String currentOid,
+    required List<String> remainingOids,
+  }) {
+    _batchContinuations.removeWhere(
+      (_, record) => !record.expiresAt.isAfter(_now()),
+    );
+    final token = _newOpaqueToken();
+    _batchContinuations[token] = _HistoryBatchContinuationRecord(
+      repositoryId: repositoryId,
+      requestKey: requestKey,
+      fingerprint: fingerprint,
+      completedOids: completedOids,
+      skippedOids: skippedOids,
+      currentOid: currentOid,
+      remainingOids: remainingOids,
+      expiresAt: _now().add(batchPreviewLifetime),
+    );
+    return token;
+  }
+
+  void validateHistoryBatchContinuation({
+    required RepositoryId repositoryId,
+    required GitHistoryBatchRecoveryRequest request,
+    required String fingerprint,
+  }) {
+    final record = _batchContinuations[request.continuationToken];
+    final matches =
+        record != null &&
+        record.repositoryId == repositoryId &&
+        record.requestKey == request.queryKey &&
+        record.fingerprint == fingerprint &&
+        _sameStrings(record.completedOids, request.completedOids) &&
+        _sameStrings(record.skippedOids, request.skippedOids) &&
+        record.currentOid == request.currentOid &&
+        _sameStrings(record.remainingOids, request.remainingOids) &&
+        record.expiresAt.isAfter(_now());
+    if (!matches) {
+      _batchContinuations.remove(request.continuationToken);
+      throw const GitError(
+        category: GitErrorCategory.staleRollbackPreview,
+        userMessage: 'This batch recovery request is stale or expired. Review the selection again.',
+        diagnostic: 'history batch continuation token or repository fingerprint was missing, changed, or expired',
+        retryable: true,
+      );
+    }
+  }
+
+  void consumeHistoryBatchContinuation(String token) {
+    _batchContinuations.remove(token);
   }
 
   GitBranchPreviewToken issueInteractiveRebasePreview({
@@ -3577,6 +3686,736 @@ class RepositoryService {
       revisions: revisions.toList(growable: false),
     ),
   );
+
+  Future<GitHistoryBatchPreview> previewHistoryBatch(
+    RepositoryId repositoryId,
+    GitHistoryBatchRequest request,
+  ) async {
+    final handle = await state.lookup(repositoryId);
+    final inspection = await _inspectHistoryBatch(
+      repositoryId,
+      handle,
+      request,
+    );
+    GitBranchPreviewToken? token;
+    if (inspection.blockingMessage == null) {
+      token = state.issueHistoryBatchPreview(
+        repositoryId: repositoryId,
+        request: request,
+        fingerprint: inspection.fingerprint,
+      );
+    }
+    return GitHistoryBatchPreview(
+      repositoryId: repositoryId,
+      request: request,
+      currentBranch: inspection.currentBranch,
+      currentHead: inspection.currentHead,
+      targetBranch: inspection.targetBranch,
+      displayedOids: inspection.displayedOids,
+      executionOids: inspection.executionOids,
+      executionDirection: inspection.executionDirection,
+      dirtyWorktree: inspection.dirtyWorktree,
+      detachedHead: inspection.detachedHead,
+      operationInProgress: inspection.operationInProgress,
+      duplicateOids: inspection.duplicateOids,
+      containedOids: inspection.containedOids,
+      mergeCommitOids: inspection.mergeCommitOids,
+      mergeMainlineRequired: inspection.mergeMainlineRequired,
+      impactedPaths: inspection.impactedPaths,
+      fingerprint: inspection.fingerprint,
+      requiresConfirmation: true,
+      token: token?.value,
+      expiresAt: token?.expiresAt,
+      blockingMessage: inspection.blockingMessage,
+    );
+  }
+
+  Future<GitHistoryBatchResult> executeHistoryBatch(
+    RepositoryId repositoryId,
+    GitHistoryBatchPreview preview, {
+    GitCancellationToken? cancellationToken,
+  }) async {
+    return state.runMutation(repositoryId, () async {
+      final handle = await state.lookup(repositoryId);
+      final inspection = await _inspectHistoryBatch(
+        repositoryId,
+        handle,
+        preview.request,
+      );
+      _throwIfHistoryBatchBlocked(inspection);
+      state.validateHistoryBatchPreview(
+        repositoryId: repositoryId,
+        preview: preview,
+        fingerprint: inspection.fingerprint,
+      );
+      if (preview.token case final token?) {
+        state.consumeHistoryBatchPreview(token);
+      }
+      return _executeHistoryBatchSequence(
+        repositoryId: repositoryId,
+        handle: handle,
+        request: preview.request,
+        targetBranch: inspection.targetBranch!,
+        executionOids: inspection.executionOids,
+        allExecutionOids: inspection.executionOids,
+        completedOids: const [],
+        skippedOids: const [],
+        previousHead: inspection.currentHead,
+        cancellationToken: cancellationToken,
+      );
+    });
+  }
+
+  Future<GitHistoryBatchResult> recoverHistoryBatch(
+    RepositoryId repositoryId,
+    GitHistoryBatchRecoveryRequest request, {
+    GitCancellationToken? cancellationToken,
+  }) async {
+    return state.runMutation(repositoryId, () async {
+      final handle = await state.lookup(repositoryId);
+      final status = await getStatus(repositoryId);
+      final currentHead = await _readHeadOid(handle) ?? '';
+      final operation = await _detectBranchOperation(handle);
+      final sequencerInProgress =
+          operation != null || await _gitPathExists(handle.root, 'REVERT_HEAD');
+      final fingerprint = _historyBatchRecoveryFingerprint(
+        status: status,
+        currentHead: currentHead,
+        request: request.request,
+        executionOids: request.executionOids,
+      );
+      state.validateHistoryBatchContinuation(
+        repositoryId: repositoryId,
+        request: request,
+        fingerprint: fingerprint,
+      );
+      state.consumeHistoryBatchContinuation(request.continuationToken);
+
+      if (request.recoveryAction ==
+          GitHistoryBatchRecoveryAction.abortRemaining) {
+        return _historyBatchResult(
+          repositoryId: repositoryId,
+          request: request.request,
+          state: GitHistoryBatchState.aborted,
+          status: status,
+          previousHead: currentHead,
+          currentOid: request.currentOid,
+          completedOids: request.completedOids,
+          skippedOids: request.skippedOids,
+          remainingOids: request.remainingOids,
+          summary: 'The remaining batch commits were not applied.',
+        );
+      }
+
+      if (request.recoveryAction ==
+          GitHistoryBatchRecoveryAction.continueRemaining) {
+        if (sequencerInProgress) {
+          throw const GitError(
+            category: GitErrorCategory.operationInProgress,
+            userMessage: 'Recover the current Git operation before continuing.',
+            diagnostic: 'batch remainder was requested while a sequencer operation remained active',
+            retryable: true,
+          );
+        }
+        return _executeHistoryBatchSequence(
+          repositoryId: repositoryId,
+          handle: handle,
+          request: request.request,
+          targetBranch: request.targetBranch,
+          executionOids: request.remainingOids,
+          allExecutionOids: request.executionOids,
+          completedOids: request.completedOids,
+          skippedOids: request.skippedOids,
+          previousHead: currentHead,
+          cancellationToken: cancellationToken,
+        );
+      }
+
+      if (!sequencerInProgress) {
+        throw const GitError(
+          category: GitErrorCategory.operationInProgress,
+          userMessage: 'There is no in-progress batch commit to recover.',
+          diagnostic:
+              'batch recovery was requested without a Git sequencer operation',
+          retryable: false,
+        );
+      }
+      final recoveryArgs = switch (request.recoveryAction) {
+        GitHistoryBatchRecoveryAction.continueCurrent => [
+          request.action == GitHistoryBatchAction.cherryPick
+              ? 'cherry-pick'
+              : 'revert',
+          '--continue',
+        ],
+        GitHistoryBatchRecoveryAction.skipCurrent => [
+          request.action == GitHistoryBatchAction.cherryPick
+              ? 'cherry-pick'
+              : 'revert',
+          '--skip',
+        ],
+        GitHistoryBatchRecoveryAction.abortCurrent => [
+          request.action == GitHistoryBatchAction.cherryPick
+              ? 'cherry-pick'
+              : 'revert',
+          '--abort',
+        ],
+        GitHistoryBatchRecoveryAction.continueRemaining ||
+        GitHistoryBatchRecoveryAction.abortRemaining => const <String>[],
+      };
+      if (request.recoveryAction ==
+          GitHistoryBatchRecoveryAction.abortCurrent) {
+        await _runHistoryBatchRecovery(
+          handle,
+          recoveryArgs,
+          cancellationToken: cancellationToken,
+        );
+        return _historyBatchResult(
+          repositoryId: repositoryId,
+          request: request.request,
+          state: GitHistoryBatchState.aborted,
+          status: await getStatus(repositoryId),
+          previousHead: currentHead,
+          currentOid: request.currentOid,
+          completedOids: request.completedOids,
+          skippedOids: request.skippedOids,
+          remainingOids: [request.currentOid, ...request.remainingOids],
+          summary: 'The current batch operation was aborted.',
+        );
+      }
+
+      await _runHistoryBatchRecovery(
+        handle,
+        recoveryArgs,
+        cancellationToken: cancellationToken,
+      );
+      final after = await getStatus(repositoryId);
+      final afterHead = await _readHeadOid(handle) ?? currentHead;
+      final completed = [...request.completedOids];
+      final skipped = [...request.skippedOids];
+      if (request.recoveryAction ==
+          GitHistoryBatchRecoveryAction.continueCurrent) {
+        completed.add(request.currentOid);
+      } else {
+        skipped.add(request.currentOid);
+      }
+      final afterFingerprint = _historyBatchRecoveryFingerprint(
+        status: after,
+        currentHead: afterHead,
+        request: request.request,
+        executionOids: request.executionOids,
+      );
+      final continuationRequest = GitHistoryBatchRecoveryRequest(
+        action: request.action,
+        revisions: request.revisions,
+        executionOids: request.executionOids,
+        completedOids: completed,
+        skippedOids: skipped,
+        currentOid: request.currentOid,
+        remainingOids: request.remainingOids,
+        targetBranch: request.targetBranch,
+        mainlines: request.mainlines,
+        selectionFingerprint: afterFingerprint,
+        recoveryAction: GitHistoryBatchRecoveryAction.continueRemaining,
+        continuationToken: '',
+      );
+      final continuationToken = state.issueHistoryBatchContinuation(
+        repositoryId: repositoryId,
+        requestKey: continuationRequest.queryKey,
+        fingerprint: afterFingerprint,
+        completedOids: completed,
+        skippedOids: skipped,
+        currentOid: request.currentOid,
+        remainingOids: request.remainingOids,
+      );
+      return _historyBatchResult(
+        repositoryId: repositoryId,
+        request: request.request,
+        state: GitHistoryBatchState.readyToContinue,
+        status: after,
+        previousHead: currentHead,
+        currentOid: request.currentOid,
+        completedOids: completed,
+        skippedOids: skipped,
+        remainingOids: request.remainingOids,
+        continuationToken: continuationToken,
+        selectionFingerprint: afterFingerprint,
+        recoveryActions: const [
+          GitHistoryBatchRecoveryAction.continueRemaining,
+          GitHistoryBatchRecoveryAction.abortRemaining,
+        ],
+        summary: 'The current commit was recovered. Choose whether to continue the remaining batch.',
+      );
+    });
+  }
+
+  Future<GitHistoryBatchResult> _executeHistoryBatchSequence({
+    required RepositoryId repositoryId,
+    required RepositoryHandle handle,
+    required GitHistoryBatchRequest request,
+    required String targetBranch,
+    required List<String> executionOids,
+    required List<String> allExecutionOids,
+    required List<String> completedOids,
+    required List<String> skippedOids,
+    required String previousHead,
+    GitCancellationToken? cancellationToken,
+  }) async {
+    final completed = [...completedOids];
+    final skipped = [...skippedOids];
+    for (var index = 0; index < executionOids.length; index++) {
+      final oid = executionOids[index];
+      final remaining = executionOids.sublist(index + 1);
+      if (cancellationToken?.isCancelled == true) {
+        return _historyBatchResult(
+          repositoryId: repositoryId,
+          request: request,
+          state: GitHistoryBatchState.cancelled,
+          status: await getStatus(repositoryId),
+          previousHead: previousHead,
+          currentOid: oid,
+          completedOids: completed,
+          skippedOids: skipped,
+          remainingOids: [oid, ...remaining],
+          summary: 'The batch was cancelled before the next commit.',
+        );
+      }
+      try {
+        await _runner.run(
+          GitInvocation(
+            program: gitPath,
+            args: _historyBatchStepArgs(request, oid),
+            cwd: handle.root,
+            kind: GitOperationKind.mutation,
+            outputPolicy: const OutputPolicy.capture(maxBytes: 512 * 1024),
+            cancellationToken: cancellationToken,
+            environment: const {'GIT_EDITOR': ':'},
+          ),
+        );
+        completed.add(oid);
+      } on GitError catch (error) {
+        final mapped = _mapHistoryRollbackError(error);
+        final status = await getStatus(repositoryId);
+        final currentHead = await _readHeadOid(handle) ?? previousHead;
+        final operation = await _detectBranchOperation(handle);
+        final sequencerInProgress =
+            operation == GitBranchOperation.cherryPick ||
+            await _gitPathExists(handle.root, 'REVERT_HEAD');
+        if (sequencerInProgress) {
+          final conflictFingerprint = _historyBatchRecoveryFingerprint(
+            status: status,
+            currentHead: currentHead,
+            request: request,
+            executionOids: allExecutionOids,
+          );
+          final recoveryRequest = GitHistoryBatchRecoveryRequest(
+            action: request.action,
+            revisions: request.revisions,
+            executionOids: allExecutionOids,
+            completedOids: completed,
+            skippedOids: skipped,
+            currentOid: oid,
+            remainingOids: remaining,
+            targetBranch: targetBranch,
+            mainlines: request.mainlines,
+            selectionFingerprint: conflictFingerprint,
+            recoveryAction: GitHistoryBatchRecoveryAction.continueCurrent,
+            continuationToken: '',
+          );
+          final continuationToken = state.issueHistoryBatchContinuation(
+            repositoryId: repositoryId,
+            requestKey: recoveryRequest.queryKey,
+            fingerprint: conflictFingerprint,
+            completedOids: completed,
+            skippedOids: skipped,
+            currentOid: oid,
+            remainingOids: remaining,
+          );
+          final cancelled = mapped.category == GitErrorCategory.cancelled;
+          final conflicted = mapped.category == GitErrorCategory.mergeConflict;
+          final stoppedState = cancelled
+              ? GitHistoryBatchState.cancelled
+              : conflicted
+              ? GitHistoryBatchState.conflicted
+              : GitHistoryBatchState.failed;
+          return _historyBatchResult(
+            repositoryId: repositoryId,
+            request: request,
+            state: stoppedState,
+            status: status,
+            previousHead: previousHead,
+            currentOid: oid,
+            completedOids: completed,
+            skippedOids: skipped,
+            remainingOids: [oid, ...remaining],
+            continuationToken: continuationToken,
+            selectionFingerprint: conflictFingerprint,
+            recoveryActions: const [
+              GitHistoryBatchRecoveryAction.continueCurrent,
+              GitHistoryBatchRecoveryAction.skipCurrent,
+              GitHistoryBatchRecoveryAction.abortCurrent,
+            ],
+            summary: cancelled
+                ? 'The batch was cancelled while applying a commit. Recover the current operation explicitly.'
+                : conflicted
+                ? 'Git stopped on a conflict. Recover the current commit before continuing the batch.'
+                : '${request.action.label} stopped on $oid: ${mapped.userMessage} Recover the current operation explicitly.',
+          );
+        }
+        final stoppedState = mapped.category == GitErrorCategory.cancelled
+            ? GitHistoryBatchState.cancelled
+            : GitHistoryBatchState.failed;
+        return _historyBatchResult(
+          repositoryId: repositoryId,
+          request: request,
+          state: stoppedState,
+          status: status,
+          previousHead: previousHead,
+          currentOid: oid,
+          completedOids: completed,
+          skippedOids: skipped,
+          remainingOids: [oid, ...remaining],
+          summary:
+              '${request.action.label} stopped on $oid: ${mapped.userMessage}',
+        );
+      }
+    }
+    final status = await getStatus(repositoryId);
+    return _historyBatchResult(
+      repositoryId: repositoryId,
+      request: request,
+      state: GitHistoryBatchState.completed,
+      status: status,
+      previousHead: previousHead,
+      currentOid: null,
+      completedOids: completed,
+      skippedOids: skipped,
+      remainingOids: const [],
+      summary:
+          '${request.action.label} completed for ${completed.length + skipped.length} reviewed commit(s).',
+    );
+  }
+
+  Future<void> _runHistoryBatchRecovery(
+    RepositoryHandle handle,
+    List<String> args, {
+    GitCancellationToken? cancellationToken,
+  }) async {
+    try {
+      await _runner.run(
+        GitInvocation(
+          program: gitPath,
+          args: args,
+          cwd: handle.root,
+          kind: GitOperationKind.mutation,
+          outputPolicy: const OutputPolicy.capture(maxBytes: 512 * 1024),
+          cancellationToken: cancellationToken,
+          environment: const {'GIT_EDITOR': ':'},
+        ),
+      );
+    } on GitError catch (error, stackTrace) {
+      Error.throwWithStackTrace(_mapHistoryRollbackError(error), stackTrace);
+    }
+  }
+
+  List<String> _historyBatchStepArgs(
+    GitHistoryBatchRequest request,
+    String oid,
+  ) {
+    final command = request.action == GitHistoryBatchAction.cherryPick
+        ? 'cherry-pick'
+        : 'revert';
+    final mainline = request.mainlines[oid];
+    return [
+      command,
+      '--no-edit',
+      if (mainline != null) ...['-m', '$mainline'],
+      oid,
+    ];
+  }
+
+  GitHistoryBatchResult _historyBatchResult({
+    required RepositoryId repositoryId,
+    required GitHistoryBatchRequest request,
+    required GitHistoryBatchState state,
+    required GitStatusSnapshot status,
+    required String previousHead,
+    required String? currentOid,
+    required List<String> completedOids,
+    required List<String> skippedOids,
+    required List<String> remainingOids,
+    required String summary,
+    List<GitHistoryBatchRecoveryAction> recoveryActions = const [],
+    String? continuationToken,
+    String selectionFingerprint = '',
+  }) {
+    return GitHistoryBatchResult(
+      repositoryId: repositoryId,
+      request: request,
+      state: state,
+      status: status,
+      previousHead: previousHead,
+      resultingHead: status.branch.oid ?? previousHead,
+      completedOids: completedOids,
+      skippedOids: skippedOids,
+      currentOid: currentOid,
+      remainingOids: remainingOids,
+      summary: summary,
+      recoveryActions: recoveryActions,
+      selectionFingerprint: selectionFingerprint,
+      continuationToken: continuationToken,
+    );
+  }
+
+  Future<_HistoryBatchInspection> _inspectHistoryBatch(
+    RepositoryId repositoryId,
+    RepositoryHandle handle,
+    GitHistoryBatchRequest request,
+  ) async {
+    if (request.revisions.isEmpty || request.revisions.length > 50) {
+      throw const GitError(
+        category: GitErrorCategory.invalidRevision,
+        userMessage: 'Select between 1 and 50 commits for a batch operation.',
+        diagnostic:
+            'history batch revision count was outside the bounded range',
+        retryable: false,
+      );
+    }
+    final status = await getStatus(repositoryId);
+    final currentHead = await _readHeadOid(handle);
+    if (currentHead == null || currentHead.isEmpty) {
+      throw const GitError(
+        category: GitErrorCategory.unbornBranch,
+        userMessage: 'Create a commit before starting a history batch.',
+        diagnostic: 'history batch preview was requested without a HEAD',
+        retryable: false,
+      );
+    }
+    final currentBranch = status.branch.head;
+    final targetBranch = request.targetBranch?.trim().isEmpty == true
+        ? currentBranch
+        : request.targetBranch?.trim() ?? currentBranch;
+    if (targetBranch != null && !status.branch.isDetached) {
+      _validateBranchName(targetBranch);
+      await _validateBranchNameWithGit(handle, targetBranch);
+    }
+    final displayedOids = <String>[];
+    for (final revision in request.revisions) {
+      if (!_isCommitOid(revision)) {
+        throw const GitError(
+          category: GitErrorCategory.invalidRevision,
+          userMessage: 'Batch selections must use full commit IDs.',
+          diagnostic: 'history batch request contained a short, non-hex, or malformed commit ID',
+          retryable: false,
+        );
+      }
+      final resolved = await _resolveCommit(handle, revision);
+      if (resolved.toLowerCase() != revision.toLowerCase()) {
+        throw const GitError(
+          category: GitErrorCategory.staleRollbackPreview,
+          userMessage:
+              'A selected commit changed. Refresh History and try again.',
+          diagnostic:
+              'history batch full commit ID resolved to a different object',
+          retryable: true,
+        );
+      }
+      displayedOids.add(resolved);
+    }
+    final duplicateOids = <String>[];
+    final seen = <String>{};
+    for (final oid in displayedOids) {
+      if (!seen.add(oid)) duplicateOids.add(oid);
+    }
+    final parentCounts = await _readBatchParentCounts(handle, displayedOids);
+    final mergeCommitOids = [
+      for (final oid in displayedOids)
+        if ((parentCounts[oid] ?? 0) > 1) oid,
+    ];
+    final mergeMainlineRequired = [
+      for (final oid in mergeCommitOids)
+        if (!_validBatchMainline(request.mainlines[oid], parentCounts[oid]!))
+          oid,
+    ];
+    final containedOids = <String>[];
+    if (request.action == GitHistoryBatchAction.cherryPick) {
+      for (final oid in displayedOids) {
+        if (await _isAncestor(handle, oid, currentHead)) containedOids.add(oid);
+      }
+    }
+    final executionDirection =
+        request.action == GitHistoryBatchAction.cherryPick
+        ? GitHistoryBatchExecutionDirection.oldestToNewest
+        : GitHistoryBatchExecutionDirection.newestToOldest;
+    final executionOids = request.action == GitHistoryBatchAction.cherryPick
+        ? displayedOids.reversed.toList(growable: false)
+        : List<String>.of(displayedOids, growable: false);
+    final impactedPaths = await _readHistoryBatchImpactPaths(
+      repositoryId,
+      displayedOids,
+    );
+    final fingerprint = _historyBatchStateFingerprint(
+      status: status,
+      currentHead: currentHead,
+      request: request,
+      executionOids: executionOids,
+    );
+    String? blockingMessage;
+    final operationInProgress = await _detectBranchOperation(handle);
+    if (currentBranch == null || status.branch.isDetached) {
+      blockingMessage = 'Switch to a branch before starting a history batch.';
+    } else if (targetBranch != currentBranch) {
+      blockingMessage = 'The target branch must be the current branch.';
+    } else if (status.changes.isNotEmpty) {
+      blockingMessage = 'Commit or stash local changes before the batch.';
+    } else if (operationInProgress != null) {
+      blockingMessage = 'Finish or abort the in-progress Git operation first.';
+    } else if (duplicateOids.isNotEmpty) {
+      blockingMessage = 'Remove duplicate commits from the batch selection.';
+    } else if (containedOids.isNotEmpty) {
+      blockingMessage =
+          'Some selected commits are already contained in the current branch.';
+    } else if (mergeMainlineRequired.isNotEmpty) {
+      blockingMessage =
+          'Choose a mainline parent for each selected merge commit.';
+    }
+    return _HistoryBatchInspection(
+      currentBranch: currentBranch,
+      currentHead: currentHead,
+      targetBranch: targetBranch,
+      displayedOids: displayedOids,
+      executionOids: executionOids,
+      executionDirection: executionDirection,
+      dirtyWorktree: !status.isClean,
+      detachedHead: status.branch.isDetached,
+      operationInProgress: operationInProgress,
+      duplicateOids: duplicateOids,
+      containedOids: containedOids,
+      mergeCommitOids: mergeCommitOids,
+      mergeMainlineRequired: mergeMainlineRequired,
+      impactedPaths: impactedPaths,
+      fingerprint: fingerprint,
+      blockingMessage: blockingMessage,
+    );
+  }
+
+  Future<Map<String, int>> _readBatchParentCounts(
+    RepositoryHandle handle,
+    Iterable<String> oids,
+  ) async {
+    final requested = oids.toList(growable: false);
+    final output = await _runner.run(
+      GitInvocation(
+        program: gitPath,
+        args: ['rev-list', '--parents', '--no-walk=unsorted', ...requested],
+        cwd: handle.root,
+        kind: GitOperationKind.read,
+        outputPolicy: const OutputPolicy.capture(maxBytes: 512 * 1024),
+      ),
+    );
+    final counts = <String, int>{};
+    for (final line
+        in utf8.decode(output.stdout, allowMalformed: true).split('\n')) {
+      final fields = line.trim().split(RegExp(r'\s+'));
+      if (fields.isEmpty || fields.first.isEmpty) continue;
+      counts[fields.first] = fields.length - 1;
+    }
+    if (counts.length != requested.toSet().length) {
+      throw const GitError(
+        category: GitErrorCategory.parseFailure,
+        userMessage: 'Git returned incomplete batch commit metadata.',
+        diagnostic: 'rev-list did not return every selected batch commit',
+        retryable: true,
+      );
+    }
+    return counts;
+  }
+
+  Future<List<String>> _readHistoryBatchImpactPaths(
+    RepositoryId repositoryId,
+    Iterable<String> oids,
+  ) async {
+    final paths = <String>{};
+    for (final oid in oids) {
+      final changes = await getCommitFiles(repositoryId, oid);
+      for (final change in changes) {
+        paths.add(change.path);
+        if (change.oldPath case final oldPath?) paths.add(oldPath);
+      }
+    }
+    final result = paths.toList()..sort();
+    return result;
+  }
+
+  String _historyBatchStateFingerprint({
+    required GitStatusSnapshot status,
+    required String currentHead,
+    required GitHistoryBatchRequest request,
+    required Iterable<String> executionOids,
+  }) {
+    return hashGitObjectBytes(
+      utf8.encode(
+        [
+          status.contentHash,
+          currentHead,
+          status.branch.head ?? '',
+          request.action.name,
+          request.targetBranch ?? status.branch.head ?? '',
+          ...request.revisions,
+          ...executionOids,
+          for (final entry
+              in request.mainlines.entries.toList()
+                ..sort((left, right) => left.key.compareTo(right.key)))
+            '${entry.key}:${entry.value}',
+        ].join('\u0000'),
+      ),
+    );
+  }
+
+  String _historyBatchRecoveryFingerprint({
+    required GitStatusSnapshot status,
+    required String currentHead,
+    required GitHistoryBatchRequest request,
+    required Iterable<String> executionOids,
+  }) {
+    return hashGitObjectBytes(
+      utf8.encode(
+        [
+          currentHead,
+          status.branch.head ?? '',
+          request.action.name,
+          request.targetBranch ?? status.branch.head ?? '',
+          ...request.revisions,
+          ...executionOids,
+          for (final entry
+              in request.mainlines.entries.toList()
+                ..sort((left, right) => left.key.compareTo(right.key)))
+            '${entry.key}:${entry.value}',
+        ].join('\u0000'),
+      ),
+    );
+  }
+
+  bool _validBatchMainline(int? mainline, int parentCount) =>
+      parentCount <= 1 ||
+      mainline != null && mainline >= 1 && mainline <= parentCount;
+
+  void _throwIfHistoryBatchBlocked(_HistoryBatchInspection inspection) {
+    final message = inspection.blockingMessage;
+    if (message == null) return;
+    final category = inspection.operationInProgress != null
+        ? GitErrorCategory.operationInProgress
+        : inspection.detachedHead
+        ? GitErrorCategory.detachedHead
+        : inspection.dirtyWorktree
+        ? GitErrorCategory.dirtyWorktree
+        : GitErrorCategory.historyRollbackNotAllowed;
+    throw GitError(
+      category: category,
+      userMessage: message,
+      diagnostic: 'history batch preview was blocked before mutation',
+      retryable: true,
+    );
+  }
 
   Future<_HistoryRollbackInspection> _inspectHistoryRollback(
     RepositoryId repositoryId,
@@ -11419,4 +12258,88 @@ GitError _mapConflictError(GitError error) {
     );
   }
   return error;
+}
+
+class _HistoryBatchPreviewRecord {
+  const _HistoryBatchPreviewRecord({
+    required this.repositoryId,
+    required this.requestKey,
+    required this.fingerprint,
+    required this.expiresAt,
+  });
+
+  final RepositoryId repositoryId;
+  final String requestKey;
+  final String fingerprint;
+  final DateTime expiresAt;
+}
+
+class _HistoryBatchContinuationRecord {
+  _HistoryBatchContinuationRecord({
+    required this.repositoryId,
+    required this.requestKey,
+    required this.fingerprint,
+    required List<String> completedOids,
+    required List<String> skippedOids,
+    required this.currentOid,
+    required List<String> remainingOids,
+    required this.expiresAt,
+  }) : completedOids = List.unmodifiable(completedOids),
+       skippedOids = List.unmodifiable(skippedOids),
+       remainingOids = List.unmodifiable(remainingOids);
+
+  final RepositoryId repositoryId;
+  final String requestKey;
+  final String fingerprint;
+  final List<String> completedOids;
+  final List<String> skippedOids;
+  final String currentOid;
+  final List<String> remainingOids;
+  final DateTime expiresAt;
+}
+
+bool _sameStrings(List<String> left, List<String> right) {
+  if (left.length != right.length) return false;
+  for (var index = 0; index < left.length; index++) {
+    if (left[index] != right[index]) return false;
+  }
+  return true;
+}
+
+class _HistoryBatchInspection {
+  const _HistoryBatchInspection({
+    required this.currentBranch,
+    required this.currentHead,
+    required this.targetBranch,
+    required this.displayedOids,
+    required this.executionOids,
+    required this.executionDirection,
+    required this.dirtyWorktree,
+    required this.detachedHead,
+    required this.operationInProgress,
+    required this.duplicateOids,
+    required this.containedOids,
+    required this.mergeCommitOids,
+    required this.mergeMainlineRequired,
+    required this.impactedPaths,
+    required this.fingerprint,
+    required this.blockingMessage,
+  });
+
+  final String? currentBranch;
+  final String currentHead;
+  final String? targetBranch;
+  final List<String> displayedOids;
+  final List<String> executionOids;
+  final GitHistoryBatchExecutionDirection executionDirection;
+  final bool dirtyWorktree;
+  final bool detachedHead;
+  final GitBranchOperation? operationInProgress;
+  final List<String> duplicateOids;
+  final List<String> containedOids;
+  final List<String> mergeCommitOids;
+  final List<String> mergeMainlineRequired;
+  final List<String> impactedPaths;
+  final String fingerprint;
+  final String? blockingMessage;
 }

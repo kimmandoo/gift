@@ -13,6 +13,7 @@ class HistoryState {
     this.error,
     this.selectedOid,
     this.selectedCommitData,
+    this.selectedOids = const <String>[],
     this.commitFiles,
     this.commitFilesError,
     this.commitDiff,
@@ -29,6 +30,7 @@ class HistoryState {
   final GitError? error;
   final String? selectedOid;
   final GitCommit? selectedCommitData;
+  final List<String> selectedOids;
   final List<GitCommitFileChange>? commitFiles;
   final GitError? commitFilesError;
   final GitCommitDiff? commitDiff;
@@ -61,6 +63,8 @@ class HistoryState {
     bool clearSelectedOid = false,
     GitCommit? selectedCommitData,
     bool clearSelectedCommitData = false,
+    List<String>? selectedOids,
+    bool clearSelectedOids = false,
     List<GitCommitFileChange>? commitFiles,
     bool clearCommitFiles = false,
     GitError? commitFilesError,
@@ -81,6 +85,9 @@ class HistoryState {
       page: clearPage ? null : page ?? this.page,
       error: clearError ? null : error ?? this.error,
       selectedOid: clearSelectedOid ? null : selectedOid ?? this.selectedOid,
+      selectedOids: clearSelectedOids
+          ? const <String>[]
+          : selectedOids ?? this.selectedOids,
       selectedCommitData: clearSelectedCommitData
           ? null
           : selectedCommitData ?? this.selectedCommitData,
@@ -139,6 +146,7 @@ class HistoryController extends ChangeNotifier {
         clearError: true,
         clearSelectedOid: true,
         clearSelectedCommitData: true,
+        clearSelectedOids: true,
         clearCommitFiles: true,
         clearCommitFilesError: true,
         clearCommitDiff: true,
@@ -211,8 +219,37 @@ class HistoryController extends ChangeNotifier {
       );
     } on GitError catch (error) {
       if (requestId != _historyRequestId) return;
+
       _setState(_state.copyWith(error: error, isLoadingMore: false));
     }
+  }
+
+  /// Toggles one commit without changing the single-commit details selection.
+  /// The returned order always follows the currently displayed history order.
+  void toggleCommitSelection(GitCommit commit) {
+    if (_disposed) return;
+    final selected = _state.selectedOids.toSet();
+    if (!selected.add(commit.oid)) {
+      selected.remove(commit.oid);
+    }
+    _setState(_state.copyWith(selectedOids: _orderSelectedOids(selected)));
+  }
+
+  void clearCommitSelection() {
+    if (_disposed || _state.selectedOids.isEmpty) return;
+    _setState(_state.copyWith(clearSelectedOids: true));
+  }
+
+  List<String> _orderSelectedOids(Set<String> selected) {
+    final visible = _state.page?.commits ?? const <GitCommit>[];
+    final ordered = <String>[
+      for (final commit in visible)
+        if (selected.contains(commit.oid)) commit.oid,
+    ];
+    for (final oid in selected) {
+      if (!ordered.contains(oid)) ordered.add(oid);
+    }
+    return List.unmodifiable(ordered);
   }
 
   Future<void> applyFilters(GitHistoryFilters filters) =>

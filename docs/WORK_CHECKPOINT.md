@@ -5,30 +5,34 @@ This file is the handoff record for continuing work across query sessions.
 ## Current checkpoint
 
 - Date: 2026-09-05
-- Active task: Task 42 contract phase; Task 41 is complete in commit
-  `9718629`.
-- Branch: `main`; no new branch or worktree was created.
-- Latest implementation commit before this task:
-  `9718629 feat(history): add commit context actions`.
-- Task 41 delivered the History commit-row action menu, full-OID binding,
-  direct branch creation at a selected commit, and deep links into existing
-  reviewed mutation dialogs.
-- Task 42 added ACTION-07/08 for non-contiguous selection, deterministic OID
-  ordering, batch preview facts, partial progress, conflict recovery, and
-  stale selection handling.
-- Changed files for the Task 42 start include `TASKS.md`, the behavior ledger,
-  the implementation plan, this checkpoint, and the first RED History widget
-  test.
-- Verification carried forward: the Task 41 History widget suite passed all 9
-  tests, the advanced branch suite passed all 8 tests, `flutter analyze`
-  reported no issues, and `git diff --check` passed before the Task 42 RED
-  fixture was added. `flutter test --no-pub --plain-name
-  "supports keyboard-accessible non-contiguous selection"
-  test/features/repository/history_screen_test.dart` now fails at the missing
-  `history-selection-summary` key, as intended.
-- Exact next action: implement the immutable full-OID selection model while
-  preserving the single-selection details workflow.
-- Blockers: none.
+- Active task: Task 42 is complete; Task 43 is the next priority.
+- Branch: `main`; Task 42 implementation is committed at the current HEAD.
+- Latest Task 42 implementation commit subject:
+  `feat(history): add ordered multi-commit operations`.
+- Task 42 added ordered non-contiguous History selection, full-OID batch
+  previews for cherry-pick and revert, combined path impact, duplicate and
+  containment guards, merge-mainline review, dirty/in-progress blocking,
+  one-commit-at-a-time execution, cancellation, conflict progress, and
+  token/fingerprint-bound recovery.
+- Changed implementation files: `lib/src/backend/history_batch.dart`,
+  `lib/src/backend/{git_gateway,dart_git_backend,dart_git_gateway,
+  repository_service}.dart`, `lib/src/features/repository/{history_controller,
+  history_screen,history_batch_dialog}.dart`, and the related backend/widget
+  tests and gateway stub.
+- Changed documentation files: `TASKS.md`, `CHANGELOG.md`,
+  `docs/POST_MVP_ROADMAP.md`, the implementation plan, and this checkpoint.
+- Verification so far: focused real-Git batch tests passed 8 tests, the
+  History widget suite passed 11 tests, the batch dialog suite passed 1 test,
+  `flutter analyze` reported no issues, and `git diff --check` passed.
+  `dart run tool/verify.dart` also passed formatting and analysis, but its full
+  Windows Flutter suite failed 15 pre-existing platform-sensitive tests:
+  CRLF/UTF-8/path-separator assertions, interactive-rebase failures, and one
+  submodule cleanup timeout. No Task42 test failed in that run.
+- Exact next action: start Task 43 by activating its behavior-ledger
+  scenarios and first RED test; do not infer Task 42 completion from the
+  commit alone.
+- Blockers: no Task42 source blocker. Full repository verification remains
+  red on this Windows host for the unrelated failures listed above.
 
 ## Previous checkpoint
 

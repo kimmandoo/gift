@@ -15,6 +15,7 @@ import 'objects.dart';
 import 'shelf.dart';
 import 'file_history.dart';
 import 'reset.dart';
+import 'history_batch.dart';
 import 'push.dart';
 import 'worktree.dart';
 import 'ignore.dart';
@@ -571,6 +572,23 @@ abstract interface class GitGateway {
   Future<GitHistoryRollbackResult> executeHistoryRollback(
     RepositoryId repositoryId,
     GitHistoryRollbackPreview preview, {
+    GitCancellationToken? cancellationToken,
+  });
+
+  Future<GitHistoryBatchPreview> previewHistoryBatch(
+    RepositoryId repositoryId,
+    GitHistoryBatchRequest request,
+  );
+
+  Future<GitHistoryBatchResult> executeHistoryBatch(
+    RepositoryId repositoryId,
+    GitHistoryBatchPreview preview, {
+    GitCancellationToken? cancellationToken,
+  });
+
+  Future<GitHistoryBatchResult> recoverHistoryBatch(
+    RepositoryId repositoryId,
+    GitHistoryBatchRecoveryRequest request, {
     GitCancellationToken? cancellationToken,
   });
 

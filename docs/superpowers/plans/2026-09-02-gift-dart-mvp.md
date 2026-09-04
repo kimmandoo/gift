@@ -801,16 +801,20 @@ system Git 2.35+.
 5. Covered the menu inventory, cherry-pick prefill, refreshed copy binding, and
    exact branch-ref creation in focused widget and real-Git tests.
 
-## Active vertical: Ordered multi-commit operations (Task 42)
+## Completed vertical: Ordered multi-commit operations (Task 42)
 
-1. Activated Task 42 after completing Task 41's OID-bound commit actions and
-   direct cherry-pick entry points.
-2. The first RED fixture is
-   `test/features/repository/history_screen_test.dart`: it expects explicit
-   non-contiguous commit selection and currently fails because History only
-   supports one selected commit.
-3. Preserve the existing single-selection details workflow and execute
-   batch operations one reviewed full OID at a time.
+1. Added immutable non-contiguous History selection with explicit clear
+   controls while leaving single-commit details selection independent.
+2. Added full-OID previews for cherry-pick and revert, including deterministic
+   execution direction, target branch, combined paths, duplicate and contained
+   commits, merge mainline requirements, dirty state, and active operations.
+3. Executed reviewed OIDs one at a time with completed/current/remaining
+   progress and cancellation, conflict, and typed-failure stop behavior.
+4. Added token- and fingerprint-bound current-operation recovery for continue,
+   skip, abort, and an explicit continue-or-abort remaining decision.
+5. Covered reverse-visible order, revert order, merge mainlines, duplicates,
+   containment, stale previews, cancellation, conflicts, recovery, and the
+   reviewed progress dialog in focused real-Git and widget tests.
 
 ## Completed follow-up: visible push progress
 

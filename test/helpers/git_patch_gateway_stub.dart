@@ -15,6 +15,7 @@ import 'package:gift/src/backend/objects.dart';
 import 'package:gift/src/backend/shelf.dart';
 import 'package:gift/src/backend/file_history.dart';
 import 'package:gift/src/backend/reset.dart';
+import 'package:gift/src/backend/history_batch.dart';
 import 'package:gift/src/backend/push.dart';
 import 'package:gift/src/backend/worktree.dart';
 import 'package:gift/src/backend/ignore.dart';
@@ -437,6 +438,23 @@ mixin GitPatchGatewayStub {
     RepositoryId repositoryId,
     GitInteractiveRebasePlan plan,
   ) => throw UnimplementedError();
+
+  Future<GitHistoryBatchPreview> previewHistoryBatch(
+    RepositoryId repositoryId,
+    GitHistoryBatchRequest request,
+  ) => throw UnimplementedError();
+
+  Future<GitHistoryBatchResult> executeHistoryBatch(
+    RepositoryId repositoryId,
+    GitHistoryBatchPreview preview, {
+    GitCancellationToken? cancellationToken,
+  }) => throw UnimplementedError();
+
+  Future<GitHistoryBatchResult> recoverHistoryBatch(
+    RepositoryId repositoryId,
+    GitHistoryBatchRecoveryRequest request, {
+    GitCancellationToken? cancellationToken,
+  }) => throw UnimplementedError();
 
   Future<GitInteractiveRebaseResult> executeInteractiveRebase(
     RepositoryId repositoryId,

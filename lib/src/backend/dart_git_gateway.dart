@@ -24,6 +24,7 @@ import 'submodule.dart';
 import 'recovery.dart';
 import 'setup.dart';
 import 'hosting.dart';
+import 'history_batch.dart';
 import 'credentials.dart';
 
 /// Adapts the UI-facing [GitGateway] contract to the Dart backend facade.
@@ -828,6 +829,34 @@ class DartGitGateway
   }) => backend.executeHistoryRollback(
     repositoryId,
     preview,
+    cancellationToken: cancellationToken,
+  );
+
+  @override
+  Future<GitHistoryBatchPreview> previewHistoryBatch(
+    RepositoryId repositoryId,
+    GitHistoryBatchRequest request,
+  ) => backend.previewHistoryBatch(repositoryId, request);
+
+  @override
+  Future<GitHistoryBatchResult> executeHistoryBatch(
+    RepositoryId repositoryId,
+    GitHistoryBatchPreview preview, {
+    GitCancellationToken? cancellationToken,
+  }) => backend.executeHistoryBatch(
+    repositoryId,
+    preview,
+    cancellationToken: cancellationToken,
+  );
+
+  @override
+  Future<GitHistoryBatchResult> recoverHistoryBatch(
+    RepositoryId repositoryId,
+    GitHistoryBatchRecoveryRequest request, {
+    GitCancellationToken? cancellationToken,
+  }) => backend.recoverHistoryBatch(
+    repositoryId,
+    request,
     cancellationToken: cancellationToken,
   );
 

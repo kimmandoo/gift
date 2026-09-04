@@ -6,10 +6,11 @@
 
 ## Progress
 
-- **Completed:** 40 / 48
-- **Current Active Task:** Task 42 — Ordered multi-commit operations.
-  **Next priority:** complete Task 42, then Tasks 43–47, Task 39 visual
-  regression QA, and finally Task 38 public release.
+- **Completed:** 41 / 48
+- **Current Active Task:** none; Task 43 — Change and file context actions is
+  next.
+- **Next priority:** complete Tasks 43–47, then Task 39 visual regression QA,
+  and finally Task 38 public release.
 
 | # | Scope | Dart backend deliverables | Flutter deliverables | Status |
 |---|---|---|---|:---:|
@@ -55,7 +56,7 @@
 | **39** | Visual regression QA | Deterministic fixture states and platform font checks | Golden matrix, overflow guards, and interaction snapshots | Planned after Tasks 38A and 41–47 |
 | **40** | Contextual action foundation | Typed action availability, immutable targets, and preview routing | Shared secondary-click, keyboard, and overflow action menus | ✅ |
 | **41** | Commit context actions | OID-bound cherry-pick and existing history mutations | History-row action menu and prefilled previews | ✅ |
-| **42** | Multi-commit operations | Ordered batch cherry-pick/revert state machine | Multi-select history actions and conflict progress | Next |
+| **42** | Multi-commit operations | Ordered batch cherry-pick/revert state machine | Multi-select history actions and conflict progress | ✅ |
 | **43** | Change and file actions | Selection-safe path operations and reveal contracts | Changes/diff/history-file context menus | ⬜ |
 | **44** | Branch and remote actions | Ref-bound operation routing and freshness checks | Local/remote branch context menus | ⬜ |
 | **45** | Workspace context actions | Root-bound tab and recent-repository operations | Tab/recent/nested-root context menus | ⬜ |
@@ -646,26 +647,26 @@ also complete.
   shared context-action menu.
 - [x] Verify every action remains bound to the full commit OID after refresh.
 
-Task 41 is complete. Task 42 is now active; Tasks 36–40 are complete.
+Task 41 is complete. Task 42 is complete; Tasks 36–41 are complete.
 
-### 🚧 Task 42: Ordered multi-commit operations
+### ✅ Task 42: Ordered multi-commit operations
 
 - [x] Record ACTION-07/08 History multi-selection, ordering, partial-progress,
   and recovery scenarios.
 - [x] Add the first RED non-contiguous selection test.
-- [ ] Add exact OID-sequence previews for batch cherry-pick and revert.
-- [ ] Execute reviewed commits one at a time with explicit progress and
+- [x] Add exact OID-sequence previews for batch cherry-pick and revert.
+- [x] Execute reviewed commits one at a time with explicit progress and
   conflict recovery.
-- [ ] Verify refresh, duplicate, containment, merge-mainline, cancellation,
+- [x] Verify refresh, duplicate, containment, merge-mainline, cancellation,
   and stale-selection behavior.
 
-Task 42 is active. Tasks 43–47 follow it; Task 39 remains after those tasks.
+Task 42 is complete. Tasks 43–47 follow it; Task 39 remains after those tasks.
 
 ## Post-MVP backlog
 
 Tasks 16–47 and Task 38A are specified in
 [`docs/POST_MVP_ROADMAP.md`](docs/POST_MVP_ROADMAP.md). Start them in dependency
-order. Task 42 is now the next priority; Tasks 41–47 remain ahead of Task 39,
+order. Task 43 is now the next priority; Tasks 43–47 remain ahead of Task 39,
 and Task 38 is deferred until credential management, UX, and visual regression
 are complete. Before implementation, move exactly one task to active, add its
 behavior-ledger scenarios, and record the first failing test in the checkpoint.

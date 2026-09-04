@@ -17,6 +17,7 @@ import 'objects.dart';
 import 'shelf.dart';
 import 'file_history.dart';
 import 'reset.dart';
+import 'history_batch.dart';
 import 'push.dart';
 import 'worktree.dart';
 import 'ignore.dart';
@@ -1471,6 +1472,52 @@ class DartGitBackend {
     ).executeHistoryRollback(
       repositoryId,
       preview,
+      cancellationToken: cancellationToken,
+    );
+  }
+
+  Future<GitHistoryBatchPreview> previewHistoryBatch(
+    RepositoryId repositoryId,
+    GitHistoryBatchRequest request,
+  ) async {
+    final installation = await getGitInstallation();
+    return RepositoryService(
+      gitPath: installation.executablePath,
+      state: _state,
+      runner: _runner,
+    ).previewHistoryBatch(repositoryId, request);
+  }
+
+  Future<GitHistoryBatchResult> executeHistoryBatch(
+    RepositoryId repositoryId,
+    GitHistoryBatchPreview preview, {
+    GitCancellationToken? cancellationToken,
+  }) async {
+    final installation = await getGitInstallation();
+    return RepositoryService(
+      gitPath: installation.executablePath,
+      state: _state,
+      runner: _runner,
+    ).executeHistoryBatch(
+      repositoryId,
+      preview,
+      cancellationToken: cancellationToken,
+    );
+  }
+
+  Future<GitHistoryBatchResult> recoverHistoryBatch(
+    RepositoryId repositoryId,
+    GitHistoryBatchRecoveryRequest request, {
+    GitCancellationToken? cancellationToken,
+  }) async {
+    final installation = await getGitInstallation();
+    return RepositoryService(
+      gitPath: installation.executablePath,
+      state: _state,
+      runner: _runner,
+    ).recoverHistoryBatch(
+      repositoryId,
+      request,
       cancellationToken: cancellationToken,
     );
   }

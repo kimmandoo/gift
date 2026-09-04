@@ -5,6 +5,7 @@ import 'package:gift/src/backend/diff.dart';
 import 'package:gift/src/backend/error.dart';
 import 'package:gift/src/backend/git_gateway.dart';
 import 'package:gift/src/backend/history.dart';
+import 'package:gift/src/backend/history_batch.dart';
 import 'package:gift/src/backend/interactive_rebase.dart';
 import 'package:gift/src/backend/reset.dart';
 import 'package:gift/src/features/repository/history_controller.dart';
@@ -14,6 +15,7 @@ import 'package:gift/src/features/repository/branch_dialog.dart';
 import 'package:gift/src/features/repository/comparison_dialog.dart';
 import 'package:gift/src/features/repository/context_actions.dart';
 import 'package:gift/src/features/repository/object_dialog.dart';
+import 'package:gift/src/features/repository/history_batch_dialog.dart';
 import 'package:gift/src/backend/branch.dart';
 import 'package:gift/src/features/repository/hosting_dialog.dart';
 import 'package:flutter/material.dart';
@@ -155,6 +157,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
             _filtersPanel(context),
             if (state.isLoading) const LinearProgressIndicator(),
             if (state.error case final error?) _errorBanner(context, error),
+            _batchSelectionBar(context, state),
             Expanded(
               child: page == null
                   ? state.error != null
@@ -197,6 +200,68 @@ class _HistoryScreenState extends State<HistoryScreen> {
       bindings: bindings,
       child: Focus(autofocus: true, child: scaffold),
     );
+  }
+
+  Widget _batchSelectionBar(BuildContext context, HistoryState state) {
+    final count = state.selectedOids.length;
+    if (count == 0) {
+      return SizedBox.shrink(
+        key: const Key('history-selection-summary'),
+        child: const Text('0 commits selected'),
+      );
+    }
+    final scheme = Theme.of(context).colorScheme;
+    return Container(
+      key: const Key('history-selection-summary'),
+      color: scheme.secondaryContainer,
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+      child: Wrap(
+        crossAxisAlignment: WrapCrossAlignment.center,
+        spacing: 8,
+        runSpacing: 6,
+        children: [
+          Text('$count commits selected'),
+          if (count > 0) ...[
+            TextButton(
+              key: const Key('history-clear-selection'),
+              onPressed: _controller.clearCommitSelection,
+              child: const Text('Clear selection'),
+            ),
+            FilledButton.tonal(
+              key: const Key('history-batch-cherry-pick'),
+              onPressed: () => unawaited(
+                _openHistoryBatch(GitHistoryBatchAction.cherryPick),
+              ),
+              child: const Text('Cherry-pick selected'),
+            ),
+            FilledButton.tonal(
+              key: const Key('history-batch-revert'),
+              onPressed: () =>
+                  unawaited(_openHistoryBatch(GitHistoryBatchAction.revert)),
+              child: const Text('Revert selected'),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Future<void> _openHistoryBatch(GitHistoryBatchAction action) async {
+    final revisions = List<String>.unmodifiable(_controller.state.selectedOids);
+    if (revisions.isEmpty) return;
+    final result = await showDialog<GitHistoryBatchResult>(
+      context: context,
+      builder: (_) => HistoryBatchDialog(
+        gateway: widget.gateway,
+        repository: widget.repository,
+        action: action,
+        revisions: revisions,
+      ),
+    );
+    if (mounted && result?.historyChanged == true) {
+      _controller.clearCommitSelection();
+      await _controller.refresh();
+    }
   }
 
   Future<void> _openHosting(BuildContext context, HistoryState state) async {
@@ -473,6 +538,18 @@ class _HistoryScreenState extends State<HistoryScreen> {
               padding: const EdgeInsets.only(right: 4),
               child: Row(
                 children: [
+                  IconButton(
+                    key: ValueKey('commit-select:${commit.oid}'),
+                    tooltip: state.selectedOids.contains(commit.oid)
+                        ? 'Deselect commit'
+                        : 'Select commit',
+                    onPressed: () => _controller.toggleCommitSelection(commit),
+                    icon: Icon(
+                      state.selectedOids.contains(commit.oid)
+                          ? Icons.check_box
+                          : Icons.check_box_outline_blank,
+                    ),
+                  ),
                   Semantics(
                     container: true,
                     explicitChildNodes: true,

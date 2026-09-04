@@ -3,6 +3,8 @@
 ## 2026-09-05
 - feat(history): exposed OID-bound commit context actions and direct
   cherry-pick entry points.
+- feat(history): added ordered multi-commit selection, preview, progress,
+  and conflict recovery.
 
 ## 2026-09-04
 - fix(auth): improved Git account management with searchable host groups,
