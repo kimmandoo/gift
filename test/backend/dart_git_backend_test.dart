@@ -644,6 +644,7 @@ void main() {
   test(
     'cancels a running process and returns a typed cancellation error',
     () async {
+      GitOperationHistory.shared.clear();
       final token = GitCancellationToken();
       final program = Platform.isWindows
           ? (Platform.environment['ComSpec'] ?? 'cmd.exe')
@@ -674,10 +675,15 @@ void main() {
           ),
         ),
       );
+      expect(
+        GitOperationHistory.shared.records().single.outcome,
+        GitOperationOutcome.cancelled,
+      );
     },
   );
 
   test('times out a process that does not finish', () async {
+    GitOperationHistory.shared.clear();
     final program = Platform.isWindows
         ? (Platform.environment['ComSpec'] ?? 'cmd.exe')
         : 'sleep';
@@ -702,6 +708,10 @@ void main() {
           GitErrorCategory.timeout,
         ),
       ),
+    );
+    expect(
+      GitOperationHistory.shared.records().single.outcome,
+      GitOperationOutcome.timedOut,
     );
   });
 

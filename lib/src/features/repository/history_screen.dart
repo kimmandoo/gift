@@ -14,6 +14,7 @@ import 'package:gift/src/features/repository/hosting_dialog.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:gift/src/app/pixel_theme.dart';
+import 'package:gift/src/app/app_preferences.dart';
 
 class HistoryScreen extends StatefulWidget {
   const HistoryScreen({
@@ -173,19 +174,22 @@ class _HistoryScreenState extends State<HistoryScreen> {
         ),
       ),
     );
+    final preferences =
+        AppPreferencesScope.maybeOf(context)?.preferences ??
+        GiftPreferences.defaults;
+    final bindings = <ShortcutActivator, VoidCallback>{};
+    void bind(String id, VoidCallback action) {
+      final activator = shortcutActivator(preferences.shortcut(id));
+      if (activator != null) bindings[activator] = action;
+    }
+
+    bind('refresh', () => unawaited(_controller.refresh()));
+    bind('focusSearch', _searchFocusNode.requestFocus);
+    bind('cancel', () => Navigator.of(context).maybePop());
+    bind('nextCommit', _controller.selectNext);
+    bind('previousCommit', _controller.selectPrevious);
     return CallbackShortcuts(
-      bindings: {
-        const SingleActivator(LogicalKeyboardKey.keyR, control: true):
-            _controller.refresh,
-        const SingleActivator(LogicalKeyboardKey.arrowDown):
-            _controller.selectNext,
-        const SingleActivator(LogicalKeyboardKey.arrowUp):
-            _controller.selectPrevious,
-        const SingleActivator(LogicalKeyboardKey.keyF, control: true): () =>
-            _searchFocusNode.requestFocus(),
-        const SingleActivator(LogicalKeyboardKey.escape): () =>
-            Navigator.of(context).maybePop(),
-      },
+      bindings: bindings,
       child: Focus(autofocus: true, child: scaffold),
     );
   }

@@ -1,4 +1,7 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
+import 'package:gift/src/app/app_preferences.dart';
 import 'package:gift/src/app/pixel_theme.dart';
 import 'package:gift/src/backend/dart_git_gateway.dart';
 import 'package:gift/src/backend/git_gateway.dart';
@@ -31,7 +34,7 @@ class GiftApp extends StatefulWidget {
 }
 
 class _GiftAppState extends State<GiftApp> {
-  late ThemeMode _themeMode;
+  late GiftPreferences _preferences;
   late final GitGateway _gateway;
   late final RecentRepositoryStore _recentStore;
   late final WorkspaceController _workspaceController;
@@ -40,9 +43,13 @@ class _GiftAppState extends State<GiftApp> {
   @override
   void initState() {
     super.initState();
-    _themeMode = widget.preferences?.getString(GiftApp.themeModeKey) == 'light'
-        ? ThemeMode.light
-        : ThemeMode.dark;
+    final loaded = widget.preferences == null
+        ? const GiftPreferencesLoadResult(preferences: GiftPreferences.defaults)
+        : GiftPreferences.load(widget.preferences!);
+    _preferences = loaded.preferences;
+    if (widget.preferences != null && loaded.needsRewrite) {
+      unawaited(_preferences.save(widget.preferences!));
+    }
     _gateway = widget.gateway ?? DartGitGateway();
     _recentStore =
         widget.recentStore ??
@@ -58,6 +65,7 @@ class _GiftAppState extends State<GiftApp> {
               ? WorkspaceStore.inMemory()
               : WorkspaceStore(widget.preferences!),
           recentStore: _recentStore,
+          changesPollInterval: _preferences.refreshInterval,
         );
   }
 
@@ -67,15 +75,19 @@ class _GiftAppState extends State<GiftApp> {
     super.dispose();
   }
 
-  Future<void> _toggleTheme() async {
-    final next = _themeMode == ThemeMode.dark
+  Future<void> _updatePreferences(GiftPreferences next) async {
+    if (!mounted) return;
+    setState(() => _preferences = next);
+    if (widget.preferences != null) {
+      await next.save(widget.preferences!);
+    }
+  }
+
+  Future<void> _toggleTheme() {
+    final next = _preferences.themeMode == ThemeMode.dark
         ? ThemeMode.light
         : ThemeMode.dark;
-    setState(() => _themeMode = next);
-    await widget.preferences?.setString(
-      GiftApp.themeModeKey,
-      next == ThemeMode.light ? 'light' : 'dark',
-    );
+    return _updatePreferences(_preferences.copyWith(themeMode: next));
   }
 
   @override
@@ -83,18 +95,44 @@ class _GiftAppState extends State<GiftApp> {
     return MaterialApp(
       title: 'gift',
       debugShowCheckedModeBanner: false,
-      theme: buildPixelTheme(brightness: Brightness.light),
-      darkTheme: buildPixelTheme(),
-      themeMode: _themeMode,
-      home: PixelThemeScope(
-        mode: _themeMode,
-        toggle: _toggleTheme,
-        child: WelcomeScreen(
-          gateway: _gateway,
-          recentStore: _recentStore,
-          workspaceController: _workspaceController,
-          preferences: widget.preferences,
-          autoInitialize: widget.autoInitialize,
+      locale: const Locale('en'),
+      supportedLocales: const [Locale('en')],
+      theme: buildPixelTheme(
+        brightness: Brightness.light,
+        uiScale: _preferences.uiScale,
+        highContrast: _preferences.highContrast,
+        colorSafeGraph: _preferences.colorSafeGraph,
+      ),
+      darkTheme: buildPixelTheme(
+        uiScale: _preferences.uiScale,
+        highContrast: _preferences.highContrast,
+        colorSafeGraph: _preferences.colorSafeGraph,
+      ),
+      themeMode: _preferences.themeMode,
+      builder: (context, child) {
+        final media = MediaQuery.of(context);
+        final baseTextScale = media.textScaler.scale(1);
+        return MediaQuery(
+          data: media.copyWith(
+            textScaler: TextScaler.linear(baseTextScale),
+            disableAnimations: _preferences.reducedMotion,
+          ),
+          child: child ?? const SizedBox.shrink(),
+        );
+      },
+      home: AppPreferencesScope(
+        preferences: _preferences,
+        update: _updatePreferences,
+        child: PixelThemeScope(
+          mode: _preferences.themeMode,
+          toggle: _toggleTheme,
+          child: WelcomeScreen(
+            gateway: _gateway,
+            recentStore: _recentStore,
+            workspaceController: _workspaceController,
+            preferences: widget.preferences,
+            autoInitialize: widget.autoInitialize,
+          ),
         ),
       ),
     );

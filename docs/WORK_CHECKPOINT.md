@@ -5,95 +5,39 @@ This file is the handoff record for continuing work across query sessions.
 ## Current checkpoint
 
 - Date: 2026-09-04
-- Active task: Task 40 contextual action foundation and its requested UI
-  spacing follow-up are complete and verified; no implementation task is
-  active.
+- Active task: Task 36 Scale & resilience and Task 37 Accessibility &
+  preferences are complete and verified. No implementation task is active.
 - Branch: `main`; no new branch or worktree was created.
 - Latest completed implementation commit before this session: `a5b3462`
   (`fix(windows): create desktop install shortcut`).
-- This session's Task 40 and UI spacing changes are committed under
-  `feat(ui): add contextual action menus`.
-- Blockers: none.
-- Added immutable remote ref snapshots with grouped remotes, local tracking,
-  tags, divergence counts, OID-bound checkout/compare entry points, and
-  preview-bound remote deletion with a just-in-time published-tip check.
-- Added Update Project merge, rebase, reset-to-remote, clean-worktree/stash
-  choices, stale preview validation, cancellation, conflict detection, and
-  explicit continue/abort recovery. Added responsive Branch and Changes UI,
-  including remote branch actions and the review-first update dialog.
-- Completed the post-Task-28 History follow-up: selected commit file diffs now
-  paint semantic backgrounds to the available viewer width, long code remains
-  horizontally scrollable, the detail pane does not widen, and tapping the
-  selected file row collapses its inline diff.
-- Completed the compact UI hardening follow-up: bounded the History filter
-  expansion and diff viewport fallback at small window sizes, made File History
-  use one scroll surface, and constrained/ellipsized Advanced revision and
-  rollback preview controls.
-- Kept the diff background in a fixed viewport layer while long code scrolls,
-  and exposed a direct Push entry point from the Changes workspace. Task 29
-  then activated the behavior-ledger PUSH-02/03/04 scenarios.
-- First Task 29 RED test: `/home/mgkim/.local/flutter/bin/flutter test
-  test/backend/push_test.dart` failed before implementation because
-  `push.dart`, `DartGitBackend.previewPush`, and `GitPushRequest` did not yet
-  exist.
-- Task 29 implementation now includes typed branch/selected-commit/tag push
-  requests, OID-bound review tokens, explicit refspecs, force-with-lease,
-  protected-branch blocking, stale review detection, rejection classification,
-  and merge/rebase recovery actions. Changes and Remote operations both open
-  the review dialog.
-- Task 30 implementation includes typed worktree snapshots, NUL-delimited
-  porcelain parsing, isolated add/open operations, dirty/current/main/locked
-  action guards, expiring action previews, and stale-record pruning.
-- The Worktree manager is available from the Changes actions. It provides a
-  compact add form, state/path/HEAD display, lock/unlock/remove/prune actions,
-  dirty-removal confirmation, and opens linked roots through the workspace tab
-  controller.
-- Prior Task 30 changed files and verification remain recorded in the previous
-  checkpoint; this task's files and verification are listed below.
-- Changed files in the earlier Task 30 session: `TASKS.md`, `CHANGELOG.md`,
-  `docs/research/jetbrains-git-mvp-behavior.md`,
-  `docs/superpowers/plans/2026-09-02-gift-dart-mvp.md`, this checkpoint, the
-  worktree backend contracts/adapters/service, Changes and workspace wiring,
-  the Worktree manager, and backend/widget tests.
-- Verification: focused worktree backend and UI tests passed; the full Flutter
-  suite passed with 192 tests; `flutter analyze` and `git diff --check` passed.
-- Task 31 is complete. Its first RED real-Git fixture failed before the
-  contract existed, then passed after the backend and responsive dialog were
-  implemented.
-- Task 31 added source-aware ignored/untracked/tracked-modified snapshots,
-  scoped `.gitignore`/`.git/info/exclude` append actions, bounded
-  `git check-attr` inspection, and explanations for text/EOL/diff/filter
-  attributes. Inspection never executes configured filter or textconv commands.
-- Changed Task 31 files: `TASKS.md`, `CHANGELOG.md`,
+- This session added the Task 36 resilience foundation, Task 37 preference
+  surface, and the requested remote-branch fetch affordance.
+- Task 36 now watches repository metadata with a debounced coordinator and
+  low-frequency fallback, coalesces refreshes, bounds diff caching/rendering,
+  exposes deliberate diff paging, and records cancellation/timeout outcomes
+  after bounded process-tree cleanup.
+- Task 37 now persists validated version-1 preferences with legacy theme
+  migration and corrupt-data recovery. UI scale, reduced motion, high
+  contrast, color-safe graph colors, refresh policy, default branch/remote,
+  English-first labels, semantic controls, and configurable shortcuts flow
+  through the app and workspace boundaries.
+- Branch browsing now shows a visible fetch affordance, fetches every
+  configured remote, refreshes remote-tracking refs, and explains an empty
+  remote cache instead of hiding the section.
+- Changed files include `TASKS.md`, `CHANGELOG.md`,
   `docs/research/jetbrains-git-mvp-behavior.md`,
   `docs/superpowers/plans/2026-09-02-gift-dart-mvp.md`, this checkpoint,
-  `lib/src/backend/{ignore,git_gateway,dart_git_backend,dart_git_gateway,repository_service}.dart`,
-  `lib/src/features/repository/{ignore_dialog,changes_screen}.dart`, and the
-  related backend/widget test and gateway-stub files.
-- Verification: `PATH=/home/mgkim/.local/flutter/bin:$PATH dart run
-  tool/verify.dart` passed formatting, analysis, and all 195 Flutter tests;
-  `git diff --check` passed.
-- Task 32 activation recorded SUBMODULE-02/03/04 in the behavior ledger. Its
-  first RED command failed because the typed contract did not exist; the
-  real-Git fixture then passed after implementation.
-- Task 32 added bounded `.gitmodules` and recursive `git submodule status`
-  inspection, independent child dirty/detached checks, safe scoped lifecycle
-  actions, and nested-root mapping. The compact manager distinguishes the
-  superproject from child roots and routes opening through the workspace.
-- Changed Task 32 files: `TASKS.md`, `CHANGELOG.md`,
-  `docs/research/jetbrains-git-mvp-behavior.md`,
-  `docs/superpowers/plans/2026-09-02-gift-dart-mvp.md`, this checkpoint,
-  `lib/src/backend/{submodule,git_gateway,dart_git_backend,dart_git_gateway,repository_service}.dart`,
-  `lib/src/features/repository/{submodule_dialog,changes_screen}.dart`, and
-  the related backend/widget test and gateway-stub files.
-- Verification: `PATH=/home/mgkim/.local/flutter/bin:$PATH dart run
-  tool/verify.dart` passed formatting, analysis, and all 197 Flutter tests;
-  `git diff --check` passed.
-- Task 33 activation recorded RECOVERY-02/03 in the behavior ledger. Its first
-  RED command failed because the typed recovery and operation-console
-  contracts did not exist; the real-Git and widget fixtures then passed.
-- Earlier Task 23 and Windows incremental-build diagnostics remain recorded in
-  the plan and prior checkpoints.
+  `lib/src/app/{app_preferences,app_strings,gift_app,pixel_theme,preferences_dialog}.dart`,
+  `lib/src/backend/executor.dart`,
+  `lib/src/features/repository/{repository_refresh_coordinator,changes_controller,changes_screen,history_screen,workspace_screen,branch_dialog,remote_dialog}.dart`,
+  and their focused tests.
+- Verification:
+  `flutter test test/features/repository/repository_refresh_coordinator_test.dart
+  test/features/repository/changes_screen_test.dart
+  test/backend/dart_git_backend_test.dart` passed 43 tests;
+  focused Task 37 and repository UI tests passed 49 tests;
+  `PATH=/home/mgkim/.local/flutter/bin:$PATH dart run tool/verify.dart`
+  passed formatting, analysis, and all 224 Flutter tests.
 - Blockers: none.
 
 ## Previous checkpoint

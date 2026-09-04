@@ -6,6 +6,8 @@ import 'package:gift/src/features/settings/git_settings_dialog.dart';
 import 'package:gift/src/features/repository/workspace_controller.dart';
 import 'package:gift/src/features/repository/workspace_screen.dart';
 import 'package:gift/src/features/repository/repository_setup_dialog.dart';
+import 'package:gift/src/app/app_preferences.dart';
+import 'package:gift/src/app/preferences_dialog.dart';
 import 'package:gift/src/backend/git_gateway.dart';
 import 'package:gift/src/backend/domain.dart';
 import 'package:file_selector/file_selector.dart';
@@ -101,6 +103,14 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
         title: const Text('GIFT'),
         actions: [
           const PixelThemeToggle(),
+          Builder(
+            builder: (context) => IconButton(
+              key: const Key('open-preferences'),
+              tooltip: 'Accessibility and preferences',
+              onPressed: () => _showPreferences(context),
+              icon: const Icon(Icons.tune_outlined),
+            ),
+          ),
           if (_gitSettingsController != null)
             IconButton(
               tooltip: 'Git settings',
@@ -268,6 +278,18 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
     if (opened?.repository != null) {
       await _repositoryController.reloadRecent();
     }
+  }
+
+  Future<void> _showPreferences(BuildContext context) async {
+    final scope = AppPreferencesScope.maybeOf(context);
+    if (scope == null) return;
+    await showDialog<void>(
+      context: context,
+      builder: (_) => PreferencesDialog(
+        preferences: scope.preferences,
+        onSave: scope.update,
+      ),
+    );
   }
 
   Future<void> _initialize() async {

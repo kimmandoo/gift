@@ -1,9 +1,9 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:gift/src/features/repository/changes_screen.dart';
 import 'package:gift/src/features/repository/workspace_controller.dart';
+import 'package:gift/src/app/app_preferences.dart';
 
 /// The tab shell that keeps one Changes screen alive for every open repository.
 ///
@@ -47,18 +47,20 @@ class _WorkspaceScreenState extends State<WorkspaceScreen> {
       return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
     final activeIndex = state.activeIndex.clamp(0, state.tabs.length - 1);
+    final preferences =
+        AppPreferencesScope.maybeOf(context)?.preferences ??
+        GiftPreferences.defaults;
+    final bindings = <ShortcutActivator, VoidCallback>{};
+    void bind(String id, VoidCallback action) {
+      final activator = shortcutActivator(preferences.shortcut(id));
+      if (activator != null) bindings[activator] = action;
+    }
+
+    bind('nextTab', widget.controller.selectNext);
+    bind('previousTab', widget.controller.selectPrevious);
+    bind('cancel', () => unawaited(_closeActive()));
     return CallbackShortcuts(
-      bindings: {
-        const SingleActivator(LogicalKeyboardKey.tab, control: true):
-            widget.controller.selectNext,
-        const SingleActivator(
-          LogicalKeyboardKey.tab,
-          control: true,
-          shift: true,
-        ): widget.controller.selectPrevious,
-        const SingleActivator(LogicalKeyboardKey.keyW, control: true):
-            _closeActive,
-      },
+      bindings: bindings,
       child: Focus(
         autofocus: true,
         child: Scaffold(

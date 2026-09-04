@@ -1,4 +1,6 @@
 import 'dart:async';
+import 'dart:collection';
+import 'dart:math' as math;
 
 import 'package:gift/src/backend/commit.dart';
 import 'package:gift/src/backend/domain.dart';
@@ -7,6 +9,7 @@ import 'package:gift/src/backend/diff.dart';
 import 'package:gift/src/backend/error.dart';
 import 'package:gift/src/backend/git_gateway.dart';
 import 'package:gift/src/backend/status.dart';
+import 'package:gift/src/features/repository/repository_refresh_coordinator.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -15,21 +18,27 @@ class ChangesControllerArgs {
   const ChangesControllerArgs({
     required this.gateway,
     required this.repositoryId,
+    this.repositoryRoot,
   });
 
   final GitGateway gateway;
   final RepositoryId repositoryId;
+  final String? repositoryRoot;
 
   @override
-  int get hashCode => Object.hash(gateway, repositoryId);
+  int get hashCode => Object.hash(gateway, repositoryId, repositoryRoot);
 
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
       other is ChangesControllerArgs &&
           identical(other.gateway, gateway) &&
-          other.repositoryId == repositoryId;
+          other.repositoryId == repositoryId &&
+          other.repositoryRoot == repositoryRoot;
 }
+
+const maxRenderedDiffLines = 500;
+const diffLinePageSize = 500;
 
 /// The visible state for the Changes screen.
 class ChangesState {
@@ -52,6 +61,7 @@ class ChangesState {
     this.isMutating = false,
     this.isCommitting = false,
     this.isCommitPreflighting = false,
+    this.diffLineLimit = maxRenderedDiffLines,
     this.isDiscardPreparing = false,
     this.diffScope = GitDiffScope.workingTree,
     this.selectedDiffHunks = const <int>{},
@@ -76,10 +86,17 @@ class ChangesState {
   final bool isMutating;
   final bool isCommitting;
   final bool isCommitPreflighting;
+  final int diffLineLimit;
   final bool isDiscardPreparing;
   final GitDiffScope diffScope;
   final Set<int> selectedDiffHunks;
   final Set<int> selectedDiffLines;
+
+  bool get hasMoreDiffLines =>
+      diff != null && diff!.lines.length > diffLineLimit;
+
+  int get visibleDiffLineCount =>
+      diff == null ? 0 : math.min(diff!.lines.length, diffLineLimit);
 
   ChangesState copyWith({
     GitStatusSnapshot? snapshot,
@@ -113,6 +130,7 @@ class ChangesState {
     bool? isCommitting,
     bool? isCommitPreflighting,
     bool? isDiscardPreparing,
+    int? diffLineLimit,
     GitDiffScope? diffScope,
     Set<int>? selectedDiffHunks,
     Set<int>? selectedDiffLines,
@@ -152,6 +170,7 @@ class ChangesState {
       isCommitting: isCommitting ?? this.isCommitting,
       isCommitPreflighting: isCommitPreflighting ?? this.isCommitPreflighting,
       isDiscardPreparing: isDiscardPreparing ?? this.isDiscardPreparing,
+      diffLineLimit: diffLineLimit ?? this.diffLineLimit,
       diffScope: diffScope ?? this.diffScope,
       selectedDiffHunks: clearDiffSelection
           ? const <int>{}
@@ -168,16 +187,23 @@ class ChangesController extends ChangeNotifier {
   ChangesController({
     required this.gateway,
     required this.repositoryId,
-    this.pollInterval = const Duration(seconds: 5),
+    this.repositoryRoot,
+    this.pollInterval = const Duration(seconds: 30),
   });
 
   final GitGateway gateway;
   final RepositoryId repositoryId;
+  final String? repositoryRoot;
   final Duration pollInterval;
 
   ChangesState _state = const ChangesState();
-  Timer? _pollTimer;
+  final LinkedHashMap<String, GitDiffSnapshot> _diffCache =
+      LinkedHashMap<String, GitDiffSnapshot>();
+  static const _maxCachedDiffs = 8;
+  RepositoryRefreshCoordinator? _refreshCoordinator;
   var _requestInFlight = false;
+  var _refreshPending = false;
+  var _pendingShowProgress = false;
   var _mutationInFlight = false;
   var _diffRequest = 0;
   var _commitPreflightRequest = 0;
@@ -188,14 +214,15 @@ class ChangesController extends ChangeNotifier {
 
   ChangesState get state => _state;
 
-  /// Starts the first load and the timer that keeps the list current.
+  /// Starts the first load and metadata watcher for the visible repository.
   void start() {
     if (_started || _disposed) return;
     _started = true;
-    _pollTimer = Timer.periodic(
-      pollInterval,
-      (_) => unawaited(_refresh(showProgress: false)),
-    );
+    _refreshCoordinator = RepositoryRefreshCoordinator(
+      root: repositoryRoot,
+      fallbackInterval: pollInterval,
+      onRefresh: () => _refresh(showProgress: false),
+    )..start();
     unawaited(refresh());
   }
 
@@ -203,7 +230,12 @@ class ChangesController extends ChangeNotifier {
   Future<void> refresh() => _refresh(showProgress: true);
 
   Future<void> _refresh({required bool showProgress}) async {
-    if (_requestInFlight || _mutationInFlight || _disposed) return;
+    if (_disposed) return;
+    if (_requestInFlight || _mutationInFlight) {
+      _refreshPending = true;
+      _pendingShowProgress = _pendingShowProgress || showProgress;
+      return;
+    }
     _requestInFlight = true;
     final firstLoad = _state.snapshot == null;
     final exposeProgress = firstLoad || showProgress;
@@ -224,6 +256,9 @@ class ChangesController extends ChangeNotifier {
       final statusChanged =
           previousSnapshot == null ||
           previousSnapshot.contentHash != snapshot.contentHash;
+      if (statusChanged) {
+        _diffCache.clear();
+      }
       final selectionStillExists =
           selectedPath != null &&
           snapshot.changes.any((change) => change.path == selectedPath);
@@ -263,6 +298,12 @@ class ChangesController extends ChangeNotifier {
       );
     } finally {
       _requestInFlight = false;
+      if (_refreshPending && !_disposed && !_mutationInFlight) {
+        final pendingShowProgress = _pendingShowProgress;
+        _refreshPending = false;
+        _pendingShowProgress = false;
+        unawaited(_refresh(showProgress: pendingShowProgress));
+      }
     }
   }
 
@@ -280,6 +321,7 @@ class ChangesController extends ChangeNotifier {
         clearDiscardError: true,
         isDiscardPreparing: false,
         isDiffLoading: false,
+        diffLineLimit: maxRenderedDiffLines,
         clearDiffSelection: true,
       ),
     );
@@ -314,9 +356,26 @@ class ChangesController extends ChangeNotifier {
         clearDiffError: true,
         clearDiffSelection: true,
         isDiffLoading: true,
+        diffLineLimit: maxRenderedDiffLines,
       ),
     );
     _lastDiffLineIndex = null;
+    final cacheKey = _diffCacheKey(path, originalPath, scope);
+    final cached = _diffCache.remove(cacheKey);
+    if (cached != null) {
+      _diffCache[cacheKey] = cached;
+      if (request == _diffRequest && !_disposed) {
+        _setState(
+          _state.copyWith(
+            diff: cached,
+            clearDiffError: true,
+            isDiffLoading: false,
+            diffLineLimit: math.min(cached.lines.length, maxRenderedDiffLines),
+          ),
+        );
+      }
+      return;
+    }
     try {
       final diff = await gateway.getDiff(
         repositoryId,
@@ -325,13 +384,34 @@ class ChangesController extends ChangeNotifier {
         originalPath: originalPath,
       );
       if (request != _diffRequest || _disposed) return;
+      _diffCache[cacheKey] = diff;
+      while (_diffCache.length > _maxCachedDiffs) {
+        _diffCache.remove(_diffCache.keys.first);
+      }
       _setState(
-        _state.copyWith(diff: diff, clearDiffError: true, isDiffLoading: false),
+        _state.copyWith(
+          diff: diff,
+          clearDiffError: true,
+          isDiffLoading: false,
+          diffLineLimit: math.min(diff.lines.length, maxRenderedDiffLines),
+        ),
       );
     } on GitError catch (error) {
       if (request != _diffRequest || _disposed) return;
       _setState(_state.copyWith(diffError: error, isDiffLoading: false));
     }
+  }
+
+  void loadMoreDiffLines() {
+    if (_disposed || !_state.hasMoreDiffLines) return;
+    _setState(
+      _state.copyWith(
+        diffLineLimit: math.min(
+          _state.diffLineLimit + diffLinePageSize,
+          _state.diff!.lines.length,
+        ),
+      ),
+    );
   }
 
   bool get canStageSelected {
@@ -523,6 +603,7 @@ class ChangesController extends ChangeNotifier {
       lineIndexes: _state.selectedDiffLines,
     );
     _mutationInFlight = true;
+    _diffCache.clear();
     _setState(_state.copyWith(clearMutationError: true, isMutating: true));
     try {
       final snapshot = await operation(repositoryId, selection);
@@ -606,6 +687,7 @@ class ChangesController extends ChangeNotifier {
   }) async {
     if (_disposed || _mutationInFlight || !canCommit) return;
     _mutationInFlight = true;
+    _diffCache.clear();
     _setState(
       _state.copyWith(
         clearMutationError: true,
@@ -743,6 +825,7 @@ class ChangesController extends ChangeNotifier {
       return;
     }
     _mutationInFlight = true;
+    _diffCache.clear();
     _setState(
       _state.copyWith(
         clearDiscardPreview: true,
@@ -796,6 +879,7 @@ class ChangesController extends ChangeNotifier {
     final change = _selectedChange;
     if (change == null) return;
     _mutationInFlight = true;
+    _diffCache.clear();
     _setState(
       _state.copyWith(
         clearMutationError: true,
@@ -861,10 +945,15 @@ class ChangesController extends ChangeNotifier {
       line.kind == GitDiffLineKind.addition ||
       line.kind == GitDiffLineKind.deletion;
 
+  String _diffCacheKey(String path, String? originalPath, GitDiffScope scope) {
+    return '${scope.name}:$path:${originalPath ?? ''}';
+  }
+
   @override
   void dispose() {
     _disposed = true;
-    _pollTimer?.cancel();
+    unawaited(_refreshCoordinator?.dispose());
+    _refreshCoordinator = null;
     super.dispose();
   }
 
@@ -881,5 +970,6 @@ final changesControllerProvider = ChangeNotifierProvider.autoDispose
       return ChangesController(
         gateway: args.gateway,
         repositoryId: args.repositoryId,
+        repositoryRoot: args.repositoryRoot,
       );
     });

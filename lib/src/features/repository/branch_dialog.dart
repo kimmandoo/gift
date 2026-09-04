@@ -17,10 +17,12 @@ class BranchDialog extends StatefulWidget {
     super.key,
     required this.gateway,
     required this.repository,
+    this.preferredBranch,
   });
 
   final GitGateway gateway;
   final RepositoryOpened repository;
+  final String? preferredBranch;
 
   @override
   State<BranchDialog> createState() => _BranchDialogState();
@@ -160,98 +162,146 @@ class _BranchDialogState extends State<BranchDialog> {
     if (_isLoading && branches == null) {
       return const Center(child: CircularProgressIndicator());
     }
-    final remoteBranches = _remoteSnapshot?.branches
-        .where((branch) => !branch.isSymbolicHead)
-        .toList(growable: false);
-    if (branches == null) return const SizedBox.shrink();
-    if (branches.isEmpty && remoteBranches?.isNotEmpty != true) {
+    final visibleBranches = branches ?? const <GitBranch>[];
+    final orderedBranches = [...visibleBranches]
+      ..sort((left, right) {
+        final preferred = widget.preferredBranch;
+        if (preferred == null) return 0;
+        if (left.name == preferred) return -1;
+        if (right.name == preferred) return 1;
+        return 0;
+      });
+    final visibleRemoteBranches =
+        _remoteSnapshot?.branches
+            .where((branch) => !branch.isSymbolicHead)
+            .toList(growable: false) ??
+        const <GitRemoteBranch>[];
+    if (orderedBranches.isEmpty && _remoteSnapshot == null) {
       return const Center(child: Text('No local branches yet.'));
     }
-    return SingleChildScrollView(
-      child: Column(
-        children: [
-          for (final branch in branches)
-            ListTile(
-              key: ValueKey('branch:${branch.name}'),
-              leading: Icon(
-                branch.isCurrent
-                    ? Icons.radio_button_checked
-                    : Icons.call_split,
-              ),
-              title: Text(branch.name),
-              subtitle: Text(
-                branch.isCurrent
-                    ? 'Current branch'
-                    : branch.hasUpstream
-                    ? 'Tracks ${branch.upstream}'
-                    : 'Local branch',
-              ),
-              trailing: branch.isCurrent
-                  ? const Text('HEAD')
-                  : PopupMenuButton<String>(
-                      key: ValueKey('branch-actions:${branch.name}'),
-                      tooltip: 'Branch actions',
-                      onSelected: (action) =>
-                          _prepareQuickOperation(action, branch.name),
+    return Stack(
+      children: [
+        SingleChildScrollView(
+          child: Column(
+            children: [
+              for (final branch in orderedBranches)
+                ListTile(
+                  key: ValueKey('branch:${branch.name}'),
+                  leading: Icon(
+                    branch.isCurrent
+                        ? Icons.radio_button_checked
+                        : Icons.call_split,
+                  ),
+                  title: Text(branch.name),
+                  subtitle: Text(
+                    branch.isCurrent
+                        ? 'Current branch'
+                        : branch.hasUpstream
+                        ? 'Tracks ${branch.upstream}'
+                        : 'Local branch',
+                  ),
+                  trailing: branch.isCurrent
+                      ? const Text('HEAD')
+                      : PopupMenuButton<String>(
+                          key: ValueKey('branch-actions:${branch.name}'),
+                          tooltip: 'Branch actions',
+                          onSelected: (action) =>
+                              _prepareQuickOperation(action, branch.name),
+                          itemBuilder: (context) => const [
+                            PopupMenuItem(
+                              value: 'rename',
+                              child: Text('Rename'),
+                            ),
+                            PopupMenuItem(
+                              value: 'delete',
+                              child: Text('Delete'),
+                            ),
+                          ],
+                        ),
+                  onTap: branch.isCurrent || _isMutating
+                      ? null
+                      : () => _switchBranch(branch.name),
+                ),
+              if (_remoteSnapshot != null) ...[
+                const Divider(),
+                const ListTile(
+                  dense: true,
+                  leading: Icon(Icons.cloud_outlined),
+                  title: Text('Remote branches'),
+                ),
+                if (visibleRemoteBranches.isEmpty)
+                  const ListTile(
+                    dense: true,
+                    title: Text(
+                      'No remote branches cached. Fetch remote branches to update.',
+                    ),
+                  ),
+                for (final branch in visibleRemoteBranches)
+                  ListTile(
+                    key: ValueKey('remote-branch:${branch.name}'),
+                    leading: const Icon(Icons.cloud_queue_outlined),
+                    title: Text(branch.name),
+                    subtitle: Text(
+                      branch.localTrackingBranch == null
+                          ? 'Remote-tracking branch'
+                          : 'Tracked by ${branch.localTrackingBranch}',
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    trailing: PopupMenuButton<String>(
+                      key: ValueKey('remote-actions:${branch.name}'),
+                      tooltip: 'Remote branch actions',
+                      onSelected: (action) {
+                        if (action == 'checkout') {
+                          unawaited(_checkoutRemoteBranch(branch));
+                        } else if (action == 'compare') {
+                          unawaited(_compareRemoteBranch(branch));
+                        } else {
+                          unawaited(_deleteRemoteBranch(branch));
+                        }
+                      },
                       itemBuilder: (context) => const [
-                        PopupMenuItem(value: 'rename', child: Text('Rename')),
-                        PopupMenuItem(value: 'delete', child: Text('Delete')),
+                        PopupMenuItem(
+                          value: 'checkout',
+                          child: Text('Checkout as local branch'),
+                        ),
+                        PopupMenuItem(
+                          value: 'compare',
+                          child: Text('Compare with current'),
+                        ),
+                        PopupMenuItem(
+                          value: 'delete',
+                          child: Text('Delete remote branch'),
+                        ),
                       ],
                     ),
-              onTap: branch.isCurrent || _isMutating
-                  ? null
-                  : () => _switchBranch(branch.name),
-            ),
-          if (remoteBranches?.isNotEmpty == true) ...[
-            const Divider(),
-            const ListTile(
-              dense: true,
-              leading: Icon(Icons.cloud_outlined),
-              title: Text('Remote branches'),
-            ),
-            for (final branch in remoteBranches!)
-              ListTile(
-                key: ValueKey('remote-branch:${branch.name}'),
-                leading: const Icon(Icons.cloud_queue_outlined),
-                title: Text(branch.name),
-                subtitle: Text(
-                  branch.localTrackingBranch == null
-                      ? 'Remote-tracking branch'
-                      : 'Tracked by ${branch.localTrackingBranch}',
-                  overflow: TextOverflow.ellipsis,
+                    onTap: _isMutating
+                        ? null
+                        : () => _checkoutRemoteBranch(branch),
+                  ),
+              ],
+            ],
+          ),
+        ),
+        Positioned(
+          top: 4,
+          right: 4,
+          child: Tooltip(
+            message: 'Fetch remote branches',
+            child: Semantics(
+              button: true,
+              label: 'Fetch remote branches',
+              child: InkWell(
+                key: const Key('fetch-remote-branches'),
+                onTap: _isMutating ? null : _fetchRemoteBranches,
+                child: const Padding(
+                  padding: EdgeInsets.all(4),
+                  child: Icon(Icons.cloud_download_outlined, size: 20),
                 ),
-                trailing: PopupMenuButton<String>(
-                  key: ValueKey('remote-actions:${branch.name}'),
-                  tooltip: 'Remote branch actions',
-                  onSelected: (action) {
-                    if (action == 'checkout') {
-                      unawaited(_checkoutRemoteBranch(branch));
-                    } else if (action == 'compare') {
-                      unawaited(_compareRemoteBranch(branch));
-                    } else {
-                      unawaited(_deleteRemoteBranch(branch));
-                    }
-                  },
-                  itemBuilder: (context) => const [
-                    PopupMenuItem(
-                      value: 'checkout',
-                      child: Text('Checkout as local branch'),
-                    ),
-                    PopupMenuItem(
-                      value: 'compare',
-                      child: Text('Compare with current'),
-                    ),
-                    PopupMenuItem(
-                      value: 'delete',
-                      child: Text('Delete remote branch'),
-                    ),
-                  ],
-                ),
-                onTap: _isMutating ? null : () => _checkoutRemoteBranch(branch),
               ),
-          ],
-        ],
-      ),
+            ),
+          ),
+        ),
+      ],
     );
   }
 
@@ -554,6 +604,34 @@ class _BranchDialogState extends State<BranchDialog> {
     } on Object {
       // Older/focused test gateways and repositories without remote refs keep
       // the local branch browser usable when the optional remote read fails.
+    }
+  }
+
+  Future<void> _fetchRemoteBranches() async {
+    if (_isMutating) return;
+    setState(() {
+      _isMutating = true;
+      _error = null;
+    });
+    final cancellation = GitCancellationToken();
+    _operationCancellation = cancellation;
+    try {
+      final remotes = await widget.gateway.getRemotes(
+        widget.repository.repositoryId,
+      );
+      for (final remote in remotes) {
+        await widget.gateway.fetch(
+          widget.repository.repositoryId,
+          remote.name,
+          cancellationToken: cancellation,
+        );
+      }
+      await _loadBranches();
+    } on GitError catch (error) {
+      if (mounted) setState(() => _error = error);
+    } finally {
+      _operationCancellation = null;
+      if (mounted) setState(() => _isMutating = false);
     }
   }
 

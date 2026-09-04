@@ -35,6 +35,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter/services.dart';
 import 'package:gift/src/app/pixel_theme.dart';
+import 'package:gift/src/app/app_preferences.dart';
 
 const _diffSelectorHeight = 20.0;
 const _diffCheckboxScale = 0.8;
@@ -123,6 +124,7 @@ class _ChangesScreenBodyState extends ConsumerState<_ChangesScreenBody> {
     _providerArgs = ChangesControllerArgs(
       gateway: widget.gateway,
       repositoryId: widget.repository.repositoryId,
+      repositoryRoot: widget.repository.root,
     );
     final providedController = widget.controller;
     if (providedController != null) {
@@ -416,29 +418,23 @@ class _ChangesScreenBodyState extends ConsumerState<_ChangesScreenBody> {
         ),
       ),
     );
+    final preferences =
+        AppPreferencesScope.maybeOf(context)?.preferences ??
+        GiftPreferences.defaults;
+    final bindings = <ShortcutActivator, VoidCallback>{};
+    void bind(String id, VoidCallback action) {
+      final activator = shortcutActivator(preferences.shortcut(id));
+      if (activator != null) bindings[activator] = action;
+    }
+
+    bind('refresh', () => unawaited(controller.refresh()));
+    bind('history', () => unawaited(_openHistory(context)));
+    bind('branch', () => unawaited(_openBranches(context)));
+    bind('remote', () => unawaited(_openRemotes(context)));
+    bind('commit', () => unawaited(_submitCommit(controller)));
+    if (widget.onBack != null) bind('cancel', widget.onBack!);
     return CallbackShortcuts(
-      bindings: {
-        const SingleActivator(LogicalKeyboardKey.keyR, control: true):
-            controller.refresh,
-        const SingleActivator(LogicalKeyboardKey.keyH, control: true): () =>
-            unawaited(_openHistory(context)),
-        const SingleActivator(
-          LogicalKeyboardKey.keyB,
-          control: true,
-          shift: true,
-        ): () =>
-            unawaited(_openBranches(context)),
-        const SingleActivator(
-          LogicalKeyboardKey.keyR,
-          control: true,
-          shift: true,
-        ): () =>
-            unawaited(_openRemotes(context)),
-        const SingleActivator(LogicalKeyboardKey.enter, control: true): () =>
-            unawaited(_submitCommit(controller)),
-        if (widget.onBack != null)
-          const SingleActivator(LogicalKeyboardKey.escape): widget.onBack!,
-      },
+      bindings: bindings,
       child: Focus(autofocus: true, child: scaffold),
     );
   }
@@ -1558,10 +1554,14 @@ class _ChangesScreenBodyState extends ConsumerState<_ChangesScreenBody> {
   }
 
   Future<void> _openBranches(BuildContext context) async {
+    final preferences = AppPreferencesScope.maybeOf(context)?.preferences;
     final result = await showDialog<Object>(
       context: context,
-      builder: (_) =>
-          BranchDialog(gateway: widget.gateway, repository: widget.repository),
+      builder: (_) => BranchDialog(
+        gateway: widget.gateway,
+        repository: widget.repository,
+        preferredBranch: preferences?.defaultBranch,
+      ),
     );
     if (!context.mounted || result == null) return;
     await _activeController.refresh();
@@ -1578,10 +1578,14 @@ class _ChangesScreenBodyState extends ConsumerState<_ChangesScreenBody> {
   }
 
   Future<void> _openRemotes(BuildContext context) async {
+    final preferences = AppPreferencesScope.maybeOf(context)?.preferences;
     final result = await showDialog<Object?>(
       context: context,
-      builder: (_) =>
-          RemoteDialog(gateway: widget.gateway, repository: widget.repository),
+      builder: (_) => RemoteDialog(
+        gateway: widget.gateway,
+        repository: widget.repository,
+        preferredRemote: preferences?.defaultRemote,
+      ),
     );
     if (!context.mounted || result == null) return;
     await _activeController.refresh();
@@ -1827,21 +1831,53 @@ class _ChangesScreenBodyState extends ConsumerState<_ChangesScreenBody> {
       return const Center(child: Text('No changes in this scope.'));
     }
 
+    final visibleLineCount = state.visibleDiffLineCount;
+    final hasMoreLines = state.hasMoreDiffLines;
     final lines = scrollable
         ? ListView.builder(
             key: const Key('diff-lines'),
-            itemCount: diff.lines.length,
-            itemBuilder: (context, index) =>
-                _diffLine(context, diff.lines[index], index, state),
+            itemCount: visibleLineCount + (hasMoreLines ? 1 : 0),
+            itemBuilder: (context, index) {
+              if (index == visibleLineCount) {
+                return _loadMoreDiffLines(context, state);
+              }
+              return _diffLine(context, diff.lines[index], index, state);
+            },
           )
         : Column(
             key: const Key('diff-lines'),
             children: [
-              for (var index = 0; index < diff.lines.length; index++)
+              for (var index = 0; index < visibleLineCount; index++)
                 _diffLine(context, diff.lines[index], index, state),
+              if (hasMoreLines) _loadMoreDiffLines(context, state),
             ],
           );
     return SelectionArea(key: const Key('diff-selection-area'), child: lines);
+  }
+
+  Widget _loadMoreDiffLines(BuildContext context, ChangesState state) {
+    final total = state.diff?.lines.length ?? 0;
+    return Semantics(
+      container: true,
+      label: 'Diff output truncated. Load more lines.',
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Column(
+          children: [
+            Text(
+              'Showing ${state.visibleDiffLineCount} of $total diff lines.',
+              style: Theme.of(context).textTheme.bodySmall,
+              textAlign: TextAlign.center,
+            ),
+            TextButton(
+              key: const Key('load-more-diff-lines'),
+              onPressed: _activeController.loadMoreDiffLines,
+              child: const Text('Load more diff lines'),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   Widget _patchSelectionHint(BuildContext context, ChangesState state) {

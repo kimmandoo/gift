@@ -149,6 +149,49 @@ void main() {
     expect(find.byKey(const Key('branch-operation-result')), findsOneWidget);
   });
 
+  testWidgets('shows remote branch fetching in the branch browser', (
+    tester,
+  ) async {
+    addTearDown(tester.view.reset);
+    tester.view.physicalSize = const Size(420, 640);
+    tester.view.devicePixelRatio = 1;
+    final repository = const RepositoryOpened(
+      repositoryId: RepositoryId(value: 'remote-fetch-ui-repository'),
+      root: '/workspace/project',
+    );
+    final status = GitStatusSnapshot(
+      repositoryId: repository.repositoryId,
+      root: repository.root,
+      branch: const GitBranchStatus(head: 'main'),
+      changes: const [],
+      contentHash: 'remote-fetch-ui',
+      generation: 1,
+    );
+    final gateway = FakeBranchGateway(
+      branches: const [GitBranch(name: 'main', isCurrent: true)],
+      action: GitBranchActionResult(
+        repositoryId: repository.repositoryId,
+        branchName: 'main',
+        status: status,
+      ),
+    );
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: BranchDialog(gateway: gateway, repository: repository),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('fetch-remote-branches')), findsOneWidget);
+
+    await tester.tap(find.byKey(const Key('fetch-remote-branches')));
+    await tester.pumpAndSettle();
+
+    expect(gateway.fetchCalls, ['origin']);
+  });
+
   testWidgets('shows remote branches as checkout and compare actions', (
     tester,
   ) async {
@@ -298,6 +341,7 @@ class FakeBranchGateway with GitPatchGatewayStub implements GitGateway {
     this.remoteSnapshot,
     this.remoteDeletePreview,
     this.remoteDeleteResult,
+    this.remotes = const [GitRemote(name: 'origin')],
   });
 
   final List<GitBranch> branches;
@@ -307,10 +351,12 @@ class FakeBranchGateway with GitPatchGatewayStub implements GitGateway {
   final GitRemoteBranchSnapshot? remoteSnapshot;
   final GitRemoteBranchDeletePreview? remoteDeletePreview;
   final GitRemoteBranchActionResult? remoteDeleteResult;
+  final List<GitRemote> remotes;
   String? switchedTo;
   String? checkedOutRemote;
   String? deletedRemote;
   var executed = false;
+  final fetchCalls = <String>[];
 
   @override
   Future<List<GitBranch>> getBranches(RepositoryId repositoryId) async =>
@@ -424,15 +470,24 @@ class FakeBranchGateway with GitPatchGatewayStub implements GitGateway {
   ) => throw UnimplementedError();
 
   @override
-  Future<List<GitRemote>> getRemotes(RepositoryId repositoryId) =>
-      throw UnimplementedError();
+  Future<List<GitRemote>> getRemotes(RepositoryId repositoryId) async =>
+      remotes;
 
   @override
   Future<GitRemoteOperationResult> fetch(
     RepositoryId repositoryId,
     String remote, {
     GitCancellationToken? cancellationToken,
-  }) => throw UnimplementedError();
+  }) async {
+    fetchCalls.add(remote);
+    return GitRemoteOperationResult(
+      repositoryId: repositoryId,
+      remote: remote,
+      operation: GitRemoteOperation.fetch,
+      status: action.status,
+      summary: 'Fetched $remote.',
+    );
+  }
 
   @override
   Future<GitRemoteOperationResult> pull(

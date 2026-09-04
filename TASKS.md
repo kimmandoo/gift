@@ -6,9 +6,9 @@
 
 ## Progress
 
-- **Total Tasks:** 47
-- **Completed:** 36 / 47
-- **Current Active Task:** None. Task 41 — Commit context actions is prioritized next.
+- **Completed:** 38 / 47
+- **Current Active Task:** None. Task 37 — Accessibility & preferences is
+  complete.
 
 | # | Scope | Dart backend deliverables | Flutter deliverables | Status |
 |---|---|---|---|:---:|
@@ -47,8 +47,8 @@
 | **33** | Recovery diagnostics | Reflog browsing, recovery refs, and Git operation console | Recovery and command diagnostics | ✅ |
 | **34** | Repository setup | Clone, init, publish, shallow/unshallow, and root mapping | Repository setup flows | ✅ |
 | **35** | Hosting integration | Optional GitHub/GitLab links and review handoff contracts | Hosting links and review entry points | ✅ |
-| **36** | Scale & resilience | File watching, cache invalidation, process supervision | Large-repository responsiveness | ⬜ |
-| **37** | Accessibility & preferences | Versioned settings and locale-ready text contracts | Scaling, remapping, themes, and accessibility | ⬜ |
+| **36** | Scale & resilience | File watching, cache invalidation, process supervision | Large-repository responsiveness | ✅ |
+| **37** | Accessibility & preferences | Versioned settings and locale-ready text contracts | Scaling, remapping, themes, and accessibility | ✅ |
 | **38** | Public release | Signed packages, provenance, update metadata, and release checks | Installers and first-run diagnostics | ⬜ |
 | **39** | Visual regression QA | Deterministic fixture states and platform font checks | Golden matrix, overflow guards, and interaction snapshots | ⬜ |
 | **40** | Contextual action foundation | Typed action availability, immutable targets, and preview routing | Shared secondary-click, keyboard, and overflow action menus | ✅ |
@@ -575,8 +575,44 @@ Task 35 is complete. GitHub/GitLab SSH and HTTPS remotes now produce
 credential-safe repository, commit, file, and blame links. Copy/open actions
 and an explicitly optional review-handoff capability are available without
 coupling local Git operations to hosting authentication. The full Flutter
-verification suite passed with 206 tests. Task 40 is now prioritized next for
-the requested desktop interaction and action-discoverability work.
+verification suite passed with 206 tests. Task 36 then completed its
+large-repository resilience and process-lifecycle work.
+
+
+### ✅ Task 36: Scale & resilience
+
+- [x] Record debounced metadata watching, fallback refresh, coalescing,
+  bounded-cache, process cleanup, and large-list scenarios in the behavior
+  ledger.
+- [x] Add the first RED resilience test.
+- [x] Replace fixed polling with debounced repository watching and a
+  low-frequency fallback refresh.
+- [x] Add explicit invalidation/coalescing and process lifecycle diagnostics.
+- [x] Virtualize large rows, cap rendered diff lines, and expose truncation
+  with deliberate load-more behavior.
+- [x] Verify refresh, cancellation, switching, and disposal do not leak
+  timers, listeners, tokens, or child processes.
+
+Task 36 is complete. Repository status now responds to debounced filesystem
+events with a low-frequency fallback, diff previews are bounded and paged,
+and process diagnostics distinguish cancellation and timeout cleanup.
+
+### ✅ Task 37: Accessibility & preferences
+
+- [x] Record preference migration, scaling, reduced-motion, contrast,
+  color-safe graph, shortcut conflict, semantics, and locale scenarios.
+- [x] Add the first RED preference persistence test.
+- [x] Implement versioned preference storage with migration and corrupt-data
+  recovery.
+- [x] Add UI scaling, reduced-motion, contrast, palette, and shortcut
+  remapping controls.
+- [x] Harden semantics, focus order, text scaling, and locale boundaries.
+- [x] Verify settings survive upgrades and core workflows remain mouse-free
+  and color-independent.
+
+Task 37 is complete. Versioned preferences now persist accessibility, theme,
+shortcut, refresh, and repository-choice settings; the app applies them at
+its theme, media-query, locale, and workspace boundaries.
 
 ### ✅ Task 40: Contextual action foundation
 
@@ -593,9 +629,9 @@ the requested desktop interaction and action-discoverability work.
 - [x] Restore missing vertical spacing between File History controls and audit
   adjacent option groups in File History, interactive rebase, object, and
   remote dialogs.
-
 Task 40 is complete. The shared action presenter and Changes row integration
-passed the full Flutter verification suite with 213 tests. Task 41 is next.
+passed the full Flutter verification suite with 213 tests. Tasks 36 and 37 are
+also complete; the next unstarted task is Task 38.
 
 ## Post-MVP backlog
 

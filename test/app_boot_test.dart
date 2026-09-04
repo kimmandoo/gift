@@ -1,3 +1,6 @@
+import 'dart:convert';
+
+import 'package:gift/src/app/app_preferences.dart';
 import 'package:gift/src/app/gift_app.dart';
 import 'package:gift/src/app/pixel_theme.dart';
 import 'package:flutter/material.dart';
@@ -44,6 +47,7 @@ void main() {
     expect(theme.textTheme.headlineSmall?.fontSize, pixelHeadlineSmallSize);
     expect(theme.textTheme.headlineMedium?.fontSize, pixelHeadlineMediumSize);
     expect(theme.appBarTheme.titleTextStyle?.fontSize, pixelTitleLargeSize);
+    expect(theme.appBarTheme.actionsPadding, const EdgeInsets.only(right: 8));
     expect(
       theme.filledButtonTheme.style?.minimumSize?.resolve({}),
       const Size(40, 38),
@@ -156,6 +160,50 @@ void main() {
 
     expect(tester.takeException(), isNull);
     expect(find.text('Open Repository'), findsOneWidget);
+  });
+  testWidgets('insets AppBar actions from the window edge', (tester) async {
+    addTearDown(tester.view.reset);
+    tester.view.physicalSize = const Size(640, 480);
+    tester.view.devicePixelRatio = 1;
+
+    await tester.pumpWidget(const GiftApp());
+    await tester.pump();
+
+    expect(
+      tester.getRect(find.byKey(const Key('theme-toggle'))).right,
+      lessThanOrEqualTo(632),
+    );
+  });
+  testWidgets('applies persisted scale, motion, and locale preferences', (
+    tester,
+  ) async {
+    SharedPreferences.setMockInitialValues({
+      GiftPreferences.storageKey: jsonEncode({
+        'version': GiftPreferences.currentVersion,
+        'uiScale': 1.25,
+        'reducedMotion': true,
+        'highContrast': true,
+      }),
+    });
+    final preferences = await SharedPreferences.getInstance();
+
+    await tester.pumpWidget(GiftApp(preferences: preferences));
+
+    final app = tester.widget<MaterialApp>(find.byType(MaterialApp));
+    expect(app.locale, const Locale('en'));
+    expect(app.supportedLocales, [const Locale('en')]);
+    expect(
+      app.darkTheme?.textTheme.bodyMedium?.fontSize,
+      closeTo(pixelBodyMediumSize * 1.25, 0.001),
+    );
+    expect(app.darkTheme?.dividerTheme.thickness, greaterThanOrEqualTo(1.5));
+    expect(
+      find.byWidgetPredicate(
+        (widget) =>
+            widget is MediaQuery && widget.data.disableAnimations == true,
+      ),
+      findsAtLeastNWidgets(1),
+    );
   });
 }
 

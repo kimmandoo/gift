@@ -50,7 +50,12 @@ const pixelTitleLargeSize = 17.0;
 const pixelHeadlineSmallSize = 20.0;
 const pixelHeadlineMediumSize = 22.0;
 
-ThemeData buildPixelTheme({Brightness brightness = Brightness.dark}) {
+ThemeData buildPixelTheme({
+  Brightness brightness = Brightness.dark,
+  double uiScale = 1,
+  bool highContrast = false,
+  bool colorSafeGraph = true,
+}) {
   final dark = brightness == Brightness.dark;
   final canvas = dark ? pixelCanvas : pixelLightCanvas;
   final panel = dark ? pixelPanel : pixelLightPanel;
@@ -58,7 +63,8 @@ ThemeData buildPixelTheme({Brightness brightness = Brightness.dark}) {
   final ink = dark ? pixelInk : pixelLightInk;
   final muted = dark ? pixelMuted : pixelLightMuted;
   final primary = dark ? pixelMint : pixelLightMint;
-  final scheme = dark
+  final scale = uiScale.clamp(0.8, 1.6).toDouble();
+  final baseScheme = dark
       ? const ColorScheme.dark(
           surface: pixelPanel,
           onSurface: pixelInk,
@@ -119,7 +125,16 @@ ThemeData buildPixelTheme({Brightness brightness = Brightness.dark}) {
           outline: pixelLightMuted,
           onSurfaceVariant: pixelLightMuted,
         );
-  final border = BorderSide(color: muted.withValues(alpha: 0.55));
+  final scheme = colorSafeGraph
+      ? baseScheme.copyWith(
+          secondary: dark ? const Color(0xFF56B4E9) : const Color(0xFF005A8D),
+          tertiary: dark ? const Color(0xFFE69F00) : const Color(0xFF8C5C00),
+        )
+      : baseScheme;
+  final border = BorderSide(
+    color: muted.withValues(alpha: highContrast ? 0.9 : 0.55),
+    width: highContrast ? 1.5 : 1,
+  );
   final square = RoundedRectangleBorder(
     borderRadius: BorderRadius.zero,
     side: border,
@@ -128,9 +143,9 @@ ThemeData buildPixelTheme({Brightness brightness = Brightness.dark}) {
     borderRadius: BorderRadius.zero,
     borderSide: border,
   );
-  const buttonTextStyle = TextStyle(
+  final buttonTextStyle = TextStyle(
     fontFamily: pixelFontFamily,
-    fontSize: pixelLabelLargeSize,
+    fontSize: pixelLabelLargeSize * scale,
     height: 1.28,
     fontWeight: FontWeight.w600,
     letterSpacing: 0.05,
@@ -161,7 +176,7 @@ ThemeData buildPixelTheme({Brightness brightness = Brightness.dark}) {
       }
       return Colors.transparent;
     }),
-    textStyle: const WidgetStatePropertyAll(buttonTextStyle),
+    textStyle: WidgetStatePropertyAll(buttonTextStyle),
     iconSize: const WidgetStatePropertyAll(18),
     padding: const WidgetStatePropertyAll(buttonPadding),
     tapTargetSize: MaterialTapTargetSize.shrinkWrap,
@@ -204,7 +219,7 @@ ThemeData buildPixelTheme({Brightness brightness = Brightness.dark}) {
       }
       return border;
     }),
-    textStyle: const WidgetStatePropertyAll(buttonTextStyle),
+    textStyle: WidgetStatePropertyAll(buttonTextStyle),
     iconSize: const WidgetStatePropertyAll(18),
     padding: const WidgetStatePropertyAll(buttonPadding),
     tapTargetSize: MaterialTapTargetSize.shrinkWrap,
@@ -236,7 +251,7 @@ ThemeData buildPixelTheme({Brightness brightness = Brightness.dark}) {
       }
       return Colors.transparent;
     }),
-    textStyle: const WidgetStatePropertyAll(buttonTextStyle),
+    textStyle: WidgetStatePropertyAll(buttonTextStyle),
     iconSize: const WidgetStatePropertyAll(18),
     padding: const WidgetStatePropertyAll(buttonPadding),
     tapTargetSize: MaterialTapTargetSize.shrinkWrap,
@@ -255,49 +270,49 @@ ThemeData buildPixelTheme({Brightness brightness = Brightness.dark}) {
   final textTheme = base.textTheme.copyWith(
     bodyLarge: TextStyle(
       color: ink,
-      fontSize: pixelBodyLargeSize,
+      fontSize: pixelBodyLargeSize * scale,
       height: 1.42,
       letterSpacing: 0,
       fontWeight: FontWeight.w500,
     ),
     bodyMedium: TextStyle(
       color: ink,
-      fontSize: pixelBodyMediumSize,
+      fontSize: pixelBodyMediumSize * scale,
       height: 1.4,
       letterSpacing: 0,
       fontWeight: FontWeight.w500,
     ),
     bodySmall: TextStyle(
       color: muted,
-      fontSize: pixelBodySmallSize,
+      fontSize: pixelBodySmallSize * scale,
       height: 1.38,
       letterSpacing: 0,
       fontWeight: FontWeight.w500,
     ),
     labelLarge: TextStyle(
       color: ink,
-      fontSize: pixelLabelLargeSize,
+      fontSize: pixelLabelLargeSize * scale,
       height: 1.3,
       fontWeight: FontWeight.w600,
       letterSpacing: 0.05,
     ),
     labelSmall: TextStyle(
       color: muted,
-      fontSize: pixelLabelSmallSize,
+      fontSize: pixelLabelSmallSize * scale,
       height: 1.35,
       fontWeight: FontWeight.w500,
       letterSpacing: 0.05,
     ),
     titleMedium: TextStyle(
       color: ink,
-      fontSize: pixelTitleMediumSize,
+      fontSize: pixelTitleMediumSize * scale,
       height: 1.28,
       fontWeight: FontWeight.w600,
       letterSpacing: 0,
     ),
     titleLarge: TextStyle(
       color: ink,
-      fontSize: pixelTitleLargeSize,
+      fontSize: pixelTitleLargeSize * scale,
       height: 1.28,
       fontWeight: FontWeight.w600,
       letterSpacing: 0,
@@ -305,7 +320,7 @@ ThemeData buildPixelTheme({Brightness brightness = Brightness.dark}) {
     headlineSmall: TextStyle(
       color: ink,
       fontFamily: pixelDisplayFontFamily,
-      fontSize: pixelHeadlineSmallSize,
+      fontSize: pixelHeadlineSmallSize * scale,
       height: 1.15,
       fontWeight: FontWeight.w400,
       letterSpacing: 0.2,
@@ -313,7 +328,7 @@ ThemeData buildPixelTheme({Brightness brightness = Brightness.dark}) {
     headlineMedium: TextStyle(
       color: ink,
       fontFamily: pixelDisplayFontFamily,
-      fontSize: pixelHeadlineMediumSize,
+      fontSize: pixelHeadlineMediumSize * scale,
       height: 1.15,
       fontWeight: FontWeight.w400,
       letterSpacing: 0.2,
@@ -332,7 +347,10 @@ ThemeData buildPixelTheme({Brightness brightness = Brightness.dark}) {
       bodyColor: ink,
       displayColor: ink,
     ),
-    dividerTheme: DividerThemeData(color: border.color, thickness: 1),
+    dividerTheme: DividerThemeData(
+      color: border.color,
+      thickness: highContrast ? 1.5 : 1,
+    ),
     appBarTheme: AppBarTheme(
       backgroundColor: panel,
       foregroundColor: ink,
@@ -342,12 +360,13 @@ ThemeData buildPixelTheme({Brightness brightness = Brightness.dark}) {
       titleTextStyle: TextStyle(
         fontFamily: pixelDisplayFontFamily,
         color: ink,
-        fontSize: pixelTitleLargeSize,
+        fontSize: pixelTitleLargeSize * scale,
         height: 1.15,
         fontWeight: FontWeight.w400,
         letterSpacing: 0.2,
       ),
       toolbarHeight: 52,
+      actionsPadding: const EdgeInsets.only(right: 8),
     ),
     cardTheme: CardThemeData(
       color: panel,
@@ -366,7 +385,7 @@ ThemeData buildPixelTheme({Brightness brightness = Brightness.dark}) {
       titleTextStyle: TextStyle(
         color: ink,
         fontFamily: pixelDisplayFontFamily,
-        fontSize: pixelHeadlineSmallSize,
+        fontSize: pixelHeadlineSmallSize * scale,
         height: 1.15,
       ),
       contentTextStyle: resolvedTextTheme.bodyMedium,
@@ -397,7 +416,7 @@ ThemeData buildPixelTheme({Brightness brightness = Brightness.dark}) {
       labelStyle: TextStyle(color: muted),
       floatingLabelStyle: TextStyle(
         color: primary,
-        fontSize: pixelLabelLargeSize,
+        fontSize: pixelLabelLargeSize * scale,
         height: 1.55,
         fontWeight: FontWeight.w600,
       ),
@@ -506,7 +525,7 @@ ThemeData buildPixelTheme({Brightness brightness = Brightness.dark}) {
           return border;
         }),
         shape: WidgetStatePropertyAll(buttonShape),
-        textStyle: const WidgetStatePropertyAll(buttonTextStyle),
+        textStyle: WidgetStatePropertyAll(buttonTextStyle),
         padding: const WidgetStatePropertyAll(
           EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         ),

@@ -47,6 +47,45 @@ void main() {
     controller.dispose();
   });
 
+  test('reuses a diff until the status snapshot changes', () async {
+    final repository = const RepositoryOpened(
+      repositoryId: RepositoryId(value: 'diff-cache-repository'),
+      root: '/workspace/project',
+    );
+    final gateway = FakeChangesGateway(
+      snapshots: [
+        snapshot(repository, changes: [change('notes.txt')]),
+        snapshot(
+          repository,
+          changes: [change('notes.txt'), change('lib/app.dart')],
+        ),
+      ],
+      diffs: {
+        'notes.txt:workingTree': diff(
+          repository,
+          path: 'notes.txt',
+          scope: GitDiffScope.workingTree,
+          lines: const [],
+        ),
+      },
+    );
+    final controller = ChangesController(
+      gateway: gateway,
+      repositoryId: repository.repositoryId,
+      pollInterval: const Duration(hours: 1),
+    );
+
+    await controller.refresh();
+    controller.selectPath('notes.txt');
+    await controller.loadDiff('notes.txt');
+    await controller.loadDiff('notes.txt');
+    expect(gateway.diffCalls, 1);
+
+    await controller.refresh();
+    await controller.loadDiff('notes.txt');
+    expect(gateway.diffCalls, 2);
+    controller.dispose();
+  });
   test('keeps unchanged background polling visually silent', () async {
     final repository = const RepositoryOpened(
       repositoryId: RepositoryId(value: 'polling-repository'),
@@ -69,6 +108,47 @@ void main() {
 
     expect(gateway.statusCalls, greaterThanOrEqualTo(2));
     expect(refreshingStates, [true, false]);
+    controller.dispose();
+  });
+  test('caps large diffs and deliberately loads the next page', () async {
+    final repository = const RepositoryOpened(
+      repositoryId: RepositoryId(value: 'large-diff-repository'),
+      root: '/workspace/project',
+    );
+    final lines = List<GitDiffLine>.generate(
+      maxRenderedDiffLines + 1,
+      (index) =>
+          GitDiffLine(kind: GitDiffLineKind.context, text: ' line $index'),
+    );
+    final gateway = FakeChangesGateway(
+      snapshots: [
+        snapshot(repository, changes: [change('large.txt')]),
+      ],
+      diffs: {
+        'large.txt:workingTree': GitDiffSnapshot(
+          repositoryId: repository.repositoryId,
+          path: 'large.txt',
+          scope: GitDiffScope.workingTree,
+          lines: lines,
+          contentHash: 'large-diff',
+        ),
+      },
+    );
+    final controller = ChangesController(
+      gateway: gateway,
+      repositoryId: repository.repositoryId,
+      pollInterval: const Duration(hours: 1),
+    );
+
+    await controller.refresh();
+    controller.selectPath('large.txt');
+    await controller.loadDiff('large.txt');
+    expect(controller.state.visibleDiffLineCount, maxRenderedDiffLines);
+    expect(controller.state.hasMoreDiffLines, isTrue);
+
+    controller.loadMoreDiffLines();
+    expect(controller.state.visibleDiffLineCount, maxRenderedDiffLines + 1);
+    expect(controller.state.hasMoreDiffLines, isFalse);
     controller.dispose();
   });
 

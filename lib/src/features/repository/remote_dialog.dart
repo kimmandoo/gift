@@ -14,11 +14,13 @@ class RemoteDialog extends StatefulWidget {
     required this.gateway,
     required this.repository,
     this.initialOperation,
+    this.preferredRemote,
   });
 
   final GitGateway gateway;
   final RepositoryOpened repository;
   final GitRemoteOperation? initialOperation;
+  final String? preferredRemote;
 
   @override
   State<RemoteDialog> createState() => _RemoteDialogState();
@@ -103,10 +105,18 @@ class _RemoteDialogState extends State<RemoteDialog> {
     if (remotes.isEmpty) {
       return const Center(child: Text('No remotes are configured.'));
     }
+    final orderedRemotes = [...remotes]
+      ..sort((left, right) {
+        final preferred = widget.preferredRemote;
+        if (preferred == null) return 0;
+        if (left.name == preferred) return -1;
+        if (right.name == preferred) return 1;
+        return 0;
+      });
     return ListView.builder(
-      itemCount: remotes.length,
+      itemCount: orderedRemotes.length,
       itemBuilder: (context, index) {
-        final remote = remotes[index];
+        final remote = orderedRemotes[index];
         final disabled = _runningOperation != null;
         return Card(
           child: Padding(

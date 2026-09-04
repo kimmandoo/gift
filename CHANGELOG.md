@@ -1,6 +1,12 @@
 # Changelog
 
 ## 2026-09-04
+- feat(resilience): added debounced repository watching, bounded diff paging,
+  cache invalidation, and process-tree cleanup diagnostics.
+- feat(accessibility): added versioned preferences for scale, motion, contrast,
+  color-safe graph colors, locale-ready labels, and configurable shortcuts.
+- fix(branches): exposed remote fetching and empty remote-cache guidance in the
+  branch browser so remote-only branches can be retrieved and reviewed.
 - feat(ui): added shared typed contextual actions for secondary click,
   Shift+F10/Menu, and per-row overflow entry points with stale-snapshot
   protection and existing mutation routing.

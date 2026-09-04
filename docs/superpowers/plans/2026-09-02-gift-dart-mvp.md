@@ -726,6 +726,43 @@ system Git 2.35+.
    batch history operations, and the two path-selection models can be verified
    independently.
 
+
+## Completed vertical: Scale and resilience (Task 36)
+
+1. Activated Task 36 after recording PERF-01/02/03/04 for debounced metadata
+   watching, refresh coalescing, process lifecycle cleanup, and bounded large
+   list/diff rendering.
+2. The first RED fixture
+   `test/features/repository/repository_refresh_coordinator_test.dart`
+   failed before the watcher coordinator existed.
+3. Implemented debounced repository-root watching with a low-frequency
+   fallback, refresh coalescing, bounded diff caching with explicit mutation
+   invalidation, paged diff rendering, and process-tree cleanup diagnostics.
+4. Kept explicit budgets in the implementation: 180 ms event debounce, 30 s
+   fallback polling, eight diff-cache entries, 500 rendered diff lines per
+   page, and bounded process-tree escalation.
+5. Focused watcher, Changes, and backend executor verification passed.
+
+## Completed vertical: Accessibility and preferences (Task 37)
+
+1. Activated Task 37 after recording ACCESS-01/02/03/04 for preference
+   migration/recovery, visual and motion settings, shortcut conflicts, and
+   semantic/locale boundaries.
+2. The first RED fixture
+   `test/app_preferences_test.dart` failed before the versioned preference
+   contract existed.
+3. Implemented versioned, validated preference persistence with legacy theme
+   migration, corrupt-data recovery, canonical shortcut conflict detection,
+   refresh policy, default branch/remote choices, and rewrite-on-recovery.
+4. Applied UI scale, reduced motion, high contrast, color-safe graph colors,
+   configurable keyboard bindings, English locale resources, semantic labels,
+   focus-safe shortcuts, and preference-aware branch/remote ordering at the
+   app and workspace boundaries.
+5. Added persistence, migration, semantics, contrast, locale, dialog,
+   shortcut, and compact-workflow coverage.
+6. Focused accessibility and repository UI verification passed; the full
+   Flutter verification suite passed with 224 tests.
+
 ## Completed vertical: Contextual action foundation (Task 40)
 
 1. Activated Task 40 after recording shared action-descriptor,

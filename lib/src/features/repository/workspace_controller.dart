@@ -317,6 +317,7 @@ class WorkspaceController extends ChangeNotifier {
       changesController: ChangesController(
         gateway: gateway,
         repositoryId: repository.repositoryId,
+        repositoryRoot: repository.root,
         pollInterval: changesPollInterval,
       ),
       historyController: HistoryController(

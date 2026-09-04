@@ -8,6 +8,10 @@ import 'error.dart';
 /// will use this value for serialization and cancellation in later tasks.
 enum GitOperationKind { read, mutation, remote }
 
+/// Captures the terminal lifecycle outcome for diagnostics without retaining
+/// process objects or input payloads.
+enum GitOperationOutcome { completed, failed, cancelled, timedOut }
+
 /// A cooperative cancellation signal shared by a UI operation and its
 /// ProcessGitRunner invocation.
 class GitCancellationToken {
@@ -94,6 +98,7 @@ class GitOperationRecord {
     required this.exitCode,
     required this.diagnostic,
     required this.stdinBytes,
+    this.outcome = GitOperationOutcome.completed,
   }) : args = List.unmodifiable(args);
 
   final DateTime startedAt;
@@ -106,6 +111,7 @@ class GitOperationRecord {
   final int? exitCode;
   final String diagnostic;
   final int stdinBytes;
+  final GitOperationOutcome outcome;
 
   String get command => [program, ...args].join(' ');
 }
@@ -136,6 +142,7 @@ class GitOperationHistory {
     required bool succeeded,
     required int? exitCode,
     required String diagnostic,
+    GitOperationOutcome? outcome,
   }) {
     _records.add(
       GitOperationRecord(
@@ -151,6 +158,11 @@ class GitOperationHistory {
         exitCode: exitCode,
         diagnostic: _boundOperationText(redactBytes(utf8.encode(diagnostic))),
         stdinBytes: invocation.stdin?.length ?? 0,
+        outcome:
+            outcome ??
+            (succeeded
+                ? GitOperationOutcome.completed
+                : GitOperationOutcome.failed),
       ),
     );
     if (_records.length > maxRecords) {
@@ -188,6 +200,7 @@ class ProcessGitRunner {
         succeeded: true,
         exitCode: output.exitCode,
         diagnostic: redactBytes(output.stderr),
+        outcome: GitOperationOutcome.completed,
       );
       return output;
     } on Object catch (error) {
@@ -198,6 +211,7 @@ class ProcessGitRunner {
         succeeded: false,
         exitCode: error is GitError ? error.exitCode : null,
         diagnostic: error is GitError ? error.diagnostic : '$error',
+        outcome: _operationOutcome(error),
       );
       rethrow;
     }
@@ -254,7 +268,7 @@ class ProcessGitRunner {
           .then((_) => const _ProcessOutcome.timedOut()),
     ]);
     if (!outcome.completedNormally) {
-      process.kill();
+      await _terminateProcessTree(process);
     }
 
     // 4. Wait for all output and for Git to exit before interpreting the
@@ -320,6 +334,91 @@ class ProcessGitRunner {
       exitCode: exitCode,
     );
   }
+}
+
+/// Terminates the process and descendants without retaining them after the
+/// invocation completes. POSIX descendants are read from `/proc`; Windows
+/// uses the platform-provided process-tree termination command.
+Future<void> _terminateProcessTree(Process process) async {
+  if (Platform.isWindows) {
+    try {
+      await Process.run('taskkill', [
+        '/PID',
+        '${process.pid}',
+        '/T',
+        '/F',
+      ], runInShell: false).timeout(const Duration(seconds: 1));
+    } on Object {
+      process.kill();
+    }
+  } else {
+    final descendants = await _linuxDescendantPids(process.pid);
+    for (final pid in descendants.reversed) {
+      Process.killPid(pid, ProcessSignal.sigterm);
+    }
+    process.kill(ProcessSignal.sigterm);
+  }
+
+  try {
+    await process.exitCode.timeout(const Duration(milliseconds: 750));
+    return;
+  } on TimeoutException {
+    // Escalate only when graceful termination did not close the process.
+  } on Object {
+    return;
+  }
+
+  if (!Platform.isWindows) {
+    final descendants = await _linuxDescendantPids(process.pid);
+    for (final pid in descendants.reversed) {
+      Process.killPid(pid, ProcessSignal.sigkill);
+    }
+    process.kill(ProcessSignal.sigkill);
+  } else {
+    process.kill();
+  }
+  try {
+    await process.exitCode.timeout(const Duration(milliseconds: 750));
+  } on Object {
+    // The original invocation will still be bounded by its closed pipes.
+  }
+}
+
+Future<List<int>> _linuxDescendantPids(int rootPid) async {
+  if (!Platform.isLinux) {
+    return const <int>[];
+  }
+  final pending = <int>[rootPid];
+  final descendants = <int>[];
+  final seen = <int>{rootPid};
+  while (pending.isNotEmpty) {
+    final parent = pending.removeLast();
+    final childrenFile = File('/proc/$parent/task/$parent/children');
+    try {
+      final text = await childrenFile.readAsString();
+      for (final token in text.trim().split(RegExp(r'\\s+'))) {
+        final child = int.tryParse(token);
+        if (child == null || !seen.add(child)) continue;
+        descendants.add(child);
+        pending.add(child);
+      }
+    } on Object {
+      // The process may have exited between the PID and /proc reads.
+    }
+  }
+  return descendants;
+}
+
+GitOperationOutcome _operationOutcome(Object error) {
+  if (error is GitError) {
+    if (error.category == GitErrorCategory.cancelled) {
+      return GitOperationOutcome.cancelled;
+    }
+    if (error.category == GitErrorCategory.timeout) {
+      return GitOperationOutcome.timedOut;
+    }
+  }
+  return GitOperationOutcome.failed;
 }
 
 String _redactOperationArgument(String value) {
