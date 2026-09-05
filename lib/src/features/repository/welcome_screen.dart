@@ -175,10 +175,10 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
                     ),
                   ),
                   const SizedBox(height: 16),
-                  Text('Open a Git repository'),
+                  Text('Get started', style: textTheme.titleLarge),
                   const SizedBox(height: 8),
                   const Text(
-                    'Choose a working folder to start reviewing changes.',
+                    'Open an existing repository, or clone and initialize one.',
                   ),
                   const SizedBox(height: 16),
                   FolderPathField(

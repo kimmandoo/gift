@@ -1,6 +1,8 @@
 # Changelog
 
 ## 2026-09-05
+- fix(ui): clarified the welcome startup hierarchy by using a single
+  `Get started` section heading above the existing repository actions.
 - fix(paths): polished repository-relative navigation with browse-all recovery,
   loading and no-match states, stale-refresh clearing, compact status
   indicators, and keyboard suggestion selection.

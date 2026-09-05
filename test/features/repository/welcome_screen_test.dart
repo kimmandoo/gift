@@ -66,6 +66,9 @@ void main() {
       ),
     );
     await tester.pumpAndSettle();
+    expect(find.text('Get started'), findsOneWidget);
+    expect(find.text('Open a Git repository'), findsNothing);
+    expect(find.text('Open Repository'), findsOneWidget);
 
     await tester.tap(find.text('Open Repository'));
     await tester.pumpAndSettle();
