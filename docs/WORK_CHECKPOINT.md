@@ -9,30 +9,32 @@ This file is the handoff record for continuing work across query sessions.
   and pushed as `release-v1.0.0`; the corrected GitHub Actions run and native
   clean-machine review remain.
 - Branch: `main`; latest release source commit is
-  `2ee1bb1 release(v1.0.0): republish desktop artifacts`.
+  `7c1d482 release(v1.0.0): republish desktop artifacts`.
 - Completed in this session: fixed Windows PowerShell tag validation by using
   the GitHub ref expression; stabilized the native filesystem watcher test by
   awaiting its first callback; made the cherry-pick test assert applied
   history/tree state rather than timing-dependent commit identity; removed the
   unsupported Flutter macOS `--no-codesign` flag; added Linux
-  `libsecret-1-dev`; pushed the fixes; and force-updated `release-v1.0.0` to
-  `2ee1bb1`.
+  `libsecret-1-dev`; replaced the Bash 4-only macOS architecture expansion
+  with Bash 3.2-compatible case matching; pushed the fixes; and force-updated
+  `release-v1.0.0` to `7c1d482`.
 - Exact next action: inspect the corrected tag-triggered workflow result, review
   the Linux, ad hoc-signed macOS, and unsigned Windows archives plus
   attestations, then perform clean-machine install/launch/upgrade/downgrade/
   uninstall/Git-missing checks on all three platforms before marking Task 38
   complete.
 - Current session files: `.github/workflows/ci.yml`, `CHANGELOG.md`,
-  `tool/build_desktop.dart`,
+  `tool/build_desktop.dart`, `tool/package_macos_release.sh`,
   `test/backend/history_batch_test.dart`,
   `test/features/repository/repository_refresh_coordinator_test.dart`, and
   `docs/WORK_CHECKPOINT.md`.
-- Verification: the reported Windows release-tag failure and native build
-  failures were fixed; focused repository-refresh and history-batch tests
-  passed all 10 tests; Flutter analysis and the macOS build-helper smoke test
-  passed; workflow YAML parsing, 11 pinned Actions, release-tag validation for
-  `release-v1.0.0`, `dart format`, and `git diff --check` passed; and both
-  `main` and the forced release tag were pushed successfully.
+- Verification: the reported Windows release-tag, native build, and macOS
+  packaging failures were fixed; focused repository-refresh and history-batch
+  tests passed all 10 tests; Flutter analysis and the macOS build-helper and
+  packaging architecture smoke tests passed; workflow YAML parsing, 11 pinned
+  Actions, release-tag validation for `release-v1.0.0`, `dart format`, Bash
+  syntax, and `git diff --check` passed; and both `main` and the forced release
+  tag were pushed successfully.
 - Blockers: the local environment does not include the `gh` CLI, so the
   corrected workflow result was not queried locally. Linux/macOS native hosts
   are unavailable for the clean-machine review; Windows binaries remain
