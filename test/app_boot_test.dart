@@ -24,7 +24,7 @@ void main() {
     expect(tester.getSize(action).height, lessThanOrEqualTo(44));
     expect(
       tester.getTopLeft(find.byKey(const Key('welcome-logo'))).dx,
-      closeTo(tester.getTopLeft(find.text('Open a Git repository')).dx, 1),
+      tester.getTopLeft(find.text('Get started')).dx,
     );
   });
 

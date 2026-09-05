@@ -1,6 +1,8 @@
 # Changelog
 
 ## 2026-09-05
+- test(ui): added deterministic Welcome-screen visual QA coverage across
+  compact, standard, wide, dark, and light fixtures.
 - fix(ui): aligned remote and clone account selectors with surrounding
   controls and constrained account labels in narrow dialogs.
 - fix(push): separated the repository push-account selector from the remote

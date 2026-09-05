@@ -899,9 +899,13 @@ system Git 2.35+.
 
 ## Active vertical: Visual regression QA (Task 39)
 
-1. Build deterministic fixture states for the completed repository workflows.
-2. Add overflow guards and interaction snapshots for the desktop surfaces.
-3. Run the platform font and golden matrix checks before public release.
+1. Added deterministic Welcome-screen fixtures for compact, standard, and wide
+   windows in dark and light themes, including a 1.2x compact text-scale case.
+2. Added bounds checks for the logo, toolbar controls, action buttons, compact
+   stacking, standard/wide alignment, and theme-toggle interaction in
+   `test/app/visual_regression_test.dart`.
+3. Next: extend the same matrix to representative repository dialogs and
+   capture reviewed platform-specific golden baselines.
 
 ## Completed follow-up: visible push progress
 
