@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:gift/src/backend/domain.dart';
 import 'package:gift/src/backend/git_gateway.dart';
@@ -42,6 +43,10 @@ void main() {
       find.byKey(const Key('repository-path-suggestion:lib/main.dart')),
       findsOneWidget,
     );
+    await tester.tap(find.byKey(const Key('repository-path-field')));
+    await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
+    await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+    expect(controller.text, 'lib/main.dart');
     await tester.enterText(
       find.byKey(const Key('repository-path-field')),
       r'lib\main',
@@ -56,6 +61,18 @@ void main() {
     );
     expect(controller.text, 'lib/main.dart');
 
+    await tester.enterText(
+      find.byKey(const Key('repository-path-field')),
+      'missing',
+    );
+    await tester.pump(const Duration(milliseconds: 200));
+    expect(find.text('No paths match “missing”.'), findsOneWidget);
+    await tester.tap(find.byKey(const Key('repository-path-browse')));
+    await tester.pump();
+    expect(
+      find.byKey(const Key('repository-path-suggestion:README.md')),
+      findsOneWidget,
+    );
     await tester.enterText(
       find.byKey(const Key('repository-path-field')),
       '../outside',
