@@ -13,9 +13,9 @@ version="${release_tag#release-v}"
 output_directory="${GIFT_RELEASE_OUTPUT_DIR:-dist}"
 mkdir -p "$output_directory"
 architecture="${RUNNER_ARCH:-$(uname -m)}"
-case "${architecture^^}" in
-  X64|X86_64|AMD64) architecture="x64" ;;
-  ARM64|AARCH64) architecture="arm64" ;;
+case "$architecture" in
+  X64|x64|X86_64|x86_64|AMD64|amd64) architecture="x64" ;;
+  ARM64|arm64|AARCH64|aarch64) architecture="arm64" ;;
   *) echo "Unsupported macOS runner architecture: $architecture" >&2; exit 64 ;;
 esac
 archive="$output_directory/gift-${version}-macos-${architecture}.zip"

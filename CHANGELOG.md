@@ -14,6 +14,8 @@
   expression instead of a Bash-only environment expansion.
 - fix(build): removed the unsupported macOS `--no-codesign` flag and installed
   Linux `libsecret-1-dev` headers in the release workflow.
+- fix(release): replaced Bash 4-only macOS architecture expansion with
+  Bash 3.2-compatible case matching for hosted macOS runners.
 
 ## 2026-09-05
 - feat(ci): added required artifact checks and runner-specific visual golden
