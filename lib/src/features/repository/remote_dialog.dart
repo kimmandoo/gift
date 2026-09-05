@@ -252,32 +252,51 @@ class _RemoteDialogState extends State<RemoteDialog> {
         accounts.where((account) => account.isDefault).firstOrNull?.id ??
         '';
     final values = <String>['', ...accounts.map((account) => account.id)];
-    return DropdownButtonFormField<String>(
-      key: ValueKey('credential-selector:${remote.name}'),
-      initialValue: values.contains(selected) ? selected : '',
-      decoration: InputDecoration(
-        labelText: widget.repositoryCredentialStore == null
-            ? 'Account for ${endpoint.host}'
-            : 'Account for ${endpoint.host} in this repository',
-        isDense: true,
-      ),
-      items: [
-        const DropdownMenuItem(
-          value: '',
-          child: Text('Automatic / no account'),
+    return Padding(
+      padding: const EdgeInsets.only(top: 8),
+      child: DropdownButtonFormField<String>(
+        key: ValueKey('credential-selector:${remote.name}'),
+        initialValue: values.contains(selected) ? selected : '',
+        isExpanded: true,
+        decoration: InputDecoration(
+          labelText: 'Remote account',
+          helperText: widget.repositoryCredentialStore == null
+              ? '${endpoint.host} · default account'
+              : '${endpoint.host} · this repository',
+          isDense: true,
         ),
-        for (final account in accounts)
-          DropdownMenuItem(
-            value: account.id,
-            child: Text(account.accountName, overflow: TextOverflow.ellipsis),
+        items: [
+          const DropdownMenuItem(
+            value: '',
+            child: SizedBox(
+              width: 150,
+              child: Text(
+                'Automatic / no account',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
           ),
-      ],
-      onChanged: disabled
-          ? null
-          : (value) {
-              if (value == null) return;
-              unawaited(_selectAccount(endpoint.host, value));
-            },
+          for (final account in accounts)
+            DropdownMenuItem(
+              value: account.id,
+              child: SizedBox(
+                width: 150,
+                child: Text(
+                  account.accountName,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            ),
+        ],
+        onChanged: disabled
+            ? null
+            : (value) {
+                if (value == null) return;
+                unawaited(_selectAccount(endpoint.host, value));
+              },
+      ),
     );
   }
 

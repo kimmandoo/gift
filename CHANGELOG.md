@@ -1,6 +1,8 @@
 # Changelog
 
 ## 2026-09-05
+- fix(ui): aligned remote and clone account selectors with surrounding
+  controls and constrained account labels in narrow dialogs.
 - fix(push): separated the repository push-account selector from the remote
   selector and constrained its labels for narrow dialogs.
 - fix(ui): removed the redundant welcome repository-folder field so

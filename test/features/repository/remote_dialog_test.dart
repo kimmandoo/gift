@@ -110,7 +110,14 @@ void main() {
     expect(find.byKey(const Key('push-dialog')), findsOneWidget);
     expect(gateway.pushCalls, 0);
   });
-  testWidgets('shows the matching host account selector', (tester) async {
+  testWidgets('shows the matching host account selector without overlap', (
+    tester,
+  ) async {
+    addTearDown(tester.view.reset);
+    tester.view.physicalSize = const Size(320, 480);
+    tester.view.devicePixelRatio = 1;
+    tester.platformDispatcher.textScaleFactorTestValue = 1.2;
+    addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
     final repository = const RepositoryOpened(
       repositoryId: RepositoryId(value: 'credential-remote-repository'),
       root: '/workspace/project',
@@ -141,7 +148,14 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.byKey(const Key('credential-selector:origin')), findsOneWidget);
+    final fetch = tester.getRect(find.text('fetch: https://example.test/repo'));
+    final account = tester.getRect(
+      find.byKey(const Key('credential-selector:origin')),
+    );
+    expect(account.top, greaterThanOrEqualTo(fetch.bottom + 8));
+    expect(find.text('Remote account'), findsOneWidget);
+    expect(find.text('example.test · default account'), findsOneWidget);
+    expect(tester.takeException(), isNull);
     await tester.tap(find.byKey(const Key('credential-selector:origin')));
     await tester.pump();
     await tester.tap(find.text('Work account').last);

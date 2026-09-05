@@ -101,7 +101,14 @@ void main() {
     await tester.pumpAndSettle();
     expect(pickedInitialDirectory, Directory.current.path);
   });
-  testWidgets('shows an account selector for a clone remote', (tester) async {
+  testWidgets('shows a compact account selector for a clone remote', (
+    tester,
+  ) async {
+    addTearDown(tester.view.reset);
+    tester.view.physicalSize = const Size(360, 640);
+    tester.view.devicePixelRatio = 1;
+    tester.platformDispatcher.textScaleFactorTestValue = 1.2;
+    addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
     final store = InMemoryGitCredentialStore(
       records: [
         GitCredentialRecord(
@@ -131,7 +138,12 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.byKey(const Key('clone-credential')), findsOneWidget);
+    final source = tester.getRect(find.byKey(const Key('clone-source')));
+    final account = tester.getRect(find.byKey(const Key('clone-credential')));
+    expect(account.top, greaterThanOrEqualTo(source.bottom + 8));
+    expect(find.text('Clone account'), findsOneWidget);
+    expect(find.text('example.test · default account'), findsOneWidget);
+    expect(tester.takeException(), isNull);
     await tester.tap(find.byKey(const Key('clone-credential')));
     await tester.pump();
     await tester.tap(find.text('Clone work').last);

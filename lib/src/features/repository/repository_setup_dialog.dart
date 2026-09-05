@@ -398,19 +398,35 @@ class _RepositorySetupDialogState extends State<RepositorySetupDialog> {
       child: DropdownButtonFormField<String>(
         key: const Key('clone-credential'),
         initialValue: selected,
+        isExpanded: true,
         decoration: InputDecoration(
-          labelText: 'Clone account for ${endpoint.host}',
+          labelText: 'Clone account',
+          helperText: '${endpoint.host} · default account',
           isDense: true,
         ),
         items: [
           const DropdownMenuItem(
             value: '',
-            child: Text('Automatic / no account'),
+            child: SizedBox(
+              width: 150,
+              child: Text(
+                'Automatic / no account',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
           ),
           for (final account in accounts)
             DropdownMenuItem(
               value: account.id,
-              child: Text(account.accountName),
+              child: SizedBox(
+                width: 150,
+                child: Text(
+                  account.accountName,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
             ),
         ],
         onChanged: _isBusy
