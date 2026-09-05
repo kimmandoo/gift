@@ -5,15 +5,17 @@ This file is the handoff record for continuing work across query sessions.
 ## Current checkpoint
 
 - Date: 2026-09-05
-- Active task: Task 39 — Visual regression QA; current requested fixes complete.
+- Active task: Task 39 — Visual regression QA; Welcome matrix slice complete.
 - Branch: `main`; latest commit is
-  `d8485ad fix(ui): harden remote account selectors`.
-- Completed in this session: audited the account-selector surfaces adjacent to
-  remote and clone controls. Added vertical separation, shortened host context
-  into helper text, enabled expanded fields, and constrained automatic/account
-  labels so narrow dialogs do not overlap or overflow.
-- Exact next action: no remaining action for the current UI request; continue
-  Task 39 only if a later visual regression is identified.
+  `270859d test(ui): add visual regression matrix`.
+- Completed in this session: added deterministic Welcome-screen visual fixtures
+  for compact, standard, and wide windows in dark and light themes, including a
+  1.2x compact text-scale case. Added bounds checks for the logo, toolbar
+  controls, action buttons, responsive stacking/alignment, and theme-toggle
+  interaction. Updated the stale app-boot alignment assertion to the current
+  `Get started` welcome hierarchy.
+- Exact next action: extend the same matrix to representative repository
+  dialogs, then capture reviewed platform-specific golden baselines.
 - Committed Task 47 files: `CHANGELOG.md`, `TASKS.md`,
   `docs/research/jetbrains-git-mvp-behavior.md`,
   `docs/superpowers/plans/2026-09-02-gift-dart-mvp.md`,
@@ -35,20 +37,23 @@ This file is the handoff record for continuing work across query sessions.
   `lib/src/features/repository/repository_path_field.dart`,
   `test/features/repository/changes_screen_test.dart`, and
   `test/features/repository/repository_setup_dialog_test.dart`.
-- Current account-selector files: `CHANGELOG.md`,
-  `lib/src/features/repository/remote_dialog.dart`,
+- Current account-selector files: `lib/src/features/repository/remote_dialog.dart`,
   `lib/src/features/repository/repository_setup_dialog.dart`,
   `test/features/repository/remote_dialog_test.dart`, and
   `test/features/repository/repository_setup_dialog_test.dart`.
-- Current UX fix files: `lib/src/features/repository/push_dialog.dart`,
-  `lib/src/features/repository/welcome_screen.dart`,
-  `test/features/repository/push_dialog_test.dart`, and
-  `test/features/repository/welcome_screen_test.dart`.
-- Verification: the repository UI suite plus credential/settings dialog tests
-  passed (112 tests), and `flutter analyze` passed with no issues. Compact
-  remote and clone selector regressions assert control separation, concise
-  helper context, and no layout exception at narrow large-text sizes.
-- Blockers: none.
+- Current visual QA files: `CHANGELOG.md`,
+  `docs/superpowers/plans/2026-09-02-gift-dart-mvp.md`,
+  `test/app_boot_test.dart`, and `test/app/visual_regression_test.dart`.
+- Verification: `flutter test test/app_boot_test.dart
+  test/app/visual_regression_test.dart` passed (14 tests), and `flutter
+  analyze` passed with no issues. A full `flutter test` run was attempted
+  before the stale app-boot assertion correction and also exposed 15 existing
+  Windows backend failures involving CRLF/encoding, interactive-rebase process
+  behavior, and locked temporary submodule files; the corrected app-boot and
+  new visual matrix pass in the focused run.
+- Blockers: full cross-platform suite remains blocked by the listed Windows
+  backend environment failures; visual dialog matrix and platform goldens remain
+  the next Task 39 work.
 
 ## Previous checkpoint
 
