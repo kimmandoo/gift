@@ -5,16 +5,16 @@ This file is the handoff record for continuing work across query sessions.
 ## Current checkpoint
 
 - Date: 2026-09-05
-- Active task: Task 39 — Visual regression QA.
+- Active task: Task 39 — Visual regression QA; current requested fixes complete.
 - Branch: `main`; latest commit is
-  `2bed490 fix(ui): prevent tooltip overlap`.
-- Completed in this session: audited all visual `Tooltip` wrappers and removed
-  text-hover popovers from editable folder fields, repository path suggestions,
-  and Changes rows where they could cover adjacent controls. Replaced them
-  with accessible labels, kept action tooltips for icon affordances, and made
-  global tooltips prefer the open side of the control.
-- Exact next action: continue Task 39 visual regression QA with deterministic
-  compact and large-text fixtures.
+  `df6e777 fix(ui): separate push account and welcome actions`.
+- Completed in this session: separated the push-account selector from the
+  remote selector with vertical spacing, shortened its context to helper text,
+  constrained dropdown labels for narrow dialogs, and removed the redundant
+  repository-folder field from the welcome screen so `Open Repository` opens
+  the native folder chooser directly.
+- Exact next action: no remaining action for the current UI request; continue
+  Task 39 only if a later visual regression is identified.
 - Committed Task 47 files: `CHANGELOG.md`, `TASKS.md`,
   `docs/research/jetbrains-git-mvp-behavior.md`,
   `docs/superpowers/plans/2026-09-02-gift-dart-mvp.md`,
@@ -37,12 +37,15 @@ This file is the handoff record for continuing work across query sessions.
   `test/features/repository/changes_screen_test.dart`, and
   `test/features/repository/repository_setup_dialog_test.dart`.
 - Current UX fix files: `CHANGELOG.md`,
-  `lib/src/features/repository/welcome_screen.dart`, and
+  `lib/src/features/repository/push_dialog.dart`,
+  `lib/src/features/repository/welcome_screen.dart`,
+  `test/features/repository/push_dialog_test.dart`, and
   `test/features/repository/welcome_screen_test.dart`.
-- Verification: the repository UI suite plus credential/settings dialog tests
-  passed (111 tests), and `flutter analyze` passed with no issues. Regression
-  coverage asserts text-field and change-row tooltip ancestors are absent
-  while icon action tooltips remain available.
+- Verification: push-dialog and welcome-screen regression tests passed (11
+  tests), and `flutter analyze` passed with no issues. The push regression
+  asserts a gap between remote and account controls, compact account context,
+  and narrow-dialog label containment. The welcome regression asserts the
+  initial repository path controls are absent.
 - Blockers: none.
 
 ## Previous checkpoint
