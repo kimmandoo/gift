@@ -5,31 +5,39 @@ This file is the handoff record for continuing work across query sessions.
 ## Current checkpoint
 
 - Date: 2026-09-05
-- Active task: Task 47 — Repository path navigation.
+- Active task: Task 39 — Visual regression QA.
 - Branch: `main`; latest commit is
-  `af7b6e4 feat(paths): add native folder chooser fields`.
-- Completed in this session: Task 46 native folder chooser UX. PATH-01 is
-  recorded; the shared editable folder field now supports injected/native
-  directory browsing, clear/paste, keyboard submission, full-path tooltips,
-  purpose-scoped remembered locations, and inline absolute/relative-path
-  validation. Repository open/replacement, clone, initialization, nested-root
-  scan, and worktree flows use it.
-- Exact next action: activate Task 47 with its tracked-path behavior scenario
-  and first RED searchable repository-relative path fixture.
-- Committed Task 46 files: `CHANGELOG.md`, `TASKS.md`,
+  `a59ca15 feat(paths): add repository-relative navigation`.
+- Completed in this session: Task 47 repository path navigation. PATH-02 is
+  recorded; bounded cached tracked-path lookup now merges changed,
+  deleted/renamed, and derived directory entries with a stable fingerprint and
+  truncation flag. Searchable repository-relative fields now support manual
+  entry, separator normalization, keyboard submission, clear, browse
+  suggestions with parent context, file/folder modes, and traversal checks.
+  History path filters, File History/Blame, comparison, and hosting file-link
+  inputs use the shared field with stale response protection.
+- Exact next action: activate Task 39 and add the first deterministic visual
+  regression fixture/overflow guard for the completed repository workflows.
+- Committed Task 47 files: `CHANGELOG.md`, `TASKS.md`,
   `docs/research/jetbrains-git-mvp-behavior.md`,
   `docs/superpowers/plans/2026-09-02-gift-dart-mvp.md`,
-  `lib/src/features/repository/folder_path_field.dart`,
-  `lib/src/features/repository/repository_setup_dialog.dart`,
-  `lib/src/features/repository/worktree_dialog.dart`,
-  `lib/src/features/repository/workspace_screen.dart`,
-  `lib/src/features/repository/welcome_screen.dart`,
-  `lib/src/features/repository/changes_screen.dart`, and
-  `test/features/repository/repository_setup_dialog_test.dart`.
-- Verification: the first RED chooser fixture failed because
-  `init-path-browse` did not exist. After implementation, targeted setup,
-  worktree, workspace, welcome, and Changes suites passed (42 tests total),
-  and `flutter analyze` passed with no issues.
+  `lib/src/backend/repository_paths.dart`,
+  `lib/src/backend/repository_service.dart`,
+  `lib/src/backend/git_gateway.dart`,
+  `lib/src/backend/dart_git_backend.dart`,
+  `lib/src/backend/dart_git_gateway.dart`,
+  `lib/src/features/repository/repository_path_field.dart`,
+  `lib/src/features/repository/history_screen.dart`,
+  `lib/src/features/repository/file_history_dialog.dart`,
+  `lib/src/features/repository/comparison_dialog.dart`,
+  `lib/src/features/repository/hosting_dialog.dart`,
+  `test/helpers/git_patch_gateway_stub.dart`, and
+  `test/features/repository/repository_path_field_test.dart`.
+- Verification: the repository path widget test passed (1 test), the affected
+  comparison, File History, History, and Hosting suites passed (20 tests), and
+  `flutter analyze` passed with no issues. The first affected-flow run exposed
+  a 3-pixel comparison overflow; dense path-field decoration fixed it and the
+  final affected suites passed.
 - Blockers: none.
 
 ## Previous checkpoint
