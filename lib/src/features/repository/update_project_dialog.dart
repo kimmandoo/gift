@@ -130,7 +130,7 @@ class _UpdateProjectDialogState extends State<UpdateProjectDialog> {
                     padding: const EdgeInsets.only(top: 8),
                     child: Wrap(
                       spacing: 8,
-                      runSpacing: 4,
+                      runSpacing: 8,
                       children: [
                         for (final phase in result.recoveryActions)
                           OutlinedButton(
@@ -146,7 +146,7 @@ class _UpdateProjectDialogState extends State<UpdateProjectDialog> {
           ),
         ),
       ),
-      actionsOverflowButtonSpacing: 4,
+      actionsOverflowButtonSpacing: 8,
       actions: [
         if (_busy)
           TextButton(

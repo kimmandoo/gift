@@ -66,7 +66,7 @@ class _RemoteDialogState extends State<RemoteDialog> {
             ? 'Push to remote'
             : 'Remote operations',
       ),
-      actionsOverflowButtonSpacing: 4,
+      actionsOverflowButtonSpacing: 8,
       content: SizedBox(
         width: width,
         height: (size.height - 180).clamp(220.0, 360.0),
@@ -138,7 +138,7 @@ class _RemoteDialogState extends State<RemoteDialog> {
         final disabled = _runningOperation != null;
         return Card(
           child: Padding(
-            padding: const EdgeInsets.all(10),
+            padding: const EdgeInsets.all(12),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
@@ -156,7 +156,7 @@ class _RemoteDialogState extends State<RemoteDialog> {
                 const SizedBox(height: 8),
                 Wrap(
                   spacing: 8,
-                  runSpacing: 4,
+                  runSpacing: 8,
                   children: [
                     if (widget.initialOperation != GitRemoteOperation.push)
                       OutlinedButton(

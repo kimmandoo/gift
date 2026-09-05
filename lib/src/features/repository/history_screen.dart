@@ -116,13 +116,13 @@ class _HistoryScreenState extends State<HistoryScreen> {
           ],
         ),
         actions: [
-          IconButton(
+          PixelToolbarIconButton(
             key: const Key('history-rollback'),
             tooltip: 'Undo, reset, or revert history',
             onPressed: () => unawaited(_openHistoryRollback(context)),
             icon: const Icon(Icons.history_toggle_off),
           ),
-          IconButton(
+          PixelToolbarIconButton(
             key: const Key('history-interactive-rebase'),
             tooltip: 'Interactive rebase',
             onPressed: state.isLoading
@@ -130,7 +130,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
                 : () => unawaited(_openInteractiveRebase(context)),
             icon: const Icon(Icons.reorder),
           ),
-          IconButton(
+          PixelToolbarIconButton(
             key: const Key('history-hosting'),
             tooltip: 'Open hosting links',
             onPressed: state.selectedCommit == null
@@ -138,7 +138,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
                 : () => unawaited(_openHosting(context, state)),
             icon: const Icon(Icons.link_outlined),
           ),
-          IconButton(
+          PixelToolbarIconButton(
             key: const Key('history-select-mode'),
             tooltip: selectionMode ? 'Exit commit selection' : 'Select commits',
             onPressed: selectionMode
@@ -147,7 +147,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
             icon: Icon(selectionMode ? Icons.close : Icons.playlist_add_check),
           ),
           const PixelThemeToggle(),
-          IconButton(
+          PixelToolbarIconButton(
             tooltip: 'Refresh history',
             onPressed: state.isLoading ? null : _controller.refresh,
             icon: state.isLoading
@@ -232,7 +232,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
       child: Wrap(
         crossAxisAlignment: WrapCrossAlignment.center,
         spacing: 8,
-        runSpacing: 6,
+        runSpacing: 8,
         children: [
           Text('$count commits selected'),
           if (count == 0)
@@ -995,8 +995,8 @@ class _HistoryScreenState extends State<HistoryScreen> {
                 const SizedBox(height: 16),
                 const Text('Refs'),
                 Wrap(
-                  spacing: 6,
-                  runSpacing: 4,
+                  spacing: 8,
+                  runSpacing: 8,
                   children: [
                     for (final ref in commit.refs)
                       Chip(label: Text('${ref.kind}: ${ref.shortName}')),
@@ -1007,8 +1007,8 @@ class _HistoryScreenState extends State<HistoryScreen> {
                 const SizedBox(height: 16),
                 Text('Parents: ${commit.parents.length}'),
                 Wrap(
-                  spacing: 6,
-                  runSpacing: 4,
+                  spacing: 8,
+                  runSpacing: 8,
                   children: [
                     for (final parent in commit.parents)
                       OutlinedButton(
@@ -1082,7 +1082,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
       child: ListTile(
         key: Key('commit-file:${file.path}'),
         dense: true,
-        contentPadding: const EdgeInsets.symmetric(horizontal: 10),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 12),
         leading: Text(file.statusLabel),
         title: Text(file.path, maxLines: 1, overflow: TextOverflow.ellipsis),
         subtitle: file.oldPath == null
@@ -1159,7 +1159,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
         children: [
           Container(
             color: scheme.surfaceContainerHighest,
-            padding: const EdgeInsets.fromLTRB(12, 10, 8, 10),
+            padding: const EdgeInsets.fromLTRB(12, 8, 8, 8),
             child: Wrap(
               crossAxisAlignment: WrapCrossAlignment.center,
               spacing: 8,
@@ -1458,7 +1458,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
   Widget _errorBanner(BuildContext context, GitError error) {
     return Container(
       key: const Key('history-error-banner'),
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
       color: Theme.of(context).colorScheme.errorContainer,
       child: Text(
         error.userMessage,

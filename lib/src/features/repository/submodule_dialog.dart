@@ -85,7 +85,7 @@ class _SubmoduleDialogState extends State<SubmoduleDialog> {
           ],
         ),
       ),
-      actionsOverflowButtonSpacing: 4,
+      actionsOverflowButtonSpacing: 8,
       actions: [
         TextButton(
           key: const Key('refresh-submodules'),
@@ -117,10 +117,10 @@ class _SubmoduleDialogState extends State<SubmoduleDialog> {
     return Card(
       margin: EdgeInsets.zero,
       child: Padding(
-        padding: const EdgeInsets.all(10),
+        padding: const EdgeInsets.all(12),
         child: Wrap(
           spacing: 8,
-          runSpacing: 6,
+          runSpacing: 8,
           crossAxisAlignment: WrapCrossAlignment.center,
           children: [
             Text('Scope', style: Theme.of(context).textTheme.labelLarge),
@@ -208,7 +208,7 @@ class _SubmoduleDialogState extends State<SubmoduleDialog> {
       key: ValueKey('submodule:${module.path}'),
       margin: const EdgeInsets.only(bottom: 8),
       child: Padding(
-        padding: const EdgeInsets.all(10),
+        padding: const EdgeInsets.all(12),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
@@ -251,11 +251,11 @@ class _SubmoduleDialogState extends State<SubmoduleDialog> {
                 overflow: TextOverflow.ellipsis,
                 style: TextStyle(color: colors.error),
               ),
-            const SizedBox(height: 6),
+            const SizedBox(height: 8),
             Wrap(
               alignment: WrapAlignment.end,
-              spacing: 6,
-              runSpacing: 4,
+              spacing: 8,
+              runSpacing: 8,
               children: [
                 if (!module.isInitialized || module.isMissing)
                   OutlinedButton(

@@ -219,7 +219,7 @@ class _ObjectDialogState extends State<ObjectDialog> {
     return Card(
       key: ValueKey('stash:${stash.oid}'),
       child: Padding(
-        padding: const EdgeInsets.all(10),
+        padding: const EdgeInsets.all(12),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
@@ -229,10 +229,10 @@ class _ObjectDialogState extends State<ObjectDialog> {
               '${stash.branch == null ? '' : ' · ${stash.branch}'}',
               style: Theme.of(context).textTheme.bodySmall,
             ),
-            const SizedBox(height: 6),
+            const SizedBox(height: 8),
             Wrap(
-              spacing: 6,
-              runSpacing: 4,
+              spacing: 8,
+              runSpacing: 8,
               children: [
                 OutlinedButton(
                   key: ValueKey('apply-stash:${stash.oid}'),
@@ -344,7 +344,7 @@ class _ObjectDialogState extends State<ObjectDialog> {
     return Card(
       key: ValueKey('tag:${tag.name}'),
       child: Padding(
-        padding: const EdgeInsets.all(10),
+        padding: const EdgeInsets.all(12),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
@@ -352,10 +352,10 @@ class _ObjectDialogState extends State<ObjectDialog> {
             Text('${tag.kind.name} · ${tag.targetOid.substring(0, 8)}'),
             if (tag.subject case final subject?)
               Text(subject, maxLines: 2, overflow: TextOverflow.ellipsis),
-            const SizedBox(height: 4),
+            const SizedBox(height: 8),
             Wrap(
-              spacing: 6,
-              runSpacing: 4,
+              spacing: 8,
+              runSpacing: 8,
               children: [
                 OutlinedButton(
                   key: ValueKey('inspect-tag:${tag.name}'),
@@ -439,7 +439,7 @@ class _ObjectDialogState extends State<ObjectDialog> {
     return Card(
       key: ValueKey('managed-remote:${remote.name}'),
       child: Padding(
-        padding: const EdgeInsets.all(10),
+        padding: const EdgeInsets.all(12),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
@@ -454,10 +454,10 @@ class _ObjectDialogState extends State<ObjectDialog> {
                 'push: ${redactRemote(url)}',
                 overflow: TextOverflow.ellipsis,
               ),
-            const SizedBox(height: 4),
+            const SizedBox(height: 8),
             Wrap(
-              spacing: 6,
-              runSpacing: 4,
+              spacing: 8,
+              runSpacing: 8,
               children: [
                 OutlinedButton(
                   key: ValueKey('rename-remote:${remote.name}'),

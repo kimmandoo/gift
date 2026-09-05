@@ -132,7 +132,7 @@ class _RepositorySetupDialogState extends State<RepositorySetupDialog> {
           ],
         ),
       ),
-      actionsOverflowButtonSpacing: 4,
+      actionsOverflowButtonSpacing: 8,
       actions: [
         TextButton(
           key: const Key('close-setup-dialog'),
@@ -251,7 +251,7 @@ class _RepositorySetupDialogState extends State<RepositorySetupDialog> {
       const SizedBox(height: 8),
       Wrap(
         spacing: 8,
-        runSpacing: 6,
+        runSpacing: 8,
         children: [
           OutlinedButton.icon(
             key: const Key('discover-roots'),

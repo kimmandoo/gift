@@ -101,7 +101,7 @@ class _IgnoreDialogState extends State<IgnoreDialog>
           ],
         ),
       ),
-      actionsOverflowButtonSpacing: 4,
+      actionsOverflowButtonSpacing: 8,
       actions: [
         TextButton(
           key: const Key('refresh-ignore-metadata'),
@@ -175,7 +175,7 @@ class _IgnoreDialogState extends State<IgnoreDialog>
       key: ValueKey('ignore-entry:${entry.path}'),
       margin: const EdgeInsets.only(bottom: 8),
       child: Padding(
-        padding: const EdgeInsets.all(10),
+        padding: const EdgeInsets.all(12),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
@@ -216,10 +216,10 @@ class _IgnoreDialogState extends State<IgnoreDialog>
               ),
             ],
             if (entry.kind == GitPathMetadataKind.untracked) ...[
-              const SizedBox(height: 6),
+              const SizedBox(height: 8),
               Wrap(
-                spacing: 6,
-                runSpacing: 4,
+                spacing: 8,
+                runSpacing: 8,
                 alignment: WrapAlignment.end,
                 children: [
                   OutlinedButton(

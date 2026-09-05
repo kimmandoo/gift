@@ -75,7 +75,7 @@ class _InteractiveRebaseDialogState extends State<InteractiveRebaseDialog> {
               )
             : _content(context, compact),
       ),
-      actionsOverflowButtonSpacing: 4,
+      actionsOverflowButtonSpacing: 8,
       actions: [
         if (_history != null) _actionButtons(context),
         TextButton(
@@ -202,7 +202,7 @@ class _InteractiveRebaseDialogState extends State<InteractiveRebaseDialog> {
         const SizedBox(height: 8),
         Wrap(
           spacing: 8,
-          runSpacing: 4,
+          runSpacing: 8,
           children: [
             FilterChip(
               key: const Key('rebase-autosquash'),
@@ -396,7 +396,7 @@ class _InteractiveRebaseDialogState extends State<InteractiveRebaseDialog> {
     return Wrap(
       alignment: WrapAlignment.end,
       spacing: 8,
-      runSpacing: 4,
+      runSpacing: 8,
       children: [
         if (_isMutating)
           TextButton(
@@ -496,7 +496,7 @@ class _InteractiveRebaseDialogState extends State<InteractiveRebaseDialog> {
               const SizedBox(height: 8),
               Wrap(
                 spacing: 8,
-                runSpacing: 4,
+                runSpacing: 8,
                 children: [
                   for (final action in result.recoveryActions)
                     OutlinedButton(

@@ -159,10 +159,12 @@ ThemeData buildPixelTheme({
     letterSpacing: 0.05,
   );
 
-  final buttonShape = BeveledRectangleBorder(
-    borderRadius: BorderRadius.circular(4),
+  const buttonShape = RoundedRectangleBorder(borderRadius: BorderRadius.zero);
+  const labeledButtonPadding = EdgeInsets.symmetric(
+    horizontal: 16,
+    vertical: 8,
   );
-  const buttonPadding = EdgeInsets.symmetric(horizontal: 12, vertical: 8);
+  const textButtonPadding = EdgeInsets.symmetric(horizontal: 12, vertical: 8);
   final filledButtonStyle = ButtonStyle(
     animationDuration: Duration.zero,
     backgroundColor: WidgetStateProperty.resolveWith((states) {
@@ -187,7 +189,7 @@ ThemeData buildPixelTheme({
     }),
     textStyle: WidgetStatePropertyAll(buttonTextStyle),
     iconSize: const WidgetStatePropertyAll(18),
-    padding: const WidgetStatePropertyAll(buttonPadding),
+    padding: const WidgetStatePropertyAll(labeledButtonPadding),
     side: WidgetStateProperty.resolveWith((states) {
       if (states.contains(WidgetState.disabled)) {
         return BorderSide(color: muted.withValues(alpha: 0.24));
@@ -210,7 +212,13 @@ ThemeData buildPixelTheme({
   );
   final outlinedButtonStyle = ButtonStyle(
     animationDuration: Duration.zero,
-    backgroundColor: const WidgetStatePropertyAll(Colors.transparent),
+    backgroundColor: WidgetStateProperty.resolveWith((states) {
+      if (states.contains(WidgetState.disabled)) return Colors.transparent;
+      if (states.contains(WidgetState.pressed)) {
+        return primary.withValues(alpha: 0.12);
+      }
+      return raised.withValues(alpha: dark ? 0.5 : 0.38);
+    }),
     foregroundColor: WidgetStateProperty.resolveWith((states) {
       if (states.contains(WidgetState.disabled)) {
         return muted.withValues(alpha: 0.58);
@@ -245,7 +253,7 @@ ThemeData buildPixelTheme({
     }),
     textStyle: WidgetStatePropertyAll(buttonTextStyle),
     iconSize: const WidgetStatePropertyAll(18),
-    padding: const WidgetStatePropertyAll(buttonPadding),
+    padding: const WidgetStatePropertyAll(labeledButtonPadding),
     tapTargetSize: MaterialTapTargetSize.shrinkWrap,
     shape: WidgetStatePropertyAll(buttonShape),
     minimumSize: const WidgetStatePropertyAll(Size(40, 40)),
@@ -277,7 +285,7 @@ ThemeData buildPixelTheme({
     }),
     textStyle: WidgetStatePropertyAll(buttonTextStyle),
     iconSize: const WidgetStatePropertyAll(18),
-    padding: const WidgetStatePropertyAll(buttonPadding),
+    padding: const WidgetStatePropertyAll(textButtonPadding),
     tapTargetSize: MaterialTapTargetSize.shrinkWrap,
     shape: WidgetStatePropertyAll(buttonShape),
     minimumSize: const WidgetStatePropertyAll(Size(40, 40)),
@@ -419,7 +427,7 @@ ThemeData buildPixelTheme({
       surfaceTintColor: Colors.transparent,
       shape: square,
       insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
-      actionsPadding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+      actionsPadding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
       titleTextStyle: TextStyle(
         color: ink,
         fontFamily: pixelDisplayFontFamily,
@@ -493,12 +501,16 @@ ThemeData buildPixelTheme({
         animationDuration: Duration.zero,
         backgroundColor: WidgetStateProperty.resolveWith((states) {
           if (states.contains(WidgetState.disabled)) {
-            return raised.withValues(alpha: 0.24);
+            return Colors.transparent;
           }
           if (states.contains(WidgetState.pressed)) {
             return scheme.primaryContainer;
           }
-          return raised.withValues(alpha: dark ? 0.42 : 0.3);
+          if (states.contains(WidgetState.hovered) ||
+              states.contains(WidgetState.focused)) {
+            return raised;
+          }
+          return raised.withValues(alpha: dark ? 0.32 : 0.22);
         }),
         foregroundColor: WidgetStateProperty.resolveWith((states) {
           if (states.contains(WidgetState.disabled)) {
@@ -522,15 +534,12 @@ ThemeData buildPixelTheme({
           return Colors.transparent;
         }),
         side: WidgetStateProperty.resolveWith((states) {
-          if (states.contains(WidgetState.disabled)) {
-            return BorderSide(color: muted.withValues(alpha: 0.14));
-          }
           if (states.contains(WidgetState.hovered) ||
               states.contains(WidgetState.focused) ||
               states.contains(WidgetState.pressed)) {
             return BorderSide(color: primary);
           }
-          return BorderSide(color: muted.withValues(alpha: 0.22));
+          return const BorderSide(color: Colors.transparent);
         }),
         padding: const WidgetStatePropertyAll(EdgeInsets.all(8)),
         tapTargetSize: MaterialTapTargetSize.shrinkWrap,
@@ -573,7 +582,7 @@ ThemeData buildPixelTheme({
       checkmarkColor: primary,
       labelStyle: resolvedTextTheme.labelLarge,
       side: border,
-      shape: BeveledRectangleBorder(borderRadius: BorderRadius.circular(4)),
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
     ),
     segmentedButtonTheme: SegmentedButtonThemeData(
@@ -645,6 +654,27 @@ class PixelThemeScope extends InheritedWidget {
   bool updateShouldNotify(PixelThemeScope oldWidget) => oldWidget.mode != mode;
 }
 
+class PixelToolbarIconButton extends StatelessWidget {
+  const PixelToolbarIconButton({
+    super.key,
+    required this.tooltip,
+    required this.onPressed,
+    required this.icon,
+  });
+
+  final String tooltip;
+  final VoidCallback? onPressed;
+  final Widget icon;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(left: 4),
+      child: IconButton(tooltip: tooltip, onPressed: onPressed, icon: icon),
+    );
+  }
+}
+
 class PixelThemeToggle extends StatelessWidget {
   const PixelThemeToggle({super.key});
 
@@ -653,7 +683,7 @@ class PixelThemeToggle extends StatelessWidget {
     final scope = PixelThemeScope.maybeOf(context);
     if (scope == null) return const SizedBox.shrink();
     final dark = scope.mode == ThemeMode.dark;
-    return IconButton(
+    return PixelToolbarIconButton(
       key: const Key('theme-toggle'),
       tooltip: dark ? 'Use light theme' : 'Use dark theme',
       onPressed: scope.toggle,

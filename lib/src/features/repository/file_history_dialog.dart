@@ -150,9 +150,29 @@ class _FileHistoryDialogState extends State<FileHistoryDialog> {
                 children: [
                   pathField,
                   const SizedBox(height: 8),
-                  loadButton,
-                  const SizedBox(height: 4),
-                  blameButton,
+                  Row(
+                    children: [
+                      Expanded(
+                        child: FilledButton(
+                          key: const Key('load-file-history'),
+                          onPressed: _loading
+                              ? null
+                              : () => unawaited(_loadHistory()),
+                          child: const Text('Load history'),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: OutlinedButton(
+                          key: const Key('load-file-blame'),
+                          onPressed: _loading
+                              ? null
+                              : () => unawaited(_loadBlame()),
+                          child: const Text('Load blame'),
+                        ),
+                      ),
+                    ],
+                  ),
                 ],
               )
             else
@@ -161,15 +181,22 @@ class _FileHistoryDialogState extends State<FileHistoryDialog> {
                   Expanded(child: pathField),
                   const SizedBox(width: 8),
                   loadButton,
-                  const SizedBox(width: 6),
+                  const SizedBox(width: 8),
                   blameButton,
                 ],
               ),
             const SizedBox(height: 8),
             Wrap(
-              spacing: 4,
-              runSpacing: 0,
+              spacing: 8,
+              runSpacing: 8,
               children: [
+                if (!_blameMode)
+                  TextButton.icon(
+                    key: const Key('file-history-lines-toggle'),
+                    onPressed: _loading ? null : _showLineRange,
+                    icon: const Icon(Icons.format_list_numbered, size: 18),
+                    label: const Text('Line range'),
+                  ),
                 FilterChip(
                   key: const Key('file-history-follow'),
                   label: const Text('Follow renames'),
@@ -186,13 +213,6 @@ class _FileHistoryDialogState extends State<FileHistoryDialog> {
                       ? null
                       : (value) => setState(() => _directoryMode = value),
                 ),
-                if (!_blameMode)
-                  TextButton.icon(
-                    key: const Key('file-history-lines-toggle'),
-                    onPressed: _loading ? null : _showLineRange,
-                    icon: const Icon(Icons.format_list_numbered, size: 18),
-                    label: const Text('Line range'),
-                  ),
               ],
             ),
             if (!_blameMode &&
@@ -221,7 +241,8 @@ class _FileHistoryDialogState extends State<FileHistoryDialog> {
             if (_blameMode) ...[
               const SizedBox(height: 8),
               Wrap(
-                spacing: 4,
+                spacing: 8,
+                runSpacing: 8,
                 children: [
                   FilterChip(
                     key: const Key('blame-ignore-whitespace'),

@@ -119,7 +119,7 @@ class _PushDialogState extends State<PushDialog> {
           ),
         ),
       ),
-      actionsOverflowButtonSpacing: 4,
+      actionsOverflowButtonSpacing: 8,
       actions: [
         if (_busy)
           TextButton(
@@ -629,7 +629,7 @@ class _PushDialogState extends State<PushDialog> {
                 padding: const EdgeInsets.only(top: 8),
                 child: Wrap(
                   spacing: 8,
-                  runSpacing: 4,
+                  runSpacing: 8,
                   children: [
                     for (final action in result.recoveryActions)
                       OutlinedButton(

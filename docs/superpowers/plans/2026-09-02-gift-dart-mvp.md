@@ -881,3 +881,19 @@ system Git 2.35+.
 4. Grouped branch, synchronization, and changed-file metrics at the start of
    the summary strip; strengthened active-tab indication and replaced the
    isolated empty detail sentence with concise next-action guidance.
+
+## Completed follow-up: square controls and complete action spacing
+
+1. Replaced beveled controls with flat square pixel surfaces. Primary actions
+   remain solid, secondary actions use a quiet raised fill and border, text
+   actions stay lightweight, and icon actions gain a subtle resting tile plus
+   explicit hover and focus borders.
+2. Added one toolbar icon component that owns the four-pixel inter-control gap;
+   Changes, History, Conflict, Welcome, theme, and refresh actions now share
+   the same rhythm and retain an eight-pixel outer edge.
+3. Standardized dialog overflow actions, wrapped action rows, compact icon
+   groups, and button-to-card spacing at 8 px. Dialog action edges remain
+   16 px, with 12 px between content and actions.
+4. Moved explicit 10 px card and notice padding to the 12 px grid, and kept
+   compact File History actions directly reachable by placing History and
+   Blame side by side.

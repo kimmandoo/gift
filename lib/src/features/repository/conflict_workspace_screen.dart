@@ -80,7 +80,7 @@ class _ConflictWorkspaceScreenState extends State<ConflictWorkspaceScreen> {
               ),
         title: const Text('Conflict workspace'),
         actions: [
-          IconButton(
+          PixelToolbarIconButton(
             key: const Key('refresh-conflicts'),
             tooltip: 'Refresh conflicts',
             onPressed: state.isLoading || state.isMutating
@@ -179,7 +179,7 @@ class _ConflictWorkspaceScreenState extends State<ConflictWorkspaceScreen> {
     final selected = count == 0 ? 0 : state.selectedIndex + 1;
     final path = state.selectedConflict?.path ?? 'All conflicts resolved';
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 10, 16, 6),
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
       child: Wrap(
         alignment: WrapAlignment.spaceBetween,
         crossAxisAlignment: WrapCrossAlignment.center,
@@ -195,7 +195,7 @@ class _ConflictWorkspaceScreenState extends State<ConflictWorkspaceScreen> {
           ),
           Wrap(
             spacing: 8,
-            runSpacing: 4,
+            runSpacing: 8,
             children: [
               OutlinedButton.icon(
                 key: const Key('previous-conflict'),

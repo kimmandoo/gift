@@ -216,7 +216,7 @@ class _CredentialsDialogState extends State<CredentialsDialog> {
     return Container(
       key: Key(isError ? 'credential-error' : 'credential-message'),
       margin: const EdgeInsets.only(bottom: 8),
-      padding: const EdgeInsets.all(10),
+      padding: const EdgeInsets.all(12),
       color: background,
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -515,7 +515,7 @@ class _CredentialsDialogState extends State<CredentialsDialog> {
     key: const Key('credential-editor'),
     color: Theme.of(context).colorScheme.surfaceContainerHigh,
     child: Padding(
-      padding: const EdgeInsets.all(14),
+      padding: const EdgeInsets.all(16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [

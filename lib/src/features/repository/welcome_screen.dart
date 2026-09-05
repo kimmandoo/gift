@@ -116,7 +116,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
         actions: [
           const PixelThemeToggle(),
           Builder(
-            builder: (context) => IconButton(
+            builder: (context) => PixelToolbarIconButton(
               key: const Key('open-preferences'),
               tooltip: 'Accessibility and preferences',
               onPressed: () => _showPreferences(context),
@@ -124,7 +124,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
             ),
           ),
           if (_gitSettingsController != null)
-            IconButton(
+            PixelToolbarIconButton(
               tooltip: 'Git settings',
               onPressed: _showGitSettings,
               icon: const Icon(Icons.settings_outlined),
@@ -196,7 +196,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
                       return Row(
                         children: [
                           Expanded(child: openButton),
-                          const SizedBox(width: 12),
+                          const SizedBox(width: 8),
                           Expanded(child: setupButton),
                         ],
                       );

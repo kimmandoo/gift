@@ -97,7 +97,7 @@ class _ShelfDialogState extends State<ShelfDialog> {
 
   Widget _localStateNotice(BuildContext context) => Container(
     key: const Key('shelf-semantics'),
-    padding: const EdgeInsets.all(10),
+    padding: const EdgeInsets.all(12),
     color: Theme.of(context).colorScheme.surfaceContainerHighest,
     child: const Text(
       'Shelves are local reusable patches. They do not touch Git stash. '
@@ -135,7 +135,8 @@ class _ShelfDialogState extends State<ShelfDialog> {
                   ? null
                   : () => unawaited(_activateChangelist(list.id)),
               trailing: Wrap(
-                spacing: 0,
+                spacing: 4,
+                runSpacing: 4,
                 children: [
                   IconButton(
                     key: ValueKey('rename-changelist:${list.id}'),
@@ -256,7 +257,8 @@ class _ShelfDialogState extends State<ShelfDialog> {
       '${_pathCount(shelf.paths.length)} · ${shelf.imported ? 'imported' : 'tracked'}',
     ),
     trailing: Wrap(
-      spacing: 0,
+      spacing: 4,
+      runSpacing: 4,
       children: [
         IconButton(
           key: ValueKey('unshelve:${shelf.id}'),

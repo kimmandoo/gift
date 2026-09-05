@@ -294,9 +294,9 @@ class _WorkspaceTab extends StatelessWidget {
                         side: BorderSide.none,
                         minimumSize: const Size(32, 32),
                         maximumSize: const Size(32, 32),
-                        padding: const EdgeInsets.all(6),
-                        shape: const BeveledRectangleBorder(
-                          borderRadius: BorderRadius.all(Radius.circular(4)),
+                        padding: const EdgeInsets.all(8),
+                        shape: const RoundedRectangleBorder(
+                          borderRadius: BorderRadius.zero,
                         ),
                       ),
                       icon: const Icon(Icons.close, size: 15),

@@ -131,7 +131,7 @@ class _HostingDialogState extends State<HostingDialog> {
               Wrap(
                 alignment: WrapAlignment.end,
                 spacing: 8,
-                runSpacing: 4,
+                runSpacing: 8,
                 children: [
                   TextButton(
                     key: const Key('refresh-hosting'),
@@ -179,7 +179,7 @@ class _HostingDialogState extends State<HostingDialog> {
     if (snapshot == null) {
       return const Card(
         child: Padding(
-          padding: EdgeInsets.all(10),
+          padding: EdgeInsets.all(12),
           child: Text('Checking the selected remote…'),
         ),
       );
@@ -189,7 +189,7 @@ class _HostingDialogState extends State<HostingDialog> {
       return Card(
         key: const Key('hosting-unavailable'),
         child: Padding(
-          padding: const EdgeInsets.all(10),
+          padding: const EdgeInsets.all(12),
           child: Text(
             snapshot.reason ??
                 'Hosting links are unavailable; local Git remains available.',
@@ -203,7 +203,7 @@ class _HostingDialogState extends State<HostingDialog> {
     return Card(
       key: const Key('hosting-available'),
       child: Padding(
-        padding: const EdgeInsets.all(10),
+        padding: const EdgeInsets.all(12),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -232,7 +232,7 @@ class _HostingDialogState extends State<HostingDialog> {
     key: const Key('hosting-link-form'),
     margin: EdgeInsets.zero,
     child: Padding(
-      padding: const EdgeInsets.all(10),
+      padding: const EdgeInsets.all(12),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -347,17 +347,17 @@ class _HostingDialogState extends State<HostingDialog> {
     key: Key('hosting-link-${link.kind.name}'),
     margin: const EdgeInsets.only(bottom: 8),
     child: Padding(
-      padding: const EdgeInsets.all(10),
+      padding: const EdgeInsets.all(12),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Text(link.label, style: Theme.of(context).textTheme.titleSmall),
           const SizedBox(height: 3),
           SelectableText(link.url, key: Key('hosting-url-${link.kind.name}')),
-          const SizedBox(height: 6),
+          const SizedBox(height: 8),
           Wrap(
             spacing: 8,
-            runSpacing: 6,
+            runSpacing: 8,
             children: [
               OutlinedButton.icon(
                 key: Key('copy-hosting-${link.kind.name}'),

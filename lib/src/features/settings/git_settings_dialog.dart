@@ -42,7 +42,7 @@ class _GitSettingsDialogState extends State<GitSettingsDialog> {
         vertical: 24,
       ),
       title: const Text('Git executable'),
-      actionsOverflowButtonSpacing: 4,
+      actionsOverflowButtonSpacing: 8,
       content: SizedBox(
         width: width,
         child: Column(

@@ -12,6 +12,8 @@
   provider marks, and per-repository account selection.
 - fix(ui): aligned pixel-cut button states, toolbar controls, repository tabs,
   change-list density, pane sizing, summary metrics, and empty-detail guidance.
+- fix(ui): redesigned controls as square pixel surfaces and standardized
+  toolbar, dialog, card, and wrapped-action spacing on the 4/8/12/16 px grid.
 
 ## 2026-09-04
 - fix(auth): improved Git account management with searchable host groups,

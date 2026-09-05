@@ -254,7 +254,7 @@ class _HistoryBatchDialogState extends State<HistoryBatchDialog> {
 
   Widget _notice(BuildContext context, String text, Color color) => Container(
     color: color,
-    padding: const EdgeInsets.all(10),
+    padding: const EdgeInsets.all(12),
     child: Text(text),
   );
 

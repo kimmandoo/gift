@@ -127,7 +127,7 @@ class _BranchDialogState extends State<BranchDialog> {
             ),
         ],
       ),
-      actionsOverflowButtonSpacing: 4,
+      actionsOverflowButtonSpacing: 8,
       content: SizedBox(
         width: width,
         height: (size.height - 180).clamp(220.0, 420.0),
@@ -414,11 +414,11 @@ class _BranchDialogState extends State<BranchDialog> {
                 : (value) => setState(() => _forceDelete = value ?? false),
             title: const Text('Force delete unmerged branch'),
           ),
-        const SizedBox(height: 4),
+        const SizedBox(height: 8),
         Wrap(
           alignment: WrapAlignment.end,
           spacing: 8,
-          runSpacing: 4,
+          runSpacing: 8,
           children: [
             OutlinedButton(
               key: const Key('preview-branch-operation'),

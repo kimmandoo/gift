@@ -92,7 +92,7 @@ class _RecoveryDialogState extends State<RecoveryDialog> {
           ],
         ),
       ),
-      actionsOverflowButtonSpacing: 4,
+      actionsOverflowButtonSpacing: 8,
       actions: [
         TextButton(
           key: const Key('refresh-recovery'),
@@ -122,7 +122,7 @@ class _RecoveryDialogState extends State<RecoveryDialog> {
     return Card(
       margin: EdgeInsets.zero,
       child: Padding(
-        padding: const EdgeInsets.all(10),
+        padding: const EdgeInsets.all(12),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
@@ -145,7 +145,7 @@ class _RecoveryDialogState extends State<RecoveryDialog> {
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
               ),
-              const SizedBox(height: 6),
+              const SizedBox(height: 8),
               Align(
                 alignment: Alignment.centerRight,
                 child: FilledButton(
@@ -206,7 +206,7 @@ class _RecoveryDialogState extends State<RecoveryDialog> {
       margin: const EdgeInsets.only(bottom: 6),
       child: ListTile(
         dense: true,
-        contentPadding: const EdgeInsets.symmetric(horizontal: 10),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 12),
         title: Text(
           '${entry.selector} · ${entry.message}',
           maxLines: 2,

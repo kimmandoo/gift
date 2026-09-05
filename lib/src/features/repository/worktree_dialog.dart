@@ -100,7 +100,7 @@ class _WorktreeDialogState extends State<WorktreeDialog> {
           ],
         ),
       ),
-      actionsOverflowButtonSpacing: 4,
+      actionsOverflowButtonSpacing: 8,
       actions: [
         TextButton(
           key: const Key('refresh-worktrees'),
@@ -133,8 +133,8 @@ class _WorktreeDialogState extends State<WorktreeDialog> {
       child: ExpansionTile(
         key: const Key('add-worktree-expansion'),
         initiallyExpanded: false,
-        tilePadding: const EdgeInsets.symmetric(horizontal: 10),
-        childrenPadding: const EdgeInsets.fromLTRB(10, 0, 10, 10),
+        tilePadding: const EdgeInsets.symmetric(horizontal: 12),
+        childrenPadding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
         title: Text(
           'Add worktree',
           style: Theme.of(context).textTheme.titleSmall,
@@ -254,7 +254,7 @@ class _WorktreeDialogState extends State<WorktreeDialog> {
       key: ValueKey('worktree:${worktree.path}'),
       margin: const EdgeInsets.only(bottom: 8),
       child: Padding(
-        padding: const EdgeInsets.all(10),
+        padding: const EdgeInsets.all(12),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
@@ -324,10 +324,10 @@ class _WorktreeDialogState extends State<WorktreeDialog> {
                 'Prune reason: $reason',
                 style: Theme.of(context).textTheme.bodySmall,
               ),
-            const SizedBox(height: 6),
+            const SizedBox(height: 8),
             Wrap(
-              spacing: 6,
-              runSpacing: 4,
+              spacing: 8,
+              runSpacing: 8,
               alignment: WrapAlignment.end,
               children: [
                 if (!worktree.isPrunable && !worktree.isCurrent)

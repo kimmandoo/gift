@@ -5,40 +5,43 @@ This file is the handoff record for continuing work across query sessions.
 ## Current checkpoint
 
 - Date: 2026-09-05
-- Active task: the requested overall UX refinement is complete; Task 43
-  remains the next backlog priority.
+- Active task: the requested button redesign and complete spacing pass are
+  complete; Task 43 remains the next backlog priority.
 - Branch: `main`; the committed base before this session was
-  `f3b5bf9 feat(ui): refine history typography and git accounts`.
-- UX behavior: filled, outlined, text, segmented, chip, and icon controls now
-  share crisp pixel-cut geometry, four-pixel-grid sizing, restrained resting
-  surfaces, and immediate hover, focus, pressed, and disabled states.
-- UX behavior: row overflow and tab-close affordances stay lightweight while
-  top-level icon actions have visible hit areas. The active repository tab has
-  a primary four-pixel edge and the add-repository control is inset.
-- Changes behavior: desktop change panes widen responsively up to 440 px,
-  repeated rows no longer add empty vertical gaps, truncated paths expose a
-  hover tooltip, and branch/sync/change metrics remain grouped at the start of
-  the summary strip.
-- Changes behavior: empty detail space now explains the next action, short
-  detail heights remain scroll-safe, panel/status padding follows the shared
-  grid, and populated details preserve the diff viewport.
+  `b106932 fix(ui): refine pixel controls and spacing`.
+- UX behavior: buttons now use flat square pixel surfaces instead of beveled
+  corners. Primary actions stay solid, secondary actions use a quiet raised
+  fill and border, text actions stay lightweight, and icon actions expose
+  subtle resting tiles with explicit hover and focus borders.
+- Spacing behavior: the shared `PixelToolbarIconButton` owns a four-pixel
+  inter-control gap while app bars retain an eight-pixel outer edge. Dialog
+  actions use 16-pixel side/bottom edges, a 12-pixel content gap, and
+  eight-pixel overflow spacing.
+- Spacing behavior: wrapped action rows and button-to-card gaps use 8 px,
+  compact icon groups use 4 px, and explicit card, notice, and list insets use
+  the 12 px grid.
+- Responsive behavior: compact File History keeps History and Blame side by
+  side and orders the Line range action before optional filters, so every
+  control remains reachable at 320×480 with 1.3× text scaling.
 - Changed implementation files:
-  `lib/src/app/pixel_theme.dart` and
-  `lib/src/features/repository/{changes_screen,context_actions,
-  workspace_screen}.dart`.
-- Changed docs/tests: `CHANGELOG.md`,
-  `docs/superpowers/plans/2026-09-02-gift-dart-mvp.md`, this checkpoint,
-  `test/app_boot_test.dart`, and `test/branding_test.dart`. Incidental
-  implementation-pinning button assertions were removed; behavior and contrast
-  coverage remain.
+  `lib/src/app/{credentials_dialog,pixel_theme}.dart`,
+  `lib/src/features/settings/git_settings_dialog.dart`, and the repository
+  branch, changes, comparison, conflict workspace, file history, history batch,
+  history, hosting, ignore, interactive rebase, object, push, recovery, remote,
+  repository setup, shelf, submodule, update project, welcome, workspace, and
+  worktree UI files.
+- Changed docs: `CHANGELOG.md`,
+  `docs/superpowers/plans/2026-09-02-gift-dart-mvp.md`, and this checkpoint.
 - Verification: `flutter analyze` passed; `flutter test
   test/app_boot_test.dart test/branding_test.dart test/features` passed all
-  101 tests; `flutter build windows --release` produced
+  101 tests; the focused 320×480, 1.3× File History regression passed; and
+  `flutter build windows --release` produced
   `build/windows/x64/runner/Release/gift.exe`.
-- Desktop verification: the rebuilt executable launched at 1280×720. Light
-  and dark Changes views showed the new tab, toolbar, summary, list-density,
-  and empty-detail hierarchy; selecting `CHANGELOG.md` loaded its real diff
-  with the pixel-cut Stage and Discard actions and no visible clipping.
+- Desktop verification: the rebuilt executable was inspected at 1280×720.
+  Light and dark Changes views showed square toolbar tiles with consistent
+  inter-button and outer spacing; a selected real diff showed distinct Stage
+  and Discard actions; and the Branch dialog showed the new button surfaces,
+  content spacing, and footer edges without clipping.
 - Exact next action: begin Task 43 with its first change/file context-action
   behavior-ledger scenario and RED fixture.
 - Blockers: none. The five generated Flutter plugin files were already

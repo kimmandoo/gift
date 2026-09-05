@@ -191,25 +191,25 @@ class _ChangesScreenBodyState extends ConsumerState<_ChangesScreenBody> {
         ),
         actions: [
           if (!compactToolbar) ...[
-            IconButton(
+            PixelToolbarIconButton(
               key: const Key('open-push'),
               tooltip: 'Push to remote',
               onPressed: () => unawaited(_openPush(context)),
               icon: const Icon(Icons.cloud_upload_outlined),
             ),
-            IconButton(
+            PixelToolbarIconButton(
               key: const Key('update-project'),
               tooltip: 'Update project',
               onPressed: () => unawaited(_openUpdateProject(context)),
               icon: const Icon(Icons.cloud_download_outlined),
             ),
-            IconButton(
+            PixelToolbarIconButton(
               key: const Key('open-branches'),
               tooltip: 'Open branches',
               onPressed: () => unawaited(_openBranches(context)),
               icon: const Icon(Icons.call_split),
             ),
-            IconButton(
+            PixelToolbarIconButton(
               key: const Key('open-history'),
               tooltip: 'Open history',
               onPressed: () => unawaited(_openHistory(context)),
@@ -394,9 +394,8 @@ class _ChangesScreenBodyState extends ConsumerState<_ChangesScreenBody> {
               ),
             ],
           ),
-          const SizedBox(width: 4),
           const PixelThemeToggle(),
-          IconButton(
+          PixelToolbarIconButton(
             tooltip: 'Refresh changes',
             onPressed: state.isRefreshing ? null : controller.refresh,
             icon: state.isRefreshing
@@ -708,7 +707,7 @@ class _ChangesScreenBodyState extends ConsumerState<_ChangesScreenBody> {
                       children: [
                         editor,
                         _commitCharacterGuidance(context),
-                        const SizedBox(height: 10),
+                        const SizedBox(height: 8),
                         button,
                       ],
                     );
@@ -721,7 +720,7 @@ class _ChangesScreenBodyState extends ConsumerState<_ChangesScreenBody> {
                           children: [editor, _commitCharacterGuidance(context)],
                         ),
                       ),
-                      const SizedBox(width: 10),
+                      const SizedBox(width: 8),
                       button,
                     ],
                   );
@@ -918,7 +917,7 @@ class _ChangesScreenBodyState extends ConsumerState<_ChangesScreenBody> {
         : result.commitOid;
     return Container(
       key: const Key('commit-success'),
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
       color: Theme.of(context).colorScheme.tertiaryContainer,
       child: Text(
         'Committed $shortOid. History updated.',
@@ -936,7 +935,7 @@ class _ChangesScreenBodyState extends ConsumerState<_ChangesScreenBody> {
               'Verify history before retrying.'
         : 'History was not changed.';
     return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 10, 20, 0),
+      padding: const EdgeInsets.fromLTRB(20, 8, 20, 0),
       child: Column(
         key: const Key('commit-error'),
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -2196,7 +2195,7 @@ class _ChangesScreenBodyState extends ConsumerState<_ChangesScreenBody> {
   Widget _errorBanner(BuildContext context, GitError error) {
     return Container(
       key: const Key('changes-refresh-error'),
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
       color: Theme.of(context).colorScheme.errorContainer,
       child: Row(
         children: [

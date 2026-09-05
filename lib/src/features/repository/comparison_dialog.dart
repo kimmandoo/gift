@@ -468,7 +468,7 @@ class _ComparisonDialogState extends State<ComparisonDialog> {
   Widget _errorBanner(GitError error) {
     return Container(
       key: const Key('comparison-error'),
-      padding: const EdgeInsets.all(10),
+      padding: const EdgeInsets.all(12),
       color: Theme.of(context).colorScheme.errorContainer,
       child: Row(
         children: [
@@ -711,7 +711,7 @@ class _ThreeWayComparisonDialogState extends State<ThreeWayComparisonDialog> {
               const SizedBox(height: 8),
               Container(
                 key: const Key('three-way-error'),
-                padding: const EdgeInsets.all(10),
+                padding: const EdgeInsets.all(12),
                 color: Theme.of(context).colorScheme.errorContainer,
                 child: Text(error.userMessage),
               ),
