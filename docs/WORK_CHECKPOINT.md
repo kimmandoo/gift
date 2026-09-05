@@ -5,27 +5,33 @@ This file is the handoff record for continuing work across query sessions.
 ## Current checkpoint
 
 - Date: 2026-09-06
-- Active task: Task 38 — release candidate `v1.0.0` was committed and pushed
-  as `release-v1.0.0`; the GitHub Actions release run and native clean-machine
-  review remain.
+- Active task: Task 38 — corrected `v1.0.0` release candidate was committed
+  and pushed as `release-v1.0.0`; the corrected GitHub Actions run and native
+  clean-machine review remain.
 - Branch: `main`; latest release source commit is
-  `19834c9 release(v1.0.0): publish desktop artifacts`.
-- Completed in this session: created the versioned release commit, pushed
-  `main` and `release-v1.0.0` to `origin`, and verified both remote refs point
-  to `19834c9`.
-- Exact next action: inspect the tag-triggered workflow result, review the
-  Linux, ad hoc-signed macOS, and unsigned Windows archives plus attestations,
-  then perform clean-machine install/launch/upgrade/downgrade/uninstall/Git-
-  missing checks on all three platforms before marking Task 38 complete.
-- Current session files: `docs/WORK_CHECKPOINT.md`; release source changes
-  are recorded in `18c69f9`, and the release commit is `19834c9`.
-- Verification: the release commit subject matched the workflow contract;
-  `release-v1.0.0` matched `pubspec.yaml` version `1.0.0`; `git push origin
-  main release-v1.0.0` succeeded; and `git ls-remote` confirmed both refs point
-  to `19834c9`.
+  `2b290f0 release(v1.0.0): republish desktop artifacts`.
+- Completed in this session: fixed Windows PowerShell tag validation by using
+  the GitHub ref expression; stabilized the native filesystem watcher test by
+  awaiting its first callback; made the cherry-pick test assert applied
+  history/tree state rather than timing-dependent commit identity; pushed the
+  fixes; and force-updated `release-v1.0.0` to `2b290f0`.
+- Exact next action: inspect the corrected tag-triggered workflow result, review
+  the Linux, ad hoc-signed macOS, and unsigned Windows archives plus
+  attestations, then perform clean-machine install/launch/upgrade/downgrade/
+  uninstall/Git-missing checks on all three platforms before marking Task 38
+  complete.
+- Current session files: `.github/workflows/ci.yml`, `CHANGELOG.md`,
+  `test/backend/history_batch_test.dart`,
+  `test/features/repository/repository_refresh_coordinator_test.dart`, and
+  `docs/WORK_CHECKPOINT.md`.
+- Verification: the reported Windows release-tag failure was fixed; focused
+  repository-refresh and history-batch tests passed all 10 tests; Flutter
+  analysis passed; workflow YAML parsing, 11 pinned Actions, release-tag
+  validation for `release-v1.0.0`, and `git diff --check` passed; and both
+  `main` and the forced release tag were pushed successfully.
 - Blockers: the local environment does not include the `gh` CLI, so the
-  tag-triggered workflow result was not queried locally. Linux/macOS native
-  hosts are unavailable for the clean-machine review; Windows binaries remain
+  corrected workflow result was not queried locally. Linux/macOS native hosts
+  are unavailable for the clean-machine review; Windows binaries remain
   unsigned and macOS remains intentionally ad hoc-signed and not notarized.
 
 ## Previous checkpoint
