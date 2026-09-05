@@ -3216,77 +3216,41 @@ class RepositoryService {
         )
         .join('\n');
     await todo.writeAsString('$todoContents\n');
-    final scriptName = Platform.isWindows
-        ? 'sequence-editor.cmd'
-        : 'sequence-editor.sh';
     final script = File(
-      '${directory.path}${Platform.pathSeparator}$scriptName',
+      '${directory.path}${Platform.pathSeparator}sequence-editor.sh',
     );
-    final messageScriptName = Platform.isWindows
-        ? 'message-editor.cmd'
-        : 'message-editor.sh';
     final messageScript = File(
-      '${directory.path}${Platform.pathSeparator}$messageScriptName',
+      '${directory.path}${Platform.pathSeparator}message-editor.sh',
     );
     final rewordEntries = plan.entries
         .where((entry) => entry.action == GitInteractiveRebaseAction.reword)
         .toList(growable: false);
-    if (Platform.isWindows) {
-      await script.writeAsString(
-        '@echo off\r\n'
-        'copy /Y "${_windowsPath(todo.path)}" "%~1" >NUL\r\n',
+    await script.writeAsString(
+      '#!/bin/sh\n'
+      'cp -- ${_shellPath(todo.path)} "\$1"\n',
+    );
+    final messageScriptContents = StringBuffer(
+      '#!/bin/sh\n'
+      'head=\$(git rev-parse HEAD 2>/dev/null || true)\n',
+    );
+    for (var index = 0; index < rewordEntries.length; index++) {
+      final entry = rewordEntries[index];
+      final messageFile = File(
+        '${directory.path}${Platform.pathSeparator}message-$index.txt',
       );
-      final messageScriptContents = StringBuffer(
-        '@echo off\r\n'
-        'set "head="\r\n'
-        'for /f "delims=" %%H in (\'git rev-parse HEAD\') do set "head=%%H"\r\n',
-      );
-      for (var index = 0; index < rewordEntries.length; index++) {
-        final entry = rewordEntries[index];
-        final messageFile = File(
-          '${directory.path}${Platform.pathSeparator}message-$index.txt',
-        );
-        await messageFile.writeAsString('${_todoSubject(entry.subject)}\r\n');
-        messageScriptContents
-          ..writeln(
-            'if "%head%"=="${entry.originalOid}" copy /Y "${_windowsPath(messageFile.path)}" "%~1" >NUL',
-          )
-          ..writeln('if "%head%"=="${entry.originalOid}" exit /b 0');
-      }
-      messageScriptContents.write('exit /b 0\r\n');
-      await messageScript.writeAsString(messageScriptContents.toString());
-    } else {
-      await script.writeAsString(
-        '#!/bin/sh\n'
-        'cp -- ${_shellPath(todo.path)} "\$1"\n',
-      );
-      final messageScriptContents = StringBuffer(
-        '#!/bin/sh\n'
-        'head=\$(git rev-parse HEAD 2>/dev/null || true)\n',
-      );
-      for (var index = 0; index < rewordEntries.length; index++) {
-        final entry = rewordEntries[index];
-        final messageFile = File(
-          '${directory.path}${Platform.pathSeparator}message-$index.txt',
-        );
-        await messageFile.writeAsString('${_todoSubject(entry.subject)}\n');
-        messageScriptContents
-          ..writeln('if [ "\$head" = "${entry.originalOid}" ]; then')
-          ..writeln('  cp -- ${_shellPath(messageFile.path)} "\$1"')
-          ..writeln('  exit 0')
-          ..writeln('fi');
-      }
-      messageScriptContents.write('exit 0\n');
-      await messageScript.writeAsString(messageScriptContents.toString());
+      await messageFile.writeAsString('${_todoSubject(entry.subject)}\n');
+      messageScriptContents
+        ..writeln('if [ "\$head" = "${entry.originalOid}" ]; then')
+        ..writeln('  cp -- ${_shellPath(messageFile.path)} "\$1"')
+        ..writeln('  exit 0')
+        ..writeln('fi');
     }
+    messageScriptContents.write('exit 0\n');
+    await messageScript.writeAsString(messageScriptContents.toString());
     return _InteractiveRebaseEditor(
       directory: directory,
-      sequenceEditorCommand: Platform.isWindows
-          ? _windowsPath(script.path)
-          : 'sh ${_shellPath(script.path)}',
-      messageEditorCommand: Platform.isWindows
-          ? _windowsPath(messageScript.path)
-          : 'sh ${_shellPath(messageScript.path)}',
+      sequenceEditorCommand: 'sh ${_shellPath(script.path)}',
+      messageEditorCommand: 'sh ${_shellPath(messageScript.path)}',
     );
   }
 
@@ -6534,9 +6498,7 @@ class RepositoryService {
   }
 
   String _shellPath(String path) =>
-      '"${path.replaceAll('\\', '\\\\').replaceAll('"', '\\"')}"';
-
-  String _windowsPath(String path) => path.replaceAll('"', '""');
+      '"${path.replaceAll('\\', '/').replaceAll('"', '\\"')}"';
 
   Future<String> _readRefOid(
     RepositoryHandle handle,
@@ -7328,7 +7290,18 @@ class RepositoryService {
     );
     late final List<GitWorktree> parsed;
     try {
-      parsed = parseGitWorktrees(output.stdout);
+      parsed = [
+        for (final worktree in parseGitWorktrees(output.stdout))
+          GitWorktree(
+            path: _normalizeGitFilesystemPath(worktree.path),
+            head: worktree.head,
+            branch: worktree.branch,
+            isLocked: worktree.isLocked,
+            lockReason: worktree.lockReason,
+            isPrunable: worktree.isPrunable,
+            pruneReason: worktree.pruneReason,
+          ),
+      ];
     } on FormatException catch (error, stackTrace) {
       Error.throwWithStackTrace(
         GitError(
@@ -12278,6 +12251,11 @@ GitError _mapUpdateError(GitError error) {
     userMessage: 'Git could not update the project from its remote branch.',
     retryable: true,
   );
+}
+
+String _normalizeGitFilesystemPath(String path) {
+  if (!Platform.isWindows) return path;
+  return path.replaceAll('/', r'\');
 }
 
 Future<String> _canonicalizeDirectory(String path, {bool moved = false}) async {

@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:gift/src/app/pixel_theme.dart';
 import 'package:gift/src/backend/credentials.dart';
 import 'package:gift/src/backend/domain.dart';
@@ -104,6 +106,7 @@ void main() {
         expect(setup.left, greaterThanOrEqualTo(open.right + 8));
         expect(setup.top, closeTo(open.top, 1));
       }
+      await expectVisualGolden(tester, '${fixture.name}.png');
     });
   }
 
@@ -190,6 +193,7 @@ void main() {
       expect(account, completelyWithin(viewport));
       expect(account.top, greaterThanOrEqualTo(remote.bottom + 8));
       expect(tester.takeException(), isNull);
+      await expectVisualGolden(tester, '${fixture.name}-push.png');
     });
 
     testWidgets('keeps the ${fixture.name} clone dialog bounded', (
@@ -242,8 +246,32 @@ void main() {
       expect(account, completelyWithin(viewport));
       expect(account.top, greaterThanOrEqualTo(source.bottom + 8));
       expect(tester.takeException(), isNull);
+      await expectVisualGolden(tester, '${fixture.name}-clone.png');
     });
   }
+}
+
+String? get visualGoldenPlatform => switch (Platform.operatingSystem) {
+  'windows' => 'windows',
+  'linux' => 'linux',
+  'macos' => 'macos',
+  _ => null,
+};
+
+bool get shouldCaptureVisualGoldens {
+  final platform = visualGoldenPlatform;
+  return platform != null &&
+      (Platform.isWindows ||
+          Platform.environment['GIFT_CAPTURE_GOLDENS'] == '1');
+}
+
+Future<void> expectVisualGolden(WidgetTester tester, String fileName) async {
+  final platform = visualGoldenPlatform;
+  if (platform == null || !shouldCaptureVisualGoldens) return;
+  await expectLater(
+    find.byType(MaterialApp),
+    matchesGoldenFile('goldens/$platform/$fileName'),
+  );
 }
 
 class _VisualGateway with GitPatchGatewayStub implements GitGateway {

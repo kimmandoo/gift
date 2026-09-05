@@ -26,7 +26,10 @@ void main() {
     expect(snapshot.worktrees.first.isMain, isTrue);
     expect(snapshot.worktrees.first.isCurrent, isTrue);
     expect(snapshot.worktrees.first.branch, 'main');
-    expect(snapshot.worktrees.last.path, fixture.linked.path);
+    expect(
+      snapshot.worktrees.last.path,
+      Directory(fixture.linked.path).resolveSymbolicLinksSync(),
+    );
     expect(snapshot.worktrees.last.isCurrent, isFalse);
     expect(snapshot.worktrees.last.branch, isNull);
     expect(snapshot.worktrees.last.head, hasLength(40));

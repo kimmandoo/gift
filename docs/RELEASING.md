@@ -94,8 +94,12 @@ git push origin main release-v1.0.0
 Ordinary branch pushes create no workflow run. Use manual dispatch when a
 maintainer needs a deliberate rerun.
 After all three checks pass, it builds one release bundle per platform and
-uploads the bundles as workflow artifacts. A tagged public release can attach
-those artifacts after a maintainer has reviewed and signed them.
+uploads the bundles as workflow artifacts. Each build also verifies the
+platform-specific executable and runtime files before upload. Linux and macOS
+jobs capture their runner-specific visual goldens as separate review artifacts;
+the reviewed Windows goldens live under `test/app/goldens/windows/`. A tagged
+public release can attach the release artifacts after a maintainer has reviewed
+and signed them.
 
 The Flutter version is pinned in the workflow and in
 [`tool/versions.json`](../tool/versions.json), which keeps local and CI

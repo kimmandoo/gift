@@ -905,8 +905,20 @@ system Git 2.35+.
 2. Added representative Push and Repository Setup dialog fixtures for compact
    dark 1.2x text and standard light 1.0x text, with bounds and spacing checks
    in `test/app/visual_regression_test.dart`.
-3. Next: capture reviewed platform-specific golden baselines for the welcome
-   and repository-dialog fixtures.
+3. Captured and reviewed the Windows golden matrix for all welcome and dialog
+   fixtures. CI captures Linux and macOS runner-specific goldens as review
+   artifacts without pretending their rasterization matches Windows.
+4. Next: finish the cross-platform CI build audit and verify all three release
+   artifact layouts.
+
+## Completed follow-up: cross-platform CI hardening
+
+1. Serialized Git integration verification and forced LF Git fixtures on
+   Windows so CRLF conversion and teardown races cannot block CI.
+2. Made interactive-rebase editor scripts run through Git's portable `sh`
+   command path on every desktop platform, including Windows Git Bash.
+3. Added release-bundle structure checks, Windows packaging-script checks,
+   and Linux/macOS runner-specific golden capture to the GitHub Actions matrix.
 
 ## Completed follow-up: visible push progress
 

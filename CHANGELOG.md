@@ -1,6 +1,13 @@
 # Changelog
 
 ## 2026-09-05
+- feat(ci): added required artifact checks and runner-specific visual golden
+  capture for Linux, macOS, and Windows desktop release jobs.
+- fix(ci): stabilized Windows Git verification with LF fixtures, UTF-8 process
+  output, serialized integration tests, native path normalization, and
+  Git-Bash-compatible rebase editors.
+- test(ui): captured and reviewed the Windows golden matrix for welcome,
+  Push, and Repository Setup dialog fixtures.
 - feat(windows): changed the setup executable into an interactive per-user
   installation wizard with selectable install and shortcut options.
 - test(windows): added packaging verification for distinct setup and portable

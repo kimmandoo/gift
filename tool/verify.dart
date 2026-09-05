@@ -18,15 +18,37 @@ Future<void> main() async {
     'tool',
   ]);
   await runCommand(flutter, ['analyze']);
-  await runCommand(flutter, ['test']);
+
+  // Git integration fixtures create repositories and temporary helper files.
+  // Serializing the suite avoids Windows file-lock races during teardown while
+  // keeping the same deterministic verification contract on every runner.
+  final gitTestEnvironment = Platform.isWindows
+      ? const <String, String>{
+          'GIT_CONFIG_COUNT': '2',
+          'GIT_CONFIG_KEY_0': 'core.autocrlf',
+          'GIT_CONFIG_VALUE_0': 'false',
+          'GIT_CONFIG_KEY_1': 'core.eol',
+          'GIT_CONFIG_VALUE_1': 'lf',
+        }
+      : null;
+  await runCommand(flutter, [
+    'test',
+    '--concurrency=1',
+    '--timeout=2m',
+  ], environment: gitTestEnvironment);
 }
 
-Future<void> runCommand(String executable, List<String> arguments) async {
+Future<void> runCommand(
+  String executable,
+  List<String> arguments, {
+  Map<String, String>? environment,
+}) async {
   stdout.writeln('\n> $executable ${arguments.join(' ')}');
   final result = await Process.run(
     executable,
     arguments,
     runInShell: Platform.isWindows,
+    environment: environment,
   );
   stdout.write(result.stdout);
   stderr.write(result.stderr);

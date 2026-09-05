@@ -39,6 +39,12 @@ jobs:
           cache: true
       - name: Enable desktop target
         run: flutter config --enable-${{ matrix.target }}-desktop
+      - name: Check toolchain
+        run: |
+          flutter --version
+          dart --version
+          git --version
+
       - name: Run formatter, analyzer, and tests
         run: dart run tool/verify.dart
 
@@ -81,6 +87,11 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y clang cmake ninja-build pkg-config libgtk-3-dev
+      - name: Verify Windows packaging scripts
+        if: matrix.target == 'windows'
+        shell: pwsh
+        run: ./tool/windows_packaging_test.ps1
+
       - name: Build release bundle
         if: matrix.target != 'windows'
         shell: bash
@@ -89,6 +100,21 @@ jobs:
         if: matrix.target == 'windows'
         shell: pwsh
         run: ./tool/build_windows.ps1
+      - name: Capture platform visual goldens
+        if: matrix.target != 'windows'
+        env:
+          GIFT_CAPTURE_GOLDENS: '1'
+        run: flutter test --update-goldens test/app/visual_regression_test.dart
+      - name: Upload platform visual goldens
+        if: matrix.target != 'windows'
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: gift-${{ matrix.target }}-visual-goldens
+          path: test/app/goldens/${{ matrix.target }}/
+          if-no-files-found: error
+
+      - name: Verify release artifact
+        run: dart run tool/verify_desktop_artifact.dart ${{ matrix.target }}
       - name: Upload desktop artifact
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:

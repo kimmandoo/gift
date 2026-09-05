@@ -469,6 +469,8 @@ void main() {
           const ['log', '-1', '--format=%B'],
           workingDirectory: directory.path,
           runInShell: false,
+          stdoutEncoding: utf8,
+          stderrEncoding: utf8,
         );
         expect(log.exitCode, 0);
         expect((log.stdout as String).trim(), message);

@@ -88,7 +88,10 @@ void main() {
         ),
       );
       expect(initialized.snapshot.modules.single.isInitialized, isTrue);
-      expect(initialized.status.root, fixture.superproject.path);
+      expect(
+        initialized.status.root,
+        Directory(fixture.superproject.path).resolveSymbolicLinksSync(),
+      );
 
       final synced = await backend.executeSubmoduleAction(
         opened.repositoryId,

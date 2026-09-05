@@ -23,7 +23,10 @@ void main() {
     final initialized = await backend.initRepository(
       GitInitRequest(path: fixture.empty.path, initialBranch: 'main'),
     );
-    expect(initialized.repository.root, fixture.empty.path);
+    expect(
+      initialized.repository.root,
+      Directory(fixture.empty.path).resolveSymbolicLinksSync(),
+    );
     expect(Directory('${fixture.empty.path}/.git').existsSync(), isTrue);
 
     final shallow = await backend.cloneRepository(
