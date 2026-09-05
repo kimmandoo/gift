@@ -7,7 +7,7 @@ This file is the handoff record for continuing work across query sessions.
 - Date: 2026-09-05
 - Active task: Task 45 — Workspace context actions.
 - Branch: `main`; committed base is
-  `0337fb5 feat(actions): add branch context menus`.
+  `5c3d444 feat(changes): add multi-file staging selection`.
 - Completed in this session: Task 44 local and remote branch context menus and
   the multi-file stage-selection follow-up. ACTION-13 is recorded; the Changes
   controller now owns path-based selection, refresh pruning, serialized batch
@@ -15,9 +15,8 @@ This file is the handoff record for continuing work across query sessions.
   checkbox controls, a selected-count bar, and keyboard parity.
 - Exact next action: activate Task 45 with its behavior-ledger scenario and
   first RED workspace-context fixture.
-- Changed files in the uncommitted follow-up batch: `CHANGELOG.md`, `TASKS.md`,
-  `docs/WORK_CHECKPOINT.md`,
-  `docs/research/jetbrains-git-mvp-behavior.md`,
+- Committed follow-up files: `CHANGELOG.md`, `TASKS.md`,
+  `docs/WORK_CHECKPOINT.md`, `docs/research/jetbrains-git-mvp-behavior.md`,
   `docs/superpowers/plans/2026-09-02-gift-dart-mvp.md`,
   `lib/src/app/pixel_theme.dart`,
   `lib/src/features/repository/changes_controller.dart`,
