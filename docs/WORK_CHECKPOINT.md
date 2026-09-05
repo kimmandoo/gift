@@ -7,17 +7,14 @@ This file is the handoff record for continuing work across query sessions.
 - Date: 2026-09-05
 - Active task: Task 39 — Visual regression QA.
 - Branch: `main`; latest commit is
-  `a59ca15 feat(paths): add repository-relative navigation`.
-- Completed in this session: Task 47 repository path navigation. PATH-02 is
-  recorded; bounded cached tracked-path lookup now merges changed,
-  deleted/renamed, and derived directory entries with a stable fingerprint and
-  truncation flag. Searchable repository-relative fields now support manual
-  entry, separator normalization, keyboard submission, clear, browse
-  suggestions with parent context, file/folder modes, and traversal checks.
-  History path filters, File History/Blame, comparison, and hosting file-link
-  inputs use the shared field with stale response protection.
-- Exact next action: activate Task 39 and add the first deterministic visual
-  regression fixture/overflow guard for the completed repository workflows.
+  `0cec74f fix(paths): polish repository path navigation`.
+- Completed in this session: polished the shared repository-relative path
+  field. Browse now restores the full catalog after a no-match query, loading
+  and unavailable-catalog states are explicit, empty results explain the
+  query, clear/browse controls stay compact, and arrow-key/Enter navigation
+  selects suggestions consistently with pointer selection.
+- Exact next action: activate Task 39's deterministic visual regression
+  fixture/overflow guard for the completed repository workflows.
 - Committed Task 47 files: `CHANGELOG.md`, `TASKS.md`,
   `docs/research/jetbrains-git-mvp-behavior.md`,
   `docs/superpowers/plans/2026-09-02-gift-dart-mvp.md`,
@@ -33,11 +30,12 @@ This file is the handoff record for continuing work across query sessions.
   `lib/src/features/repository/hosting_dialog.dart`,
   `test/helpers/git_patch_gateway_stub.dart`, and
   `test/features/repository/repository_path_field_test.dart`.
-- Verification: the repository path widget test passed (1 test), the affected
-  comparison, File History, History, and Hosting suites passed (20 tests), and
-  `flutter analyze` passed with no issues. The first affected-flow run exposed
-  a 3-pixel comparison overflow; dense path-field decoration fixed it and the
-  final affected suites passed.
+- Verification: the polished repository path widget test passed (1 test), the
+  affected comparison, File History, History, and Hosting suites passed
+  (21 tests including the widget test), and `flutter analyze` passed with no
+  issues. The UX regression coverage includes keyboard selection, no-match
+  recovery, browse-all restoration, separator normalization, and traversal
+  rejection.
 - Blockers: none.
 
 ## Previous checkpoint
