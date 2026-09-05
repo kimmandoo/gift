@@ -20,7 +20,7 @@ Future<void> main(List<String> arguments) async {
     ],
     'macos' => <String>[
       'build/macos/Build/Products/Release/gift.app/Contents/MacOS/gift',
-      'build/macos/Build/Products/Release/gift.app/Contents/Resources/flutter_assets',
+      'build/macos/Build/Products/Release/gift.app/Contents/Frameworks/App.framework/Resources/flutter_assets',
     ],
     'windows' => <String>[
       'build/windows/x64/runner/Release/gift.exe',

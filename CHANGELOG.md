@@ -16,6 +16,8 @@
   Linux `libsecret-1-dev` headers in the release workflow.
 - fix(release): replaced Bash 4-only macOS architecture expansion with
   Bash 3.2-compatible case matching for hosted macOS runners.
+- fix(release): corrected macOS artifact verification to inspect Flutter's
+  `App.framework/Resources/flutter_assets` bundle location.
 
 ## 2026-09-05
 - feat(ci): added required artifact checks and runner-specific visual golden
