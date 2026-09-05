@@ -21,12 +21,7 @@ Future<void> main(List<String> arguments) async {
   await runCommand(flutter, ['clean']);
   await runCommand(flutter, ['config', '--enable-$target-desktop']);
   await runCommand(flutter, ['pub', 'get']);
-  await runCommand(flutter, [
-    'build',
-    target,
-    '--release',
-    if (target == 'macos') '--no-codesign',
-  ]);
+  await runCommand(flutter, ['build', target, '--release']);
 
   stdout.writeln('\nRelease bundle: ${artifactPath(target)}');
 }

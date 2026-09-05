@@ -12,6 +12,8 @@
   cherry-pick identities across native runners.
 - fix(ci): fixed Windows release-tag validation by using the GitHub ref
   expression instead of a Bash-only environment expansion.
+- fix(build): removed the unsupported macOS `--no-codesign` flag and installed
+  Linux `libsecret-1-dev` headers in the release workflow.
 
 ## 2026-09-05
 - feat(ci): added required artifact checks and runner-specific visual golden
