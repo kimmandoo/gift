@@ -43,6 +43,14 @@ class ContextActionTarget {
     required String name,
     required String label,
   }) : this(kind: ContextActionTargetKind.remote, identity: name, label: label);
+  const ContextActionTarget.repository({
+    required String path,
+    required String label,
+  }) : this(
+         kind: ContextActionTargetKind.repository,
+         identity: path,
+         label: label,
+       );
 
   const ContextActionTarget.commit({required String oid, required String label})
     : this(kind: ContextActionTargetKind.commit, identity: oid, label: label);
@@ -130,6 +138,14 @@ enum ContextActionId {
   deleteRemote,
   cherryPickRemote,
   hostLink,
+  openRepository,
+  activateRepository,
+  closeRepository,
+  closeOtherRepositories,
+  removeRecentRepository,
+  copyRepositoryPath,
+  revealRepository,
+  openNestedRepository,
 }
 
 enum ContextActionGroup { inspect, workflow, destructive }
@@ -172,6 +188,14 @@ enum ContextActionRoute {
   deleteRemote,
   cherryPickRemote,
   hostLink,
+  openRepository,
+  activateRepository,
+  closeRepository,
+  closeOtherRepositories,
+  removeRecentRepository,
+  copyRepositoryPath,
+  revealRepository,
+  openNestedRepository,
 }
 
 /// One item in a context menu, including its availability and reviewed route.

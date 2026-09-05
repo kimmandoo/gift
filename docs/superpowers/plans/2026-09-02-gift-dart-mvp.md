@@ -858,9 +858,25 @@ system Git 2.35+.
 5. Verified the complete Changes screen suite, pixel theme contract, and
    `flutter analyze`.
 
-## Next activation: workspace context actions (Task 45)
+## Completed vertical: Workspace context actions (Task 45)
 
-Task 45 remains the next numbered vertical after this follow-up and Task 44.
+1. Added root-bound workspace and recent-repository action descriptors with
+   canonical-path fingerprints and stale-row guards.
+2. Added tab actions for activation, closing, closing other tabs, copying the
+   repository path, revealing the root, and opening nested roots; recent rows
+   expose opening, removal, copying, and file-manager reveal.
+3. Reused the shared contextual menu and direct platform file-manager boundary
+   without treating tab removal as filesystem deletion.
+4. Verified the workspace/recent repository fixtures and `flutter analyze`.
+
+## Active vertical: Native folder chooser UX (Task 46)
+
+1. Record the purpose-scoped path validation and browse-assisted absolute-path
+   field behavior before changing repository setup and Git settings dialogs.
+2. Add the first RED fixture for editable absolute paths and native browse
+   affordances.
+3. Reuse the existing selector boundary while keeping manual entry, purpose
+   validation, and recent-location feedback explicit.
 
 ## Completed follow-up: visible push progress
 

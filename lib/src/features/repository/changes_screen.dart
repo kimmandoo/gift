@@ -1224,10 +1224,7 @@ class _ChangesScreenBodyState extends ConsumerState<_ChangesScreenBody> {
     );
   }
 
-  Widget _changeSelectionBox(
-    GitChange change,
-    ChangesState state,
-  ) {
+  Widget _changeSelectionBox(GitChange change, ChangesState state) {
     final controller = _activeController;
     final enabled = controller.canStagePath(change) && !state.isMutating;
     final focusNode = _changeSelectionFocusNodes.putIfAbsent(
@@ -1572,7 +1569,15 @@ class _ChangesScreenBodyState extends ConsumerState<_ChangesScreenBody> {
           ContextActionRoute.checkoutRemote ||
           ContextActionRoute.deleteRemote ||
           ContextActionRoute.cherryPickRemote ||
-          ContextActionRoute.hostLink:
+          ContextActionRoute.hostLink ||
+          ContextActionRoute.openRepository ||
+          ContextActionRoute.activateRepository ||
+          ContextActionRoute.closeRepository ||
+          ContextActionRoute.closeOtherRepositories ||
+          ContextActionRoute.removeRecentRepository ||
+          ContextActionRoute.copyRepositoryPath ||
+          ContextActionRoute.revealRepository ||
+          ContextActionRoute.openNestedRepository:
         return;
     }
   }

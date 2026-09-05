@@ -547,7 +547,15 @@ class _ComparisonDialogState extends State<ComparisonDialog> {
           ContextActionRoute.checkoutRemote ||
           ContextActionRoute.deleteRemote ||
           ContextActionRoute.cherryPickRemote ||
-          ContextActionRoute.hostLink:
+          ContextActionRoute.hostLink ||
+          ContextActionRoute.openRepository ||
+          ContextActionRoute.activateRepository ||
+          ContextActionRoute.closeRepository ||
+          ContextActionRoute.closeOtherRepositories ||
+          ContextActionRoute.removeRecentRepository ||
+          ContextActionRoute.copyRepositoryPath ||
+          ContextActionRoute.revealRepository ||
+          ContextActionRoute.openNestedRepository:
         return;
     }
   }

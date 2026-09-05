@@ -262,6 +262,43 @@ void main() {
     controller.dispose();
   });
 
+  testWidgets('exposes workspace tab context actions', (tester) async {
+    final controller = WorkspaceController(
+      gateway: WorkspaceGateway(),
+      store: WorkspaceStore.inMemory(),
+      changesPollInterval: const Duration(hours: 1),
+    );
+    await controller.openPath('/aliases/alpha');
+    await controller.openPath('/aliases/beta');
+
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: buildPixelTheme(brightness: Brightness.light),
+        home: WorkspaceScreen(
+          controller: controller,
+          onOpenRepository: (_) async {},
+          onWorkspaceEmpty: () {},
+          autoInitialize: false,
+        ),
+      ),
+    );
+
+    await tester.tap(
+      find.byKey(const ValueKey('workspace-actions:/workspace/alpha')),
+    );
+    await tester.pump(const Duration(seconds: 1));
+
+    for (final label in [
+      'Activate',
+      'Close tab',
+      'Close other tabs',
+      'Copy repository path',
+      'Reveal in file manager',
+    ]) {
+      expect(find.text(label), findsOneWidget, reason: label);
+    }
+    controller.dispose();
+  });
   testWidgets('restores workspace tabs through the app entry point', (
     tester,
   ) async {

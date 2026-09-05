@@ -1,16 +1,18 @@
 import 'dart:async';
+import 'dart:io';
+
+import 'package:flutter/services.dart';
+import 'package:gift/src/features/repository/context_actions.dart';
+import 'package:gift/src/features/repository/path_actions.dart';
 
 import 'package:flutter/material.dart';
 import 'package:gift/src/features/repository/changes_screen.dart';
 import 'package:gift/src/features/repository/workspace_controller.dart';
 import 'package:gift/src/app/app_preferences.dart';
 import 'package:gift/src/backend/credentials.dart';
+import 'package:gift/src/backend/domain.dart';
 import 'package:gift/src/app/repository_credential_store.dart';
 
-/// The tab shell that keeps one Changes screen alive for every open repository.
-///
-/// `IndexedStack` is intentional: switching tabs changes visibility without
-/// throwing away a tab's selected file, diff, or in-flight status request.
 class WorkspaceScreen extends StatefulWidget {
   const WorkspaceScreen({
     super.key,
@@ -20,6 +22,7 @@ class WorkspaceScreen extends StatefulWidget {
     this.autoInitialize = true,
     this.credentialStore,
     this.repositoryCredentialStore,
+    this.fileManager = const PlatformFileManagerRevealer(),
   });
 
   final WorkspaceController controller;
@@ -27,6 +30,7 @@ class WorkspaceScreen extends StatefulWidget {
   final VoidCallback onWorkspaceEmpty;
   final GitCredentialStore? credentialStore;
   final RepositoryCredentialStore? repositoryCredentialStore;
+  final FileManagerRevealer fileManager;
   final bool autoInitialize;
 
   @override
@@ -79,6 +83,9 @@ class _WorkspaceScreenState extends State<WorkspaceScreen> {
                 onClose: _close,
                 onReorder: widget.controller.reorder,
                 onAdd: () => widget.onOpenRepository(null),
+                snapshotFor: _workspaceActionSnapshot,
+                actionsFor: _workspaceActions,
+                onAction: _handleWorkspaceAction,
               ),
               Expanded(
                 child: IndexedStack(
@@ -97,6 +104,191 @@ class _WorkspaceScreenState extends State<WorkspaceScreen> {
         ),
       ),
     );
+  }
+
+  ContextActionSnapshot _workspaceActionSnapshot(WorkspaceTab tab) {
+    final repository =
+        tab.repository ??
+        RepositoryOpened(
+          repositoryId: RepositoryId(value: 'workspace:${tab.path}'),
+          root: tab.path,
+        );
+    final membership = widget.controller.state.tabs
+        .map(
+          (candidate) =>
+              '${candidate.path}:${candidate.repository?.root ?? ''}:'
+              '${candidate.isAvailable}',
+        )
+        .join('|');
+    return ContextActionSnapshot(
+      repository: repository,
+      target: ContextActionTarget.repository(
+        path: tab.path,
+        label: tab.displayName,
+      ),
+      fingerprint:
+          '${widget.controller.state.activeIndex}:$membership:${tab.path}',
+    );
+  }
+
+  List<ContextActionDescriptor> _workspaceActions(WorkspaceTab tab, int index) {
+    final snapshot = _workspaceActionSnapshot(tab);
+    final state = widget.controller.state;
+    final active = state.activeIndex == index;
+    final nested = state.tabs.any(
+      (candidate) =>
+          candidate.path != tab.path && _isNestedPath(tab.path, candidate.path),
+    );
+    ContextActionDescriptor action({
+      required ContextActionId id,
+      required String label,
+      required IconData icon,
+      required ContextActionGroup group,
+      required ContextActionRoute route,
+      bool enabled = true,
+      String? disabledReason,
+    }) => ContextActionDescriptor(
+      id: id,
+      label: label,
+      icon: icon,
+      group: group,
+      route: route,
+      snapshot: snapshot,
+      enabled: enabled,
+      disabledReason: disabledReason,
+    );
+
+    return [
+      action(
+        id: ContextActionId.activateRepository,
+        label: 'Activate',
+        icon: Icons.open_in_new,
+        group: ContextActionGroup.workflow,
+        route: ContextActionRoute.activateRepository,
+        enabled: !active,
+        disabledReason: active ? 'This repository is already active.' : null,
+      ),
+      action(
+        id: ContextActionId.closeRepository,
+        label: 'Close tab',
+        icon: Icons.close,
+        group: ContextActionGroup.destructive,
+        route: ContextActionRoute.closeRepository,
+      ),
+      action(
+        id: ContextActionId.closeOtherRepositories,
+        label: 'Close other tabs',
+        icon: Icons.tab_unselected,
+        group: ContextActionGroup.destructive,
+        route: ContextActionRoute.closeOtherRepositories,
+        enabled: state.tabs.length > 1,
+        disabledReason: state.tabs.length > 1
+            ? null
+            : 'There are no other open repositories.',
+      ),
+      action(
+        id: ContextActionId.copyRepositoryPath,
+        label: 'Copy repository path',
+        icon: Icons.content_copy,
+        group: ContextActionGroup.inspect,
+        route: ContextActionRoute.copyRepositoryPath,
+      ),
+      action(
+        id: ContextActionId.revealRepository,
+        label: 'Reveal in file manager',
+        icon: Icons.folder_open_outlined,
+        group: ContextActionGroup.inspect,
+        route: ContextActionRoute.revealRepository,
+        enabled: tab.isAvailable && Directory(tab.path).existsSync(),
+        disabledReason: tab.isAvailable
+            ? 'The repository root is not present on disk.'
+            : 'This repository is unavailable.',
+      ),
+      if (nested)
+        action(
+          id: ContextActionId.openNestedRepository,
+          label: 'Open nested repository',
+          icon: Icons.account_tree_outlined,
+          group: ContextActionGroup.workflow,
+          route: ContextActionRoute.openNestedRepository,
+        ),
+    ];
+  }
+
+  Future<void> _handleWorkspaceAction(ContextActionDescriptor action) async {
+    if (action.snapshot.target.kind != ContextActionTargetKind.repository) {
+      return;
+    }
+    final index = widget.controller.state.tabs.indexWhere(
+      (tab) => tab.path == action.snapshot.target.identity,
+    );
+    if (index == -1) return;
+    final tab = widget.controller.state.tabs[index];
+    if (_workspaceActionSnapshot(tab) != action.snapshot) return;
+    switch (action.route) {
+      case ContextActionRoute.activateRepository ||
+          ContextActionRoute.openNestedRepository:
+        widget.controller.select(index);
+      case ContextActionRoute.closeRepository:
+        await _close(index);
+      case ContextActionRoute.closeOtherRepositories:
+        await widget.controller.closeOthers(index);
+      case ContextActionRoute.copyRepositoryPath:
+        await Clipboard.setData(ClipboardData(text: tab.path));
+      case ContextActionRoute.revealRepository:
+        final result = await widget.fileManager.reveal(tab.path);
+        if (!mounted || result.isSuccess || result.message == null) return;
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text(result.message!)));
+      case ContextActionRoute.openRepository:
+      case ContextActionRoute.removeRecentRepository:
+      case ContextActionRoute.inspect ||
+          ContextActionRoute.stage ||
+          ContextActionRoute.unstage ||
+          ContextActionRoute.stageSelectedPatch ||
+          ContextActionRoute.discard ||
+          ContextActionRoute.moveToChangelist ||
+          ContextActionRoute.shelve ||
+          ContextActionRoute.ignoreLocal ||
+          ContextActionRoute.ignoreRepository ||
+          ContextActionRoute.fileHistory ||
+          ContextActionRoute.blame ||
+          ContextActionRoute.compare ||
+          ContextActionRoute.compareBranch ||
+          ContextActionRoute.copyRelativePath ||
+          ContextActionRoute.copyAbsolutePath ||
+          ContextActionRoute.reveal ||
+          ContextActionRoute.cherryPick ||
+          ContextActionRoute.revert ||
+          ContextActionRoute.createBranch ||
+          ContextActionRoute.createTag ||
+          ContextActionRoute.reset ||
+          ContextActionRoute.copyFullHash ||
+          ContextActionRoute.copyShortHash ||
+          ContextActionRoute.checkoutBranch ||
+          ContextActionRoute.mergeBranch ||
+          ContextActionRoute.rebaseBranch ||
+          ContextActionRoute.renameBranch ||
+          ContextActionRoute.deleteBranch ||
+          ContextActionRoute.pushBranch ||
+          ContextActionRoute.upstream ||
+          ContextActionRoute.copyBranchName ||
+          ContextActionRoute.copyBranchRef ||
+          ContextActionRoute.compareRemote ||
+          ContextActionRoute.checkoutRemote ||
+          ContextActionRoute.deleteRemote ||
+          ContextActionRoute.cherryPickRemote ||
+          ContextActionRoute.hostLink:
+        return;
+    }
+  }
+
+  bool _isNestedPath(String path, String possibleParent) {
+    final child = path.replaceAll('\\', '/').replaceFirst(RegExp(r'/+$'), '');
+    final parent = possibleParent
+        .replaceAll('\\', '/')
+        .replaceFirst(RegExp(r'/+$'), '');
+    return child != parent && child.startsWith('$parent/');
   }
 
   Widget _tabContent(WorkspaceTab tab) {
@@ -145,6 +337,9 @@ class _WorkspaceTabBar extends StatelessWidget {
     required this.onClose,
     required this.onReorder,
     required this.onAdd,
+    required this.snapshotFor,
+    required this.actionsFor,
+    required this.onAction,
   });
 
   final WorkspaceState state;
@@ -152,6 +347,10 @@ class _WorkspaceTabBar extends StatelessWidget {
   final ValueChanged<int> onClose;
   final Future<void> Function(int oldIndex, int newIndex) onReorder;
   final VoidCallback onAdd;
+  final ContextActionSnapshot Function(WorkspaceTab tab) snapshotFor;
+  final List<ContextActionDescriptor> Function(WorkspaceTab tab, int index)
+  actionsFor;
+  final ContextActionHandler onAction;
 
   @override
   Widget build(BuildContext context) {
@@ -188,15 +387,21 @@ class _WorkspaceTabBar extends StatelessWidget {
                   itemBuilder: (context, index) {
                     final tab = state.tabs[index];
                     final selected = state.activeIndex == index;
-                    return ReorderableDelayedDragStartListener(
-                      key: ValueKey('workspace-tab:${tab.path}'),
-                      index: index,
-                      child: _WorkspaceTab(
-                        width: tabWidth,
-                        tab: tab,
-                        selected: selected,
-                        onSelect: () => onSelect(index),
-                        onClose: () => onClose(index),
+                    return ContextActionMenu(
+                      key: ValueKey('workspace-menu:${tab.path}'),
+                      snapshot: snapshotFor(tab),
+                      actions: actionsFor(tab, index),
+                      onAction: onAction,
+                      child: ReorderableDelayedDragStartListener(
+                        key: ValueKey('workspace-tab:${tab.path}'),
+                        index: index,
+                        child: _WorkspaceTab(
+                          width: tabWidth,
+                          tab: tab,
+                          selected: selected,
+                          onSelect: () => onSelect(index),
+                          onClose: () => onClose(index),
+                        ),
                       ),
                     );
                   },
@@ -283,6 +488,9 @@ class _WorkspaceTab extends StatelessWidget {
                               : FontWeight.w500,
                         ),
                       ),
+                    ),
+                    ContextActionMenuButton(
+                      key: ValueKey('workspace-actions:${tab.path}'),
                     ),
                     IconButton(
                       key: ValueKey('workspace-close:${tab.path}'),

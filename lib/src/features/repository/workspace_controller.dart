@@ -282,6 +282,16 @@ class WorkspaceController extends ChangeNotifier {
     await _persist();
   }
 
+  Future<void> closeOthers(int keepIndex) async {
+    if (!_isValidIndex(keepIndex) || state.tabs.length < 2) return;
+    final keep = state.tabs[keepIndex];
+    for (var index = 0; index < state.tabs.length; index++) {
+      if (index != keepIndex) _disposeTab(state.tabs[index]);
+    }
+    _setState(_state.copyWith(tabs: List.unmodifiable([keep]), activeIndex: 0));
+    await _persist();
+  }
+
   Future<void> reorder(int oldIndex, int newIndex) async {
     if (!_isValidIndex(oldIndex)) return;
     if (newIndex < 0 || newIndex >= state.tabs.length) return;

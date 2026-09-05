@@ -6,9 +6,9 @@
 
 ## Progress
 
-- **Completed:** 44 / 48
-- **Current Active Task:** Task 45 — Workspace context actions.
-- **Next priority:** activate Task 45, then Tasks 46–47, Task 39 visual
+- **Completed:** 45 / 48
+- **Current Active Task:** Task 46 — Native folder chooser UX.
+- **Next priority:** activate Task 46, then Task 47, Task 39 visual
   regression QA, and finally Task 38 public release.
 
 | # | Scope | Dart backend deliverables | Flutter deliverables | Status |
@@ -694,3 +694,16 @@ Task 45 is the next activation ahead of Tasks 46–47 and Task 39.
 - [x] Add square pixel checkbox controls with pointer and keyboard parity.
 - [x] Verify selection refresh, batch staging, focused diff preservation, and
   the complete Changes regression suite.
+
+### ✅ Task 45: Workspace context actions
+
+- [x] Record ACTION-14 for root-bound tabs, recent repositories, and nested
+  roots.
+- [x] Add RED workspace and recent-row context-menu fixtures.
+- [x] Add canonical root fingerprints and stale target guards.
+- [x] Add tab activation, close, close-other, path copy, reveal, recent
+  removal/open, and nested-root actions.
+- [x] Verify the workspace/recent repository suites and `flutter analyze`.
+
+Task 45 is complete. Task 46 is now the active priority, followed by Task 47
+and Task 39 visual regression QA.

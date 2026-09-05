@@ -1,3 +1,6 @@
+import 'package:flutter/services.dart';
+import 'package:gift/src/features/repository/context_actions.dart';
+import 'package:gift/src/features/repository/path_actions.dart';
 import 'package:gift/src/features/repository/recent_repository_store.dart';
 import 'package:gift/src/features/repository/changes_screen.dart';
 import 'package:gift/src/features/repository/repository_controller.dart';
@@ -29,6 +32,7 @@ class WelcomeScreen extends StatefulWidget {
     this.selectDirectory,
     this.selectExecutable,
     this.workspaceController,
+    this.fileManager = const PlatformFileManagerRevealer(),
     this.autoInitialize = true,
   });
 
@@ -41,6 +45,7 @@ class WelcomeScreen extends StatefulWidget {
   final Future<String?> Function()? selectDirectory;
   final Future<String?> Function()? selectExecutable;
   final WorkspaceController? workspaceController;
+  final FileManagerRevealer fileManager;
   final bool autoInitialize;
 
   @override
@@ -245,31 +250,175 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
         final repository = repositories[index];
         final available = repository.exists;
         final colors = Theme.of(context).colorScheme;
-        return Card(
-          key: ValueKey('recent-repository:${repository.path}'),
-          child: ListTile(
-            leading: Icon(
-              available
-                  ? Icons.account_tree_outlined
-                  : Icons.folder_off_outlined,
-              color: available ? colors.primary : colors.error,
-            ),
-            title: Text(
-              repository.path,
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-            ),
-            subtitle: Text(available ? 'Available · click to open' : 'Missing'),
-            onTap: available ? () => _openPath(repository.path) : null,
-            trailing: IconButton(
-              tooltip: 'Remove',
-              onPressed: () => _repositoryController.removeRecent(repository),
-              icon: const Icon(Icons.close),
+        return ContextActionMenu(
+          key: ValueKey('recent-menu:${repository.path}'),
+          snapshot: _recentActionSnapshot(repository),
+          actions: _recentActions(repository),
+          onAction: _handleRecentAction,
+          child: Card(
+            key: ValueKey('recent-repository:${repository.path}'),
+            child: ListTile(
+              leading: Icon(
+                available
+                    ? Icons.account_tree_outlined
+                    : Icons.folder_off_outlined,
+                color: available ? colors.primary : colors.error,
+              ),
+              title: Text(
+                repository.path,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+              ),
+              subtitle: Text(
+                available ? 'Available · click to open' : 'Missing',
+              ),
+              onTap: available ? () => _openPath(repository.path) : null,
+              trailing: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  ContextActionMenuButton(
+                    key: ValueKey('recent-actions:${repository.path}'),
+                  ),
+                  IconButton(
+                    tooltip: 'Remove',
+                    onPressed: () =>
+                        _repositoryController.removeRecent(repository),
+                    icon: const Icon(Icons.close),
+                  ),
+                ],
+              ),
             ),
           ),
         );
       },
     );
+  }
+
+  ContextActionSnapshot _recentActionSnapshot(RecentRepository repository) {
+    final opened = RepositoryOpened(
+      repositoryId: RepositoryId(value: 'recent:${repository.path}'),
+      root: repository.path,
+    );
+    return ContextActionSnapshot(
+      repository: opened,
+      target: ContextActionTarget.repository(
+        path: repository.path,
+        label: repository.path,
+      ),
+      fingerprint: '${repository.path}|${repository.exists}',
+    );
+  }
+
+  List<ContextActionDescriptor> _recentActions(RecentRepository repository) {
+    final snapshot = _recentActionSnapshot(repository);
+    final available = repository.exists;
+    return [
+      ContextActionDescriptor(
+        id: ContextActionId.openRepository,
+        label: 'Open repository',
+        icon: Icons.folder_open,
+        group: ContextActionGroup.workflow,
+        route: ContextActionRoute.openRepository,
+        snapshot: snapshot,
+        enabled: available,
+        disabledReason: available ? null : 'Repository path is not available.',
+      ),
+      ContextActionDescriptor(
+        id: ContextActionId.removeRecentRepository,
+        label: 'Remove from recent',
+        icon: Icons.remove_circle_outline,
+        group: ContextActionGroup.destructive,
+        route: ContextActionRoute.removeRecentRepository,
+        snapshot: snapshot,
+      ),
+      ContextActionDescriptor(
+        id: ContextActionId.copyRepositoryPath,
+        label: 'Copy repository path',
+        icon: Icons.content_copy,
+        group: ContextActionGroup.inspect,
+        route: ContextActionRoute.copyRepositoryPath,
+        snapshot: snapshot,
+      ),
+      ContextActionDescriptor(
+        id: ContextActionId.revealRepository,
+        label: 'Reveal in file manager',
+        icon: Icons.folder_open,
+        group: ContextActionGroup.inspect,
+        route: ContextActionRoute.revealRepository,
+        snapshot: snapshot,
+        enabled: available,
+        disabledReason: available ? null : 'Repository path is not available.',
+      ),
+    ];
+  }
+
+  Future<void> _handleRecentAction(ContextActionDescriptor action) async {
+    if (action.snapshot.target.kind != ContextActionTargetKind.repository) {
+      return;
+    }
+    final repository = _repositoryController.state.recentRepositories
+        .where((item) => item.path == action.snapshot.target.identity)
+        .firstOrNull;
+    if (repository == null ||
+        _recentActionSnapshot(repository) != action.snapshot) {
+      return;
+    }
+    switch (action.route) {
+      case ContextActionRoute.openRepository:
+        await _openPath(repository.path);
+      case ContextActionRoute.removeRecentRepository:
+        await _repositoryController.removeRecent(repository);
+      case ContextActionRoute.copyRepositoryPath:
+        await Clipboard.setData(ClipboardData(text: repository.path));
+      case ContextActionRoute.revealRepository:
+        final result = await widget.fileManager.reveal(repository.path);
+        if (!mounted || result.isSuccess) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(result.message ?? 'Could not reveal path.')),
+        );
+      case ContextActionRoute.inspect ||
+          ContextActionRoute.activateRepository ||
+          ContextActionRoute.closeRepository ||
+          ContextActionRoute.closeOtherRepositories ||
+          ContextActionRoute.openNestedRepository ||
+          ContextActionRoute.stage ||
+          ContextActionRoute.unstage ||
+          ContextActionRoute.stageSelectedPatch ||
+          ContextActionRoute.discard ||
+          ContextActionRoute.moveToChangelist ||
+          ContextActionRoute.shelve ||
+          ContextActionRoute.ignoreLocal ||
+          ContextActionRoute.ignoreRepository ||
+          ContextActionRoute.fileHistory ||
+          ContextActionRoute.blame ||
+          ContextActionRoute.compare ||
+          ContextActionRoute.compareBranch ||
+          ContextActionRoute.copyRelativePath ||
+          ContextActionRoute.copyAbsolutePath ||
+          ContextActionRoute.reveal ||
+          ContextActionRoute.cherryPick ||
+          ContextActionRoute.revert ||
+          ContextActionRoute.createBranch ||
+          ContextActionRoute.createTag ||
+          ContextActionRoute.reset ||
+          ContextActionRoute.copyFullHash ||
+          ContextActionRoute.copyShortHash ||
+          ContextActionRoute.checkoutBranch ||
+          ContextActionRoute.mergeBranch ||
+          ContextActionRoute.rebaseBranch ||
+          ContextActionRoute.renameBranch ||
+          ContextActionRoute.deleteBranch ||
+          ContextActionRoute.pushBranch ||
+          ContextActionRoute.upstream ||
+          ContextActionRoute.copyBranchName ||
+          ContextActionRoute.copyBranchRef ||
+          ContextActionRoute.compareRemote ||
+          ContextActionRoute.checkoutRemote ||
+          ContextActionRoute.deleteRemote ||
+          ContextActionRoute.cherryPickRemote ||
+          ContextActionRoute.hostLink:
+        return;
+    }
   }
 
   Future<void> _selectAndOpen([int? replaceIndex]) async {

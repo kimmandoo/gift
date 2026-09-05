@@ -108,6 +108,42 @@ void main() {
     expect(find.text('/path/that/is/not/present'), findsNothing);
     expect(preferences.getStringList(RecentRepositoryStore.pathsKey), isEmpty);
   });
+  testWidgets('exposes recent repository context actions', (tester) async {
+    final preferences = await SharedPreferences.getInstance();
+    await preferences.setStringList(RecentRepositoryStore.pathsKey, [
+      '/path/that/is/not/present',
+    ]);
+    final gateway = FakeGitGateway(
+      installation: const GitInstallation(
+        executablePath: '/usr/bin/git',
+        version: '2.51.0',
+      ),
+    );
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: WelcomeScreen(
+          gateway: gateway,
+          recentStore: RecentRepositoryStore(preferences),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(
+      find.byKey(const ValueKey('recent-actions:/path/that/is/not/present')),
+    );
+    await tester.pumpAndSettle();
+
+    for (final label in [
+      'Open repository',
+      'Remove from recent',
+      'Copy repository path',
+      'Reveal in file manager',
+    ]) {
+      expect(find.text(label), findsOneWidget, reason: label);
+    }
+  });
 
   testWidgets(
     'presents a not-repository error without calling the bridge directly',
