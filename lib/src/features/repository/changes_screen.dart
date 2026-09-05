@@ -1196,8 +1196,8 @@ class _ChangesScreenBodyState extends ConsumerState<_ChangesScreenBody> {
       snapshot: actionSnapshot,
       actions: _changeActions(change, state, actionSnapshot),
       onAction: _handleChangeAction,
-      child: Tooltip(
-        message: change.path,
+      child: Semantics(
+        label: change.path,
         child: ListTile(
           key: ValueKey('${group.name}:${change.path}'),
           dense: true,

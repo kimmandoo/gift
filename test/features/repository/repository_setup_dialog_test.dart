@@ -56,6 +56,12 @@ void main() {
     await tester.tap(find.text('Initialize'));
     await tester.pumpAndSettle();
     expect(find.byKey(const Key('init-path-browse')), findsOneWidget);
+    expect(
+      tester
+          .element(find.byKey(const Key('init-path')))
+          .findAncestorWidgetOfExactType<Tooltip>(),
+      isNull,
+    );
 
     await tester.enterText(find.byKey(const Key('init-path')), 'relative/path');
     await tester.pump();

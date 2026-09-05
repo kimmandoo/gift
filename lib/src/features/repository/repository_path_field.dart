@@ -403,8 +403,8 @@ class RepositoryPathFieldState extends State<RepositoryPathField> {
                         dense: true,
                         selected: index == _highlightedIndex,
                         selectedTileColor: colorScheme.primaryContainer,
-                        title: Tooltip(
-                          message: entry.path,
+                        title: Semantics(
+                          label: entry.path,
                           child: Text(
                             entry.path,
                             maxLines: 1,

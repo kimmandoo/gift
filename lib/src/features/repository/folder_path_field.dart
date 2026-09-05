@@ -285,43 +285,40 @@ class FolderPathFieldState extends State<FolderPathField> {
         ? null
         : validation.message;
     final text = widget.controller.text;
-    return Tooltip(
-      message: text.isEmpty ? widget.hint : text,
-      child: TextField(
-        key: widget.fieldKey,
-        controller: widget.controller,
-        enabled: widget.enabled,
-        autocorrect: false,
-        enableSuggestions: false,
-        textInputAction: TextInputAction.done,
-        onSubmitted: (value) {
-          final result = validateNow();
-          if (result.isValid) widget.onSubmitted?.call(value.trim());
-        },
-        decoration: InputDecoration(
-          labelText: widget.label,
-          hintText: widget.hint,
-          errorText: message,
-          border: const OutlineInputBorder(),
-          isDense: true,
-          suffixIcon: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              if (text.isNotEmpty)
-                IconButton(
-                  key: widget.clearKey,
-                  tooltip: 'Clear path',
-                  onPressed: widget.enabled ? _clear : null,
-                  icon: const Icon(Icons.clear, size: 18),
-                ),
+    return TextField(
+      key: widget.fieldKey,
+      controller: widget.controller,
+      enabled: widget.enabled,
+      autocorrect: false,
+      enableSuggestions: false,
+      textInputAction: TextInputAction.done,
+      onSubmitted: (value) {
+        final result = validateNow();
+        if (result.isValid) widget.onSubmitted?.call(value.trim());
+      },
+      decoration: InputDecoration(
+        labelText: widget.label,
+        hintText: widget.hint,
+        errorText: message,
+        border: const OutlineInputBorder(),
+        isDense: true,
+        suffixIcon: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (text.isNotEmpty)
               IconButton(
-                key: widget.browseKey,
-                tooltip: 'Browse for folder',
-                onPressed: widget.enabled ? _browse : null,
-                icon: const Icon(Icons.folder_open, size: 18),
+                key: widget.clearKey,
+                tooltip: 'Clear path',
+                onPressed: widget.enabled ? _clear : null,
+                icon: const Icon(Icons.clear, size: 18),
               ),
-            ],
-          ),
+            IconButton(
+              key: widget.browseKey,
+              tooltip: 'Browse for folder',
+              onPressed: widget.enabled ? _browse : null,
+              icon: const Icon(Icons.folder_open, size: 18),
+            ),
+          ],
         ),
       ),
     );

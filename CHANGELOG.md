@@ -1,6 +1,9 @@
 # Changelog
 
 ## 2026-09-05
+- fix(ui): removed hover tooltips from text fields and path rows where their
+  popovers could cover adjacent controls, while keeping action tooltips and
+  accessible labels intact.
 - fix(ui): clarified the welcome startup hierarchy by using a single
   `Get started` section heading above the existing repository actions.
 - fix(paths): polished repository-relative navigation with browse-all recovery,

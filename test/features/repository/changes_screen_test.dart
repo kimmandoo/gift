@@ -924,6 +924,11 @@ void main() {
         ),
       );
       final row = find.byKey(const ValueKey('unstaged:lib/app.dart'));
+      expect(row, findsOneWidget);
+      expect(
+        tester.element(row).findAncestorWidgetOfExactType<Tooltip>(),
+        isNull,
+      );
       expect(
         find.byKey(const ValueKey('change-actions:lib/app.dart')),
         findsOneWidget,
@@ -1084,9 +1089,7 @@ void main() {
       ),
     );
 
-    final checkbox = find.byKey(
-      const ValueKey('change-select:lib/app.dart'),
-    );
+    final checkbox = find.byKey(const ValueKey('change-select:lib/app.dart'));
     final focus = tester.widget<Focus>(
       find.ancestor(of: checkbox, matching: find.byType(Focus)).first,
     );
