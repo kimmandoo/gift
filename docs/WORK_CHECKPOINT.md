@@ -5,35 +5,35 @@ This file is the handoff record for continuing work across query sessions.
 ## Current checkpoint
 
 - Date: 2026-09-05
-- Active task: Task 39 — Visual regression QA; Welcome and representative
-  repository-dialog matrix slices are complete. Windows setup packaging now
-  uses a distinct interactive installer wizard.
+- Active task: Task 39 — visual regression QA and cross-platform desktop CI
+  hardening are complete through the local Windows verification boundary.
 - Branch: `main`; latest source commit is
-  `456471d feat(windows): add interactive setup wizard`.
-- Completed in this session: added compact dark 1.2x and standard light
-  repository Push and Repository Setup dialog fixtures with viewport and
-  spacing assertions. Replaced the Windows setup launcher with a visible
-  WinForms wizard that selects the install directory, Start Menu/Desktop
-  shortcuts, and post-install launch behavior. Kept the portable launcher
-  temporary and non-installing, added `-STA` to the setup bridge, and added
-  PowerShell packaging syntax/identity verification.
-- Exact next action: capture reviewed platform-specific golden baselines for
-  the Welcome and repository-dialog fixtures, then reassess Task 38 public
-  release readiness.
-- Current session files: `CHANGELOG.md`, `README.md`, `docs/RELEASING.md`,
-  `docs/superpowers/plans/2026-09-02-gift-dart-mvp.md`,
-  `test/app/visual_regression_test.dart`, `tool/windows_setup_launcher.ps1`,
-  `tool/windows_setup_launcher.vbs`, `tool/windows_packaging_test.ps1`, and
-  this checkpoint.
-- Verification: `flutter test test/app_boot_test.dart
-  test/app/visual_regression_test.dart` passed (18 tests); `flutter analyze`
-  passed with no issues; `powershell.exe -NoProfile -ExecutionPolicy Bypass
-  -File tool/windows_packaging_test.ps1` passed. A full `flutter test` run
-  remains affected by the previously observed 15 Windows backend/environment
-  failures involving CRLF/encoding, interactive-rebase process behavior, and
-  locked temporary submodule files.
-- Blockers: platform-specific golden capture and the known full-suite Windows
-  backend failures remain before release completion.
+  `83d230c fix(ci): harden desktop release matrix`.
+- Completed in this session: captured and reviewed the Windows golden matrix
+  for Welcome plus Push and Repository Setup dialog fixtures; configured
+  native Linux/macOS runner golden capture; added release artifact validation
+  for all three desktop targets; verified Windows packaging scripts; serialized
+  Git integration verification with LF fixtures; preserved UTF-8 Git process
+  output; normalized Windows Git worktree paths; and made interactive rebase
+  editors portable through `sh`.
+- Exact next action: reassess Task 38 public release readiness after the
+  release workflow runs its native Linux, macOS, and Windows build matrix.
+- Current session files: `.github/workflows/ci.yml`, `CHANGELOG.md`,
+  `docs/RELEASING.md`, `docs/superpowers/plans/2026-09-02-gift-dart-mvp.md`,
+  `lib/src/backend/repository_service.dart`,
+  `test/app/visual_regression_test.dart`,
+  `test/app/goldens/windows/`, Windows backend regression tests,
+  `tool/verify.dart`, and `tool/verify_desktop_artifact.dart`.
+- Verification: `dart run tool/verify.dart` passed formatting, Flutter
+  analysis, and all 292 tests on Windows; focused setup/submodule/worktree
+  path tests passed 7 tests; focused Welcome/golden tests passed 18 tests;
+  `powershell.exe -NoProfile -ExecutionPolicy Bypass -File
+  tool/build_windows.ps1` built and packaged the Windows release; Windows
+  artifact verification and packaging verification passed; and Ruby parsed
+  `.github/workflows/ci.yml`.
+- Blockers: native Linux and macOS release builds were not executable on this
+  Windows host; their GitHub Actions runners are configured to build, validate,
+  upload artifacts, and publish runner-specific golden captures.
 
 ## Previous checkpoint
 
