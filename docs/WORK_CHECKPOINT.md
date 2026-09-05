@@ -5,31 +5,31 @@ This file is the handoff record for continuing work across query sessions.
 ## Current checkpoint
 
 - Date: 2026-09-05
-- Active task: Task 46 — Native folder chooser UX.
+- Active task: Task 47 — Repository path navigation.
 - Branch: `main`; latest commit is
-  `f324244 feat(workspace): add repository context actions`.
-- Completed in this session: Task 45 workspace context actions. ACTION-14 is
-  recorded; workspace tabs and recent repository rows now expose root-bound
-  context menus with canonical-path fingerprints, stale-target guards,
-  nested-root opening, recent removal/opening, path copy, and file-manager
-  reveal.
-- Exact next action: activate Task 46 with its behavior-ledger scenario and
-  first RED editable absolute-path chooser fixture.
-- Committed Task 45 files: `CHANGELOG.md`, `TASKS.md`,
+  `af7b6e4 feat(paths): add native folder chooser fields`.
+- Completed in this session: Task 46 native folder chooser UX. PATH-01 is
+  recorded; the shared editable folder field now supports injected/native
+  directory browsing, clear/paste, keyboard submission, full-path tooltips,
+  purpose-scoped remembered locations, and inline absolute/relative-path
+  validation. Repository open/replacement, clone, initialization, nested-root
+  scan, and worktree flows use it.
+- Exact next action: activate Task 47 with its tracked-path behavior scenario
+  and first RED searchable repository-relative path fixture.
+- Committed Task 46 files: `CHANGELOG.md`, `TASKS.md`,
+  `docs/research/jetbrains-git-mvp-behavior.md`,
   `docs/superpowers/plans/2026-09-02-gift-dart-mvp.md`,
-  `lib/src/features/repository/context_actions.dart`,
-  `lib/src/features/repository/changes_screen.dart`,
-  `lib/src/features/repository/comparison_dialog.dart`,
-  `lib/src/features/repository/history_screen.dart`,
-  `lib/src/features/repository/workspace_controller.dart`,
+  `lib/src/features/repository/folder_path_field.dart`,
+  `lib/src/features/repository/repository_setup_dialog.dart`,
+  `lib/src/features/repository/worktree_dialog.dart`,
   `lib/src/features/repository/workspace_screen.dart`,
   `lib/src/features/repository/welcome_screen.dart`,
-  `test/features/repository/workspace_controller_test.dart`, and
-  `test/features/repository/welcome_screen_test.dart`.
-- Verification: the first RED workspace and recent-row fixtures failed before
-  implementation because their action affordance keys were absent. After
-  implementation, the workspace/recent repository test suites passed (17
-  tests total), and `flutter analyze` passed with no issues.
+  `lib/src/features/repository/changes_screen.dart`, and
+  `test/features/repository/repository_setup_dialog_test.dart`.
+- Verification: the first RED chooser fixture failed because
+  `init-path-browse` did not exist. After implementation, targeted setup,
+  worktree, workspace, welcome, and Changes suites passed (42 tests total),
+  and `flutter analyze` passed with no issues.
 - Blockers: none.
 
 ## Previous checkpoint
