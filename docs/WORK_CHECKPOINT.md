@@ -5,36 +5,28 @@ This file is the handoff record for continuing work across query sessions.
 ## Current checkpoint
 
 - Date: 2026-09-06
-- Active task: Task 38 — secretless public release packaging is implemented
-  through the local Windows verification boundary; the native three-platform
-  clean-machine release pass remains.
-- Branch: `main`; latest source commit is
-  `18c69f9 fix(release): remove signing secret requirement`.
-- Completed in this session: removed all signing-secret workflow inputs and the
-  Windows Authenticode helper; changed the macOS helper to ad hoc
-  `codesign --sign -`; kept Windows executables unsigned; preserved checksums,
-  release metadata, SBOM, dependency/license audit, pinned-action verification,
-  and OIDC provenance; corrected Unix release-helper executable modes; and
-  updated trust documentation and Task 38 planning.
-- Exact next action: push a `release-v1.0.0` tag whose commit subject uses
-  `release(scope):`, review the three native archives and attestations, then
-  perform clean-machine install/launch/upgrade/downgrade/uninstall/Git-missing
-  checks on Linux, macOS, and Windows before marking Task 38 complete.
-- Current session files: `.github/workflows/ci.yml`, `CHANGELOG.md`,
-  `TASKS.md`, `docs/POST_MVP_ROADMAP.md`, `docs/RELEASING.md`,
-  `docs/superpowers/plans/2026-09-02-gift-dart-mvp.md`,
-  `tool/package_linux_release.sh`, `tool/package_macos_release.sh`,
-  `tool/sign_macos_release.sh`, and deleted
-  `tool/sign_windows_release.ps1`.
-- Verification: the baseline `dart run tool/verify.dart` passed formatting,
-  Flutter analysis, and all 292 tests before this workflow-only migration;
-  current workflow YAML parsing, 11 pinned GitHub Actions, Bash syntax,
-  PowerShell packaging parsing, `git diff --check`, and an ad hoc macOS signing
-  smoke test without secrets all passed.
-- Blockers: Linux and macOS native hosts are unavailable on this Windows
-  machine. Windows binaries are intentionally unsigned and macOS packages are
-  intentionally not notarized; the remaining gate is the maintainer's
-  three-platform clean-machine release review.
+- Active task: Task 38 — release candidate `v1.0.0` was committed and pushed
+  as `release-v1.0.0`; the GitHub Actions release run and native clean-machine
+  review remain.
+- Branch: `main`; latest release source commit is
+  `19834c9 release(v1.0.0): publish desktop artifacts`.
+- Completed in this session: created the versioned release commit, pushed
+  `main` and `release-v1.0.0` to `origin`, and verified both remote refs point
+  to `19834c9`.
+- Exact next action: inspect the tag-triggered workflow result, review the
+  Linux, ad hoc-signed macOS, and unsigned Windows archives plus attestations,
+  then perform clean-machine install/launch/upgrade/downgrade/uninstall/Git-
+  missing checks on all three platforms before marking Task 38 complete.
+- Current session files: `docs/WORK_CHECKPOINT.md`; release source changes
+  are recorded in `18c69f9`, and the release commit is `19834c9`.
+- Verification: the release commit subject matched the workflow contract;
+  `release-v1.0.0` matched `pubspec.yaml` version `1.0.0`; `git push origin
+  main release-v1.0.0` succeeded; and `git ls-remote` confirmed both refs point
+  to `19834c9`.
+- Blockers: the local environment does not include the `gh` CLI, so the
+  tag-triggered workflow result was not queried locally. Linux/macOS native
+  hosts are unavailable for the clean-machine review; Windows binaries remain
+  unsigned and macOS remains intentionally ad hoc-signed and not notarized.
 
 ## Previous checkpoint
 
