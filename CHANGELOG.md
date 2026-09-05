@@ -1,6 +1,10 @@
 # Changelog
 
 ## 2026-09-05
+- fix(push): separated the repository push-account selector from the remote
+  selector and constrained its labels for narrow dialogs.
+- fix(ui): removed the redundant welcome repository-folder field so
+  `Open Repository` opens the native folder chooser directly.
 - fix(ui): removed hover tooltips from text fields and path rows where their
   popovers could cover adjacent controls, while keeping action tooltips and
   accessible labels intact.

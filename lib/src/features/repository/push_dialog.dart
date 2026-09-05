@@ -98,6 +98,7 @@ class _PushDialogState extends State<PushDialog> {
               ],
               const SizedBox(height: 14),
               _remoteField(),
+              const SizedBox(height: 10),
               _credentialField(),
               const SizedBox(height: 10),
               _trackingCard(),
@@ -478,22 +479,36 @@ class _PushDialogState extends State<PushDialog> {
     return DropdownButtonFormField<String>(
       key: const Key('push-credential'),
       initialValue: selected,
-      isExpanded: true,
       decoration: InputDecoration(
-        labelText: widget.repositoryCredentialStore == null
-            ? 'Push account for ${endpoint.host}'
-            : 'Push account for ${endpoint.host} in this repository',
+        labelText: 'Push account',
+        helperText: widget.repositoryCredentialStore == null
+            ? '${endpoint.host} · default account'
+            : '${endpoint.host} · this repository',
         isDense: true,
       ),
       items: [
         const DropdownMenuItem(
           value: '',
-          child: Text('Automatic / no account'),
+          child: SizedBox(
+            width: 150,
+            child: Text(
+              'Automatic / no account',
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
         ),
         for (final account in accounts)
           DropdownMenuItem(
             value: account.id,
-            child: Text(account.accountName, overflow: TextOverflow.ellipsis),
+            child: SizedBox(
+              width: 150,
+              child: Text(
+                account.accountName,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
           ),
       ],
       onChanged: _busy

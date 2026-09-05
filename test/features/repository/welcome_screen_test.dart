@@ -68,6 +68,8 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('Get started'), findsOneWidget);
     expect(find.text('Open a Git repository'), findsNothing);
+    expect(find.byKey(const Key('open-repository-path')), findsNothing);
+    expect(find.byKey(const Key('open-repository-browse')), findsNothing);
     expect(find.text('Open Repository'), findsOneWidget);
 
     await tester.tap(find.text('Open Repository'));

@@ -8,6 +8,7 @@ import 'package:gift/src/backend/git_gateway.dart';
 import 'package:gift/src/backend/history.dart';
 import 'package:gift/src/backend/push.dart';
 import 'package:gift/src/backend/remote.dart';
+import 'package:gift/src/backend/credentials.dart';
 import 'package:gift/src/backend/status.dart';
 import 'package:gift/src/app/pixel_theme.dart';
 import 'package:gift/src/features/repository/push_dialog.dart';
@@ -67,6 +68,58 @@ void main() {
     expect(gateway.executedRequest?.confirmationToken, 'push-token');
     expect(gateway.executedRequest?.setUpstream, isTrue);
     expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('separates the push account field from the remote field', (
+    tester,
+  ) async {
+    addTearDown(tester.view.reset);
+    tester.view.physicalSize = const Size(360, 640);
+    tester.view.devicePixelRatio = 1;
+    final repository = const RepositoryOpened(
+      repositoryId: RepositoryId(value: 'push-account-spacing-repository'),
+      root: '/workspace/project',
+    );
+    final store = InMemoryGitCredentialStore(
+      records: [
+        GitCredentialRecord(
+          account: const GitCredentialAccount(
+            id: 'github-account',
+            provider: GitCredentialProvider.github,
+            host: 'github.com',
+            accountName: 'GitHub work',
+            kind: GitCredentialKind.httpsToken,
+          ),
+          secret: 'test-secret',
+        ),
+      ],
+    );
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: buildPixelTheme(),
+        home: PushDialog(
+          gateway: _PushGateway(
+            repository,
+            remotes: const [
+              GitRemote(
+                name: 'origin',
+                fetchUrl: 'https://github.com/acme/project.git',
+                pushUrl: 'https://github.com/acme/project.git',
+              ),
+            ],
+          ),
+          repository: repository,
+          credentialStore: store,
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final remote = tester.getRect(find.byKey(const Key('push-remote')));
+    final account = tester.getRect(find.byKey(const Key('push-credential')));
+    expect(account.top, greaterThanOrEqualTo(remote.bottom + 8));
+    expect(find.text('Push account'), findsOneWidget);
+    expect(find.text('github.com · default account'), findsOneWidget);
   });
 
   testWidgets('keeps push progress visible until the remote operation ends', (
