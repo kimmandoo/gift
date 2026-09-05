@@ -7,13 +7,14 @@ This file is the handoff record for continuing work across query sessions.
 - Date: 2026-09-05
 - Active task: Task 39 — Visual regression QA.
 - Branch: `main`; latest commit is
-  `b7fcab7 fix(ui): clarify welcome startup actions`.
-- Completed in this session: clarified the startup welcome hierarchy by
-  replacing the action-duplicating `Open a Git repository` heading with one
-  `Get started` section heading while retaining one explicit `Open Repository`
-  action and the separate clone/initialize action.
-- Exact next action: activate Task 39's deterministic visual regression
-  fixture/overflow guard for the completed repository workflows.
+  `2bed490 fix(ui): prevent tooltip overlap`.
+- Completed in this session: audited all visual `Tooltip` wrappers and removed
+  text-hover popovers from editable folder fields, repository path suggestions,
+  and Changes rows where they could cover adjacent controls. Replaced them
+  with accessible labels, kept action tooltips for icon affordances, and made
+  global tooltips prefer the open side of the control.
+- Exact next action: continue Task 39 visual regression QA with deterministic
+  compact and large-text fixtures.
 - Committed Task 47 files: `CHANGELOG.md`, `TASKS.md`,
   `docs/research/jetbrains-git-mvp-behavior.md`,
   `docs/superpowers/plans/2026-09-02-gift-dart-mvp.md`,
@@ -29,17 +30,19 @@ This file is the handoff record for continuing work across query sessions.
   `lib/src/features/repository/hosting_dialog.dart`,
   `test/helpers/git_patch_gateway_stub.dart`, and
   `test/features/repository/repository_path_field_test.dart`.
+- Current overlap-fix files: `lib/src/app/pixel_theme.dart`,
+  `lib/src/features/repository/changes_screen.dart`,
+  `lib/src/features/repository/folder_path_field.dart`,
+  `lib/src/features/repository/repository_path_field.dart`,
+  `test/features/repository/changes_screen_test.dart`, and
+  `test/features/repository/repository_setup_dialog_test.dart`.
 - Current UX fix files: `CHANGELOG.md`,
   `lib/src/features/repository/welcome_screen.dart`, and
   `test/features/repository/welcome_screen_test.dart`.
-- Verification: the Welcome screen suite passed (7 tests), the combined
-  Welcome/path UX run passed (8 tests), the repository path widget plus
-  affected Comparison, File History, History, and Hosting suites passed
-  (21 tests), and `flutter analyze` passed with no issues. Coverage asserts
-  keyboard selection, no-match recovery, browse-all restoration, separator
-  normalization, traversal rejection, one `Get started` heading, one
-  explicit `Open Repository` action, and no duplicate `Open a Git repository`
-  heading.
+- Verification: the repository UI suite plus credential/settings dialog tests
+  passed (111 tests), and `flutter analyze` passed with no issues. Regression
+  coverage asserts text-field and change-row tooltip ancestors are absent
+  while icon action tooltips remain available.
 - Blockers: none.
 
 ## Previous checkpoint
