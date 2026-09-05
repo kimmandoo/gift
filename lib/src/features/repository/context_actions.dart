@@ -430,9 +430,17 @@ class ContextActionMenuButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final openTrigger = ContextActionMenu.openTriggerOf(context);
+    final baseStyle = Theme.of(context).iconButtonTheme.style;
     return IconButton(
       tooltip: 'More actions',
       onPressed: openTrigger == null ? null : () => openTrigger(context),
+      style: baseStyle?.copyWith(
+        backgroundColor: const WidgetStatePropertyAll(Colors.transparent),
+        side: const WidgetStatePropertyAll(BorderSide.none),
+        minimumSize: const WidgetStatePropertyAll(Size(32, 32)),
+        maximumSize: const WidgetStatePropertyAll(Size(32, 32)),
+        padding: const WidgetStatePropertyAll(EdgeInsets.all(7)),
+      ),
       icon: Icon(icon, size: 18),
     );
   }

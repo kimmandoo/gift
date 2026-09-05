@@ -159,7 +159,7 @@ ThemeData buildPixelTheme({
     letterSpacing: 0.05,
   );
 
-  final buttonShape = RoundedRectangleBorder(
+  final buttonShape = BeveledRectangleBorder(
     borderRadius: BorderRadius.circular(4),
   );
   const buttonPadding = EdgeInsets.symmetric(horizontal: 12, vertical: 8);
@@ -188,9 +188,24 @@ ThemeData buildPixelTheme({
     textStyle: WidgetStatePropertyAll(buttonTextStyle),
     iconSize: const WidgetStatePropertyAll(18),
     padding: const WidgetStatePropertyAll(buttonPadding),
+    side: WidgetStateProperty.resolveWith((states) {
+      if (states.contains(WidgetState.disabled)) {
+        return BorderSide(color: muted.withValues(alpha: 0.24));
+      }
+      return BorderSide(
+        color: scheme.onPrimary.withValues(
+          alpha:
+              states.contains(WidgetState.hovered) ||
+                  states.contains(WidgetState.focused) ||
+                  states.contains(WidgetState.pressed)
+              ? 0.82
+              : 0.55,
+        ),
+      );
+    }),
     tapTargetSize: MaterialTapTargetSize.shrinkWrap,
     shape: WidgetStatePropertyAll(buttonShape),
-    minimumSize: const WidgetStatePropertyAll(Size(40, 38)),
+    minimumSize: const WidgetStatePropertyAll(Size(40, 40)),
     elevation: const WidgetStatePropertyAll(0),
   );
   final outlinedButtonStyle = ButtonStyle(
@@ -233,7 +248,7 @@ ThemeData buildPixelTheme({
     padding: const WidgetStatePropertyAll(buttonPadding),
     tapTargetSize: MaterialTapTargetSize.shrinkWrap,
     shape: WidgetStatePropertyAll(buttonShape),
-    minimumSize: const WidgetStatePropertyAll(Size(40, 38)),
+    minimumSize: const WidgetStatePropertyAll(Size(40, 40)),
     elevation: const WidgetStatePropertyAll(0),
   );
   final textButtonStyle = ButtonStyle(
@@ -265,7 +280,7 @@ ThemeData buildPixelTheme({
     padding: const WidgetStatePropertyAll(buttonPadding),
     tapTargetSize: MaterialTapTargetSize.shrinkWrap,
     shape: WidgetStatePropertyAll(buttonShape),
-    minimumSize: const WidgetStatePropertyAll(Size(40, 38)),
+    minimumSize: const WidgetStatePropertyAll(Size(40, 40)),
     elevation: const WidgetStatePropertyAll(0),
   );
   final base = ThemeData(
@@ -382,7 +397,7 @@ ThemeData buildPixelTheme({
         fontFamily: pixelDisplayFontFamily,
         fontFamilyFallback: pixelFontFallbackFamilies,
         color: ink,
-        fontSize: pixelTitleLargeSize * scale,
+        fontSize: pixelHeadlineSmallSize * scale,
         height: 1.15,
         fontWeight: FontWeight.w400,
         letterSpacing: 0.2,
@@ -403,8 +418,8 @@ ThemeData buildPixelTheme({
       elevation: 0,
       surfaceTintColor: Colors.transparent,
       shape: square,
-      insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
-      actionsPadding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
+      insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
+      actionsPadding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
       titleTextStyle: TextStyle(
         color: ink,
         fontFamily: pixelDisplayFontFamily,
@@ -476,7 +491,15 @@ ThemeData buildPixelTheme({
     iconButtonTheme: IconButtonThemeData(
       style: ButtonStyle(
         animationDuration: Duration.zero,
-        backgroundColor: const WidgetStatePropertyAll(Colors.transparent),
+        backgroundColor: WidgetStateProperty.resolveWith((states) {
+          if (states.contains(WidgetState.disabled)) {
+            return raised.withValues(alpha: 0.24);
+          }
+          if (states.contains(WidgetState.pressed)) {
+            return scheme.primaryContainer;
+          }
+          return raised.withValues(alpha: dark ? 0.42 : 0.3);
+        }),
         foregroundColor: WidgetStateProperty.resolveWith((states) {
           if (states.contains(WidgetState.disabled)) {
             return muted.withValues(alpha: 0.42);
@@ -498,10 +521,21 @@ ThemeData buildPixelTheme({
           }
           return Colors.transparent;
         }),
-        padding: const WidgetStatePropertyAll(EdgeInsets.all(7)),
+        side: WidgetStateProperty.resolveWith((states) {
+          if (states.contains(WidgetState.disabled)) {
+            return BorderSide(color: muted.withValues(alpha: 0.14));
+          }
+          if (states.contains(WidgetState.hovered) ||
+              states.contains(WidgetState.focused) ||
+              states.contains(WidgetState.pressed)) {
+            return BorderSide(color: primary);
+          }
+          return BorderSide(color: muted.withValues(alpha: 0.22));
+        }),
+        padding: const WidgetStatePropertyAll(EdgeInsets.all(8)),
         tapTargetSize: MaterialTapTargetSize.shrinkWrap,
         shape: WidgetStatePropertyAll(buttonShape),
-        minimumSize: const WidgetStatePropertyAll(Size(38, 38)),
+        minimumSize: const WidgetStatePropertyAll(Size(40, 40)),
       ),
     ),
     listTileTheme: ListTileThemeData(
@@ -513,8 +547,8 @@ ThemeData buildPixelTheme({
         color: ink,
         fontWeight: FontWeight.w600,
       ),
-      minTileHeight: 48,
-      minVerticalPadding: 6,
+      minTileHeight: 44,
+      minVerticalPadding: 4,
       contentPadding: const EdgeInsets.symmetric(horizontal: 12),
       dense: true,
     ),
@@ -539,8 +573,8 @@ ThemeData buildPixelTheme({
       checkmarkColor: primary,
       labelStyle: resolvedTextTheme.labelLarge,
       side: border,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      shape: BeveledRectangleBorder(borderRadius: BorderRadius.circular(4)),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
     ),
     segmentedButtonTheme: SegmentedButtonThemeData(
       style: ButtonStyle(

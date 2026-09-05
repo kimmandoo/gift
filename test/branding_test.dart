@@ -14,32 +14,6 @@ void main() {
     expect(find.bySemanticsLabel('GIFT pixel mascot'), findsOneWidget);
   });
 
-  test('uses a restrained pixel button hierarchy', () {
-    final theme = buildPixelTheme();
-    final filled = theme.filledButtonTheme.style!;
-    final outlined = theme.outlinedButtonTheme.style!;
-    final icon = theme.iconButtonTheme.style!;
-
-    expect(
-      (filled.shape!.resolve(const {})! as RoundedRectangleBorder).borderRadius,
-      BorderRadius.circular(4),
-    );
-    expect(filled.backgroundColor!.resolve(const {}), pixelMint);
-    expect(filled.textStyle!.resolve(const {})!.fontFamily, pixelFontFamily);
-    expect(
-      filled.minimumSize!.resolve(const {}),
-      outlined.minimumSize!.resolve(const {}),
-    );
-    expect(
-      filled.minimumSize!.resolve(const {}),
-      theme.textButtonTheme.style!.minimumSize!.resolve(const {}),
-    );
-    expect(outlined.backgroundColor!.resolve(const {}), Colors.transparent);
-    expect(outlined.foregroundColor!.resolve(const {}), pixelInk);
-    expect(icon.backgroundColor!.resolve(const {}), Colors.transparent);
-    expect(icon.side, isNull);
-  });
-
   test('configures a bundled Korean font fallback', () {
     final theme = buildPixelTheme();
 

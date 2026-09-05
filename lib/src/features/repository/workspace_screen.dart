@@ -204,11 +204,14 @@ class _WorkspaceTabBar extends StatelessWidget {
               },
             ),
           ),
-          IconButton(
-            key: const Key('workspace-open-repository'),
-            tooltip: 'Open repository',
-            onPressed: onAdd,
-            icon: const Icon(Icons.add),
+          Padding(
+            padding: const EdgeInsets.only(right: 4),
+            child: IconButton(
+              key: const Key('workspace-open-repository'),
+              tooltip: 'Open repository',
+              onPressed: onAdd,
+              icon: const Icon(Icons.add),
+            ),
           ),
         ],
       ),
@@ -237,48 +240,69 @@ class _WorkspaceTab extends StatelessWidget {
     final foreground = selected ? colors.onSurface : colors.onSurfaceVariant;
     return SizedBox(
       width: width,
-      child: Material(
-        color: selected ? colors.surfaceContainerHighest : colors.surface,
-        child: InkWell(
-          onTap: onSelect,
-          child: Semantics(
-            button: true,
-            selected: selected,
-            label: tab.isAvailable
-                ? '${tab.displayName} repository tab'
-                : '${tab.displayName} unavailable repository tab',
-            child: Padding(
-              padding: const EdgeInsets.only(left: 10, right: 4),
-              child: Row(
-                children: [
-                  Icon(
-                    tab.isAvailable
-                        ? Icons.account_tree_outlined
-                        : Icons.warning_amber_rounded,
-                    size: 15,
-                    color: tab.isAvailable ? foreground : colors.error,
-                  ),
-                  const SizedBox(width: 6),
-                  Expanded(
-                    child: Text(
-                      tab.displayName,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                        color: foreground,
-                        fontWeight: selected
-                            ? FontWeight.w700
-                            : FontWeight.w500,
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          border: Border(
+            bottom: BorderSide(
+              color: selected ? colors.primary : Colors.transparent,
+              width: 4,
+            ),
+          ),
+        ),
+        child: Material(
+          color: selected ? colors.surfaceContainerHighest : colors.surface,
+          child: InkWell(
+            onTap: onSelect,
+            child: Semantics(
+              button: true,
+              selected: selected,
+              label: tab.isAvailable
+                  ? '${tab.displayName} repository tab'
+                  : '${tab.displayName} unavailable repository tab',
+              child: Padding(
+                padding: const EdgeInsets.only(left: 10, right: 4),
+                child: Row(
+                  children: [
+                    Icon(
+                      tab.isAvailable
+                          ? Icons.account_tree_outlined
+                          : Icons.warning_amber_rounded,
+                      size: 15,
+                      color: tab.isAvailable ? foreground : colors.error,
+                    ),
+                    const SizedBox(width: 6),
+                    Expanded(
+                      child: Text(
+                        tab.displayName,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                          color: foreground,
+                          fontWeight: selected
+                              ? FontWeight.w700
+                              : FontWeight.w500,
+                        ),
                       ),
                     ),
-                  ),
-                  IconButton(
-                    key: ValueKey('workspace-close:${tab.path}'),
-                    tooltip: 'Close ${tab.displayName}',
-                    onPressed: onClose,
-                    icon: const Icon(Icons.close, size: 15),
-                  ),
-                ],
+                    IconButton(
+                      key: ValueKey('workspace-close:${tab.path}'),
+                      tooltip: 'Close ${tab.displayName}',
+                      onPressed: onClose,
+                      style: IconButton.styleFrom(
+                        backgroundColor: Colors.transparent,
+                        foregroundColor: foreground,
+                        side: BorderSide.none,
+                        minimumSize: const Size(32, 32),
+                        maximumSize: const Size(32, 32),
+                        padding: const EdgeInsets.all(6),
+                        shape: const BeveledRectangleBorder(
+                          borderRadius: BorderRadius.all(Radius.circular(4)),
+                        ),
+                      ),
+                      icon: const Icon(Icons.close, size: 15),
+                    ),
+                  ],
+                ),
               ),
             ),
           ),

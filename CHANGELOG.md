@@ -10,6 +10,8 @@
 - feat(typography): bundled Noto Sans KR fallback support for Korean paths.
 - feat(auth): added Git Credential Manager browser sign-in, GitHub and GitLab
   provider marks, and per-repository account selection.
+- fix(ui): aligned pixel-cut button states, toolbar controls, repository tabs,
+  change-list density, pane sizing, summary metrics, and empty-detail guidance.
 
 ## 2026-09-04
 - fix(auth): improved Git account management with searchable host groups,

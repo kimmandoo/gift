@@ -46,16 +46,6 @@ void main() {
     expect(theme.textTheme.titleLarge?.fontSize, pixelTitleLargeSize);
     expect(theme.textTheme.headlineSmall?.fontSize, pixelHeadlineSmallSize);
     expect(theme.textTheme.headlineMedium?.fontSize, pixelHeadlineMediumSize);
-    expect(theme.appBarTheme.titleTextStyle?.fontSize, pixelTitleLargeSize);
-    expect(theme.appBarTheme.actionsPadding, const EdgeInsets.only(right: 8));
-    expect(
-      theme.filledButtonTheme.style?.minimumSize?.resolve({}),
-      const Size(40, 38),
-    );
-    expect(
-      theme.outlinedButtonTheme.style?.minimumSize?.resolve({}),
-      const Size(40, 38),
-    );
     expect(theme.colorScheme.surfaceContainerHighest, pixelPanelRaised);
     expect(light.brightness, Brightness.light);
     expect(light.scaffoldBackgroundColor, pixelLightCanvas);

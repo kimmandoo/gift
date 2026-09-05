@@ -5,42 +5,44 @@ This file is the handoff record for continuing work across query sessions.
 ## Current checkpoint
 
 - Date: 2026-09-05
-- Active task: the requested History, typography, spacing, and Git account
-  follow-up is complete; Task 43 remains the next backlog priority.
-- Branch: `main`; the latest committed base is
-  `251494e feat(history): add ordered multi-commit operations`.
-- Follow-up behavior: History commit selectors now appear only in an explicit
-  selection mode; changed-file rows have an 8 px gap; crowded repository
-  lists/dialogs use consistent 4–8 px separation without changing their
-  scroll ownership.
-- Follow-up behavior: Noto Sans KR is bundled as a Korean fallback, with
-  license attribution; the existing English locale remains unchanged.
-- Follow-up behavior: GitHub/GitLab browser sign-in delegates OAuth to
-  Git Credential Manager, stores a token-free Web OAuth account record, shows
-  GH/GL provider marks, and persists host/account choices per repository.
-- Changed implementation files: `lib/src/app/{credentials_dialog,
-  gift_app,git_provider_mark,pixel_theme,preferences_dialog,
-  repository_credential_store}.dart`, `lib/src/backend/{credentials,
-  dart_git_backend,dart_git_gateway,git_gateway,repository_service}.dart`,
-  and the affected repository screens/dialogs under
-  `lib/src/features/repository/`.
-- Changed assets/docs/tests: `assets/fonts/{NotoSansKR-Variable.ttf,
-  NOTO-SANS-KR-OFL.txt}`, `pubspec.yaml`, `THIRD_PARTY_NOTICES.md`,
-  `CHANGELOG.md`, and the focused credential, branding, and History tests.
-- Verification: `flutter analyze` passed; the focused 48-test UI/backend suite
-  passed; `flutter build windows --debug` produced
-  `build/windows/x64/runner/Debug/gift.exe`; the packaged
-  `assets/fonts/NotoSansKR-Variable.ttf` was present.
-- Desktop visual note: the built executable launched in a smoke process, but
-  browser attachment timed out on this Windows host, so screenshot-level
-  visual inspection was unavailable.
-- Known repository verification limitation: the full suite retains the 15
-  previously documented Windows-sensitive backend fixture failures involving
-  newline/path normalization, interactive rebase, and submodule cleanup.
-- Exact next action: commit this follow-up and checkpoint together; on a later
-  session, resume Task 43 from its first RED behavior-ledger scenario.
-- Blockers: no source blocker. The unrelated generated Flutter plugin files
-  were already modified before this follow-up and remain untouched.
+- Active task: the requested overall UX refinement is complete; Task 43
+  remains the next backlog priority.
+- Branch: `main`; the committed base before this session was
+  `f3b5bf9 feat(ui): refine history typography and git accounts`.
+- UX behavior: filled, outlined, text, segmented, chip, and icon controls now
+  share crisp pixel-cut geometry, four-pixel-grid sizing, restrained resting
+  surfaces, and immediate hover, focus, pressed, and disabled states.
+- UX behavior: row overflow and tab-close affordances stay lightweight while
+  top-level icon actions have visible hit areas. The active repository tab has
+  a primary four-pixel edge and the add-repository control is inset.
+- Changes behavior: desktop change panes widen responsively up to 440 px,
+  repeated rows no longer add empty vertical gaps, truncated paths expose a
+  hover tooltip, and branch/sync/change metrics remain grouped at the start of
+  the summary strip.
+- Changes behavior: empty detail space now explains the next action, short
+  detail heights remain scroll-safe, panel/status padding follows the shared
+  grid, and populated details preserve the diff viewport.
+- Changed implementation files:
+  `lib/src/app/pixel_theme.dart` and
+  `lib/src/features/repository/{changes_screen,context_actions,
+  workspace_screen}.dart`.
+- Changed docs/tests: `CHANGELOG.md`,
+  `docs/superpowers/plans/2026-09-02-gift-dart-mvp.md`, this checkpoint,
+  `test/app_boot_test.dart`, and `test/branding_test.dart`. Incidental
+  implementation-pinning button assertions were removed; behavior and contrast
+  coverage remain.
+- Verification: `flutter analyze` passed; `flutter test
+  test/app_boot_test.dart test/branding_test.dart test/features` passed all
+  101 tests; `flutter build windows --release` produced
+  `build/windows/x64/runner/Release/gift.exe`.
+- Desktop verification: the rebuilt executable launched at 1280×720. Light
+  and dark Changes views showed the new tab, toolbar, summary, list-density,
+  and empty-detail hierarchy; selecting `CHANGELOG.md` loaded its real diff
+  with the pixel-cut Stage and Discard actions and no visible clipping.
+- Exact next action: begin Task 43 with its first change/file context-action
+  behavior-ledger scenario and RED fixture.
+- Blockers: none. The five generated Flutter plugin files were already
+  modified before this session and remain intentionally excluded.
 
 ## Previous checkpoint
 

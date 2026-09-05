@@ -216,6 +216,7 @@ class _ChangesScreenBodyState extends ConsumerState<_ChangesScreenBody> {
               icon: const Icon(Icons.history),
             ),
           ],
+          if (!compactToolbar) const SizedBox(width: 4),
           PopupMenuButton<_ChangesMenuAction>(
             key: const Key('repository-actions-menu'),
             tooltip: 'Repository actions',
@@ -393,6 +394,7 @@ class _ChangesScreenBodyState extends ConsumerState<_ChangesScreenBody> {
               ),
             ],
           ),
+          const SizedBox(width: 4),
           const PixelThemeToggle(),
           IconButton(
             tooltip: 'Refresh changes',
@@ -497,6 +499,7 @@ class _ChangesScreenBodyState extends ConsumerState<_ChangesScreenBody> {
 
   Widget _summary(BuildContext context, GitStatusSnapshot snapshot) {
     final compact = MediaQuery.sizeOf(context).width < 480;
+    final theme = Theme.of(context);
     final branch = snapshot.branch.head ?? 'Detached HEAD';
     final sync = snapshot.branch.hasUpstream
         ? '${snapshot.branch.ahead} ahead · ${snapshot.branch.behind} behind'
@@ -504,42 +507,64 @@ class _ChangesScreenBodyState extends ConsumerState<_ChangesScreenBody> {
     final changeLabel =
         '${snapshot.changes.length} changed ${snapshot.changes.length == 1 ? 'file' : 'files'}';
     return Container(
-      padding: EdgeInsets.symmetric(
-        horizontal: compact ? 12 : 20,
-        vertical: compact ? 8 : 10,
-      ),
-      color: Theme.of(context).colorScheme.surfaceContainerHighest,
+      padding: EdgeInsets.symmetric(horizontal: compact ? 12 : 16, vertical: 8),
+      color: theme.colorScheme.surfaceContainerHighest,
       child: LayoutBuilder(
         builder: (context, constraints) {
-          final items = [
-            const Icon(Icons.account_tree_outlined, size: 18),
-            Text(
-              branch,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: Theme.of(context).textTheme.bodyMedium
-                  ?.copyWith(fontWeight: FontWeight.w600),
-            ),
-            Text(sync),
-            Text(changeLabel),
-          ];
-          if (constraints.maxWidth < 760) {
-            return Wrap(
-              spacing: 12,
-              runSpacing: 8,
-              crossAxisAlignment: WrapCrossAlignment.center,
-              children: items,
+          Widget metric(
+            IconData icon,
+            String label, {
+            bool emphasized = false,
+          }) {
+            return Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  icon,
+                  size: 16,
+                  color: emphasized
+                      ? theme.colorScheme.primary
+                      : theme.colorScheme.onSurfaceVariant,
+                ),
+                const SizedBox(width: 6),
+                Text(
+                  label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style:
+                      (emphasized
+                              ? theme.textTheme.bodyMedium
+                              : theme.textTheme.labelLarge)
+                          ?.copyWith(
+                            color: emphasized
+                                ? theme.colorScheme.onSurface
+                                : theme.colorScheme.onSurfaceVariant,
+                            fontWeight: emphasized
+                                ? FontWeight.w700
+                                : FontWeight.w600,
+                          ),
+                ),
+              ],
             );
           }
-          return Row(
+
+          return Wrap(
+            spacing: compact ? 12 : 20,
+            runSpacing: 6,
+            crossAxisAlignment: WrapCrossAlignment.center,
             children: [
-              items[0],
-              const SizedBox(width: 8),
-              Flexible(child: items[1]),
-              const SizedBox(width: 12),
-              items[2],
-              const Spacer(),
-              items[3],
+              ConstrainedBox(
+                constraints: BoxConstraints(
+                  maxWidth: compact ? constraints.maxWidth : 280,
+                ),
+                child: metric(
+                  Icons.account_tree_outlined,
+                  branch,
+                  emphasized: true,
+                ),
+              ),
+              metric(Icons.sync_alt, sync),
+              metric(Icons.description_outlined, changeLabel),
             ],
           );
         },
@@ -593,7 +618,7 @@ class _ChangesScreenBodyState extends ConsumerState<_ChangesScreenBody> {
     return Container(
       key: const Key('status-strip'),
       color: Theme.of(context).colorScheme.surfaceContainerHighest,
-      padding: EdgeInsets.symmetric(horizontal: compact ? 12 : 20, vertical: 7),
+      padding: EdgeInsets.symmetric(horizontal: compact ? 12 : 16, vertical: 8),
       child: LayoutBuilder(
         builder: (context, constraints) {
           final icon = Icon(
@@ -639,11 +664,11 @@ class _ChangesScreenBodyState extends ConsumerState<_ChangesScreenBody> {
         !state.isMutating &&
         _commitMessageController.text.trim().isNotEmpty;
     return Padding(
-      padding: EdgeInsets.fromLTRB(compact ? 12 : 20, 10, compact ? 12 : 20, 4),
+      padding: EdgeInsets.fromLTRB(compact ? 12 : 16, 8, compact ? 12 : 16, 4),
       child: Card(
         margin: EdgeInsets.zero,
         child: Padding(
-          padding: EdgeInsets.all(compact ? 10 : 14),
+          padding: EdgeInsets.all(12),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
@@ -1003,7 +1028,9 @@ class _ChangesScreenBodyState extends ConsumerState<_ChangesScreenBody> {
             ],
           );
         }
-        final listWidth = constraints.maxWidth < 720 ? 260.0 : 340.0;
+        final listWidth = (constraints.maxWidth * 0.36)
+            .clamp(320.0, 440.0)
+            .toDouble();
         return Row(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
@@ -1070,7 +1097,6 @@ class _ChangesScreenBodyState extends ConsumerState<_ChangesScreenBody> {
                 section.group,
                 state,
               ),
-              if (index < section.changes.length - 1) const SizedBox(height: 4),
             ],
             const SizedBox(height: 8),
           ],
@@ -1080,7 +1106,7 @@ class _ChangesScreenBodyState extends ConsumerState<_ChangesScreenBody> {
 
   Widget _sectionHeader(BuildContext context, String title, int count) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 12, 20, 4),
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
       child: Text(
         '$title ($count)',
         style: Theme.of(context).textTheme.labelLarge
@@ -1101,22 +1127,30 @@ class _ChangesScreenBodyState extends ConsumerState<_ChangesScreenBody> {
       snapshot: actionSnapshot,
       actions: _changeActions(change, state, actionSnapshot),
       onAction: _handleChangeAction,
-      child: ListTile(
-        key: ValueKey('${group.name}:${change.path}'),
-        dense: true,
-        selected: selected,
-        leading: _statusBadge(context, change),
-        title: Text(change.path, overflow: TextOverflow.ellipsis),
-        subtitle: change.originalPath == null
-            ? null
-            : Text(
-                'from ${change.originalPath}',
-                overflow: TextOverflow.ellipsis,
-              ),
-        trailing: ContextActionMenuButton(
-          key: ValueKey('change-actions:${change.path}'),
+      child: Tooltip(
+        message: change.path,
+        child: ListTile(
+          key: ValueKey('${group.name}:${change.path}'),
+          dense: true,
+          selected: selected,
+          leading: _statusBadge(context, change),
+          title: Text(
+            change.path,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+          subtitle: change.originalPath == null
+              ? null
+              : Text(
+                  'from ${change.originalPath}',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+          trailing: ContextActionMenuButton(
+            key: ValueKey('change-actions:${change.path}'),
+          ),
+          onTap: () => unawaited(_activeController.selectChange(change)),
         ),
-        onTap: () => unawaited(_activeController.selectChange(change)),
       ),
     );
   }
@@ -1271,7 +1305,46 @@ class _ChangesScreenBodyState extends ConsumerState<_ChangesScreenBody> {
   ) {
     final selectedPath = state.selectedPath;
     if (selectedPath == null) {
-      return const Center(child: Text('Select a change to inspect it.'));
+      final theme = Theme.of(context);
+      return LayoutBuilder(
+        builder: (context, constraints) {
+          final short = constraints.maxHeight < 180;
+          return SingleChildScrollView(
+            padding: EdgeInsets.symmetric(
+              horizontal: 24,
+              vertical: short ? 8 : 24,
+            ),
+            child: Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 320),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    if (!short) ...[
+                      Icon(
+                        Icons.difference_outlined,
+                        size: 32,
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
+                      const SizedBox(height: 12),
+                    ],
+                    Text('Select a change', style: theme.textTheme.titleMedium),
+                    if (!short) ...[
+                      const SizedBox(height: 4),
+                      Text(
+                        'Choose a file from the changes list to inspect its '
+                        'diff and available actions.',
+                        textAlign: TextAlign.center,
+                        style: theme.textTheme.bodySmall,
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+            ),
+          );
+        },
+      );
     }
     GitChange? selected;
     for (final change in snapshot.changes) {
@@ -1351,12 +1424,7 @@ class _ChangesScreenBodyState extends ConsumerState<_ChangesScreenBody> {
       return _smallHeightDetails(context, selected, state);
     }
     return Padding(
-      padding: EdgeInsets.fromLTRB(
-        compact ? 12 : 20,
-        compact ? 16 : 24,
-        compact ? 12 : 20,
-        0,
-      ),
+      padding: EdgeInsets.fromLTRB(compact ? 12 : 16, 16, compact ? 12 : 16, 0),
       child: compact
           ? ListView(
               key: const Key('compact-details-scroll'),

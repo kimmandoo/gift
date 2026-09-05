@@ -866,3 +866,18 @@ system Git 2.35+.
    default-account, and connection-test guidance without exposing secrets.
 4. Added responsive host/name fields, compact editor coverage, and interaction
    tests for filtering, adding, and editing accounts.
+
+## Completed follow-up: cohesive pixel controls and Changes layout
+
+1. Replaced rounded Material button silhouettes with crisp pixel-cut geometry
+   while preserving the filled, outlined, text, destructive, and disabled
+   action hierarchy.
+2. Added restrained bounded icon controls with immediate hover, focus, and
+   pressed states; compact row overflow and tab-close affordances remain
+   lightweight.
+3. Aligned control and list sizing to the four-pixel grid, tightened change
+   rows, widened the desktop change pane responsively, and exposed full paths
+   through hover tooltips.
+4. Grouped branch, synchronization, and changed-file metrics at the start of
+   the summary strip; strengthened active-tab indication and replaced the
+   isolated empty detail sentence with concise next-action guidance.
