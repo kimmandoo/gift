@@ -7,12 +7,13 @@ This file is the handoff record for continuing work across query sessions.
 - Date: 2026-09-05
 - Active task: Task 39 — Visual regression QA.
 - Branch: `main`; latest commit is
-  `0cec74f fix(paths): polish repository path navigation`.
+  `5f3a6e2 fix(paths): clear stale suggestions on reload`.
 - Completed in this session: polished the shared repository-relative path
   field. Browse now restores the full catalog after a no-match query, loading
   and unavailable-catalog states are explicit, empty results explain the
-  query, clear/browse controls stay compact, and arrow-key/Enter navigation
-  selects suggestions consistently with pointer selection.
+  query, stale catalog suggestions are cleared during root refresh, clear and
+  browse controls stay compact, and arrow-key/Enter navigation selects
+  suggestions consistently with pointer selection.
 - Exact next action: activate Task 39's deterministic visual regression
   fixture/overflow guard for the completed repository workflows.
 - Committed Task 47 files: `CHANGELOG.md`, `TASKS.md`,
