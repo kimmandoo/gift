@@ -7,12 +7,11 @@ This file is the handoff record for continuing work across query sessions.
 - Date: 2026-09-05
 - Active task: Task 39 — Visual regression QA; current requested fixes complete.
 - Branch: `main`; latest commit is
-  `df6e777 fix(ui): separate push account and welcome actions`.
-- Completed in this session: separated the push-account selector from the
-  remote selector with vertical spacing, shortened its context to helper text,
-  constrained dropdown labels for narrow dialogs, and removed the redundant
-  repository-folder field from the welcome screen so `Open Repository` opens
-  the native folder chooser directly.
+  `d8485ad fix(ui): harden remote account selectors`.
+- Completed in this session: audited the account-selector surfaces adjacent to
+  remote and clone controls. Added vertical separation, shortened host context
+  into helper text, enabled expanded fields, and constrained automatic/account
+  labels so narrow dialogs do not overlap or overflow.
 - Exact next action: no remaining action for the current UI request; continue
   Task 39 only if a later visual regression is identified.
 - Committed Task 47 files: `CHANGELOG.md`, `TASKS.md`,
@@ -36,16 +35,19 @@ This file is the handoff record for continuing work across query sessions.
   `lib/src/features/repository/repository_path_field.dart`,
   `test/features/repository/changes_screen_test.dart`, and
   `test/features/repository/repository_setup_dialog_test.dart`.
-- Current UX fix files: `CHANGELOG.md`,
-  `lib/src/features/repository/push_dialog.dart`,
+- Current account-selector files: `CHANGELOG.md`,
+  `lib/src/features/repository/remote_dialog.dart`,
+  `lib/src/features/repository/repository_setup_dialog.dart`,
+  `test/features/repository/remote_dialog_test.dart`, and
+  `test/features/repository/repository_setup_dialog_test.dart`.
+- Current UX fix files: `lib/src/features/repository/push_dialog.dart`,
   `lib/src/features/repository/welcome_screen.dart`,
   `test/features/repository/push_dialog_test.dart`, and
   `test/features/repository/welcome_screen_test.dart`.
-- Verification: push-dialog and welcome-screen regression tests passed (11
-  tests), and `flutter analyze` passed with no issues. The push regression
-  asserts a gap between remote and account controls, compact account context,
-  and narrow-dialog label containment. The welcome regression asserts the
-  initial repository path controls are absent.
+- Verification: the repository UI suite plus credential/settings dialog tests
+  passed (112 tests), and `flutter analyze` passed with no issues. Compact
+  remote and clone selector regressions assert control separation, concise
+  helper context, and no layout exception at narrow large-text sizes.
 - Blockers: none.
 
 ## Previous checkpoint
