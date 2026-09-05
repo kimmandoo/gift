@@ -22,6 +22,7 @@ class PushDialog extends StatefulWidget {
     required this.gateway,
     required this.repository,
     this.initialRemote,
+    this.initialBranch,
     this.credentialStore,
     this.repositoryCredentialStore,
     this.preferredRemote,
@@ -32,6 +33,7 @@ class PushDialog extends StatefulWidget {
   final GitCredentialStore? credentialStore;
   final RepositoryCredentialStore? repositoryCredentialStore;
   final String? initialRemote;
+  final String? initialBranch;
   final String? preferredRemote;
 
   @override
@@ -60,7 +62,8 @@ class _PushDialogState extends State<PushDialog> {
   @override
   void initState() {
     super.initState();
-    _load();
+    _branchController.text = widget.initialBranch ?? '';
+    unawaited(_load());
   }
 
   @override
@@ -753,9 +756,7 @@ class _PushDialogState extends State<PushDialog> {
             !status.branch.isDetached &&
             tracking == null;
         _commits = history?.commits ?? const [];
-        if (selectedBranch != null) {
-          _branchController.text = selectedBranch;
-        }
+        _branchController.text = widget.initialBranch ?? selectedBranch ?? '';
       });
     } on GitError catch (error) {
       if (!mounted) return;

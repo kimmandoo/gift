@@ -1,6 +1,8 @@
 # Changelog
 
 ## 2026-09-05
+- feat(actions): added full-ref local and remote branch context menus with
+  stale-row routing guards and reviewed workflow entry points.
 - feat(actions): added selection-safe change, history-file, and comparison-file context actions with platform file-manager reveal.
 - feat(history): exposed OID-bound commit context actions and direct
   cherry-pick entry points.

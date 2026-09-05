@@ -34,6 +34,16 @@ class ContextActionTarget {
          diffScope: diffScope,
        );
 
+  const ContextActionTarget.branch({
+    required String name,
+    required String label,
+  }) : this(kind: ContextActionTargetKind.branch, identity: name, label: label);
+
+  const ContextActionTarget.remote({
+    required String name,
+    required String label,
+  }) : this(kind: ContextActionTargetKind.remote, identity: name, label: label);
+
   const ContextActionTarget.commit({required String oid, required String label})
     : this(kind: ContextActionTargetKind.commit, identity: oid, label: label);
 
@@ -95,6 +105,7 @@ enum ContextActionId {
   fileHistory,
   blame,
   compare,
+  compareBranch,
   copyRelativePath,
   copyAbsolutePath,
   reveal,
@@ -105,6 +116,20 @@ enum ContextActionId {
   reset,
   copyFullHash,
   copyShortHash,
+  checkoutBranch,
+  mergeBranch,
+  rebaseBranch,
+  renameBranch,
+  deleteBranch,
+  pushBranch,
+  upstream,
+  copyBranchName,
+  copyBranchRef,
+  compareRemote,
+  checkoutRemote,
+  deleteRemote,
+  cherryPickRemote,
+  hostLink,
 }
 
 enum ContextActionGroup { inspect, workflow, destructive }
@@ -122,6 +147,7 @@ enum ContextActionRoute {
   fileHistory,
   blame,
   compare,
+  compareBranch,
   copyRelativePath,
   copyAbsolutePath,
   reveal,
@@ -132,6 +158,20 @@ enum ContextActionRoute {
   reset,
   copyFullHash,
   copyShortHash,
+  checkoutBranch,
+  mergeBranch,
+  rebaseBranch,
+  renameBranch,
+  deleteBranch,
+  pushBranch,
+  upstream,
+  copyBranchName,
+  copyBranchRef,
+  compareRemote,
+  checkoutRemote,
+  deleteRemote,
+  cherryPickRemote,
+  hostLink,
 }
 
 /// One item in a context menu, including its availability and reviewed route.

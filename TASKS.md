@@ -6,10 +6,10 @@
 
 ## Progress
 
-- **Completed:** 43 / 48
-- **Current Active Task:** None.
-- **Next priority:** Task 44 — Branch and remote context actions, then Tasks 45–47,
-  Task 39 visual regression QA, and finally Task 38 public release.
+- **Completed:** 44 / 48
+- **Current Active Task:** Follow-up — Multi-file stage selection.
+- **Next priority:** finish the multi-file stage-selection follow-up, then Tasks
+  45–47, Task 39 visual regression QA, and finally Task 38 public release.
 
 | # | Scope | Dart backend deliverables | Flutter deliverables | Status |
 |---|---|---|---|:---:|
@@ -57,7 +57,7 @@
 | **41** | Commit context actions | OID-bound cherry-pick and existing history mutations | History-row action menu and prefilled previews | ✅ |
 | **42** | Multi-commit operations | Ordered batch cherry-pick/revert state machine | Multi-select history actions and conflict progress | ✅ |
 | **43** | Change and file actions | Selection-safe path operations and reveal contracts | Changes/diff/history-file context menus | ✅ |
-| **44** | Branch and remote actions | Ref-bound operation routing and freshness checks | Local/remote branch context menus | ⬜ |
+| **44** | Branch and remote actions | Ref-bound operation routing and freshness checks | Local/remote branch context menus | ✅ |
 | **45** | Workspace context actions | Root-bound tab and recent-repository operations | Tab/recent/nested-root context menus | ⬜ |
 | **46** | Native folder chooser UX | Purpose-scoped path validation and recent locations | Browse-assisted editable absolute-path fields | ⬜ |
 | **47** | Repository path navigation | Bounded tracked-path queries and path validation | Searchable file/folder pickers with manual entry | ⬜ |
@@ -670,14 +670,17 @@ Task 42 is complete. Tasks 43–47 follow it; Task 39 remains after those tasks.
 - [x] Add History and comparison file actions.
 - [x] Verify stale paths, rename/deleted/conflicted states, and compact menus.
 
-Task 43 is complete. Task 44 is now the next priority; Tasks 44–47 remain
+Task 43 is complete. Task 44 is now the active priority; Tasks 44–47 remain
 ahead of Task 39.
 
-## Post-MVP backlog
+### ✅ Task 44: Branch and remote context actions
 
-Tasks 16–47 and Task 38A are specified in
-[`docs/POST_MVP_ROADMAP.md`](docs/POST_MVP_ROADMAP.md). Start them in dependency
-order. Task 43 is now the next priority; Tasks 43–47 remain ahead of Task 39,
-and Task 38 is deferred until credential management, UX, and visual regression
-are complete. Before implementation, move exactly one task to active, add its
-behavior-ledger scenarios, and record the first failing test in the checkpoint.
+- [x] Record ACTION-11/12 local and remote branch action scenarios.
+- [x] Add the first RED branch action-menu fixture.
+- [x] Add branch/ref-bound descriptors and reviewed routing.
+- [x] Add complete local and remote branch context actions.
+- [x] Verify stale refs, current/detached/protected/dirty states, and keyboard
+  parity.
+
+Task 44 is complete. The multi-file stage-selection follow-up is now active;
+Tasks 45–47 remain ahead of Task 39.

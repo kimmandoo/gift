@@ -32,6 +32,7 @@ class HistoryScreen extends StatefulWidget {
     required this.repository,
     this.controller,
     this.fileManager = const PlatformFileManagerRevealer(),
+    this.initialRef,
     this.autoInitialize = true,
   });
 
@@ -40,6 +41,7 @@ class HistoryScreen extends StatefulWidget {
   final HistoryController? controller;
   final FileManagerRevealer fileManager;
   final bool autoInitialize;
+  final String? initialRef;
   @override
   State<HistoryScreen> createState() => _HistoryScreenState();
 }
@@ -71,12 +73,18 @@ class _HistoryScreenState extends State<HistoryScreen> {
     _searchController = TextEditingController();
     _authorController = TextEditingController();
     _pathController = TextEditingController();
-    _refController = TextEditingController();
+    _refController = TextEditingController(text: widget.initialRef ?? '');
     _afterController = TextEditingController();
     _beforeController = TextEditingController();
     _searchFocusNode = FocusNode();
     if (widget.autoInitialize) {
-      Future<void>.microtask(_controller.start);
+      Future<void>.microtask(
+        widget.initialRef == null
+            ? _controller.start
+            : () => _controller.refresh(
+                filters: GitHistoryFilters(ref: widget.initialRef!),
+              ),
+      );
     }
   }
 
@@ -835,7 +843,22 @@ class _HistoryScreenState extends State<HistoryScreen> {
           ContextActionRoute.blame ||
           ContextActionRoute.copyRelativePath ||
           ContextActionRoute.copyAbsolutePath ||
-          ContextActionRoute.reveal:
+          ContextActionRoute.reveal ||
+          ContextActionRoute.checkoutBranch ||
+          ContextActionRoute.mergeBranch ||
+          ContextActionRoute.rebaseBranch ||
+          ContextActionRoute.renameBranch ||
+          ContextActionRoute.deleteBranch ||
+          ContextActionRoute.pushBranch ||
+          ContextActionRoute.upstream ||
+          ContextActionRoute.copyBranchName ||
+          ContextActionRoute.copyBranchRef ||
+          ContextActionRoute.compareBranch ||
+          ContextActionRoute.compareRemote ||
+          ContextActionRoute.checkoutRemote ||
+          ContextActionRoute.deleteRemote ||
+          ContextActionRoute.cherryPickRemote ||
+          ContextActionRoute.hostLink:
         return;
     }
   }
@@ -1304,7 +1327,22 @@ class _HistoryScreenState extends State<HistoryScreen> {
           ContextActionRoute.createTag ||
           ContextActionRoute.reset ||
           ContextActionRoute.copyFullHash ||
-          ContextActionRoute.copyShortHash:
+          ContextActionRoute.copyShortHash ||
+          ContextActionRoute.checkoutBranch ||
+          ContextActionRoute.mergeBranch ||
+          ContextActionRoute.rebaseBranch ||
+          ContextActionRoute.renameBranch ||
+          ContextActionRoute.deleteBranch ||
+          ContextActionRoute.pushBranch ||
+          ContextActionRoute.upstream ||
+          ContextActionRoute.copyBranchName ||
+          ContextActionRoute.copyBranchRef ||
+          ContextActionRoute.compareBranch ||
+          ContextActionRoute.compareRemote ||
+          ContextActionRoute.checkoutRemote ||
+          ContextActionRoute.deleteRemote ||
+          ContextActionRoute.cherryPickRemote ||
+          ContextActionRoute.hostLink:
         return;
     }
   }

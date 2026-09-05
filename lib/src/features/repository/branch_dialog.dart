@@ -13,6 +13,11 @@ import 'package:gift/src/backend/git_gateway.dart';
 import 'package:gift/src/backend/remote_branch.dart';
 import 'package:gift/src/backend/push.dart';
 import 'package:gift/src/features/repository/comparison_dialog.dart';
+import 'package:gift/src/features/repository/context_actions.dart';
+import 'package:gift/src/features/repository/history_screen.dart';
+import 'package:gift/src/features/repository/hosting_dialog.dart';
+import 'package:flutter/services.dart';
+import 'package:gift/src/features/repository/object_dialog.dart';
 import 'package:gift/src/features/repository/push_dialog.dart';
 import 'package:gift/src/app/repository_credential_store.dart';
 
@@ -243,47 +248,7 @@ class _BranchDialogState extends State<BranchDialog> {
     return SingleChildScrollView(
       child: Column(
         children: [
-          for (final branch in orderedBranches)
-            ListTile(
-              key: ValueKey('branch:${branch.name}'),
-              leading: Icon(
-                branch.isCurrent
-                    ? Icons.radio_button_checked
-                    : Icons.call_split,
-              ),
-              title: Text(branch.name),
-              subtitle: Text(
-                branch.isCurrent
-                    ? branch.hasUpstream
-                          ? 'Current · tracks ${branch.upstream}'
-                          : 'Current · not linked to a remote'
-                    : branch.hasUpstream
-                    ? 'Tracks ${branch.upstream}'
-                    : 'Local branch',
-              ),
-              trailing: branch.isCurrent
-                  ? IconButton(
-                      key: const Key('push-current-branch'),
-                      tooltip: branch.hasUpstream
-                          ? 'Push current branch'
-                          : 'Publish and link current branch',
-                      onPressed: _isMutating ? null : _openCurrentBranchPush,
-                      icon: const Icon(Icons.cloud_upload_outlined),
-                    )
-                  : PopupMenuButton<String>(
-                      key: ValueKey('branch-actions:${branch.name}'),
-                      tooltip: 'Branch actions',
-                      onSelected: (action) =>
-                          _prepareQuickOperation(action, branch.name),
-                      itemBuilder: (context) => const [
-                        PopupMenuItem(value: 'rename', child: Text('Rename')),
-                        PopupMenuItem(value: 'delete', child: Text('Delete')),
-                      ],
-                    ),
-              onTap: branch.isCurrent || _isMutating
-                  ? null
-                  : () => _switchBranch(branch.name),
-            ),
+          for (final branch in orderedBranches) _localBranchTile(branch),
           if (_remoteSnapshot != null) ...[
             const Divider(),
             const ListTile(
@@ -299,49 +264,482 @@ class _BranchDialogState extends State<BranchDialog> {
                 ),
               ),
             for (final branch in visibleRemoteBranches)
-              ListTile(
-                key: ValueKey('remote-branch:${branch.name}'),
-                leading: const Icon(Icons.cloud_queue_outlined),
-                title: Text(branch.name),
-                subtitle: Text(
-                  branch.localTrackingBranch == null
-                      ? 'Remote-tracking branch'
-                      : 'Tracked by ${branch.localTrackingBranch}',
-                  overflow: TextOverflow.ellipsis,
-                ),
-                trailing: PopupMenuButton<String>(
-                  key: ValueKey('remote-actions:${branch.name}'),
-                  tooltip: 'Remote branch actions',
-                  onSelected: (action) {
-                    if (action == 'checkout') {
-                      unawaited(_checkoutRemoteBranch(branch));
-                    } else if (action == 'compare') {
-                      unawaited(_compareRemoteBranch(branch));
-                    } else {
-                      unawaited(_deleteRemoteBranch(branch));
-                    }
-                  },
-                  itemBuilder: (context) => const [
-                    PopupMenuItem(
-                      value: 'checkout',
-                      child: Text('Checkout as local branch'),
-                    ),
-                    PopupMenuItem(
-                      value: 'compare',
-                      child: Text('Compare with current'),
-                    ),
-                    PopupMenuItem(
-                      value: 'delete',
-                      child: Text('Delete remote branch'),
-                    ),
-                  ],
-                ),
-                onTap: _isMutating ? null : () => _checkoutRemoteBranch(branch),
-              ),
+              _remoteBranchTile(branch),
           ],
         ],
       ),
     );
+  }
+
+  Widget _localBranchTile(GitBranch branch) {
+    final snapshot = _branchActionSnapshot(branch);
+    return ContextActionMenu(
+      key: ValueKey('branch-action-menu:${branch.name}'),
+      snapshot: snapshot,
+      actions: _localBranchActions(branch, snapshot),
+      onAction: _handleBranchAction,
+      child: ListTile(
+        key: ValueKey('branch:${branch.name}'),
+        leading: Icon(
+          branch.isCurrent ? Icons.radio_button_checked : Icons.call_split,
+        ),
+        title: Text(branch.name),
+        subtitle: Text(
+          branch.isCurrent
+              ? branch.hasUpstream
+                    ? 'Current · tracks ${branch.upstream}'
+                    : 'Current · not linked to a remote'
+              : branch.hasUpstream
+              ? 'Tracks ${branch.upstream}'
+              : 'Local branch',
+        ),
+        trailing: _branchActionButton(branch),
+        onTap: branch.isCurrent || _isMutating
+            ? null
+            : () => _switchBranch(branch.name),
+      ),
+    );
+  }
+
+  Widget _branchActionButton(GitBranch branch) {
+    final button = ContextActionMenuButton(
+      key: ValueKey('branch-actions:${branch.name}'),
+    );
+    return branch.isCurrent
+        ? KeyedSubtree(key: const Key('push-current-branch'), child: button)
+        : button;
+  }
+
+  Widget _remoteBranchTile(GitRemoteBranch branch) {
+    final snapshot = _remoteBranchActionSnapshot(branch);
+    return ContextActionMenu(
+      key: ValueKey('remote-action-menu:${branch.name}'),
+      snapshot: snapshot,
+      actions: _remoteBranchActions(branch, snapshot),
+      onAction: _handleBranchAction,
+      child: ListTile(
+        key: ValueKey('remote-branch:${branch.name}'),
+        leading: const Icon(Icons.cloud_queue_outlined),
+        title: Text(branch.name),
+        subtitle: Text(
+          branch.localTrackingBranch == null
+              ? 'Remote-tracking branch'
+              : 'Tracked by ${branch.localTrackingBranch}',
+          overflow: TextOverflow.ellipsis,
+        ),
+        trailing: ContextActionMenuButton(
+          key: ValueKey('remote-actions:${branch.name}'),
+        ),
+        onTap: _isMutating ? null : () => _checkoutRemoteBranch(branch),
+      ),
+    );
+  }
+
+  ContextActionSnapshot _branchActionSnapshot(GitBranch branch) =>
+      ContextActionSnapshot(
+        repository: widget.repository,
+        target: ContextActionTarget.branch(
+          name: branch.name,
+          label: branch.name,
+        ),
+        fingerprint: _branchSnapshotFingerprint(),
+      );
+
+  ContextActionSnapshot _remoteBranchActionSnapshot(
+    GitRemoteBranch branch,
+  ) => ContextActionSnapshot(
+    repository: widget.repository,
+    target: ContextActionTarget.remote(name: branch.name, label: branch.name),
+    fingerprint:
+        '${_remoteSnapshot?.fingerprint ?? ''}:${branch.remote}:'
+        '${branch.branch}:${branch.oid}:${branch.localTrackingBranch ?? ''}:'
+        '${branch.isSymbolicHead}:${_remoteSnapshot?.currentBranch ?? ''}',
+  );
+
+  String _branchSnapshotFingerprint() =>
+      '${_branches?.map((branch) => '${branch.name}:${branch.oid ?? ''}:'
+              '${branch.upstream ?? ''}:${branch.isCurrent}').join('|') ?? ''}:'
+      '${_remoteSnapshot?.fingerprint ?? ''}:${_remoteSnapshot?.currentBranch ?? ''}';
+
+  String? _currentBranchName() =>
+      _branches?.where((branch) => branch.isCurrent).firstOrNull?.name ??
+      _remoteSnapshot?.currentBranch;
+
+  List<ContextActionDescriptor> _localBranchActions(
+    GitBranch branch,
+    ContextActionSnapshot snapshot,
+  ) {
+    final current = _currentBranchName();
+    final busyReason = _isMutating
+        ? 'A branch operation is already running.'
+        : null;
+    final isCurrent = branch.isCurrent || branch.name == current;
+    ContextActionDescriptor action({
+      required ContextActionId id,
+      required String label,
+      required IconData icon,
+      required ContextActionGroup group,
+      required ContextActionRoute route,
+      bool enabled = true,
+      String? disabledReason,
+    }) => ContextActionDescriptor(
+      id: id,
+      label: label,
+      icon: icon,
+      group: group,
+      route: route,
+      snapshot: snapshot,
+      enabled: enabled && busyReason == null,
+      disabledReason: busyReason ?? disabledReason,
+    );
+    return [
+      action(
+        id: ContextActionId.checkoutBranch,
+        label: 'Checkout',
+        icon: Icons.login,
+        group: ContextActionGroup.workflow,
+        route: ContextActionRoute.checkoutBranch,
+        enabled: !isCurrent,
+        disabledReason: isCurrent ? 'This branch is already current.' : null,
+      ),
+      action(
+        id: ContextActionId.mergeBranch,
+        label: 'Merge into current',
+        icon: Icons.merge,
+        group: ContextActionGroup.workflow,
+        route: ContextActionRoute.mergeBranch,
+        enabled: !isCurrent && current != null,
+        disabledReason: isCurrent
+            ? 'A branch cannot merge into itself.'
+            : current == null
+            ? 'Detached HEAD has no current branch target.'
+            : null,
+      ),
+      action(
+        id: ContextActionId.rebaseBranch,
+        label: 'Rebase current onto this branch',
+        icon: Icons.call_merge,
+        group: ContextActionGroup.workflow,
+        route: ContextActionRoute.rebaseBranch,
+        enabled: !isCurrent && current != null,
+        disabledReason: isCurrent
+            ? 'A branch cannot rebase onto itself.'
+            : current == null
+            ? 'Detached HEAD has no current branch target.'
+            : null,
+      ),
+      action(
+        id: ContextActionId.compareBranch,
+        label: 'Compare with current',
+        icon: Icons.compare_arrows,
+        group: ContextActionGroup.inspect,
+        route: ContextActionRoute.compareBranch,
+        enabled: !isCurrent && current != null,
+        disabledReason: isCurrent
+            ? 'This branch is already current.'
+            : current == null
+            ? 'Detached HEAD has no current branch target.'
+            : null,
+      ),
+      action(
+        id: ContextActionId.renameBranch,
+        label: 'Rename',
+        icon: Icons.drive_file_rename_outline,
+        group: ContextActionGroup.workflow,
+        route: ContextActionRoute.renameBranch,
+      ),
+      action(
+        id: ContextActionId.deleteBranch,
+        label: 'Delete',
+        icon: Icons.delete_outline,
+        group: ContextActionGroup.destructive,
+        route: ContextActionRoute.deleteBranch,
+        enabled: !isCurrent,
+        disabledReason: isCurrent
+            ? 'The current branch cannot be deleted.'
+            : null,
+      ),
+      action(
+        id: ContextActionId.pushBranch,
+        label: 'Push',
+        icon: Icons.cloud_upload_outlined,
+        group: ContextActionGroup.workflow,
+        route: ContextActionRoute.pushBranch,
+        enabled: current != null,
+        disabledReason: current == null
+            ? 'Detached HEAD has no branch to publish.'
+            : null,
+      ),
+      action(
+        id: ContextActionId.upstream,
+        label: 'Set/change upstream',
+        icon: Icons.link,
+        group: ContextActionGroup.workflow,
+        route: ContextActionRoute.upstream,
+        enabled: current != null,
+        disabledReason: current == null
+            ? 'Detached HEAD has no upstream branch.'
+            : null,
+      ),
+      action(
+        id: ContextActionId.copyBranchName,
+        label: 'Copy branch name',
+        icon: Icons.content_copy,
+        group: ContextActionGroup.inspect,
+        route: ContextActionRoute.copyBranchName,
+      ),
+      action(
+        id: ContextActionId.copyBranchRef,
+        label: 'Copy full ref',
+        icon: Icons.copy_all,
+        group: ContextActionGroup.inspect,
+        route: ContextActionRoute.copyBranchRef,
+      ),
+    ];
+  }
+
+  List<ContextActionDescriptor> _remoteBranchActions(
+    GitRemoteBranch branch,
+    ContextActionSnapshot snapshot,
+  ) {
+    final busyReason = _isMutating
+        ? 'A branch operation is already running.'
+        : null;
+    final current = _currentBranchName();
+    final symbolic = branch.isSymbolicHead;
+    ContextActionDescriptor action({
+      required ContextActionId id,
+      required String label,
+      required IconData icon,
+      required ContextActionRoute route,
+      bool enabled = true,
+      String? disabledReason,
+    }) => ContextActionDescriptor(
+      id: id,
+      label: label,
+      icon: icon,
+      group: route == ContextActionRoute.deleteRemote
+          ? ContextActionGroup.destructive
+          : ContextActionGroup.workflow,
+      route: route,
+      snapshot: snapshot,
+      enabled: enabled && busyReason == null,
+      disabledReason: busyReason ?? disabledReason,
+    );
+    return [
+      action(
+        id: ContextActionId.checkoutRemote,
+        label: 'Checkout as local branch',
+        icon: Icons.login,
+        route: ContextActionRoute.checkoutRemote,
+        enabled: !symbolic && branch.localTrackingBranch == null,
+        disabledReason: symbolic
+            ? 'Symbolic remote HEAD is not a branch.'
+            : branch.localTrackingBranch != null
+            ? 'A local branch already tracks this ref.'
+            : null,
+      ),
+      action(
+        id: ContextActionId.compareRemote,
+        label: 'Compare with current',
+        icon: Icons.compare_arrows,
+        route: ContextActionRoute.compareRemote,
+        enabled: !symbolic && current != null,
+        disabledReason: symbolic
+            ? 'Symbolic remote HEAD has no independent tip.'
+            : current == null
+            ? 'Detached HEAD has no current branch target.'
+            : null,
+      ),
+      action(
+        id: ContextActionId.cherryPickRemote,
+        label: 'Cherry-pick selected commit',
+        icon: Icons.call_split,
+        route: ContextActionRoute.cherryPickRemote,
+        enabled: !symbolic,
+        disabledReason: symbolic
+            ? 'Symbolic remote HEAD has no commit row.'
+            : null,
+      ),
+      action(
+        id: ContextActionId.deleteRemote,
+        label: 'Delete remote branch',
+        icon: Icons.delete_outline,
+        route: ContextActionRoute.deleteRemote,
+        enabled: !symbolic,
+        disabledReason: symbolic
+            ? 'Symbolic remote HEAD cannot be deleted.'
+            : null,
+      ),
+      action(
+        id: ContextActionId.copyBranchName,
+        label: 'Copy name',
+        icon: Icons.content_copy,
+        route: ContextActionRoute.copyBranchName,
+      ),
+      action(
+        id: ContextActionId.copyBranchRef,
+        label: 'Copy ref',
+        icon: Icons.copy_all,
+        route: ContextActionRoute.copyBranchRef,
+      ),
+      action(
+        id: ContextActionId.hostLink,
+        label: 'Open host link',
+        icon: Icons.open_in_browser,
+        route: ContextActionRoute.hostLink,
+      ),
+    ];
+  }
+
+  Future<void> _handleBranchAction(ContextActionDescriptor action) async {
+    if (action.snapshot.repository != widget.repository) return;
+    if (action.snapshot.target.kind == ContextActionTargetKind.branch) {
+      final branch = _branches
+          ?.where((value) => value.name == action.snapshot.target.identity)
+          .firstOrNull;
+      if (branch == null || _branchActionSnapshot(branch) != action.snapshot) {
+        return;
+      }
+      switch (action.route) {
+        case ContextActionRoute.checkoutBranch:
+          await _switchBranch(branch.name);
+        case ContextActionRoute.mergeBranch:
+          _prepareQuickOperation('merge', branch.name);
+        case ContextActionRoute.rebaseBranch:
+          _prepareQuickOperation('rebase', branch.name);
+        case ContextActionRoute.compareBranch:
+          await _compareLocalBranch(branch);
+        case ContextActionRoute.renameBranch:
+          _prepareQuickOperation('rename', branch.name);
+        case ContextActionRoute.deleteBranch:
+          _prepareQuickOperation('delete', branch.name);
+        case ContextActionRoute.pushBranch:
+          await _openBranchPush(branch);
+        case ContextActionRoute.upstream:
+          await _openBranchUpstream(branch);
+        case ContextActionRoute.copyBranchName:
+          await _copyBranchValue(branch.name, fullRef: false, remote: false);
+        case ContextActionRoute.copyBranchRef:
+          await _copyBranchValue(branch.name, fullRef: true, remote: false);
+        default:
+          return;
+      }
+      return;
+    }
+    if (action.snapshot.target.kind != ContextActionTargetKind.remote) return;
+    final branch = _remoteSnapshot?.branches
+        .where((value) => value.name == action.snapshot.target.identity)
+        .firstOrNull;
+    if (branch == null ||
+        _remoteBranchActionSnapshot(branch) != action.snapshot) {
+      return;
+    }
+    switch (action.route) {
+      case ContextActionRoute.checkoutRemote:
+        await _checkoutRemoteBranch(branch);
+      case ContextActionRoute.compareRemote:
+        await _compareRemoteBranch(branch);
+      case ContextActionRoute.cherryPickRemote:
+        await _openRemoteHistory(branch);
+      case ContextActionRoute.deleteRemote:
+        await _deleteRemoteBranch(branch);
+      case ContextActionRoute.copyBranchName:
+        await _copyBranchValue(branch.name, fullRef: false, remote: true);
+      case ContextActionRoute.copyBranchRef:
+        await _copyBranchValue(branch.name, fullRef: true, remote: true);
+      case ContextActionRoute.hostLink:
+        await _openRemoteHost(branch);
+      default:
+        return;
+    }
+  }
+
+  Future<void> _compareLocalBranch(GitBranch branch) async {
+    final current = _currentBranchName();
+    if (current == null || current == branch.name) return;
+    await showDialog<void>(
+      context: context,
+      builder: (_) => ComparisonDialog(
+        gateway: widget.gateway,
+        repository: widget.repository,
+        initialLeft: branch.name,
+        initialRight: current,
+      ),
+    );
+  }
+
+  Future<void> _openBranchPush(GitBranch branch) async {
+    await showDialog<GitPushResult>(
+      context: context,
+      builder: (_) => PushDialog(
+        gateway: widget.gateway,
+        repository: widget.repository,
+        initialBranch: branch.name,
+        preferredRemote: widget.preferredRemote,
+        credentialStore: widget.credentialStore,
+        repositoryCredentialStore: widget.repositoryCredentialStore,
+      ),
+    );
+    if (mounted) await _loadBranches();
+  }
+
+  Future<void> _openBranchUpstream(GitBranch branch) async {
+    await showDialog<void>(
+      context: context,
+      builder: (_) => ObjectDialog(
+        gateway: widget.gateway,
+        repository: widget.repository,
+        initialTabIndex: 3,
+        initialBranch: branch.name,
+      ),
+    );
+    if (mounted) await _loadBranches();
+  }
+
+  Future<void> _copyBranchValue(
+    String name, {
+    required bool fullRef,
+    required bool remote,
+  }) async {
+    final value = fullRef
+        ? name.startsWith('refs/')
+              ? name
+              : '${remote ? 'refs/remotes' : 'refs/heads'}/$name'
+        : name;
+    await Clipboard.setData(ClipboardData(text: value));
+    if (mounted) {
+      _showActionMessage(fullRef ? 'Full ref copied.' : 'Branch name copied.');
+    }
+  }
+
+  Future<void> _openRemoteHistory(GitRemoteBranch branch) async {
+    await Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => HistoryScreen(
+          gateway: widget.gateway,
+          repository: widget.repository,
+          initialRef: branch.name,
+        ),
+      ),
+    );
+  }
+
+  Future<void> _openRemoteHost(GitRemoteBranch branch) async {
+    await showDialog<void>(
+      context: context,
+      builder: (_) => HostingDialog(
+        gateway: widget.gateway,
+        repository: widget.repository,
+        initialRemote: branch.remote,
+      ),
+    );
+  }
+
+  void _showActionMessage(String message) {
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(SnackBar(content: Text(message)));
   }
 
   Widget _advancedOperations() {
@@ -467,12 +865,24 @@ class _BranchDialogState extends State<BranchDialog> {
   }
 
   void _prepareQuickOperation(String action, String branch) {
+    final operation = switch (action) {
+      'rename' => GitBranchOperation.rename,
+      'delete' => GitBranchOperation.delete,
+      'merge' => GitBranchOperation.merge,
+      'rebase' => GitBranchOperation.rebase,
+      _ => GitBranchOperation.merge,
+    };
+    final current = _currentBranchName();
     setState(() {
-      _operation = action == 'rename'
-          ? GitBranchOperation.rename
-          : GitBranchOperation.delete;
-      _operationSourceController.text = branch;
-      _operationTargetController.clear();
+      _operation = operation;
+      _operationSourceController.text = operation == GitBranchOperation.rebase
+          ? current ?? ''
+          : branch;
+      _operationTargetController.text = switch (operation) {
+        GitBranchOperation.merge => current ?? '',
+        GitBranchOperation.rebase => branch,
+        _ => '',
+      };
       _forceDelete = false;
       _operationPreview = null;
       _operationResult = null;
@@ -752,22 +1162,6 @@ class _BranchDialogState extends State<BranchDialog> {
     await _runAction(
       () => widget.gateway.switchBranch(widget.repository.repositoryId, name),
     );
-  }
-
-  Future<void> _openCurrentBranchPush() async {
-    final result = await showDialog<GitPushResult>(
-      context: context,
-      builder: (_) => PushDialog(
-        gateway: widget.gateway,
-        repository: widget.repository,
-        preferredRemote: widget.preferredRemote,
-        credentialStore: widget.credentialStore,
-        repositoryCredentialStore: widget.repositoryCredentialStore,
-      ),
-    );
-    if (!mounted || result == null) return;
-    setState(() => _fetchStatus = result.summary);
-    await _loadBranches();
   }
 
   Future<void> _checkoutRemoteBranch(GitRemoteBranch branch) async {

@@ -1437,7 +1437,22 @@ class _ChangesScreenBodyState extends ConsumerState<_ChangesScreenBody> {
           ContextActionRoute.createTag ||
           ContextActionRoute.reset ||
           ContextActionRoute.copyFullHash ||
-          ContextActionRoute.copyShortHash:
+          ContextActionRoute.copyShortHash ||
+          ContextActionRoute.checkoutBranch ||
+          ContextActionRoute.mergeBranch ||
+          ContextActionRoute.rebaseBranch ||
+          ContextActionRoute.renameBranch ||
+          ContextActionRoute.deleteBranch ||
+          ContextActionRoute.pushBranch ||
+          ContextActionRoute.upstream ||
+          ContextActionRoute.copyBranchName ||
+          ContextActionRoute.copyBranchRef ||
+          ContextActionRoute.compareBranch ||
+          ContextActionRoute.compareRemote ||
+          ContextActionRoute.checkoutRemote ||
+          ContextActionRoute.deleteRemote ||
+          ContextActionRoute.cherryPickRemote ||
+          ContextActionRoute.hostLink:
         return;
     }
   }

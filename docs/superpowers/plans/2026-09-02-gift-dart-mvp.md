@@ -832,6 +832,28 @@ system Git 2.35+.
 6. Verified focused action-menu tests, path traversal/reveal boundaries,
    `flutter analyze`, and the full Flutter feature suite.
 
+## Completed vertical: Branch and remote context actions (Task 44)
+
+1. Activated Task 44 after recording ACTION-11/12 for local branch and
+   remote-tracking branch menus, ref freshness, and non-mutating selection.
+2. Added the first RED local and remote branch action-inventory fixtures.
+3. Added immutable local/remote ref identities, snapshots, and stale-row guards.
+4. Reused reviewed checkout, merge, rebase, rename, delete, push, upstream,
+   comparison, History cherry-pick, clipboard, and hosting flows.
+5. Preserved non-mutating row selection while making explicit Checkout the only
+   route that changes the checked-out branch.
+6. Verified branch-dialog regressions, `flutter analyze`, and the focused
+   branch/history/comparison/object/push/context-menu suite.
+
+## Active follow-up: multi-file stage selection
+
+1. Add a behavior-ledger scenario and first RED fixture for selecting multiple
+   changed paths with keyboard-accessible 2D checkbox controls.
+2. Extend the Changes controller with a path-set selection and one serialized
+   batch stage operation that refreshes status and removes disappeared paths.
+3. Add a themed selection summary and explicit Stage selected action without
+   changing the existing single-file diff selection behavior.
+
 ## Completed follow-up: visible push progress
 
 1. Added a pixel-themed transfer card that appears as soon as the reviewed push

@@ -68,6 +68,120 @@ void main() {
     expect(gateway.switchedTo, 'feature/demo');
   });
 
+  testWidgets('exposes the complete local branch action inventory', (
+    tester,
+  ) async {
+    final repository = const RepositoryOpened(
+      repositoryId: RepositoryId(value: 'branch-action-inventory-repository'),
+      root: '/workspace/project',
+    );
+    final gateway = FakeBranchGateway(
+      branches: const [
+        GitBranch(name: 'feature/demo'),
+        GitBranch(name: 'main', isCurrent: true),
+      ],
+      action: GitBranchActionResult(
+        repositoryId: repository.repositoryId,
+        branchName: 'main',
+        status: GitStatusSnapshot(
+          repositoryId: repository.repositoryId,
+          root: repository.root,
+          branch: GitBranchStatus(head: 'main'),
+          changes: const [],
+          contentHash: 'inventory',
+          generation: 1,
+        ),
+      ),
+    );
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: BranchDialog(gateway: gateway, repository: repository),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('branch-actions:feature/demo')));
+    await tester.pumpAndSettle();
+
+    for (final label in [
+      'Checkout',
+      'Merge into current',
+      'Rebase current onto this branch',
+      'Compare with current',
+      'Rename',
+      'Delete',
+      'Push',
+      'Set/change upstream',
+      'Copy branch name',
+      'Copy full ref',
+    ]) {
+      expect(find.text(label), findsOneWidget, reason: label);
+    }
+  });
+  testWidgets('exposes the complete remote branch action inventory', (
+    tester,
+  ) async {
+    final repository = const RepositoryOpened(
+      repositoryId: RepositoryId(value: 'remote-action-inventory-repository'),
+      root: '/workspace/project',
+    );
+    final remoteBranch = GitRemoteBranch(
+      name: 'origin/feature',
+      remote: 'origin',
+      branch: 'feature',
+      oid: 'b' * 40,
+    );
+    final status = GitStatusSnapshot(
+      repositoryId: repository.repositoryId,
+      root: repository.root,
+      branch: const GitBranchStatus(head: 'main'),
+      changes: const [],
+      contentHash: 'remote-inventory',
+      generation: 1,
+    );
+    final gateway = FakeBranchGateway(
+      branches: const [GitBranch(name: 'main', isCurrent: true)],
+      action: GitBranchActionResult(
+        repositoryId: repository.repositoryId,
+        branchName: 'main',
+        status: status,
+      ),
+      remoteSnapshot: GitRemoteBranchSnapshot(
+        repositoryId: repository.repositoryId,
+        fingerprint: 'remote-inventory',
+        currentBranch: 'main',
+        branches: [remoteBranch],
+      ),
+    );
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: BranchDialog(gateway: gateway, repository: repository),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(
+      find.byKey(const ValueKey('remote-actions:origin/feature')),
+    );
+    await tester.pumpAndSettle();
+
+    for (final label in [
+      'Checkout as local branch',
+      'Compare with current',
+      'Cherry-pick selected commit',
+      'Delete remote branch',
+      'Copy name',
+      'Copy ref',
+      'Open host link',
+    ]) {
+      expect(find.text(label), findsOneWidget, reason: label);
+    }
+  });
+
   testWidgets('previews and confirms an advanced branch operation', (
     tester,
   ) async {

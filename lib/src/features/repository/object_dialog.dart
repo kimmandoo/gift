@@ -21,12 +21,14 @@ class ObjectDialog extends StatefulWidget {
     required this.repository,
     this.initialTabIndex = 0,
     this.initialTagTarget,
+    this.initialBranch,
   }) : assert(initialTabIndex >= 0 && initialTabIndex < 4);
 
   final GitGateway gateway;
   final RepositoryOpened repository;
   final int initialTabIndex;
   final String? initialTagTarget;
+  final String? initialBranch;
 
   @override
   State<ObjectDialog> createState() => _ObjectDialogState();
@@ -498,7 +500,9 @@ class _ObjectDialogState extends State<ObjectDialog> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                Text('Branch: ${upstream?.branch ?? 'Detached HEAD'}'),
+                Text(
+                  'Branch: ${widget.initialBranch ?? upstream?.branch ?? 'Detached HEAD'}',
+                ),
                 Text(
                   upstream?.hasUpstream == true
                       ? 'Upstream: ${upstream!.remote}/${upstream.remoteBranch}'
@@ -835,11 +839,19 @@ class _ObjectDialogState extends State<ObjectDialog> {
   }
 
   Future<void> _setUpstream(String remote) => _run(
-    () => widget.gateway.setUpstream(widget.repository.repositoryId, remote),
+    () => widget.gateway.setUpstream(
+      widget.repository.repositoryId,
+      remote,
+      branch: widget.initialBranch,
+    ),
   );
 
-  Future<void> _unsetUpstream() =>
-      _run(() => widget.gateway.unsetUpstream(widget.repository.repositoryId));
+  Future<void> _unsetUpstream() => _run(
+    () => widget.gateway.unsetUpstream(
+      widget.repository.repositoryId,
+      branch: widget.initialBranch,
+    ),
+  );
 
   Future<void> _publishBranch(String remote) async {
     final result = await showDialog<GitPushResult>(
@@ -848,6 +860,7 @@ class _ObjectDialogState extends State<ObjectDialog> {
         gateway: widget.gateway,
         repository: widget.repository,
         initialRemote: remote,
+        initialBranch: widget.initialBranch,
       ),
     );
     if (!mounted || result == null) return;

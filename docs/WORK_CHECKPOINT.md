@@ -5,40 +5,32 @@ This file is the handoff record for continuing work across query sessions.
 ## Current checkpoint
 
 - Date: 2026-09-05
-- Active task: None; Task 43 — Change and file context actions is complete.
-- Branch: `main`; the committed base before this task was
-  `db5bdbb fix(ui): redesign button spacing and surfaces`.
-- Activation: recorded ACTION-09/10 for path-scoped Changes, History-file,
-  comparison-file, stale-selection, and reveal behavior.
-- Implementation: added immutable path/original-path/diff-scope/fingerprint
-  action targets, traversal-safe repository path resolution, and a direct
-  platform file-manager boundary that reports missing and unsupported paths.
-- Changes behavior: exposed inspect, stage, unstage, selected patch staging,
-  changelist, shelf, ignore, file history, blame, comparison, copy,
-  reveal, and discard actions with state-aware disabled reasons and stale-row
-  rejection before routing.
-- History/comparison behavior: exposed changed-file menus with history,
-  blame/compare availability, copy-path, and current-file-only reveal actions;
-  nested workflows reuse the existing reviewed dialogs.
-- Changed implementation files:
-  `lib/src/features/repository/{changes_screen,comparison_dialog,context_actions,
-  file_history_dialog,history_screen,ignore_dialog,path_actions}.dart`.
-- Changed tests:
-  `test/features/repository/{changes_screen,comparison_dialog,history_screen,
-  path_actions}_test.dart`.
-- Changed docs: `TASKS.md`, `CHANGELOG.md`,
+- Active task: Follow-up — Multi-file stage selection.
+- Branch: `main`; committed base is
+  `c94030e feat(actions): add path context menus`.
+- Completed in this session: Task 44 local and remote branch context menus,
+  full-ref identities, stale-row routing guards, reviewed workflow routes, and
+  branch/history/comparison/object/push regression coverage.
+- Exact next action: add the behavior-ledger scenario and first RED fixture for
+  selecting multiple changed paths, then extend ChangesController with a
+  serialized batch-stage operation and themed checkbox controls.
+- Changed files in the uncommitted Task 44 batch: `TASKS.md`, `CHANGELOG.md`,
+  `docs/superpowers/plans/2026-09-02-gift-dart-mvp.md`,
   `docs/research/jetbrains-git-mvp-behavior.md`,
-  `docs/superpowers/plans/2026-09-02-gift-dart-mvp.md`, and this checkpoint.
-- Verification: the first RED fixture failed because
-  `Stage selected lines/hunks` was absent; the final focused action suite
-  passed all 38 tests, `flutter analyze` passed with no issues, and
-  `flutter test test/app_boot_test.dart test/branding_test.dart test/features`
-  passed all 106 tests.
-- Generated Flutter plugin files show line-ending-only working-tree markers
-  with no content diff and are intentionally excluded from the commit.
-- Resulting commit: `feat(actions): add path context menus` (this session's
-  completed commit).
-- Exact next action: resume Task 44 — Branch and remote context actions.
+  `lib/src/features/repository/branch_dialog.dart`,
+  `lib/src/features/repository/changes_controller.dart`,
+  `lib/src/features/repository/changes_screen.dart`,
+  `lib/src/features/repository/comparison_dialog.dart`,
+  `lib/src/features/repository/context_actions.dart`,
+  `lib/src/features/repository/history_screen.dart`,
+  `lib/src/features/repository/object_dialog.dart`,
+  `lib/src/features/repository/push_dialog.dart`, and
+  `test/features/repository/branch_dialog_test.dart`.
+- Verification before commit: branch-dialog regression suite and
+  `flutter analyze` passed after the final Task 44 implementation; the full
+  focused suite remains to be rerun before commit.
+- Generated Flutter plugin markers were cleared from the working tree by
+  staging their unchanged content; no plugin content change is part of Task 44.
 - Blockers: none.
 
 ## Previous checkpoint
