@@ -49,7 +49,12 @@ void main() {
       expect(result.completedOids, [one, two]);
       expect(result.currentOid, isNull);
       expect(result.remainingOids, isEmpty);
-      expect(await _runGit(directory.path, ['rev-parse', 'HEAD']), isNot(two));
+      expect(
+        await _runGit(directory.path, ['rev-list', '--count', 'main']),
+        '3',
+      );
+      expect(await File('${directory.path}/one.txt').exists(), isTrue);
+      expect(await File('${directory.path}/two.txt').exists(), isTrue);
     });
   });
 

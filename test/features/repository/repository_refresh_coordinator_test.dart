@@ -38,6 +38,7 @@ void main() {
   test('watches a real repository root when available', () async {
     final directory = await Directory.systemTemp.createTemp('gift-watch-');
     addTearDown(() => directory.delete(recursive: true));
+    final refreshObserved = Completer<void>();
     var refreshes = 0;
     final coordinator = RepositoryRefreshCoordinator(
       root: directory.path,
@@ -45,13 +46,16 @@ void main() {
       fallbackInterval: const Duration(hours: 1),
       onRefresh: () async {
         refreshes++;
+        if (!refreshObserved.isCompleted) {
+          refreshObserved.complete();
+        }
       },
     )..start();
     addTearDown(coordinator.dispose);
 
     expect(coordinator.isWatching, isTrue);
     await File('${directory.path}/changed.txt').writeAsString('changed');
-    await Future<void>.delayed(const Duration(milliseconds: 80));
+    await refreshObserved.future.timeout(const Duration(seconds: 2));
 
     expect(refreshes, greaterThanOrEqualTo(1));
   });
