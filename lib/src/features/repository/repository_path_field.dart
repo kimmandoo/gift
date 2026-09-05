@@ -126,6 +126,9 @@ class RepositoryPathFieldState extends State<RepositoryPathField> {
       setState(() {
         _loading = true;
         _loadFailed = false;
+        _snapshot = null;
+        _suggestions = const [];
+        _highlightedIndex = -1;
       });
     }
     try {

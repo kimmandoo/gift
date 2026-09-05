@@ -2,8 +2,8 @@
 
 ## 2026-09-05
 - fix(paths): polished repository-relative navigation with browse-all recovery,
-  loading and no-match states, compact status indicators, and keyboard
-  suggestion selection.
+  loading and no-match states, stale-refresh clearing, compact status
+  indicators, and keyboard suggestion selection.
 - feat(paths): added bounded repository-relative search with browse suggestions,
   separator normalization, file/folder validation, and stale-root protection.
 - feat(paths): added purpose-scoped editable folder fields with native browse,
