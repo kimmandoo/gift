@@ -7,13 +7,11 @@ This file is the handoff record for continuing work across query sessions.
 - Date: 2026-09-05
 - Active task: Task 39 — Visual regression QA.
 - Branch: `main`; latest commit is
-  `5f3a6e2 fix(paths): clear stale suggestions on reload`.
-- Completed in this session: polished the shared repository-relative path
-  field. Browse now restores the full catalog after a no-match query, loading
-  and unavailable-catalog states are explicit, empty results explain the
-  query, stale catalog suggestions are cleared during root refresh, clear and
-  browse controls stay compact, and arrow-key/Enter navigation selects
-  suggestions consistently with pointer selection.
+  `b7fcab7 fix(ui): clarify welcome startup actions`.
+- Completed in this session: clarified the startup welcome hierarchy by
+  replacing the action-duplicating `Open a Git repository` heading with one
+  `Get started` section heading while retaining one explicit `Open Repository`
+  action and the separate clone/initialize action.
 - Exact next action: activate Task 39's deterministic visual regression
   fixture/overflow guard for the completed repository workflows.
 - Committed Task 47 files: `CHANGELOG.md`, `TASKS.md`,
@@ -31,12 +29,17 @@ This file is the handoff record for continuing work across query sessions.
   `lib/src/features/repository/hosting_dialog.dart`,
   `test/helpers/git_patch_gateway_stub.dart`, and
   `test/features/repository/repository_path_field_test.dart`.
-- Verification: the polished repository path widget test passed (1 test), the
-  affected comparison, File History, History, and Hosting suites passed
-  (21 tests including the widget test), and `flutter analyze` passed with no
-  issues. The UX regression coverage includes keyboard selection, no-match
-  recovery, browse-all restoration, separator normalization, and traversal
-  rejection.
+- Current UX fix files: `CHANGELOG.md`,
+  `lib/src/features/repository/welcome_screen.dart`, and
+  `test/features/repository/welcome_screen_test.dart`.
+- Verification: the Welcome screen suite passed (7 tests), the combined
+  Welcome/path UX run passed (8 tests), the repository path widget plus
+  affected Comparison, File History, History, and Hosting suites passed
+  (21 tests), and `flutter analyze` passed with no issues. Coverage asserts
+  keyboard selection, no-match recovery, browse-all restoration, separator
+  normalization, traversal rejection, one `Get started` heading, one
+  explicit `Open Repository` action, and no duplicate `Open a Git repository`
+  heading.
 - Blockers: none.
 
 ## Previous checkpoint
