@@ -6,8 +6,7 @@
 
 - **Completed:** 47 / 48
 - **Current Active Task:** Task 38 — Public release.
-- **Next priority:** configure release signing secrets and complete the
-  maintainer-only clean-machine release pass.
+- **Next priority:** complete the maintainer-only clean-machine release pass.
 
 | # | Scope | Dart backend deliverables | Flutter deliverables | Status |
 |---|---|---|---|:---:|
@@ -49,7 +48,7 @@
 | **36** | Scale & resilience | File watching, cache invalidation, process supervision | Large-repository responsiveness | ✅ |
 | **37** | Accessibility & preferences | Versioned settings and locale-ready text contracts | Scaling, remapping, themes, and accessibility | ✅ |
 | **38A** | Credential management | Secure provider/account credentials, host matching, and Git auth injection | Account manager, credential test, and private-remote recovery | ✅ |
-| **38** | Public release | Signed packages, provenance, update metadata, and release checks | Installers and first-run diagnostics | In progress — native signing secrets and clean-machine pass remain |
+| **38** | Public release | Release packages, provenance, update metadata, and release checks | Installers and first-run diagnostics | In progress — native clean-machine pass remains |
 | **39** | Visual regression QA | Deterministic fixture states and platform font checks | Golden matrix, overflow guards, and interaction snapshots | ✅ |
 | **40** | Contextual action foundation | Typed action availability, immutable targets, and preview routing | Shared secondary-click, keyboard, and overflow action menus | ✅ |
 | **41** | Commit context actions | OID-bound cherry-pick and existing history mutations | History-row action menu and prefilled previews | ✅ |

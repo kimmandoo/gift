@@ -920,20 +920,20 @@ system Git 2.35+.
 3. Added release-bundle structure checks, Windows packaging-script checks,
    and Linux/macOS runner-specific golden capture to the GitHub Actions matrix.
 
-## Active vertical: signed public release pipeline (Task 38)
+## Active vertical: public release pipeline (Task 38)
 
 1. Added semver validation for `release-v<version>` tags and deterministic
    Linux, macOS, and Windows release archive names.
-2. Added native Windows Authenticode and macOS signing/notarization entry
-   points that fail closed when the required release secrets are absent.
+2. Removed signing-secret requirements: Windows archives contain unsigned
+   executables, and macOS apps receive an ad hoc signature with
+   `codesign --sign -`; no Apple certificate or notarization account is used.
 3. Added SHA-256 checksums, opt-in release metadata, CycloneDX SBOM,
    dependency/license audit reports, full-SHA action verification, and
-   GitHub OIDC provenance attestations.
-4. Added a first-run Git diagnostics card that directs users to Git settings
-   when no supported Git executable is available.
-5. Next: configure repository signing secrets and complete the native
-   three-platform clean-machine release pass; do not mark Task 38 complete
-   before those checks pass.
+   GitHub OIDC provenance attestations for the release archives.
+4. Added a first-run Git diagnostics card that routes users to Git settings
+   when the required executable is unavailable.
+5. Next: complete the native three-platform clean-machine release pass and do
+   not mark Task 38 complete before those checks pass.
 
 ## Completed follow-up: visible push progress
 

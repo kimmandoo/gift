@@ -28,7 +28,7 @@ proprietary implementation details or assets.
 | Credential and account access | 38A | Secure GitHub, GitLab, self-hosted, HTTPS, and SSH authentication |
 | Desktop interaction UX | 40–47 | Discoverable context actions, direct cherry-pick entry points, and browse-assisted path selection |
 | Visual regression QA | 39 | Final overflow, theme, font, and interaction-state validation |
-| Public release | 38 | Signed, provenance-backed installers and update metadata after the product surface stabilizes |
+| Public release | 38 | Checksum- and provenance-backed installers with ad hoc macOS signing and update metadata after the product surface stabilizes |
 
 Every task must include backend tests with isolated Git fixtures, controller
 tests for async state changes, responsive widget tests, beginner-oriented
@@ -570,18 +570,18 @@ private remote, clone/fetch/pull/push successfully, remove or revoke it, and
 recover from authentication failure without a secret reaching argv, URLs,
 ordinary app storage, logs, or operation history.
 
-## Task 38 — Signed public release pipeline
+## Task 38 — Public release pipeline
 
 **Depends on:** Tasks 36, 37, and 38A. **Priority:** Active after Task 39
 and Tasks 41–47.
 
-**Goal:** Produce trustworthy installable releases rather than unsigned build
-folders.
+**Goal:** Produce trustworthy installable releases rather than unverifiable
+build folders.
 
 - Define semantic versioning, release notes, compatibility policy, and a
   repeatable release checklist.
-- Produce Windows installer/archive, signed and notarized macOS app/package,
-  and Linux archive plus an agreed package format.
+- Produce a Windows installer/archive, an ad hoc-signed macOS app/package, and
+  a Linux archive plus an agreed package format without signing secrets.
 - Generate checksums, SBOM, provenance, pinned-action verification, and
   dependency/license audit reports.
 - Add opt-in update metadata and first-run diagnostics; do not collect
@@ -589,16 +589,16 @@ folders.
 - Verify clean-machine install, launch, upgrade, downgrade warning, uninstall,
   and artifact naming on all three platforms.
 
-**Current implementation:** Release tags now validate the semantic version,
-package all three native outputs, generate checksums/update metadata/SBOM and
-license reports, require full-SHA pinned Actions, attest package provenance,
-and publish a GitHub release. Native Windows signing and Apple
-signing/notarization are enforced by the release workflow through repository
-secrets; the clean-machine pass remains a maintainer gate.
+**Current implementation:** Release tags validate the semantic version, package
+all three native outputs, generate checksums/update metadata/SBOM and license
+reports, require full-SHA pinned Actions, attest package provenance, and
+publish a GitHub release. Windows executables remain unsigned, macOS apps use
+ad hoc codesigning, and no signing secrets are required; the clean-machine
+pass remains a maintainer gate.
 
 **Done when:** A `release-*` tag on a matching release commit creates reviewed,
-signed, checksum-verifiable artifacts and the public documentation explains
-installation and trust verification.
+checksum-verifiable artifacts, the macOS package has an ad hoc signature, and
+the public documentation explains installation and trust verification.
 
 ## Task 39 — Cross-platform visual regression QA
 
@@ -607,7 +607,7 @@ before Task 38.
 
 **Goal:** Keep released desktop surfaces visually stable across supported
 window sizes, themes, text scales, and platform font rendering before the
-signed release pipeline runs.
+public release pipeline runs.
 
 - Build deterministic UI fixture states for core screens, dialogs, progress,
   empty, error, disabled, and destructive-confirmation surfaces.

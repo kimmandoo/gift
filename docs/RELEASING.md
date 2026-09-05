@@ -102,20 +102,13 @@ platform. The release packages are:
 - `gift-<version>-windows-x64.zip`
 
 The Windows archive contains the Flutter `Release` directory plus the portable
-and setup executables. A public tag additionally requires the following GitHub
-Actions secrets; the workflow fails before publication when any required
-secret is absent rather than publishing an unsigned package:
+and setup executables. Public release packaging requires no signing secrets.
+Windows executables are intentionally unsigned; SHA-256 checksums and GitHub's
+OIDC-backed build provenance provide the release integrity evidence.
 
-- Windows: `WINDOWS_CERTIFICATE_BASE64` and
-  `WINDOWS_CERTIFICATE_PASSWORD`; `WINDOWS_TIMESTAMP_URL` is optional.
-- macOS: `MACOS_CERTIFICATE_BASE64`, `MACOS_CERTIFICATE_PASSWORD`,
-  `MACOS_KEYCHAIN_PASSWORD`, and `MACOS_SIGNING_IDENTITY`.
-- Apple notarization: `APPLE_ID`, `APPLE_TEAM_ID`, and
-  `APPLE_APP_PASSWORD`.
-
-Windows executables and the macOS app bundle are signed by their native
-platform steps. GitHub's OIDC-backed build provenance attestation covers every
-release archive, including Linux.
+The macOS app is signed with an ad hoc identity (`codesign --sign -`) on the
+native runner. This requires no Apple certificate or notarization account, but
+it does not establish an Apple developer identity or provide notarization.
 
 The release job publishes these verification files beside the packages:
 
@@ -141,11 +134,13 @@ gh attestation verify gift-1.0.0-linux-x64.tar.gz \
   --repo <owner>/<repository>
 ```
 
-On macOS, Gatekeeper and the notarization ticket provide the native trust
-check. On Windows, the signed executables expose the Authenticode publisher
-and timestamp in Explorer's digital-signature properties. The release
-metadata is informational and opt-in; GIFT does not silently download updates,
-send telemetry, or collect crash data.
+On macOS, ad hoc signing verifies bundle integrity but does not provide an
+Apple developer identity or notarization; a downloaded app may require the
+user to approve its first launch. On Windows, the executables are unsigned and
+may trigger SmartScreen or an equivalent download warning. Checksums and the
+GitHub attestation are the release trust signals. The release metadata is
+informational and opt-in; GIFT does not silently download updates, send
+telemetry, or collect crash data.
 
 Before a public release, a maintainer must still perform a clean-machine pass
 for install, launch, upgrade, downgrade warning, uninstall, and Git-missing
