@@ -8,6 +8,8 @@
   users to Git settings when the required executable is unavailable.
 - fix(release): removed signing-secret requirements, kept Windows executables
   unsigned, and switched macOS release apps to ad hoc codesigning.
+- fix(ci): fixed Windows release-tag validation by using the GitHub ref
+  expression instead of a Bash-only environment expansion.
 
 ## 2026-09-05
 - feat(ci): added required artifact checks and runner-specific visual golden

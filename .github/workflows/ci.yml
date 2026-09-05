@@ -48,7 +48,7 @@ jobs:
         run: dart pub get
       - name: Validate release version
         if: github.event_name == 'push'
-        run: dart run tool/release_metadata.dart validate "${GITHUB_REF_NAME}"
+        run: dart run tool/release_metadata.dart validate "${{ github.ref_name }}"
       - name: Verify pinned Actions
         run: dart run tool/verify_workflow_pins.dart
 
@@ -188,8 +188,8 @@ jobs:
           GIFT_RELEASE_TAG: ${{ github.ref_name }}
         run: |
           dart pub get
-          dart run tool/release_metadata.dart validate "$GITHUB_REF_NAME"
-          dart run tool/release_metadata.dart generate "$GITHUB_REF_NAME" "$GITHUB_SHA" dist --require-licenses
+          dart run tool/release_metadata.dart validate "${{ github.ref_name }}"
+          dart run tool/release_metadata.dart generate "${{ github.ref_name }}" "${{ github.sha }}" dist --require-licenses
           dart run tool/release_metadata.dart verify dist dist/SHA256SUMS.txt
           test "$(find dist -maxdepth 1 -type f \( -name '*.tar.gz' -o -name '*.zip' \) | wc -l)" -eq 3
       - name: Attest release package provenance
@@ -201,14 +201,15 @@ jobs:
       - name: Publish GitHub release
         env:
           GH_TOKEN: ${{ github.token }}
+          GIFT_RELEASE_TAG: ${{ github.ref_name }}
         run: |
           shopt -s nullglob
           assets=(dist/*)
-          if gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1; then
-            gh release upload "$GITHUB_REF_NAME" "${assets[@]}" --clobber
+          if gh release view "$GIFT_RELEASE_TAG" >/dev/null 2>&1; then
+            gh release upload "$GIFT_RELEASE_TAG" "${assets[@]}" --clobber
           else
-            gh release create "$GITHUB_REF_NAME" "${assets[@]}" \
+            gh release create "$GIFT_RELEASE_TAG" "${assets[@]}" \
               --verify-tag \
-              --title "GIFT ${GITHUB_REF_NAME#release-v}" \
+              --title "GIFT ${GIFT_RELEASE_TAG#release-v}" \
               --generate-notes
           fi
