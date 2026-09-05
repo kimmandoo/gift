@@ -5,47 +5,41 @@ This file is the handoff record for continuing work across query sessions.
 ## Current checkpoint
 
 - Date: 2026-09-05
-- Active task: the requested button redesign and complete spacing pass are
-  complete; Task 43 remains the next backlog priority.
-- Branch: `main`; the committed base before this session was
-  `b106932 fix(ui): refine pixel controls and spacing`.
-- UX behavior: buttons now use flat square pixel surfaces instead of beveled
-  corners. Primary actions stay solid, secondary actions use a quiet raised
-  fill and border, text actions stay lightweight, and icon actions expose
-  subtle resting tiles with explicit hover and focus borders.
-- Spacing behavior: the shared `PixelToolbarIconButton` owns a four-pixel
-  inter-control gap while app bars retain an eight-pixel outer edge. Dialog
-  actions use 16-pixel side/bottom edges, a 12-pixel content gap, and
-  eight-pixel overflow spacing.
-- Spacing behavior: wrapped action rows and button-to-card gaps use 8 px,
-  compact icon groups use 4 px, and explicit card, notice, and list insets use
-  the 12 px grid.
-- Responsive behavior: compact File History keeps History and Blame side by
-  side and orders the Line range action before optional filters, so every
-  control remains reachable at 320×480 with 1.3× text scaling.
+- Active task: None; Task 43 — Change and file context actions is complete.
+- Branch: `main`; the committed base before this task was
+  `db5bdbb fix(ui): redesign button spacing and surfaces`.
+- Activation: recorded ACTION-09/10 for path-scoped Changes, History-file,
+  comparison-file, stale-selection, and reveal behavior.
+- Implementation: added immutable path/original-path/diff-scope/fingerprint
+  action targets, traversal-safe repository path resolution, and a direct
+  platform file-manager boundary that reports missing and unsupported paths.
+- Changes behavior: exposed inspect, stage, unstage, selected patch staging,
+  changelist, shelf, ignore, file history, blame, comparison, copy,
+  reveal, and discard actions with state-aware disabled reasons and stale-row
+  rejection before routing.
+- History/comparison behavior: exposed changed-file menus with history,
+  blame/compare availability, copy-path, and current-file-only reveal actions;
+  nested workflows reuse the existing reviewed dialogs.
 - Changed implementation files:
-  `lib/src/app/{credentials_dialog,pixel_theme}.dart`,
-  `lib/src/features/settings/git_settings_dialog.dart`, and the repository
-  branch, changes, comparison, conflict workspace, file history, history batch,
-  history, hosting, ignore, interactive rebase, object, push, recovery, remote,
-  repository setup, shelf, submodule, update project, welcome, workspace, and
-  worktree UI files.
-- Changed docs: `CHANGELOG.md`,
+  `lib/src/features/repository/{changes_screen,comparison_dialog,context_actions,
+  file_history_dialog,history_screen,ignore_dialog,path_actions}.dart`.
+- Changed tests:
+  `test/features/repository/{changes_screen,comparison_dialog,history_screen,
+  path_actions}_test.dart`.
+- Changed docs: `TASKS.md`, `CHANGELOG.md`,
+  `docs/research/jetbrains-git-mvp-behavior.md`,
   `docs/superpowers/plans/2026-09-02-gift-dart-mvp.md`, and this checkpoint.
-- Verification: `flutter analyze` passed; `flutter test
-  test/app_boot_test.dart test/branding_test.dart test/features` passed all
-  101 tests; the focused 320×480, 1.3× File History regression passed; and
-  `flutter build windows --release` produced
-  `build/windows/x64/runner/Release/gift.exe`.
-- Desktop verification: the rebuilt executable was inspected at 1280×720.
-  Light and dark Changes views showed square toolbar tiles with consistent
-  inter-button and outer spacing; a selected real diff showed distinct Stage
-  and Discard actions; and the Branch dialog showed the new button surfaces,
-  content spacing, and footer edges without clipping.
-- Exact next action: begin Task 43 with its first change/file context-action
-  behavior-ledger scenario and RED fixture.
-- Blockers: none. The five generated Flutter plugin files were already
-  modified before this session and remain intentionally excluded.
+- Verification: the first RED fixture failed because
+  `Stage selected lines/hunks` was absent; the final focused action suite
+  passed all 38 tests, `flutter analyze` passed with no issues, and
+  `flutter test test/app_boot_test.dart test/branding_test.dart test/features`
+  passed all 106 tests.
+- Generated Flutter plugin files show line-ending-only working-tree markers
+  with no content diff and are intentionally excluded from the commit.
+- Resulting commit: `feat(actions): add path context menus` (this session's
+  completed commit).
+- Exact next action: resume Task 44 — Branch and remote context actions.
+- Blockers: none.
 
 ## Previous checkpoint
 

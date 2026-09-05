@@ -816,6 +816,22 @@ system Git 2.35+.
    containment, stale previews, cancellation, conflicts, recovery, and the
    reviewed progress dialog in focused real-Git and widget tests.
 
+## Completed vertical: Change and file context actions (Task 43)
+
+1. Activated Task 43 after recording ACTION-09/10 for path-scoped Changes,
+   History-file, comparison-file, stale-selection, and reveal behavior.
+2. Added the first RED fixture in
+   `test/features/repository/changes_screen_test.dart`, then exposed the
+   complete changed-file action inventory through the shared context menu.
+3. Added immutable path, original-path, diff-scope, fingerprint, and repository
+   bindings; stale rows are rejected before a route can mutate or open state.
+4. Reused staging, discard preview, shelves/changelists, ignore, file history,
+   blame, comparison, clipboard, and native file-manager workflows.
+5. Added historical changed-file and comparison-file menus with revision-aware
+   compare/blame/reveal availability and platform-safe path resolution.
+6. Verified focused action-menu tests, path traversal/reveal boundaries,
+   `flutter analyze`, and the full Flutter feature suite.
+
 ## Completed follow-up: visible push progress
 
 1. Added a pixel-themed transfer card that appears as soon as the reviewed push

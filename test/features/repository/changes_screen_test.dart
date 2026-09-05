@@ -912,6 +912,59 @@ void main() {
       controller.dispose();
     },
   );
+  testWidgets('exposes the complete path action inventory for a change row', (
+    tester,
+  ) async {
+    final repository = const RepositoryOpened(
+      repositoryId: RepositoryId(value: 'change-action-inventory-repository'),
+      root: '/workspace/project',
+    );
+    final gateway = FakeChangesGateway(
+      snapshots: [
+        snapshot(repository, changes: [change('lib/app.dart')]),
+      ],
+    );
+    final controller = ChangesController(
+      gateway: gateway,
+      repositoryId: repository.repositoryId,
+      pollInterval: const Duration(hours: 1),
+    );
+    await controller.refresh();
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: ChangesScreen(
+          gateway: gateway,
+          repository: repository,
+          controller: controller,
+          autoInitialize: false,
+        ),
+      ),
+    );
+    await tester.tap(find.byKey(const ValueKey('change-actions:lib/app.dart')));
+    await tester.pumpAndSettle();
+
+    for (final label in [
+      'Inspect',
+      'Stage',
+      'Unstage',
+      'Stage selected lines/hunks',
+      'Move to changelist',
+      'Shelve selected',
+      'Ignore locally',
+      'Ignore in repository',
+      'File history',
+      'Blame',
+      'Compare with HEAD',
+      'Copy relative path',
+      'Copy absolute path',
+      'Reveal in file manager',
+      'Discard',
+    ]) {
+      expect(find.text(label), findsOneWidget, reason: label);
+    }
+    controller.dispose();
+  });
 }
 
 GitChange change(String path) {

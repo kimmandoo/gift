@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:gift/src/backend/diff.dart';
 import 'package:gift/src/backend/domain.dart';
 
 /// Stable object kinds that can participate in contextual actions.
@@ -17,10 +18,21 @@ class ContextActionTarget {
     required this.kind,
     required this.identity,
     required this.label,
+    this.originalPath,
+    this.diffScope,
   });
 
-  const ContextActionTarget.change({required String path})
-    : this(kind: ContextActionTargetKind.change, identity: path, label: path);
+  const ContextActionTarget.change({
+    required String path,
+    String? originalPath,
+    GitDiffScope? diffScope,
+  }) : this(
+         kind: ContextActionTargetKind.change,
+         identity: path,
+         label: path,
+         originalPath: originalPath,
+         diffScope: diffScope,
+       );
 
   const ContextActionTarget.commit({required String oid, required String label})
     : this(kind: ContextActionTargetKind.commit, identity: oid, label: label);
@@ -28,9 +40,12 @@ class ContextActionTarget {
   final ContextActionTargetKind kind;
   final String identity;
   final String label;
+  final String? originalPath;
+  final GitDiffScope? diffScope;
 
   @override
-  int get hashCode => Object.hash(kind, identity, label);
+  int get hashCode =>
+      Object.hash(kind, identity, label, originalPath, diffScope);
 
   @override
   bool operator ==(Object other) =>
@@ -38,7 +53,9 @@ class ContextActionTarget {
       other is ContextActionTarget &&
           other.kind == kind &&
           other.identity == identity &&
-          other.label == label;
+          other.label == label &&
+          other.originalPath == originalPath &&
+          other.diffScope == diffScope;
 }
 
 /// The immutable repository/object state captured when a menu is opened.
@@ -69,12 +86,22 @@ enum ContextActionId {
   inspect,
   stage,
   unstage,
+  stageSelectedPatch,
   discard,
+  moveToChangelist,
+  shelve,
+  ignoreLocal,
+  ignoreRepository,
+  fileHistory,
+  blame,
+  compare,
+  copyRelativePath,
+  copyAbsolutePath,
+  reveal,
   cherryPick,
   revert,
   createBranch,
   createTag,
-  compare,
   reset,
   copyFullHash,
   copyShortHash,
@@ -86,12 +113,22 @@ enum ContextActionRoute {
   inspect,
   stage,
   unstage,
+  stageSelectedPatch,
   discard,
+  moveToChangelist,
+  shelve,
+  ignoreLocal,
+  ignoreRepository,
+  fileHistory,
+  blame,
+  compare,
+  copyRelativePath,
+  copyAbsolutePath,
+  reveal,
   cherryPick,
   revert,
   createBranch,
   createTag,
-  compare,
   reset,
   copyFullHash,
   copyShortHash,

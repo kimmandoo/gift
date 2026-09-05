@@ -6,6 +6,9 @@ import 'package:gift/src/backend/diff.dart';
 import 'package:gift/src/backend/domain.dart';
 import 'package:gift/src/backend/error.dart';
 import 'package:gift/src/backend/git_gateway.dart';
+import 'package:gift/src/features/repository/context_actions.dart';
+import 'package:gift/src/features/repository/file_history_dialog.dart';
+import 'package:gift/src/features/repository/path_actions.dart';
 import 'package:flutter/services.dart';
 
 /// A bounded revision comparison workspace.
@@ -20,6 +23,7 @@ class ComparisonDialog extends StatefulWidget {
     this.initialLeft,
     this.initialRight,
     this.initialPath,
+    this.fileManager = const PlatformFileManagerRevealer(),
   });
 
   final GitGateway gateway;
@@ -27,6 +31,7 @@ class ComparisonDialog extends StatefulWidget {
   final String? initialLeft;
   final String? initialRight;
   final String? initialPath;
+  final FileManagerRevealer fileManager;
 
   @override
   State<ComparisonDialog> createState() => _ComparisonDialogState();
@@ -323,20 +328,252 @@ class _ComparisonDialogState extends State<ComparisonDialog> {
         itemBuilder: (context, index) {
           final file = comparison.files[index];
           final selected = file.path == _selectedPath;
-          return ListTile(
-            key: Key('comparison-file-${file.path}'),
-            dense: true,
-            selected: selected,
-            onTap: _busy ? null : () => _selectFile(file.path),
-            leading: CircleAvatar(radius: 14, child: Text(file.statusLabel)),
-            title: Text(file.path, overflow: TextOverflow.ellipsis),
-            subtitle: file.oldPath == null
-                ? null
-                : Text('from ${file.oldPath}', overflow: TextOverflow.ellipsis),
+          final snapshot = _comparisonFileActionSnapshot(comparison, file);
+          return ContextActionMenu(
+            key: ValueKey('comparison-file-action-menu:${file.path}'),
+            snapshot: snapshot,
+            actions: _comparisonFileActions(comparison, file, snapshot),
+            onAction: _handleComparisonFileAction,
+            child: ListTile(
+              key: Key('comparison-file-${file.path}'),
+              dense: true,
+              selected: selected,
+              onTap: _busy ? null : () => _selectFile(file.path),
+              leading: CircleAvatar(radius: 14, child: Text(file.statusLabel)),
+              title: Text(file.path, overflow: TextOverflow.ellipsis),
+
+              subtitle: file.oldPath == null
+                  ? null
+                  : Text(
+                      'from ${file.oldPath}',
+                      overflow: TextOverflow.ellipsis,
+                    ),
+              trailing: ContextActionMenuButton(
+                key: ValueKey('comparison-file-actions:${file.path}'),
+              ),
+            ),
           );
         },
       ),
     );
+  }
+
+  ContextActionSnapshot _comparisonFileActionSnapshot(
+    GitComparisonSnapshot comparison,
+    GitComparisonFile file,
+  ) {
+    final scope = comparisonDiffScope(comparison.request);
+    return ContextActionSnapshot(
+      repository: widget.repository,
+      target: ContextActionTarget.change(
+        path: file.path,
+        originalPath: file.oldPath,
+        diffScope: scope,
+      ),
+      fingerprint:
+          '${comparison.fingerprint}:${file.status.name}:${file.oldPath ?? ''}:'
+          '${file.path}:${comparison.request.queryKey}',
+    );
+  }
+
+  List<ContextActionDescriptor> _comparisonFileActions(
+    GitComparisonSnapshot comparison,
+    GitComparisonFile file,
+    ContextActionSnapshot snapshot,
+  ) {
+    final safePath = isSafeRepositoryRelativePath(file.path);
+    final pathExists =
+        safePath && repositoryPathExists(widget.repository, file.path);
+    final canCompare =
+        !comparison.request.left.isText && !comparison.request.right.isText;
+    ContextActionDescriptor action({
+      required ContextActionId id,
+      required String label,
+      required IconData icon,
+      required ContextActionRoute route,
+      bool enabled = true,
+      String? disabledReason,
+    }) => ContextActionDescriptor(
+      id: id,
+      label: label,
+      icon: icon,
+      group: ContextActionGroup.inspect,
+      route: route,
+      snapshot: snapshot,
+      enabled: enabled,
+      disabledReason: disabledReason,
+    );
+    return [
+      action(
+        id: ContextActionId.fileHistory,
+        label: 'File history',
+        icon: Icons.history,
+        route: ContextActionRoute.fileHistory,
+        enabled: safePath,
+        disabledReason: safePath
+            ? null
+            : 'The comparison path is not repository-relative.',
+      ),
+      action(
+        id: ContextActionId.blame,
+        label: 'Blame',
+        icon: Icons.person_search_outlined,
+        route: ContextActionRoute.blame,
+        enabled: pathExists,
+        disabledReason: pathExists
+            ? null
+            : 'Blame needs the current working-tree file.',
+      ),
+      action(
+        id: ContextActionId.compare,
+        label: 'Compare revisions',
+        icon: Icons.compare_arrows,
+        route: ContextActionRoute.compare,
+        enabled: canCompare,
+        disabledReason: canCompare
+            ? null
+            : 'External text comparisons have no revision pair.',
+      ),
+      action(
+        id: ContextActionId.copyRelativePath,
+        label: 'Copy path',
+        icon: Icons.content_copy,
+        route: ContextActionRoute.copyRelativePath,
+        enabled: safePath,
+        disabledReason: safePath ? null : 'The path is not safe to copy.',
+      ),
+      action(
+        id: ContextActionId.copyAbsolutePath,
+        label: 'Copy absolute path',
+        icon: Icons.folder_copy_outlined,
+        route: ContextActionRoute.copyAbsolutePath,
+        enabled: safePath,
+        disabledReason: safePath ? null : 'The path is not safe to copy.',
+      ),
+      action(
+        id: ContextActionId.reveal,
+        label: 'Reveal in file manager',
+        icon: Icons.folder_open_outlined,
+        route: ContextActionRoute.reveal,
+        enabled: pathExists,
+        disabledReason: pathExists
+            ? null
+            : 'The current working-tree file is not present.',
+      ),
+    ];
+  }
+
+  Future<void> _handleComparisonFileAction(
+    ContextActionDescriptor action,
+  ) async {
+    final comparison = _comparison;
+    if (comparison == null ||
+        action.snapshot.repository != widget.repository ||
+        action.snapshot.target.kind != ContextActionTargetKind.change) {
+      return;
+    }
+    final file = comparison.files
+        .where((value) => value.path == action.snapshot.target.identity)
+        .firstOrNull;
+    if (file == null ||
+        _comparisonFileActionSnapshot(comparison, file) != action.snapshot) {
+      return;
+    }
+    switch (action.route) {
+      case ContextActionRoute.fileHistory:
+        await showDialog<void>(
+          context: context,
+          builder: (_) => FileHistoryDialog(
+            gateway: widget.gateway,
+            repository: widget.repository,
+            initialPath: file.path,
+          ),
+        );
+      case ContextActionRoute.blame:
+        await showDialog<void>(
+          context: context,
+          builder: (_) => FileHistoryDialog(
+            gateway: widget.gateway,
+            repository: widget.repository,
+            initialPath: file.path,
+            initialBlame: true,
+          ),
+        );
+      case ContextActionRoute.compare:
+        await showDialog<void>(
+          context: context,
+          builder: (_) => ComparisonDialog(
+            gateway: widget.gateway,
+            repository: widget.repository,
+            initialLeft: _comparisonSourceValue(comparison.request.left),
+            initialRight: _comparisonSourceValue(comparison.request.right),
+            initialPath: file.path,
+            fileManager: widget.fileManager,
+          ),
+        );
+      case ContextActionRoute.copyRelativePath:
+        await _copyComparisonPath(file.path, absolute: false);
+      case ContextActionRoute.copyAbsolutePath:
+        await _copyComparisonPath(file.path, absolute: true);
+      case ContextActionRoute.reveal:
+        await _revealComparisonPath(file.path);
+      case ContextActionRoute.inspect ||
+          ContextActionRoute.stage ||
+          ContextActionRoute.unstage ||
+          ContextActionRoute.stageSelectedPatch ||
+          ContextActionRoute.discard ||
+          ContextActionRoute.moveToChangelist ||
+          ContextActionRoute.shelve ||
+          ContextActionRoute.ignoreLocal ||
+          ContextActionRoute.ignoreRepository ||
+          ContextActionRoute.cherryPick ||
+          ContextActionRoute.revert ||
+          ContextActionRoute.createBranch ||
+          ContextActionRoute.createTag ||
+          ContextActionRoute.reset ||
+          ContextActionRoute.copyFullHash ||
+          ContextActionRoute.copyShortHash:
+        return;
+    }
+  }
+
+  String _comparisonSourceValue(GitComparisonSource source) =>
+      source.kind == GitComparisonSourceKind.workingTree
+      ? 'WORKTREE'
+      : source.value;
+
+  Future<void> _copyComparisonPath(
+    String path, {
+    required bool absolute,
+  }) async {
+    final value = absolute
+        ? repositoryAbsolutePath(widget.repository.root, path)
+        : path;
+    await Clipboard.setData(ClipboardData(text: value));
+    if (mounted) {
+      _showActionMessage(
+        absolute ? 'Absolute path copied.' : 'Relative path copied.',
+      );
+    }
+  }
+
+  Future<void> _revealComparisonPath(String path) async {
+    final result = await widget.fileManager.reveal(
+      repositoryAbsolutePath(widget.repository.root, path),
+    );
+    if (mounted) {
+      _showActionMessage(
+        result.isSuccess
+            ? 'Opened the file manager.'
+            : result.message ?? 'The file manager could not reveal this path.',
+      );
+    }
+  }
+
+  void _showActionMessage(String message) {
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(SnackBar(content: Text(message)));
   }
 
   Widget _diffPane(BuildContext context) {
@@ -480,6 +717,11 @@ class _ComparisonDialogState extends State<ComparisonDialog> {
     );
   }
 
+  GitComparisonSource _comparisonSource(String value) =>
+      value.toUpperCase() == 'WORKTREE'
+      ? const GitComparisonSource.workingTree()
+      : GitComparisonSource.revision(value);
+
   Future<void> _compare() async {
     final left = _leftController.text.trim();
     final right = _rightController.text.trim();
@@ -503,10 +745,10 @@ class _ComparisonDialogState extends State<ComparisonDialog> {
                   : GitComparisonSource.text(externalText),
               path: path.isEmpty ? null : path,
             )
-          : await widget.gateway.compareRevisions(
+          : await widget.gateway.compareSources(
               widget.repository.repositoryId,
-              left,
-              right,
+              _comparisonSource(left),
+              _comparisonSource(right),
               path: path.isEmpty ? null : path,
             );
       if (!mounted || requestNumber != _requestNumber) return;

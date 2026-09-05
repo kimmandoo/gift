@@ -733,6 +733,64 @@ void main() {
     expect(tester.takeException(), isNull);
     controller.dispose();
   });
+  testWidgets('exposes actions for each historical changed file', (
+    tester,
+  ) async {
+    final repository = const RepositoryOpened(
+      repositoryId: RepositoryId(value: 'history-file-actions-repository'),
+      root: '/workspace/project',
+    );
+    final commit = makeCommit('h' * 40, 'Historical file actions');
+    final file = const GitCommitFileChange(
+      status: GitCommitFileStatus.modified,
+      path: 'lib/app.dart',
+    );
+    final gateway = FakeHistoryGateway(
+      pages: {
+        0: GitHistoryPage(
+          repositoryId: repository.repositoryId,
+          commits: [commit],
+          offset: 0,
+          limit: 1,
+          hasMore: false,
+        ),
+      },
+      filesByCommit: {
+        commit.oid: [file],
+      },
+    );
+    final controller = HistoryController(
+      gateway: gateway,
+      repositoryId: repository.repositoryId,
+      pageSize: 1,
+    );
+    await controller.refresh();
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: HistoryScreen(
+          gateway: gateway,
+          repository: repository,
+          controller: controller,
+          autoInitialize: false,
+        ),
+      ),
+    );
+    await tester.tap(find.byKey(ValueKey('commit:${commit.oid}')));
+    await tester.pumpAndSettle();
+    await tester.tap(
+      find.byKey(ValueKey('commit-file-actions:${commit.oid}:lib/app.dart')),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('File history'), findsOneWidget);
+    expect(find.text('Blame'), findsOneWidget);
+    expect(find.text('Compare revisions'), findsOneWidget);
+    expect(find.text('Copy path'), findsOneWidget);
+    expect(find.text('Copy absolute path'), findsOneWidget);
+    expect(find.text('Reveal in file manager'), findsOneWidget);
+    controller.dispose();
+  });
 }
 
 GitCommit makeCommit(String oid, String subject) {

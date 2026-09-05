@@ -14,10 +14,12 @@ class IgnoreDialog extends StatefulWidget {
     super.key,
     required this.gateway,
     required this.repository,
+    this.initialPath,
   });
 
   final GitGateway gateway;
   final RepositoryOpened repository;
+  final String? initialPath;
 
   @override
   State<IgnoreDialog> createState() => _IgnoreDialogState();
@@ -38,6 +40,7 @@ class _IgnoreDialogState extends State<IgnoreDialog>
   void initState() {
     super.initState();
     _tabs = TabController(length: 2, vsync: this);
+    _selectedPath = widget.initialPath;
     unawaited(_load());
   }
 

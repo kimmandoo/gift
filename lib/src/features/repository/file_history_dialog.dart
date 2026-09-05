@@ -13,11 +13,13 @@ class FileHistoryDialog extends StatefulWidget {
     required this.gateway,
     required this.repository,
     this.initialPath = '',
+    this.initialBlame = false,
   });
 
   final GitGateway gateway;
   final RepositoryOpened repository;
   final String initialPath;
+  final bool initialBlame;
 
   @override
   State<FileHistoryDialog> createState() => _FileHistoryDialogState();
@@ -45,6 +47,9 @@ class _FileHistoryDialogState extends State<FileHistoryDialog> {
     _path = TextEditingController(text: widget.initialPath);
     _lineStart = TextEditingController();
     _lineEnd = TextEditingController();
+    if (widget.initialBlame && widget.initialPath.isNotEmpty) {
+      unawaited(_loadBlame());
+    }
   }
 
   @override

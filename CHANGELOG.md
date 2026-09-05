@@ -1,6 +1,7 @@
 # Changelog
 
 ## 2026-09-05
+- feat(actions): added selection-safe change, history-file, and comparison-file context actions with platform file-manager reveal.
 - feat(history): exposed OID-bound commit context actions and direct
   cherry-pick entry points.
 - feat(history): added ordered multi-commit selection, preview, progress,

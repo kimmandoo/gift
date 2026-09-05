@@ -6,11 +6,10 @@
 
 ## Progress
 
-- **Completed:** 41 / 48
-- **Current Active Task:** none; Task 43 — Change and file context actions is
-  next.
-- **Next priority:** complete Tasks 43–47, then Task 39 visual regression QA,
-  and finally Task 38 public release.
+- **Completed:** 43 / 48
+- **Current Active Task:** None.
+- **Next priority:** Task 44 — Branch and remote context actions, then Tasks 45–47,
+  Task 39 visual regression QA, and finally Task 38 public release.
 
 | # | Scope | Dart backend deliverables | Flutter deliverables | Status |
 |---|---|---|---|:---:|
@@ -57,7 +56,7 @@
 | **40** | Contextual action foundation | Typed action availability, immutable targets, and preview routing | Shared secondary-click, keyboard, and overflow action menus | ✅ |
 | **41** | Commit context actions | OID-bound cherry-pick and existing history mutations | History-row action menu and prefilled previews | ✅ |
 | **42** | Multi-commit operations | Ordered batch cherry-pick/revert state machine | Multi-select history actions and conflict progress | ✅ |
-| **43** | Change and file actions | Selection-safe path operations and reveal contracts | Changes/diff/history-file context menus | ⬜ |
+| **43** | Change and file actions | Selection-safe path operations and reveal contracts | Changes/diff/history-file context menus | ✅ |
 | **44** | Branch and remote actions | Ref-bound operation routing and freshness checks | Local/remote branch context menus | ⬜ |
 | **45** | Workspace context actions | Root-bound tab and recent-repository operations | Tab/recent/nested-root context menus | ⬜ |
 | **46** | Native folder chooser UX | Purpose-scoped path validation and recent locations | Browse-assisted editable absolute-path fields | ⬜ |
@@ -661,6 +660,18 @@ Task 41 is complete. Task 42 is complete; Tasks 36–41 are complete.
   and stale-selection behavior.
 
 Task 42 is complete. Tasks 43–47 follow it; Task 39 remains after those tasks.
+
+### ✅ Task 43: Change and file context actions
+
+- [x] Record ACTION-09/10 path-action and historical-file scenarios.
+- [x] Add the first RED change-file action-menu fixture.
+- [x] Add path-safe reveal and action routing contracts.
+- [x] Add complete changed-file context actions.
+- [x] Add History and comparison file actions.
+- [x] Verify stale paths, rename/deleted/conflicted states, and compact menus.
+
+Task 43 is complete. Task 44 is now the next priority; Tasks 44–47 remain
+ahead of Task 39.
 
 ## Post-MVP backlog
 

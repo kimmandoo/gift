@@ -14,6 +14,7 @@ import 'package:gift/src/backend/push.dart';
 import 'package:gift/src/backend/status.dart';
 import 'package:gift/src/features/repository/context_actions.dart';
 import 'package:gift/src/features/repository/changes_controller.dart';
+import 'package:gift/src/features/repository/path_actions.dart';
 import 'package:gift/src/features/repository/branch_dialog.dart';
 import 'package:gift/src/features/repository/history_screen.dart';
 import 'package:gift/src/features/repository/history_controller.dart';
@@ -55,6 +56,7 @@ class ChangesScreen extends StatelessWidget {
     this.onOpenRepository,
     this.credentialStore,
     this.repositoryCredentialStore,
+    this.fileManager = const PlatformFileManagerRevealer(),
     this.autoInitialize = true,
   });
 
@@ -66,6 +68,7 @@ class ChangesScreen extends StatelessWidget {
   final Future<void> Function(RepositoryOpened repository)? onOpenRepository;
   final GitCredentialStore? credentialStore;
   final RepositoryCredentialStore? repositoryCredentialStore;
+  final FileManagerRevealer fileManager;
   final bool autoInitialize;
 
   @override
@@ -83,6 +86,7 @@ class ChangesScreen extends StatelessWidget {
         autoInitialize: autoInitialize,
         credentialStore: credentialStore,
         repositoryCredentialStore: repositoryCredentialStore,
+        fileManager: fileManager,
       ),
     );
   }
@@ -98,6 +102,7 @@ class _ChangesScreenBody extends ConsumerStatefulWidget {
     this.credentialStore,
     this.repositoryCredentialStore,
     this.onOpenRepository,
+    required this.fileManager,
     required this.autoInitialize,
   });
 
@@ -109,6 +114,7 @@ class _ChangesScreenBody extends ConsumerStatefulWidget {
   final Future<void> Function(RepositoryOpened repository)? onOpenRepository;
   final GitCredentialStore? credentialStore;
   final RepositoryCredentialStore? repositoryCredentialStore;
+  final FileManagerRevealer fileManager;
   final bool autoInitialize;
 
   @override
@@ -1159,12 +1165,20 @@ class _ChangesScreenBodyState extends ConsumerState<_ChangesScreenBody> {
     ChangesState state,
   ) {
     final status = state.snapshot!;
+    final scope = change.isStaged && !change.isUnstaged
+        ? GitDiffScope.staged
+        : GitDiffScope.workingTree;
     return ContextActionSnapshot(
       repository: widget.repository,
-      target: ContextActionTarget.change(path: change.path),
+      target: ContextActionTarget.change(
+        path: change.path,
+        originalPath: change.originalPath,
+        diffScope: scope,
+      ),
       fingerprint:
           '${status.generation}:${status.contentHash}:${change.path}:'
-          '${change.indexStatus}:${change.worktreeStatus}',
+          '${change.originalPath ?? ''}:${change.indexStatus}:'
+          '${change.worktreeStatus}:${scope.name}',
     );
   }
 
@@ -1173,62 +1187,190 @@ class _ChangesScreenBodyState extends ConsumerState<_ChangesScreenBody> {
     ChangesState state,
     ContextActionSnapshot snapshot,
   ) {
-    final disabledReason = state.isMutating || state.isDiscardPreparing
+    final busyReason = state.isMutating || state.isDiscardPreparing
         ? 'Git is already running.'
         : null;
-    final actions = <ContextActionDescriptor>[
-      ContextActionDescriptor(
+    final tracked = !change.isUntracked && !change.isConflicted;
+    final pathExists = repositoryPathExists(widget.repository, change.path);
+    ContextActionDescriptor action({
+      required ContextActionId id,
+      required String label,
+      required IconData icon,
+      required ContextActionGroup group,
+      required ContextActionRoute route,
+      bool enabled = true,
+      String? disabledReason,
+    }) => ContextActionDescriptor(
+      id: id,
+      label: label,
+      icon: icon,
+      group: group,
+      route: route,
+      snapshot: snapshot,
+      enabled: enabled && busyReason == null,
+      disabledReason: busyReason ?? disabledReason,
+    );
+
+    final selected = state.selectedPath == change.path && state.diff != null;
+    final canStageSelected =
+        selected && _activeController.canStagePatch && busyReason == null;
+    final ignoreReason = change.isUntracked
+        ? null
+        : 'Only untracked paths can receive an ignore rule.';
+    return [
+      action(
         id: ContextActionId.inspect,
         label: 'Inspect',
         icon: Icons.visibility_outlined,
         group: ContextActionGroup.inspect,
         route: ContextActionRoute.inspect,
-        snapshot: snapshot,
+      ),
+      action(
+        id: ContextActionId.fileHistory,
+        label: 'File history',
+        icon: Icons.history,
+        group: ContextActionGroup.inspect,
+        route: ContextActionRoute.fileHistory,
+        enabled: tracked,
+        disabledReason: tracked ? null : 'File history needs a tracked path.',
+      ),
+      action(
+        id: ContextActionId.blame,
+        label: 'Blame',
+        icon: Icons.person_search_outlined,
+        group: ContextActionGroup.inspect,
+        route: ContextActionRoute.blame,
+        enabled: tracked,
+        disabledReason: tracked ? null : 'Blame needs a tracked path.',
+      ),
+      action(
+        id: ContextActionId.compare,
+        label: 'Compare with HEAD',
+        icon: Icons.compare_arrows,
+        group: ContextActionGroup.inspect,
+        route: ContextActionRoute.compare,
+      ),
+      action(
+        id: ContextActionId.copyRelativePath,
+        label: 'Copy relative path',
+        icon: Icons.content_copy,
+        group: ContextActionGroup.inspect,
+        route: ContextActionRoute.copyRelativePath,
+      ),
+      action(
+        id: ContextActionId.copyAbsolutePath,
+        label: 'Copy absolute path',
+        icon: Icons.folder_copy_outlined,
+        group: ContextActionGroup.inspect,
+        route: ContextActionRoute.copyAbsolutePath,
+      ),
+      action(
+        id: ContextActionId.reveal,
+        label: 'Reveal in file manager',
+        icon: Icons.folder_open_outlined,
+        group: ContextActionGroup.inspect,
+        route: ContextActionRoute.reveal,
+        enabled: pathExists,
+        disabledReason: pathExists
+            ? null
+            : 'The current working-tree file is not present.',
+      ),
+      action(
+        id: ContextActionId.stage,
+        label: 'Stage',
+        icon: Icons.add,
+        group: ContextActionGroup.workflow,
+        route: ContextActionRoute.stage,
+        enabled:
+            !change.isConflicted && (change.isUntracked || change.isUnstaged),
+        disabledReason:
+            !change.isConflicted && (change.isUntracked || change.isUnstaged)
+            ? null
+            : change.isConflicted
+            ? 'Conflicted paths need the conflict workflow.'
+            : 'This path has no unstaged content to stage.',
+      ),
+      action(
+        id: ContextActionId.unstage,
+        label: 'Unstage',
+        icon: Icons.undo,
+        group: ContextActionGroup.workflow,
+        route: ContextActionRoute.unstage,
+        enabled: !change.isConflicted && change.isStaged && !change.isUntracked,
+        disabledReason:
+            !change.isConflicted && change.isStaged && !change.isUntracked
+            ? null
+            : change.isConflicted
+            ? 'Conflicted paths need the conflict workflow.'
+            : 'This path has no staged content to unstage.',
+      ),
+      action(
+        id: ContextActionId.stageSelectedPatch,
+        label: 'Stage selected lines/hunks',
+        icon: Icons.checklist,
+        group: ContextActionGroup.workflow,
+        route: ContextActionRoute.stageSelectedPatch,
+        enabled: canStageSelected,
+        disabledReason: canStageSelected
+            ? null
+            : 'Select lines or hunks from this file first.',
+      ),
+      action(
+        id: ContextActionId.moveToChangelist,
+        label: 'Move to changelist',
+        icon: Icons.playlist_add,
+        group: ContextActionGroup.workflow,
+        route: ContextActionRoute.moveToChangelist,
+        enabled: tracked,
+        disabledReason: tracked
+            ? null
+            : 'Only tracked paths can move to a changelist.',
+      ),
+      action(
+        id: ContextActionId.shelve,
+        label: 'Shelve selected',
+        icon: Icons.inventory_2_outlined,
+        group: ContextActionGroup.workflow,
+        route: ContextActionRoute.shelve,
+        enabled: tracked,
+        disabledReason: tracked ? null : 'Only tracked paths can be shelved.',
+      ),
+      action(
+        id: ContextActionId.ignoreLocal,
+        label: 'Ignore locally',
+        icon: Icons.visibility_off_outlined,
+        group: ContextActionGroup.workflow,
+        route: ContextActionRoute.ignoreLocal,
+        enabled: change.isUntracked,
+        disabledReason: ignoreReason,
+      ),
+      action(
+        id: ContextActionId.ignoreRepository,
+        label: 'Ignore in repository',
+        icon: Icons.rule_folder_outlined,
+        group: ContextActionGroup.workflow,
+        route: ContextActionRoute.ignoreRepository,
+        enabled: change.isUntracked,
+        disabledReason: ignoreReason,
+      ),
+      action(
+        id: ContextActionId.discard,
+        label: 'Discard',
+        icon: Icons.delete_outline,
+        group: ContextActionGroup.destructive,
+        route: ContextActionRoute.discard,
+        enabled:
+            !change.isConflicted && !change.isUntracked && change.isUnstaged,
+        disabledReason:
+            !change.isConflicted && !change.isUntracked && change.isUnstaged
+            ? null
+            : change.isConflicted
+            ? 'Conflicted paths need the conflict workflow.'
+            : change.isUntracked
+            ? 'Untracked files are not discarded by this action.'
+            : 'This path has no working-tree changes to discard.',
       ),
     ];
-    if (!change.isConflicted && (change.isUntracked || change.isUnstaged)) {
-      actions.add(
-        ContextActionDescriptor(
-          id: ContextActionId.stage,
-          label: 'Stage',
-          icon: Icons.add,
-          group: ContextActionGroup.workflow,
-          route: ContextActionRoute.stage,
-          snapshot: snapshot,
-          enabled: disabledReason == null,
-          disabledReason: disabledReason,
-        ),
-      );
-    }
-    if (!change.isConflicted && change.isStaged && !change.isUntracked) {
-      actions.add(
-        ContextActionDescriptor(
-          id: ContextActionId.unstage,
-          label: 'Unstage',
-          icon: Icons.undo,
-          group: ContextActionGroup.workflow,
-          route: ContextActionRoute.unstage,
-          snapshot: snapshot,
-          enabled: disabledReason == null,
-          disabledReason: disabledReason,
-        ),
-      );
-    }
-    if (!change.isConflicted && !change.isUntracked && change.isUnstaged) {
-      actions.add(
-        ContextActionDescriptor(
-          id: ContextActionId.discard,
-          label: 'Discard',
-          icon: Icons.delete_outline,
-          group: ContextActionGroup.destructive,
-          route: ContextActionRoute.discard,
-          snapshot: snapshot,
-          enabled: disabledReason == null,
-          disabledReason: disabledReason,
-        ),
-      );
-    }
-    return actions;
   }
 
   Future<void> _handleChangeAction(ContextActionDescriptor action) async {
@@ -1239,13 +1381,9 @@ class _ChangesScreenBodyState extends ConsumerState<_ChangesScreenBody> {
         action.snapshot.target.kind != ContextActionTargetKind.change) {
       return;
     }
-    GitChange? current;
-    for (final change in currentSnapshot.changes) {
-      if (change.path == action.snapshot.target.identity) {
-        current = change;
-        break;
-      }
-    }
+    final current = currentSnapshot.changes
+        .where((change) => change.path == action.snapshot.target.identity)
+        .firstOrNull;
     if (current == null) return;
     final currentActionSnapshot = _changeActionSnapshot(current, currentState);
     if (currentActionSnapshot != action.snapshot) return;
@@ -1259,12 +1397,121 @@ class _ChangesScreenBodyState extends ConsumerState<_ChangesScreenBody> {
       case ContextActionRoute.unstage:
         _activeController.selectPath(current.path);
         await _activeController.unstageSelected();
+      case ContextActionRoute.stageSelectedPatch:
+        final alreadySelected =
+            currentState.selectedPath == current.path &&
+            currentState.diff?.scope == GitDiffScope.workingTree;
+        if (!alreadySelected) {
+          await _activeController.selectChange(current);
+        }
+        if (_activeController.canStagePatch) {
+          await _activeController.stageSelectedPatch();
+        }
+
       case ContextActionRoute.discard:
         _activeController.selectPath(current.path);
         await _showDiscardDialog(context, _activeController);
-      default:
+      case ContextActionRoute.moveToChangelist:
+        await _openShelves(context, path: current.path);
+      case ContextActionRoute.shelve:
+        await _openShelves(context, path: current.path);
+      case ContextActionRoute.ignoreLocal:
+        await _openIgnoreForPath(context, current.path);
+      case ContextActionRoute.ignoreRepository:
+        await _openIgnoreForPath(context, current.path);
+      case ContextActionRoute.fileHistory:
+        await _openFileHistoryForPath(context, current.path);
+      case ContextActionRoute.blame:
+        await _openFileHistoryForPath(context, current.path, blame: true);
+      case ContextActionRoute.compare:
+        await _openComparisonForPath(context, current.path);
+      case ContextActionRoute.copyRelativePath:
+        await _copyPath(current.path, absolute: false);
+      case ContextActionRoute.copyAbsolutePath:
+        await _copyPath(current.path, absolute: true);
+      case ContextActionRoute.reveal:
+        await _revealPath(current.path);
+      case ContextActionRoute.cherryPick ||
+          ContextActionRoute.revert ||
+          ContextActionRoute.createBranch ||
+          ContextActionRoute.createTag ||
+          ContextActionRoute.reset ||
+          ContextActionRoute.copyFullHash ||
+          ContextActionRoute.copyShortHash:
         return;
     }
+  }
+
+  Future<void> _openIgnoreForPath(BuildContext context, String path) async {
+    await showDialog<void>(
+      context: context,
+      builder: (_) => IgnoreDialog(
+        gateway: widget.gateway,
+        repository: widget.repository,
+        initialPath: path,
+      ),
+    );
+    if (context.mounted) await _activeController.refresh();
+  }
+
+  Future<void> _openFileHistoryForPath(
+    BuildContext context,
+    String path, {
+    bool blame = false,
+  }) async {
+    await showDialog<void>(
+      context: context,
+      builder: (_) => FileHistoryDialog(
+        gateway: widget.gateway,
+        repository: widget.repository,
+        initialPath: path,
+        initialBlame: blame,
+      ),
+    );
+  }
+
+  Future<void> _openComparisonForPath(BuildContext context, String path) async {
+    await showDialog<void>(
+      context: context,
+      builder: (_) => ComparisonDialog(
+        gateway: widget.gateway,
+        repository: widget.repository,
+        initialLeft: 'HEAD',
+        initialRight: 'WORKTREE',
+        fileManager: widget.fileManager,
+        initialPath: path,
+      ),
+    );
+  }
+
+  Future<void> _copyPath(String path, {required bool absolute}) async {
+    final value = absolute
+        ? repositoryAbsolutePath(widget.repository.root, path)
+        : path;
+    await Clipboard.setData(ClipboardData(text: value));
+    if (mounted) {
+      _showActionMessage(
+        absolute ? 'Absolute path copied.' : 'Relative path copied.',
+      );
+    }
+  }
+
+  Future<void> _revealPath(String path) async {
+    final result = await widget.fileManager.reveal(
+      repositoryAbsolutePath(widget.repository.root, path),
+    );
+    if (!mounted) return;
+    _showActionMessage(
+      result.isSuccess
+          ? 'Opened the file manager.'
+          : result.message ?? 'The file manager could not reveal this path.',
+    );
+  }
+
+  void _showActionMessage(String message) {
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(SnackBar(content: Text(message)));
   }
 
   Widget _statusBadge(BuildContext context, GitChange change) {
@@ -1790,13 +2037,13 @@ class _ChangesScreenBodyState extends ConsumerState<_ChangesScreenBody> {
     );
   }
 
-  Future<void> _openShelves(BuildContext context) async {
+  Future<void> _openShelves(BuildContext context, {String? path}) async {
     await showDialog<void>(
       context: context,
       builder: (_) => ShelfDialog(
         gateway: widget.gateway,
         repository: widget.repository,
-        initialPaths: [?_activeController.state.selectedPath],
+        initialPaths: [?(path ?? _activeController.state.selectedPath)],
       ),
     );
     if (!context.mounted) return;

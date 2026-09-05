@@ -14,9 +14,11 @@ import 'package:gift/src/features/repository/reset_dialog.dart';
 import 'package:gift/src/features/repository/branch_dialog.dart';
 import 'package:gift/src/features/repository/comparison_dialog.dart';
 import 'package:gift/src/features/repository/context_actions.dart';
-import 'package:gift/src/features/repository/object_dialog.dart';
+import 'package:gift/src/features/repository/path_actions.dart';
+import 'package:gift/src/features/repository/file_history_dialog.dart';
 import 'package:gift/src/features/repository/history_batch_dialog.dart';
 import 'package:gift/src/backend/branch.dart';
+import 'package:gift/src/features/repository/object_dialog.dart';
 import 'package:gift/src/features/repository/hosting_dialog.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -29,14 +31,15 @@ class HistoryScreen extends StatefulWidget {
     required this.gateway,
     required this.repository,
     this.controller,
+    this.fileManager = const PlatformFileManagerRevealer(),
     this.autoInitialize = true,
   });
 
   final GitGateway gateway;
   final RepositoryOpened repository;
   final HistoryController? controller;
+  final FileManagerRevealer fileManager;
   final bool autoInitialize;
-
   @override
   State<HistoryScreen> createState() => _HistoryScreenState();
 }
@@ -822,7 +825,17 @@ class _HistoryScreenState extends State<HistoryScreen> {
         await _openCommitReset(commitOid);
       case ContextActionRoute.stage ||
           ContextActionRoute.unstage ||
-          ContextActionRoute.discard:
+          ContextActionRoute.stageSelectedPatch ||
+          ContextActionRoute.discard ||
+          ContextActionRoute.moveToChangelist ||
+          ContextActionRoute.shelve ||
+          ContextActionRoute.ignoreLocal ||
+          ContextActionRoute.ignoreRepository ||
+          ContextActionRoute.fileHistory ||
+          ContextActionRoute.blame ||
+          ContextActionRoute.copyRelativePath ||
+          ContextActionRoute.copyAbsolutePath ||
+          ContextActionRoute.reveal:
         return;
     }
   }
@@ -918,6 +931,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
         repository: widget.repository,
         initialLeft: commitOid,
         initialRight: 'HEAD',
+        fileManager: widget.fileManager,
       ),
     );
   }
@@ -1072,35 +1086,270 @@ class _HistoryScreenState extends State<HistoryScreen> {
     GitCommitFileChange file,
     HistoryState state,
   ) {
-    final selected = state.selectedPath == file.path;
-    return Card(
-      key: Key('commit-file-section:${file.path}'),
-      margin: EdgeInsets.zero,
-      color: selected
-          ? Theme.of(context).colorScheme.surfaceContainerHighest
-          : null,
-      child: ListTile(
-        key: Key('commit-file:${file.path}'),
-        dense: true,
-        contentPadding: const EdgeInsets.symmetric(horizontal: 12),
-        leading: Text(file.statusLabel),
-        title: Text(file.path, maxLines: 1, overflow: TextOverflow.ellipsis),
-        subtitle: file.oldPath == null
-            ? null
-            : Text(
-                'from ${file.oldPath}',
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
+    final commit = state.selectedCommit;
+    if (commit == null) return const SizedBox.shrink();
+    final snapshot = _commitFileActionSnapshot(commit, file, state);
+    return ContextActionMenu(
+      key: ValueKey('commit-file-action-menu:${commit.oid}:${file.path}'),
+      snapshot: snapshot,
+      actions: _commitFileActions(commit, file, state, snapshot),
+      onAction: _handleCommitFileAction,
+      child: Card(
+        key: Key('commit-file-section:${file.path}'),
+        margin: EdgeInsets.zero,
+        color: state.selectedPath == file.path
+            ? Theme.of(context).colorScheme.surfaceContainerHighest
+            : null,
+        child: ListTile(
+          key: Key('commit-file:${file.path}'),
+          dense: true,
+          contentPadding: const EdgeInsets.symmetric(horizontal: 12),
+          leading: Text(file.statusLabel),
+          title: Text(file.path, maxLines: 1, overflow: TextOverflow.ellipsis),
+          subtitle: file.oldPath == null
+              ? null
+              : Text(
+                  'from ${file.oldPath}',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+          trailing: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ContextActionMenuButton(
+                key: ValueKey('commit-file-actions:${commit.oid}:${file.path}'),
               ),
-        trailing: Icon(
-          selected ? Icons.keyboard_arrow_up : Icons.keyboard_arrow_down,
-          size: 20,
+              Icon(
+                state.selectedPath == file.path
+                    ? Icons.keyboard_arrow_up
+                    : Icons.keyboard_arrow_down,
+                size: 20,
+              ),
+            ],
+          ),
+          selected: state.selectedPath == file.path,
+          onTap: () => state.selectedPath == file.path
+              ? _controller.clearFileSelection()
+              : _selectFile(file),
         ),
-        selected: selected,
-        onTap: () =>
-            selected ? _controller.clearFileSelection() : _selectFile(file),
       ),
     );
+  }
+
+  ContextActionSnapshot _commitFileActionSnapshot(
+    GitCommit commit,
+    GitCommitFileChange file,
+    HistoryState state,
+  ) {
+    final filesFingerprint =
+        state.commitFiles
+            ?.map(
+              (value) =>
+                  '${value.status.name}:${value.oldPath ?? ''}:${value.path}',
+            )
+            .join('|') ??
+        '';
+    return ContextActionSnapshot(
+      repository: widget.repository,
+      target: ContextActionTarget.change(
+        path: file.path,
+        originalPath: file.oldPath,
+        diffScope: GitDiffScope.commit,
+      ),
+      fingerprint:
+          '${commit.oid}:${file.status.name}:${file.oldPath ?? ''}:'
+          '${file.path}:$filesFingerprint',
+    );
+  }
+
+  List<ContextActionDescriptor> _commitFileActions(
+    GitCommit commit,
+    GitCommitFileChange file,
+    HistoryState state,
+    ContextActionSnapshot snapshot,
+  ) {
+    final refreshing = state.isLoading || state.isLoadingCommitFiles;
+    final refreshReason = refreshing ? 'History is refreshing.' : null;
+    final hasParent = commit.parents.isNotEmpty;
+    final pathExists = repositoryPathExists(widget.repository, file.path);
+    ContextActionDescriptor action({
+      required ContextActionId id,
+      required String label,
+      required IconData icon,
+      required ContextActionGroup group,
+      required ContextActionRoute route,
+      bool enabled = true,
+      String? disabledReason,
+    }) => ContextActionDescriptor(
+      id: id,
+      label: label,
+      icon: icon,
+      group: group,
+      route: route,
+      snapshot: snapshot,
+      enabled: enabled && refreshReason == null,
+      disabledReason: refreshReason ?? disabledReason,
+    );
+
+    return [
+      action(
+        id: ContextActionId.fileHistory,
+        label: 'File history',
+        icon: Icons.history,
+        group: ContextActionGroup.inspect,
+        route: ContextActionRoute.fileHistory,
+      ),
+      action(
+        id: ContextActionId.blame,
+        label: 'Blame',
+        icon: Icons.person_search_outlined,
+        group: ContextActionGroup.inspect,
+        route: ContextActionRoute.blame,
+        enabled: false,
+        disabledReason:
+            'Revision-specific blame is not available for historical rows.',
+      ),
+      action(
+        id: ContextActionId.compare,
+        label: 'Compare revisions',
+        icon: Icons.compare_arrows,
+        group: ContextActionGroup.inspect,
+        route: ContextActionRoute.compare,
+        enabled: hasParent,
+        disabledReason: hasParent
+            ? null
+            : 'A root commit has no parent revision to compare.',
+      ),
+      action(
+        id: ContextActionId.copyRelativePath,
+        label: 'Copy path',
+        icon: Icons.content_copy,
+        group: ContextActionGroup.inspect,
+        route: ContextActionRoute.copyRelativePath,
+      ),
+      action(
+        id: ContextActionId.copyAbsolutePath,
+        label: 'Copy absolute path',
+        icon: Icons.folder_copy_outlined,
+        group: ContextActionGroup.inspect,
+        route: ContextActionRoute.copyAbsolutePath,
+      ),
+      action(
+        id: ContextActionId.reveal,
+        label: 'Reveal in file manager',
+        icon: Icons.folder_open_outlined,
+        group: ContextActionGroup.inspect,
+        route: ContextActionRoute.reveal,
+        enabled: pathExists,
+        disabledReason: pathExists
+            ? null
+            : 'The current working-tree file is not present.',
+      ),
+    ];
+  }
+
+  Future<void> _handleCommitFileAction(ContextActionDescriptor action) async {
+    final state = _controller.state;
+    final commit = state.selectedCommit;
+    if (commit == null ||
+        action.snapshot.repository != widget.repository ||
+        action.snapshot.target.kind != ContextActionTargetKind.change ||
+        state.selectedOid != commit.oid) {
+      return;
+    }
+    final file = state.commitFiles
+        ?.where((value) => value.path == action.snapshot.target.identity)
+        .firstOrNull;
+    if (file == null ||
+        _commitFileActionSnapshot(commit, file, state) != action.snapshot) {
+      return;
+    }
+    switch (action.route) {
+      case ContextActionRoute.fileHistory:
+        await _openFileHistoryForPath(file.path);
+      case ContextActionRoute.blame:
+        await _openFileHistoryForPath(file.path, blame: true);
+      case ContextActionRoute.compare:
+        if (commit.parents.isNotEmpty) {
+          await showDialog<void>(
+            context: context,
+            builder: (_) => ComparisonDialog(
+              gateway: widget.gateway,
+              repository: widget.repository,
+              initialLeft: commit.oid,
+              initialRight: commit.parents.first,
+              fileManager: widget.fileManager,
+              initialPath: file.path,
+            ),
+          );
+        }
+      case ContextActionRoute.copyRelativePath:
+        await _copyCommitFilePath(file.path, absolute: false);
+      case ContextActionRoute.copyAbsolutePath:
+        await _copyCommitFilePath(file.path, absolute: true);
+      case ContextActionRoute.reveal:
+        await _revealCommitFile(file.path);
+      case ContextActionRoute.inspect ||
+          ContextActionRoute.stage ||
+          ContextActionRoute.unstage ||
+          ContextActionRoute.stageSelectedPatch ||
+          ContextActionRoute.discard ||
+          ContextActionRoute.moveToChangelist ||
+          ContextActionRoute.shelve ||
+          ContextActionRoute.ignoreLocal ||
+          ContextActionRoute.ignoreRepository ||
+          ContextActionRoute.cherryPick ||
+          ContextActionRoute.revert ||
+          ContextActionRoute.createBranch ||
+          ContextActionRoute.createTag ||
+          ContextActionRoute.reset ||
+          ContextActionRoute.copyFullHash ||
+          ContextActionRoute.copyShortHash:
+        return;
+    }
+  }
+
+  Future<void> _openFileHistoryForPath(
+    String path, {
+    bool blame = false,
+  }) async {
+    await showDialog<void>(
+      context: context,
+      builder: (_) => FileHistoryDialog(
+        gateway: widget.gateway,
+        repository: widget.repository,
+        initialPath: path,
+        initialBlame: blame,
+      ),
+    );
+  }
+
+  Future<void> _copyCommitFilePath(
+    String path, {
+    required bool absolute,
+  }) async {
+    final value = absolute
+        ? repositoryAbsolutePath(widget.repository.root, path)
+        : path;
+    await Clipboard.setData(ClipboardData(text: value));
+    if (mounted) {
+      _showActionMessage(
+        absolute ? 'Absolute path copied.' : 'Relative path copied.',
+      );
+    }
+  }
+
+  Future<void> _revealCommitFile(String path) async {
+    final result = await widget.fileManager.reveal(
+      repositoryAbsolutePath(widget.repository.root, path),
+    );
+    if (mounted) {
+      _showActionMessage(
+        result.isSuccess
+            ? 'Opened the file manager.'
+            : result.message ?? 'The file manager could not reveal this path.',
+      );
+    }
   }
 
   void _selectFile(GitCommitFileChange file) {

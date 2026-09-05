@@ -143,6 +143,32 @@ void main() {
     expect(gateway.threeWayCalls, 1);
     expect(tester.takeException(), isNull);
   });
+  testWidgets('exposes actions for each comparison file', (tester) async {
+    const repository = RepositoryOpened(
+      repositoryId: RepositoryId(value: 'comparison-file-actions-repository'),
+      root: '/workspace/project',
+    );
+    await tester.pumpWidget(
+      MaterialApp(
+        home: ComparisonDialog(
+          gateway: _ComparisonGateway(repository.repositoryId),
+          repository: repository,
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(
+      find.byKey(const ValueKey('comparison-file-actions:src/notes.txt')),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('File history'), findsOneWidget);
+    expect(find.text('Blame'), findsOneWidget);
+    expect(find.text('Compare revisions'), findsNWidgets(2));
+    expect(find.text('Copy path'), findsOneWidget);
+    expect(find.text('Copy absolute path'), findsOneWidget);
+    expect(find.text('Reveal in file manager'), findsOneWidget);
+  });
 }
 
 class _ComparisonGateway with GitPatchGatewayStub implements GitGateway {
