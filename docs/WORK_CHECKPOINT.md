@@ -5,42 +5,36 @@ This file is the handoff record for continuing work across query sessions.
 ## Current checkpoint
 
 - Date: 2026-09-06
-- Active task: Task 38 — signed public release pipeline is implemented through
-  the local Windows verification boundary; native signing and clean-machine
-  release validation remain external gates.
+- Active task: Task 38 — secretless public release packaging is implemented
+  through the local Windows verification boundary; the native three-platform
+  clean-machine release pass remains.
 - Branch: `main`; latest source commit is
-  `1e5753c feat(release): add signed desktop release pipeline`.
-- Completed in this session: added semver/tag validation; Linux, macOS, and
-  Windows archive packaging; Windows Authenticode and macOS
-  codesign/notarization helpers; SHA256SUMS, release metadata, CycloneDX SBOM,
-  dependency/license audit, pinned-action validation, and OIDC provenance
-  publication; and added an actionable first-run Git diagnostics card.
-- Exact next action: configure the signing secrets, push a
-  `release-v1.0.0` tag whose commit subject uses `release(scope):`, review all
-  three native archives and attestations, then perform clean-machine
-  install/launch/upgrade/downgrade/uninstall/Git-missing checks on Linux,
-  macOS, and Windows before marking Task 38 complete.
+  `18c69f9 fix(release): remove signing secret requirement`.
+- Completed in this session: removed all signing-secret workflow inputs and the
+  Windows Authenticode helper; changed the macOS helper to ad hoc
+  `codesign --sign -`; kept Windows executables unsigned; preserved checksums,
+  release metadata, SBOM, dependency/license audit, pinned-action verification,
+  and OIDC provenance; corrected Unix release-helper executable modes; and
+  updated trust documentation and Task 38 planning.
+- Exact next action: push a `release-v1.0.0` tag whose commit subject uses
+  `release(scope):`, review the three native archives and attestations, then
+  perform clean-machine install/launch/upgrade/downgrade/uninstall/Git-missing
+  checks on Linux, macOS, and Windows before marking Task 38 complete.
 - Current session files: `.github/workflows/ci.yml`, `CHANGELOG.md`,
   `TASKS.md`, `docs/POST_MVP_ROADMAP.md`, `docs/RELEASING.md`,
   `docs/superpowers/plans/2026-09-02-gift-dart-mvp.md`,
-  `lib/src/features/repository/welcome_screen.dart`,
-  `test/features/repository/welcome_screen_test.dart`, `pubspec.yaml`,
-  `pubspec.lock`, and `tool/{package_linux_release.sh,
-  package_macos_release.sh, package_windows_release.ps1,
-  release_metadata.dart, sign_macos_release.sh, sign_windows_release.ps1,
-  verify_workflow_pins.dart}`.
-- Verification: `dart run tool/verify.dart` passed formatting, Flutter
-  analysis, and all 292 tests; focused Welcome/app boot/visual regression
-  tests passed 13 and 18 tests respectively; Windows packaging produced and
-  verified the release archive; release metadata generation and checksum
-  verification passed on a generated fixture and the Windows archive; workflow
-  YAML parsing, 11 pinned GitHub Actions, Bash syntax, and PowerShell parsing
-  passed; and the diagnostics golden layout was visually checked for
-  containment.
-- Blockers: no Apple or Windows signing credentials are available in this
-  local session, and Linux/macOS native hosts are unavailable on this Windows
-  machine. The public-tag workflow is configured to fail closed until the
-  required secrets and native clean-machine pass are available.
+  `tool/package_linux_release.sh`, `tool/package_macos_release.sh`,
+  `tool/sign_macos_release.sh`, and deleted
+  `tool/sign_windows_release.ps1`.
+- Verification: the baseline `dart run tool/verify.dart` passed formatting,
+  Flutter analysis, and all 292 tests before this workflow-only migration;
+  current workflow YAML parsing, 11 pinned GitHub Actions, Bash syntax,
+  PowerShell packaging parsing, `git diff --check`, and an ad hoc macOS signing
+  smoke test without secrets all passed.
+- Blockers: Linux and macOS native hosts are unavailable on this Windows
+  machine. Windows binaries are intentionally unsigned and macOS packages are
+  intentionally not notarized; the remaining gate is the maintainer's
+  three-platform clean-machine release review.
 
 ## Previous checkpoint
 
