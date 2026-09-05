@@ -23,6 +23,7 @@ import 'package:gift/src/backend/submodule.dart';
 import 'package:gift/src/backend/recovery.dart';
 import 'package:gift/src/backend/setup.dart';
 import 'package:gift/src/backend/hosting.dart';
+import 'package:gift/src/backend/repository_paths.dart';
 
 /// Existing feature fakes do not need partial-patch behavior unless a test is
 /// specifically about it. This keeps those focused fakes small as the
@@ -38,6 +39,11 @@ mixin GitPatchGatewayStub {
 
   Future<GitStatusSnapshot> getStatus(RepositoryId repositoryId) =>
       throw UnimplementedError();
+
+  Future<GitRepositoryPathSnapshot> getRepositoryPaths(
+    RepositoryId repositoryId, {
+    int maxEntries = 2000,
+  }) => throw UnimplementedError();
 
   Future<GitHistoryPage> getHistory(
     RepositoryId repositoryId, {

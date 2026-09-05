@@ -13,6 +13,7 @@ import 'executor.dart';
 import 'remote.dart';
 import 'remote_branch.dart';
 import 'status.dart';
+import 'repository_paths.dart';
 import 'objects.dart';
 import 'shelf.dart';
 import 'file_history.dart';
@@ -60,6 +61,11 @@ class DartGitGateway
   Future<GitStatusSnapshot> getStatus(RepositoryId repositoryId) =>
       backend.getStatus(repositoryId);
 
+  @override
+  Future<GitRepositoryPathSnapshot> getRepositoryPaths(
+    RepositoryId repositoryId, {
+    int maxEntries = 2000,
+  }) => backend.getRepositoryPaths(repositoryId, maxEntries: maxEntries);
   @override
   Future<GitConflictSnapshot> getConflicts(RepositoryId repositoryId) =>
       backend.getConflicts(repositoryId);

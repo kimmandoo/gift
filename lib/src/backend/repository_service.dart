@@ -12,6 +12,7 @@ import 'discard.dart';
 import 'diff.dart';
 import 'error.dart';
 import 'executor.dart';
+import 'repository_paths.dart';
 import 'history.dart';
 import 'history_batch.dart';
 import 'interactive_rebase.dart';
@@ -1332,6 +1333,53 @@ class RepositoryService {
         stackTrace,
       );
     }
+  }
+
+  Future<GitRepositoryPathSnapshot> getRepositoryPaths(
+    RepositoryId repositoryId, {
+    int maxEntries = 2000,
+  }) async {
+    final handle = await state.lookup(repositoryId);
+    final output = await _runner.run(
+      GitInvocation(
+        program: gitPath,
+        args: const ['ls-files', '--cached', '-z'],
+        cwd: handle.root,
+        kind: GitOperationKind.read,
+        outputPolicy: const OutputPolicy.capture(maxBytes: 8 * 1024 * 1024),
+      ),
+    );
+    final paths = <String, GitRepositoryPathKind>{};
+    final decoded = utf8.decode(output.stdout, allowMalformed: true);
+    for (final rawPath in decoded.split('\u0000')) {
+      final path = rawPath;
+      if (path.isEmpty) continue;
+      paths[path] = GitRepositoryPathKind.file;
+      _addRepositoryPathDirectories(paths, path);
+    }
+    final status = await getStatus(repositoryId);
+    for (final change in status.changes) {
+      paths[change.path] = GitRepositoryPathKind.file;
+      _addRepositoryPathDirectories(paths, change.path);
+      if (change.originalPath case final original?) {
+        paths[original] = GitRepositoryPathKind.file;
+        _addRepositoryPathDirectories(paths, original);
+      }
+    }
+    final sorted = paths.entries.toList()
+      ..sort((left, right) => left.key.compareTo(right.key));
+    final limited = sorted
+        .take(maxEntries)
+        .map((entry) => GitRepositoryPath(path: entry.key, kind: entry.value));
+    return GitRepositoryPathSnapshot(
+      paths: limited,
+      fingerprint: hashGitObjectBytes(
+        utf8.encode(
+          sorted.map((entry) => '${entry.key}:${entry.value.name}').join('\n'),
+        ),
+      ),
+      isTruncated: sorted.length > maxEntries,
+    );
   }
 
   Future<GitIgnoreSnapshot> getIgnoreSnapshot(RepositoryId repositoryId) async {
@@ -12173,6 +12221,18 @@ bool _sameWorktreePath(String left, String right) {
   return Platform.isWindows
       ? normalizedLeft.toLowerCase() == normalizedRight.toLowerCase()
       : normalizedLeft == normalizedRight;
+}
+
+void _addRepositoryPathDirectories(
+  Map<String, GitRepositoryPathKind> paths,
+  String filePath,
+) {
+  final segments = filePath.split('/');
+  var current = '';
+  for (var index = 0; index < segments.length - 1; index++) {
+    current = current.isEmpty ? segments[index] : '$current/${segments[index]}';
+    paths.putIfAbsent(current, () => GitRepositoryPathKind.directory);
+  }
 }
 
 bool _isRecoverablePushFailure(GitErrorCategory category) => switch (category) {

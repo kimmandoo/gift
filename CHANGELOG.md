@@ -1,6 +1,8 @@
 # Changelog
 
 ## 2026-09-05
+- feat(paths): added bounded repository-relative search with browse suggestions,
+  separator normalization, file/folder validation, and stale-root protection.
 - feat(paths): added purpose-scoped editable folder fields with native browse,
   remembered safe locations, keyboard submission, and inline validation.
 - feat(workspace): added root-bound tab and recent-repository context actions

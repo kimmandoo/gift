@@ -882,14 +882,26 @@ system Git 2.35+.
 4. Reused the history through Welcome, workspace replacement, Changes, setup,
    and worktree flows, and verified the folder workflow suites plus analysis.
 
-## Active vertical: Repository path navigation (Task 47)
+## Completed vertical: Repository path navigation (Task 47)
 
-1. Record bounded tracked-path query and file/folder-kind behavior before
-   changing repository-relative path inputs.
-2. Add the first RED fixture for a searchable path field with manual entry and
-   a browse affordance.
-3. Reuse repository snapshots and validated relative paths so suggestions never
-   escape the active root or address stale rows.
+1. Recorded PATH-02 for bounded tracked/changed/original repository-relative
+   path lookup, separator normalization, stale-root safety, and kind checks.
+2. Added a bounded Git `ls-files --cached -z` path snapshot that merges
+   changed, deleted, renamed, and derived directory entries with a stable
+   fingerprint and truncation flag.
+3. Added a debounced searchable path field with manual entry, keyboard
+   submission, clear, browse suggestions, parent context, file/folder modes,
+   separator normalization, and traversal validation.
+4. Applied the field to History path filters, File History/Blame, folder
+   comparison, and hosting file links; stale gateway responses are ignored.
+5. Added widget coverage for browse/search/normalization/traversal and verified
+   affected repository flows plus analysis.
+
+## Active vertical: Visual regression QA (Task 39)
+
+1. Build deterministic fixture states for the completed repository workflows.
+2. Add overflow guards and interaction snapshots for the desktop surfaces.
+3. Run the platform font and golden matrix checks before public release.
 
 ## Completed follow-up: visible push progress
 

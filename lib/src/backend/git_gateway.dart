@@ -6,6 +6,7 @@ import 'discard.dart';
 import 'diff.dart';
 import 'comparison.dart';
 import 'status.dart';
+import 'repository_paths.dart';
 import 'history.dart';
 import 'interactive_rebase.dart';
 import 'executor.dart';
@@ -36,6 +37,25 @@ abstract interface class GitGateway {
   Future<RepositoryOpened> openRepository(String path);
 
   Future<GitStatusSnapshot> getStatus(RepositoryId repositoryId);
+
+  /// Returns a bounded repository-relative path snapshot. Implementations
+  /// with direct Git access can include unchanged tracked paths; the default
+  /// keeps test gateways useful from the current status snapshot.
+  Future<GitRepositoryPathSnapshot> getRepositoryPaths(
+    RepositoryId repositoryId, {
+    int maxEntries = 2000,
+  }) async {
+    final snapshot = GitRepositoryPathSnapshot.fromStatus(
+      await getStatus(repositoryId),
+    );
+    return snapshot.paths.length <= maxEntries
+        ? snapshot
+        : GitRepositoryPathSnapshot(
+            paths: snapshot.paths.take(maxEntries),
+            fingerprint: snapshot.fingerprint,
+            isTruncated: true,
+          );
+  }
 
   Future<GitConflictSnapshot> getConflicts(RepositoryId repositoryId);
 

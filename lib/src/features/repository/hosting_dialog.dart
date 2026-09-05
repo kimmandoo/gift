@@ -7,6 +7,7 @@ import 'package:gift/src/backend/domain.dart';
 import 'package:gift/src/backend/error.dart';
 import 'package:gift/src/backend/git_gateway.dart';
 import 'package:gift/src/backend/hosting.dart';
+import 'package:gift/src/features/repository/repository_path_field.dart';
 
 /// Shows provider links without making hosting authentication a prerequisite
 /// for any local Git operation.
@@ -260,15 +261,18 @@ class _HostingDialogState extends State<HostingDialog> {
             ),
           ),
           const SizedBox(height: 8),
-          TextField(
-            key: const Key('hosting-path'),
+          RepositoryPathField(
+            fieldKey: const Key('hosting-path'),
+            browseKey: const Key('hosting-path-browse'),
+            clearKey: const Key('hosting-path-clear'),
+            gateway: widget.gateway,
+            repository: widget.repository,
             controller: _pathController,
             enabled: !_isBusy,
-            decoration: const InputDecoration(
-              labelText: 'Repository-relative file (optional)',
-              border: OutlineInputBorder(),
-              isDense: true,
-            ),
+            mode: RepositoryPathMode.file,
+            label: 'Repository-relative file (optional)',
+            hint: 'src/main.dart',
+            onSubmitted: (_) => unawaited(_load()),
           ),
           const SizedBox(height: 8),
           LayoutBuilder(

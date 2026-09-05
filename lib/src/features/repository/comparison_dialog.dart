@@ -8,6 +8,7 @@ import 'package:gift/src/backend/error.dart';
 import 'package:gift/src/backend/git_gateway.dart';
 import 'package:gift/src/features/repository/context_actions.dart';
 import 'package:gift/src/features/repository/file_history_dialog.dart';
+import 'package:gift/src/features/repository/repository_path_field.dart';
 import 'package:gift/src/features/repository/path_actions.dart';
 import 'package:flutter/services.dart';
 
@@ -221,15 +222,17 @@ class _ComparisonDialogState extends State<ComparisonDialog> {
                 ),
                 onSubmitted: (_) => _compare(),
               );
-        final path = TextField(
-          key: const Key('comparison-path'),
+        final path = RepositoryPathField(
+          fieldKey: const Key('comparison-path'),
+          browseKey: const Key('comparison-path-browse'),
+          clearKey: const Key('comparison-path-clear'),
+          gateway: widget.gateway,
+          repository: widget.repository,
           controller: _pathController,
           enabled: !_busy,
-          decoration: const InputDecoration(
-            labelText: 'Folder (optional)',
-            hintText: 'src/',
-            border: OutlineInputBorder(),
-          ),
+          mode: RepositoryPathMode.directory,
+          label: 'Folder (optional)',
+          hint: 'src/',
           onSubmitted: (_) => _compare(),
         );
         final compareButton = FilledButton.icon(

@@ -13,6 +13,7 @@ import 'executor.dart';
 import 'remote.dart';
 import 'remote_branch.dart';
 import 'status.dart';
+import 'repository_paths.dart';
 import 'objects.dart';
 import 'shelf.dart';
 import 'file_history.dart';
@@ -80,6 +81,19 @@ class DartGitBackend {
       runner: _runner,
       shelfStore: _shelfStore,
     ).getStatus(repositoryId);
+  }
+
+  Future<GitRepositoryPathSnapshot> getRepositoryPaths(
+    RepositoryId repositoryId, {
+    int maxEntries = 2000,
+  }) async {
+    final installation = await getGitInstallation();
+    return RepositoryService(
+      gitPath: installation.executablePath,
+      state: _state,
+      runner: _runner,
+      shelfStore: _shelfStore,
+    ).getRepositoryPaths(repositoryId, maxEntries: maxEntries);
   }
 
   Future<GitConflictSnapshot> getConflicts(RepositoryId repositoryId) async {

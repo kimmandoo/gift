@@ -5,6 +5,7 @@ import 'package:gift/src/backend/domain.dart';
 import 'package:gift/src/backend/error.dart';
 import 'package:gift/src/backend/file_history.dart';
 import 'package:gift/src/backend/git_gateway.dart';
+import 'package:gift/src/features/repository/repository_path_field.dart';
 
 /// Shows path-scoped history and blame without replacing the global graph.
 class FileHistoryDialog extends StatefulWidget {
@@ -121,14 +122,18 @@ class _FileHistoryDialogState extends State<FileHistoryDialog> {
   }
 
   Widget _pathControls(BuildContext context, bool compact) {
-    final pathField = TextField(
-      key: const Key('file-history-path'),
+    final pathField = RepositoryPathField(
+      fieldKey: const Key('file-history-path'),
+      browseKey: const Key('file-history-path-browse'),
+      clearKey: const Key('file-history-path-clear'),
+      gateway: widget.gateway,
+      repository: widget.repository,
       controller: _path,
       enabled: !_loading,
-      decoration: const InputDecoration(
-        labelText: 'File or directory path',
-        border: OutlineInputBorder(),
-      ),
+      mode: RepositoryPathMode.either,
+      allowEmpty: false,
+      label: 'File or directory path',
+      hint: 'src/main.dart',
       onSubmitted: (_) => unawaited(_loadHistory()),
     );
     final loadButton = FilledButton.icon(

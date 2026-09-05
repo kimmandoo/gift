@@ -6,10 +6,10 @@
 
 ## Progress
 
-- **Completed:** 46 / 48
-- **Current Active Task:** Task 47 — Repository path navigation.
-- **Next priority:** activate Task 47, then Task 39 visual regression QA, and
-  finally Task 38 public release.
+- **Completed:** 47 / 48
+- **Current Active Task:** Task 39 — Visual regression QA.
+- **Next priority:** activate Task 39 visual regression QA, then Task 38
+  public release.
 
 | # | Scope | Dart backend deliverables | Flutter deliverables | Status |
 |---|---|---|---|:---:|
@@ -60,7 +60,7 @@
 | **44** | Branch and remote actions | Ref-bound operation routing and freshness checks | Local/remote branch context menus | ✅ |
 | **45** | Workspace context actions | Root-bound tab and recent-repository operations | Tab/recent/nested-root context menus | ✅ |
 | **46** | Native folder chooser UX | Purpose-scoped path validation and recent locations | Browse-assisted editable absolute-path fields | ✅ |
-| **47** | Repository path navigation | Bounded tracked-path queries and path validation | Searchable file/folder pickers with manual entry | ⬜ |
+| **47** | Repository path navigation | Bounded tracked-path queries and path validation | Searchable file/folder pickers with manual entry | ✅ |
 
 ## Completed foundations
 
@@ -724,3 +724,18 @@ and Task 39 visual regression QA.
 
 Task 46 is complete. Task 47 is now the active priority, followed by Task 39
 visual regression QA.
+
+### ✅ Task 47: Repository path navigation
+
+- [x] Record PATH-02 for bounded tracked, changed, deleted, renamed, nested,
+  and Unicode repository-relative path lookup.
+- [x] Add the first RED/green searchable path-field fixture with manual entry,
+  separator normalization, and a browse affordance.
+- [x] Add bounded Git path snapshots with directory derivation, stable
+  fingerprints, truncation, stale response guards, and file/folder validation.
+- [x] Apply repository path navigation to History, File History/Blame,
+  comparison, and hosting file-link inputs.
+- [x] Verify the path-field widget, affected repository flows, and
+  `flutter analyze`.
+
+Task 47 is complete. Task 39 visual regression QA is now the active priority.

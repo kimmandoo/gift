@@ -15,6 +15,7 @@ import 'package:gift/src/features/repository/branch_dialog.dart';
 import 'package:gift/src/features/repository/comparison_dialog.dart';
 import 'package:gift/src/features/repository/context_actions.dart';
 import 'package:gift/src/features/repository/path_actions.dart';
+import 'package:gift/src/features/repository/repository_path_field.dart';
 import 'package:gift/src/features/repository/file_history_dialog.dart';
 import 'package:gift/src/features/repository/history_batch_dialog.dart';
 import 'package:gift/src/backend/branch.dart';
@@ -342,12 +343,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
                 'history-ref-filter',
                 fieldWidth,
               ),
-              _filterField(
-                _pathController,
-                'Changed path',
-                'history-path-filter',
-                fieldWidth,
-              ),
+              _repositoryPathFilter(fieldWidth),
               _filterField(
                 _afterController,
                 'Authored after (ISO date)',
@@ -443,6 +439,24 @@ class _HistoryScreenState extends State<HistoryScreen> {
         key: Key(key),
         controller: controller,
         decoration: InputDecoration(labelText: label, isDense: true),
+      ),
+    );
+  }
+
+  Widget _repositoryPathFilter(double width) {
+    return SizedBox(
+      width: width,
+      child: RepositoryPathField(
+        fieldKey: const Key('history-path-filter'),
+        browseKey: const Key('history-path-browse'),
+        clearKey: const Key('history-path-clear'),
+        gateway: widget.gateway,
+        repository: widget.repository,
+        controller: _pathController,
+        mode: RepositoryPathMode.either,
+        label: 'Changed path',
+        hint: 'src/main.dart',
+        onSubmitted: (_) => _applyFilters(),
       ),
     );
   }
