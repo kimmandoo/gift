@@ -5,55 +5,35 @@ This file is the handoff record for continuing work across query sessions.
 ## Current checkpoint
 
 - Date: 2026-09-05
-- Active task: Task 39 — Visual regression QA; Welcome matrix slice complete.
-- Branch: `main`; latest commit is
-  `270859d test(ui): add visual regression matrix`.
-- Completed in this session: added deterministic Welcome-screen visual fixtures
-  for compact, standard, and wide windows in dark and light themes, including a
-  1.2x compact text-scale case. Added bounds checks for the logo, toolbar
-  controls, action buttons, responsive stacking/alignment, and theme-toggle
-  interaction. Updated the stale app-boot alignment assertion to the current
-  `Get started` welcome hierarchy.
-- Exact next action: extend the same matrix to representative repository
-  dialogs, then capture reviewed platform-specific golden baselines.
-- Committed Task 47 files: `CHANGELOG.md`, `TASKS.md`,
-  `docs/research/jetbrains-git-mvp-behavior.md`,
+- Active task: Task 39 — Visual regression QA; Welcome and representative
+  repository-dialog matrix slices are complete. Windows setup packaging now
+  uses a distinct interactive installer wizard.
+- Branch: `main`; latest source commit is
+  `456471d feat(windows): add interactive setup wizard`.
+- Completed in this session: added compact dark 1.2x and standard light
+  repository Push and Repository Setup dialog fixtures with viewport and
+  spacing assertions. Replaced the Windows setup launcher with a visible
+  WinForms wizard that selects the install directory, Start Menu/Desktop
+  shortcuts, and post-install launch behavior. Kept the portable launcher
+  temporary and non-installing, added `-STA` to the setup bridge, and added
+  PowerShell packaging syntax/identity verification.
+- Exact next action: capture reviewed platform-specific golden baselines for
+  the Welcome and repository-dialog fixtures, then reassess Task 38 public
+  release readiness.
+- Current session files: `CHANGELOG.md`, `README.md`, `docs/RELEASING.md`,
   `docs/superpowers/plans/2026-09-02-gift-dart-mvp.md`,
-  `lib/src/backend/repository_paths.dart`,
-  `lib/src/backend/repository_service.dart`,
-  `lib/src/backend/git_gateway.dart`,
-  `lib/src/backend/dart_git_backend.dart`,
-  `lib/src/backend/dart_git_gateway.dart`,
-  `lib/src/features/repository/repository_path_field.dart`,
-  `lib/src/features/repository/history_screen.dart`,
-  `lib/src/features/repository/file_history_dialog.dart`,
-  `lib/src/features/repository/comparison_dialog.dart`,
-  `lib/src/features/repository/hosting_dialog.dart`,
-  `test/helpers/git_patch_gateway_stub.dart`, and
-  `test/features/repository/repository_path_field_test.dart`.
-- Current overlap-fix files: `lib/src/app/pixel_theme.dart`,
-  `lib/src/features/repository/changes_screen.dart`,
-  `lib/src/features/repository/folder_path_field.dart`,
-  `lib/src/features/repository/repository_path_field.dart`,
-  `test/features/repository/changes_screen_test.dart`, and
-  `test/features/repository/repository_setup_dialog_test.dart`.
-- Current account-selector files: `lib/src/features/repository/remote_dialog.dart`,
-  `lib/src/features/repository/repository_setup_dialog.dart`,
-  `test/features/repository/remote_dialog_test.dart`, and
-  `test/features/repository/repository_setup_dialog_test.dart`.
-- Current visual QA files: `CHANGELOG.md`,
-  `docs/superpowers/plans/2026-09-02-gift-dart-mvp.md`,
-  `test/app_boot_test.dart`, and `test/app/visual_regression_test.dart`.
+  `test/app/visual_regression_test.dart`, `tool/windows_setup_launcher.ps1`,
+  `tool/windows_setup_launcher.vbs`, `tool/windows_packaging_test.ps1`, and
+  this checkpoint.
 - Verification: `flutter test test/app_boot_test.dart
-  test/app/visual_regression_test.dart` passed (14 tests), and `flutter
-  analyze` passed with no issues. A full `flutter test` run was attempted
-  before the stale app-boot assertion correction and also exposed 15 existing
-  Windows backend failures involving CRLF/encoding, interactive-rebase process
-  behavior, and locked temporary submodule files; the corrected app-boot and
-  new visual matrix pass in the focused run.
-- Blockers: full cross-platform suite remains blocked by the listed Windows
-  backend environment failures; visual dialog matrix and platform goldens remain
-  the next Task 39 work.
+  test/app/visual_regression_test.dart` passed (18 tests); `flutter analyze`
+  passed with no issues; `powershell.exe -NoProfile -ExecutionPolicy Bypass
+  -File tool/windows_packaging_test.ps1` passed. A full `flutter test` run
+  remains affected by the previously observed 15 Windows backend/environment
+  failures involving CRLF/encoding, interactive-rebase process behavior, and
+  locked temporary submodule files.
+- Blockers: platform-specific golden capture and the known full-suite Windows
+  backend failures remain before release completion.
 
 ## Previous checkpoint
 

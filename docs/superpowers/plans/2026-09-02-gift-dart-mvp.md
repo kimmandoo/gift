@@ -902,11 +902,11 @@ system Git 2.35+.
 
 1. Added deterministic Welcome-screen fixtures for compact, standard, and wide
    windows in dark and light themes, including a 1.2x compact text-scale case.
-2. Added bounds checks for the logo, toolbar controls, action buttons, compact
-   stacking, standard/wide alignment, and theme-toggle interaction in
-   `test/app/visual_regression_test.dart`.
-3. Next: extend the same matrix to representative repository dialogs and
-   capture reviewed platform-specific golden baselines.
+2. Added representative Push and Repository Setup dialog fixtures for compact
+   dark 1.2x text and standard light 1.0x text, with bounds and spacing checks
+   in `test/app/visual_regression_test.dart`.
+3. Next: capture reviewed platform-specific golden baselines for the welcome
+   and repository-dialog fixtures.
 
 ## Completed follow-up: visible push progress
 
