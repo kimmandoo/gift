@@ -7,9 +7,9 @@
 ## Progress
 
 - **Completed:** 44 / 48
-- **Current Active Task:** Follow-up — Multi-file stage selection.
-- **Next priority:** finish the multi-file stage-selection follow-up, then Tasks
-  45–47, Task 39 visual regression QA, and finally Task 38 public release.
+- **Current Active Task:** Task 45 — Workspace context actions.
+- **Next priority:** activate Task 45, then Tasks 46–47, Task 39 visual
+  regression QA, and finally Task 38 public release.
 
 | # | Scope | Dart backend deliverables | Flutter deliverables | Status |
 |---|---|---|---|:---:|
@@ -682,5 +682,15 @@ ahead of Task 39.
 - [x] Verify stale refs, current/detached/protected/dirty states, and keyboard
   parity.
 
-Task 44 is complete. The multi-file stage-selection follow-up is now active;
-Tasks 45–47 remain ahead of Task 39.
+Task 44 is complete. The multi-file stage-selection follow-up is also complete;
+Task 45 is the next activation ahead of Tasks 46–47 and Task 39.
+
+### ✅ Completed follow-up: Multi-file stage selection
+
+- [x] Record ACTION-13 for independent path selection and staged facets.
+- [x] Add the first RED multi-file staging fixture.
+- [x] Add path-based selection state with refresh pruning.
+- [x] Add serialized Stage selected routing and refreshed status handling.
+- [x] Add square pixel checkbox controls with pointer and keyboard parity.
+- [x] Verify selection refresh, batch staging, focused diff preservation, and
+  the complete Changes regression suite.

@@ -421,6 +421,24 @@ ThemeData buildPixelTheme({
       margin: EdgeInsets.zero,
       shape: square,
     ),
+    checkboxTheme: CheckboxThemeData(
+      checkColor: WidgetStatePropertyAll(scheme.onPrimary),
+      fillColor: WidgetStateProperty.resolveWith((states) {
+        if (states.contains(WidgetState.disabled)) {
+          return muted.withValues(alpha: 0.18);
+        }
+        if (states.contains(WidgetState.selected) ||
+            states.contains(WidgetState.pressed) ||
+            states.contains(WidgetState.focused)) {
+          return primary;
+        }
+        return Colors.transparent;
+      }),
+      side: border,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+      visualDensity: VisualDensity.compact,
+      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+    ),
     dialogTheme: DialogThemeData(
       backgroundColor: panel,
       elevation: 0,

@@ -133,6 +133,7 @@ class _ChangesScreenBodyState extends ConsumerState<_ChangesScreenBody> {
   var _cleanup = GitCommitCleanupMode.defaultMode;
   String? _loadedTemplate;
   GitError? _templateError;
+  final Map<String, FocusNode> _changeSelectionFocusNodes = {};
 
   @override
   void initState() {
@@ -162,6 +163,9 @@ class _ChangesScreenBodyState extends ConsumerState<_ChangesScreenBody> {
     _commitMessageController.dispose();
     _authorNameController.dispose();
     _authorEmailController.dispose();
+    for (final node in _changeSelectionFocusNodes.values) {
+      node.dispose();
+    }
     _manualController?.removeListener(_onChanged);
     super.dispose();
   }
@@ -422,6 +426,8 @@ class _ChangesScreenBodyState extends ConsumerState<_ChangesScreenBody> {
               _summary(context, snapshot),
               if (snapshot.conflicts.isNotEmpty)
                 _conflictWorkspaceBanner(context, snapshot),
+              if (controller.state.selectedPaths.isNotEmpty)
+                _multiStageSelectionBar(context, controller, state),
               if (state.error case final error?) _errorBanner(context, error),
             ],
             if (state.isLoading) const LinearProgressIndicator(),
@@ -601,6 +607,58 @@ class _ChangesScreenBodyState extends ConsumerState<_ChangesScreenBody> {
                 : () => unawaited(_openConflictWorkspace(context)),
             icon: const Icon(Icons.merge_type),
             label: const Text('Resolve conflicts'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _multiStageSelectionBar(
+    BuildContext context,
+    ChangesController controller,
+    ChangesState state,
+  ) {
+    final count = state.selectedPaths.length;
+    final label = '$count file${count == 1 ? '' : 's'} selected';
+    return Container(
+      key: const Key('multi-stage-selection'),
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+      color: Theme.of(context).colorScheme.primaryContainer,
+      child: Wrap(
+        crossAxisAlignment: WrapCrossAlignment.center,
+        spacing: 12,
+        runSpacing: 8,
+        children: [
+          Icon(
+            Icons.checklist,
+            size: 18,
+            color: Theme.of(context).colorScheme.onPrimaryContainer,
+          ),
+          Text(
+            label,
+            style: TextStyle(
+              color: Theme.of(context).colorScheme.onPrimaryContainer,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          OutlinedButton(
+            key: const Key('clear-stage-selection'),
+            onPressed: state.isMutating ? null : controller.clearPathSelection,
+            child: const Text('Clear'),
+          ),
+          FilledButton.icon(
+            key: const Key('stage-selected-changes'),
+            onPressed: state.isMutating || !controller.canStageSelectedPaths
+                ? null
+                : () => unawaited(controller.stageSelectedPaths()),
+            icon: state.isMutating
+                ? const SizedBox(
+                    width: 16,
+                    height: 16,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : const Icon(Icons.add, size: 18),
+            label: const Text('Stage selected'),
           ),
         ],
       ),
@@ -1138,7 +1196,13 @@ class _ChangesScreenBodyState extends ConsumerState<_ChangesScreenBody> {
           key: ValueKey('${group.name}:${change.path}'),
           dense: true,
           selected: selected,
-          leading: _statusBadge(context, change),
+          leading: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              _changeSelectionBox(change, state),
+              _statusBadge(context, change),
+            ],
+          ),
           title: Text(
             change.path,
             maxLines: 1,
@@ -1155,6 +1219,62 @@ class _ChangesScreenBodyState extends ConsumerState<_ChangesScreenBody> {
             key: ValueKey('change-actions:${change.path}'),
           ),
           onTap: () => unawaited(_activeController.selectChange(change)),
+        ),
+      ),
+    );
+  }
+
+  Widget _changeSelectionBox(
+    GitChange change,
+    ChangesState state,
+  ) {
+    final controller = _activeController;
+    final enabled = controller.canStagePath(change) && !state.isMutating;
+    final focusNode = _changeSelectionFocusNodes.putIfAbsent(
+      change.path,
+      FocusNode.new,
+    );
+    return SizedBox(
+      width: 36,
+      child: Listener(
+        onPointerDown: enabled ? (_) => focusNode.requestFocus() : null,
+        child: Focus(
+          focusNode: focusNode,
+          canRequestFocus: enabled,
+          descendantsAreFocusable: false,
+          descendantsAreTraversable: false,
+          onKeyEvent: enabled
+              ? (node, event) {
+                  if (event is KeyDownEvent &&
+                      event.logicalKey == LogicalKeyboardKey.space) {
+                    controller.togglePathSelection(
+                      change.path,
+                      !state.selectedPaths.contains(change.path),
+                    );
+                    return KeyEventResult.handled;
+                  }
+                  return KeyEventResult.ignored;
+                }
+              : null,
+          child: Transform.scale(
+            scale: _diffCheckboxScale,
+            child: Checkbox(
+              key: ValueKey('change-select:${change.path}'),
+              value: state.selectedPaths.contains(change.path),
+              onChanged: enabled
+                  ? (selected) {
+                      if (selected != null) {
+                        controller.togglePathSelection(change.path, selected);
+                      }
+                    }
+                  : null,
+              visualDensity: VisualDensity.compact,
+              materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              semanticLabel: enabled
+                  ? 'Select ${change.path} for staging'
+                  : '${change.path} cannot be staged',
+            ),
+          ),
         ),
       ),
     );

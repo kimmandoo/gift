@@ -845,14 +845,22 @@ system Git 2.35+.
 6. Verified branch-dialog regressions, `flutter analyze`, and the focused
    branch/history/comparison/object/push/context-menu suite.
 
-## Active follow-up: multi-file stage selection
+## Completed follow-up: multi-file stage selection
 
-1. Add a behavior-ledger scenario and first RED fixture for selecting multiple
-   changed paths with keyboard-accessible 2D checkbox controls.
-2. Extend the Changes controller with a path-set selection and one serialized
-   batch stage operation that refreshes status and removes disappeared paths.
-3. Add a themed selection summary and explicit Stage selected action without
-   changing the existing single-file diff selection behavior.
+1. Added ACTION-13 for independently selected changed paths and staged facets.
+2. Added the first RED screen fixture, then implemented path-based selection
+   state with refresh pruning and a serialized Stage selected operation.
+3. Added a visible selected-count bar, explicit batch staging, and square pixel
+   checkbox controls without changing diff-focused row selection.
+4. Added pointer focus restoration and explicit Space-key handling for keyboard
+   parity; selected paths clear or remain recoverable according to refreshed
+   status and operation success.
+5. Verified the complete Changes screen suite, pixel theme contract, and
+   `flutter analyze`.
+
+## Next activation: workspace context actions (Task 45)
+
+Task 45 remains the next numbered vertical after this follow-up and Task 44.
 
 ## Completed follow-up: visible push progress
 

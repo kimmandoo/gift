@@ -47,6 +47,38 @@ void main() {
     controller.dispose();
   });
 
+  test(
+    'prunes multi-file staging selections when status refresh removes paths',
+    () async {
+      final repository = const RepositoryOpened(
+        repositoryId: RepositoryId(value: 'multi-stage-refresh-repository'),
+        root: '/workspace/project',
+      );
+      final gateway = FakeChangesGateway(
+        snapshots: [
+          snapshot(
+            repository,
+            changes: [change('lib/app.dart'), change('notes.txt')],
+          ),
+          snapshot(repository, changes: [change('notes.txt')]),
+        ],
+      );
+      final controller = ChangesController(
+        gateway: gateway,
+        repositoryId: repository.repositoryId,
+        pollInterval: const Duration(hours: 1),
+      );
+
+      await controller.refresh();
+      controller.togglePathSelection('lib/app.dart', true);
+      controller.togglePathSelection('notes.txt', true);
+      await controller.refresh();
+
+      expect(controller.state.selectedPaths, {'notes.txt'});
+      controller.dispose();
+    },
+  );
+
   test('reuses a diff until the status snapshot changes', () async {
     final repository = const RepositoryOpened(
       repositoryId: RepositoryId(value: 'diff-cache-repository'),
@@ -965,6 +997,111 @@ void main() {
     }
     controller.dispose();
   });
+
+  testWidgets('selects multiple changed paths before staging them', (
+    tester,
+  ) async {
+    final repository = const RepositoryOpened(
+      repositoryId: RepositoryId(value: 'multi-stage-repository'),
+      root: '/workspace/project',
+    );
+    final gateway = FakeChangesGateway(
+      snapshots: [
+        snapshot(
+          repository,
+          changes: [change('lib/app.dart'), change('notes.txt')],
+        ),
+      ],
+      stageSnapshot: snapshot(repository, changes: const <GitChange>[]),
+    );
+    final controller = ChangesController(
+      gateway: gateway,
+      repositoryId: repository.repositoryId,
+      pollInterval: const Duration(hours: 1),
+    );
+    await controller.refresh();
+
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: buildPixelTheme(brightness: Brightness.light),
+        home: ChangesScreen(
+          gateway: gateway,
+          repository: repository,
+          controller: controller,
+          autoInitialize: false,
+        ),
+      ),
+    );
+
+    expect(find.byKey(const ValueKey('stage-selected-changes')), findsNothing);
+    await tester.tap(find.byKey(const ValueKey('change-select:lib/app.dart')));
+    await tester.tap(find.byKey(const ValueKey('change-select:notes.txt')));
+    await tester.pump();
+
+    expect(find.text('2 files selected'), findsOneWidget);
+    expect(
+      find.byKey(const ValueKey('stage-selected-changes')),
+      findsOneWidget,
+    );
+    expect(controller.state.selectedPath, isNull);
+
+    await tester.tap(find.byKey(const ValueKey('stage-selected-changes')));
+    await tester.pumpAndSettle();
+
+    expect(gateway.stagedPaths, ['lib/app.dart', 'notes.txt']);
+    expect(controller.state.snapshot?.isClean, isTrue);
+    expect(controller.state.selectedPaths, isEmpty);
+    controller.dispose();
+  });
+  testWidgets('toggles changed-path selection with the keyboard', (
+    tester,
+  ) async {
+    final repository = const RepositoryOpened(
+      repositoryId: RepositoryId(value: 'multi-stage-keyboard-repository'),
+      root: '/workspace/project',
+    );
+    final gateway = FakeChangesGateway(
+      snapshots: [
+        snapshot(repository, changes: [change('lib/app.dart')]),
+      ],
+    );
+    final controller = ChangesController(
+      gateway: gateway,
+      repositoryId: repository.repositoryId,
+      pollInterval: const Duration(hours: 1),
+    );
+    await controller.refresh();
+
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: buildPixelTheme(brightness: Brightness.light),
+        home: ChangesScreen(
+          gateway: gateway,
+          repository: repository,
+          controller: controller,
+          autoInitialize: false,
+        ),
+      ),
+    );
+
+    final checkbox = find.byKey(
+      const ValueKey('change-select:lib/app.dart'),
+    );
+    final focus = tester.widget<Focus>(
+      find.ancestor(of: checkbox, matching: find.byType(Focus)).first,
+    );
+    focus.focusNode!.requestFocus();
+    await tester.pump();
+
+    await tester.sendKeyEvent(LogicalKeyboardKey.space);
+    await tester.pump();
+    expect(controller.state.selectedPaths, {'lib/app.dart'});
+
+    await tester.sendKeyEvent(LogicalKeyboardKey.space);
+    await tester.pump();
+    expect(controller.state.selectedPaths, isEmpty);
+    controller.dispose();
+  });
 }
 
 GitChange change(String path) {
@@ -1090,6 +1227,7 @@ class FakeChangesGateway with GitPatchGatewayStub implements GitGateway {
   var diffCalls = 0;
   var statusCalls = 0;
   var stageCalls = 0;
+  final List<String> stagedPaths = [];
   var unstageCalls = 0;
   var stagePatchCalls = 0;
   var unstagePatchCalls = 0;
@@ -1145,12 +1283,6 @@ class FakeChangesGateway with GitPatchGatewayStub implements GitGateway {
   ) => throw UnimplementedError();
 
   @override
-  Future<GitBranchActionResult> switchBranch(
-    RepositoryId repositoryId,
-    String name,
-  ) => throw UnimplementedError();
-
-  @override
   Future<List<GitRemote>> getRemotes(RepositoryId repositoryId) =>
       throw UnimplementedError();
 
@@ -1198,6 +1330,7 @@ class FakeChangesGateway with GitPatchGatewayStub implements GitGateway {
     RepositoryId repositoryId,
     String path,
   ) async {
+    stagedPaths.add(path);
     stageCalls++;
     return stageSnapshot ?? snapshots.last;
   }

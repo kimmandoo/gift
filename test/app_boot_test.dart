@@ -37,6 +37,11 @@ void main() {
     expect(theme.colorScheme.primary, pixelMint);
     expect(theme.colorScheme.error, pixelCoral);
     expect(theme.cardTheme.elevation, 0);
+    expect(theme.checkboxTheme.visualDensity, VisualDensity.compact);
+    expect(
+      (theme.checkboxTheme.shape as RoundedRectangleBorder).borderRadius,
+      BorderRadius.zero,
+    );
     expect(theme.textTheme.bodyMedium?.fontFamily, pixelFontFamily);
     expect(theme.textTheme.headlineMedium?.fontFamily, pixelDisplayFontFamily);
     expect(theme.textTheme.bodyLarge?.fontSize, pixelBodyLargeSize);

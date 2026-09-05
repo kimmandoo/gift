@@ -46,6 +46,7 @@ class ChangesState {
     this.snapshot,
     this.error,
     this.selectedPath,
+    this.selectedPaths = const <String>{},
     this.diff,
     this.diffError,
     this.mutationError,
@@ -71,6 +72,7 @@ class ChangesState {
   final GitStatusSnapshot? snapshot;
   final GitError? error;
   final String? selectedPath;
+  final Set<String> selectedPaths;
   final GitDiffSnapshot? diff;
   final GitError? diffError;
   final GitError? mutationError;
@@ -105,6 +107,7 @@ class ChangesState {
     bool clearError = false,
     String? selectedPath,
     bool clearSelectedPath = false,
+    Set<String>? selectedPaths,
     GitDiffSnapshot? diff,
     bool clearDiff = false,
     GitError? diffError,
@@ -142,6 +145,7 @@ class ChangesState {
       selectedPath: clearSelectedPath
           ? null
           : selectedPath ?? this.selectedPath,
+      selectedPaths: selectedPaths ?? this.selectedPaths,
       diff: clearDiff ? null : diff ?? this.diff,
       diffError: clearDiffError ? null : diffError ?? this.diffError,
       mutationError: clearMutationError
@@ -251,6 +255,14 @@ class ChangesController extends ChangeNotifier {
 
     try {
       final snapshot = await gateway.getStatus(repositoryId);
+      final selectedPaths = _state.selectedPaths
+          .where(
+            (path) => snapshot.changes.any((change) => change.path == path),
+          )
+          .toSet();
+      final selectedPathsChanged =
+          selectedPaths.length != _state.selectedPaths.length ||
+          _state.selectedPaths.any((path) => !selectedPaths.contains(path));
       final selectedPath = _state.selectedPath;
       final previousSnapshot = _state.snapshot;
       final statusChanged =
@@ -265,6 +277,7 @@ class ChangesController extends ChangeNotifier {
       final selectionChanged = selectedPath != null && !selectionStillExists;
       if (!statusChanged &&
           !selectionChanged &&
+          !selectedPathsChanged &&
           !exposeProgress &&
           _state.error == null) {
         return;
@@ -277,6 +290,7 @@ class ChangesController extends ChangeNotifier {
           snapshot: snapshot,
           clearError: true,
           selectedPath: selectionStillExists ? selectedPath : null,
+          selectedPaths: Set.unmodifiable(selectedPaths),
           clearSelectedPath: !selectionStillExists,
           clearDiff: !selectionStillExists,
           clearDiffError: !selectionStillExists,
@@ -327,6 +341,38 @@ class ChangesController extends ChangeNotifier {
     );
     _lastDiffLineIndex = null;
   }
+
+  /// Toggles a path in the multi-file staging set without changing the
+  /// diff-focused row selection.
+  void togglePathSelection(String path, bool selected) {
+    if (_disposed) return;
+    final change = _state.snapshot?.changes
+        .where((candidate) => candidate.path == path)
+        .firstOrNull;
+    if (change == null) return;
+    final paths = Set<String>.from(_state.selectedPaths);
+    if (selected && canStagePath(change)) {
+      paths.add(path);
+    } else {
+      paths.remove(path);
+    }
+    _setState(_state.copyWith(selectedPaths: Set.unmodifiable(paths)));
+  }
+
+  void clearPathSelection() {
+    if (_disposed || _state.selectedPaths.isEmpty) return;
+    _setState(_state.copyWith(selectedPaths: const <String>{}));
+  }
+
+  bool canStagePath(GitChange change) =>
+      !change.isConflicted && (change.isUntracked || change.isUnstaged);
+
+  bool get canStageSelectedPaths => _state.selectedPaths.any((path) {
+    final change = _state.snapshot?.changes
+        .where((candidate) => candidate.path == path)
+        .firstOrNull;
+    return change != null && canStagePath(change);
+  });
 
   /// Selects a status row and lazily loads only that file's diff.
   Future<void> selectChange(GitChange change) async {
@@ -429,6 +475,7 @@ class ChangesController extends ChangeNotifier {
         !change.isUntracked;
   }
 
+  Future<void> stageSelectedPaths() => _mutateSelectedPaths(gateway.stage);
   Future<void> stageSelected() => _mutateSelected(gateway.stage);
 
   Future<void> unstageSelected() => _mutateSelected(gateway.unstage);
@@ -866,6 +913,101 @@ class ChangesController extends ChangeNotifier {
     } on GitError catch (error) {
       if (!_disposed) {
         _setState(_state.copyWith(discardError: error, isMutating: false));
+      }
+    } finally {
+      _mutationInFlight = false;
+    }
+  }
+
+  Future<void> _mutateSelectedPaths(
+    Future<GitStatusSnapshot> Function(RepositoryId, String) operation,
+  ) async {
+    if (_disposed || _mutationInFlight) return;
+    final snapshot = _state.snapshot;
+    if (snapshot == null) return;
+    final paths = _state.selectedPaths.where((path) {
+      final change = snapshot.changes
+          .where((candidate) => candidate.path == path)
+          .firstOrNull;
+      return change != null && canStagePath(change);
+    }).toList();
+    if (paths.isEmpty) return;
+
+    _mutationInFlight = true;
+    _diffCache.clear();
+    final completed = <String>{};
+    _setState(
+      _state.copyWith(
+        clearMutationError: true,
+        clearCommitResult: true,
+        clearCommitError: true,
+        clearDiscardPreview: true,
+        clearDiscardError: true,
+        clearDiff: true,
+        clearDiffError: true,
+        clearDiffSelection: true,
+        isMutating: true,
+      ),
+    );
+    try {
+      GitStatusSnapshot? latestSnapshot;
+      for (final path in paths) {
+        latestSnapshot = await operation(repositoryId, path);
+        completed.add(path);
+      }
+      if (_disposed || latestSnapshot == null) return;
+      final selectedPath = _state.selectedPath;
+      final selected = selectedPath == null
+          ? null
+          : latestSnapshot.changes
+                .where((candidate) => candidate.path == selectedPath)
+                .firstOrNull;
+      final remainingPaths = _state.selectedPaths
+          .difference(completed)
+          .where(
+            (path) => latestSnapshot!.changes.any(
+              (candidate) => candidate.path == path,
+            ),
+          )
+          .toSet();
+      _setState(
+        _state.copyWith(
+          snapshot: latestSnapshot,
+          selectedPaths: Set.unmodifiable(remainingPaths),
+          selectedPath: selected?.path,
+          clearSelectedPath: selected == null,
+          clearDiff: true,
+          clearDiffError: true,
+          clearMutationError: true,
+          isMutating: false,
+        ),
+      );
+      if (selected != null) {
+        await loadDiff(
+          selected.path,
+          originalPath: selected.originalPath,
+          scope: _defaultDiffScope(selected),
+        );
+      }
+    } on GitError catch (error) {
+      if (!_disposed) {
+        final remainingPaths = _state.selectedPaths
+            .difference(completed)
+            .where(
+              (path) =>
+                  _state.snapshot?.changes.any(
+                    (candidate) => candidate.path == path,
+                  ) ??
+                  false,
+            )
+            .toSet();
+        _setState(
+          _state.copyWith(
+            selectedPaths: Set.unmodifiable(remainingPaths),
+            mutationError: error,
+            isMutating: false,
+          ),
+        );
       }
     } finally {
       _mutationInFlight = false;

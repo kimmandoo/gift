@@ -5,32 +5,35 @@ This file is the handoff record for continuing work across query sessions.
 ## Current checkpoint
 
 - Date: 2026-09-05
-- Active task: Follow-up — Multi-file stage selection.
+- Active task: Task 45 — Workspace context actions.
 - Branch: `main`; committed base is
-  `c94030e feat(actions): add path context menus`.
-- Completed in this session: Task 44 local and remote branch context menus,
-  full-ref identities, stale-row routing guards, reviewed workflow routes, and
-  branch/history/comparison/object/push regression coverage.
-- Exact next action: add the behavior-ledger scenario and first RED fixture for
-  selecting multiple changed paths, then extend ChangesController with a
-  serialized batch-stage operation and themed checkbox controls.
-- Changed files in the uncommitted Task 44 batch: `TASKS.md`, `CHANGELOG.md`,
-  `docs/superpowers/plans/2026-09-02-gift-dart-mvp.md`,
+  `0337fb5 feat(actions): add branch context menus`.
+- Completed in this session: Task 44 local and remote branch context menus and
+  the multi-file stage-selection follow-up. ACTION-13 is recorded; the Changes
+  controller now owns path-based selection, refresh pruning, serialized batch
+  staging, and status refresh handling; the Changes screen has square pixel
+  checkbox controls, a selected-count bar, and keyboard parity.
+- Exact next action: activate Task 45 with its behavior-ledger scenario and
+  first RED workspace-context fixture.
+- Changed files in the uncommitted follow-up batch: `CHANGELOG.md`, `TASKS.md`,
+  `docs/WORK_CHECKPOINT.md`,
   `docs/research/jetbrains-git-mvp-behavior.md`,
-  `lib/src/features/repository/branch_dialog.dart`,
+  `docs/superpowers/plans/2026-09-02-gift-dart-mvp.md`,
+  `lib/src/app/pixel_theme.dart`,
   `lib/src/features/repository/changes_controller.dart`,
   `lib/src/features/repository/changes_screen.dart`,
-  `lib/src/features/repository/comparison_dialog.dart`,
-  `lib/src/features/repository/context_actions.dart`,
-  `lib/src/features/repository/history_screen.dart`,
-  `lib/src/features/repository/object_dialog.dart`,
-  `lib/src/features/repository/push_dialog.dart`, and
-  `test/features/repository/branch_dialog_test.dart`.
-- Verification before commit: branch-dialog regression suite and
-  `flutter analyze` passed after the final Task 44 implementation; the full
-  focused suite remains to be rerun before commit.
+  `test/app_boot_test.dart`, and
+  `test/features/repository/changes_screen_test.dart`.
+- Verification: the first RED fixture failed before implementation because
+  `ChangesState.selectedPaths` did not exist; the complete Changes screen suite
+  passed (20 tests), the keyboard parity fixture passed, and `flutter analyze`
+  passed with no issues. The final `flutter test` run passed all relevant UI
+  coverage but reported 15 unrelated Windows backend/environment failures:
+  CRLF/UTF-8/path-separator assertions, interactive-rebase process failures,
+  and a submodule cleanup timeout.
 - Generated Flutter plugin markers were cleared from the working tree by
-  staging their unchanged content; no plugin content change is part of Task 44.
+  staging their unchanged content; no plugin content change is part of these
+  commits.
 - Blockers: none.
 
 ## Previous checkpoint
