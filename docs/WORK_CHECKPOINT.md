@@ -5,34 +5,31 @@ This file is the handoff record for continuing work across query sessions.
 ## Current checkpoint
 
 - Date: 2026-09-05
-- Active task: Task 45 — Workspace context actions.
-- Branch: `main`; committed base is
-  `5c3d444 feat(changes): add multi-file staging selection`.
-- Completed in this session: Task 44 local and remote branch context menus and
-  the multi-file stage-selection follow-up. ACTION-13 is recorded; the Changes
-  controller now owns path-based selection, refresh pruning, serialized batch
-  staging, and status refresh handling; the Changes screen has square pixel
-  checkbox controls, a selected-count bar, and keyboard parity.
-- Exact next action: activate Task 45 with its behavior-ledger scenario and
-  first RED workspace-context fixture.
-- Committed follow-up files: `CHANGELOG.md`, `TASKS.md`,
-  `docs/WORK_CHECKPOINT.md`, `docs/research/jetbrains-git-mvp-behavior.md`,
+- Active task: Task 46 — Native folder chooser UX.
+- Branch: `main`; latest commit is
+  `f324244 feat(workspace): add repository context actions`.
+- Completed in this session: Task 45 workspace context actions. ACTION-14 is
+  recorded; workspace tabs and recent repository rows now expose root-bound
+  context menus with canonical-path fingerprints, stale-target guards,
+  nested-root opening, recent removal/opening, path copy, and file-manager
+  reveal.
+- Exact next action: activate Task 46 with its behavior-ledger scenario and
+  first RED editable absolute-path chooser fixture.
+- Committed Task 45 files: `CHANGELOG.md`, `TASKS.md`,
   `docs/superpowers/plans/2026-09-02-gift-dart-mvp.md`,
-  `lib/src/app/pixel_theme.dart`,
-  `lib/src/features/repository/changes_controller.dart`,
+  `lib/src/features/repository/context_actions.dart`,
   `lib/src/features/repository/changes_screen.dart`,
-  `test/app_boot_test.dart`, and
-  `test/features/repository/changes_screen_test.dart`.
-- Verification: the first RED fixture failed before implementation because
-  `ChangesState.selectedPaths` did not exist; the complete Changes screen suite
-  passed (20 tests), the keyboard parity fixture passed, and `flutter analyze`
-  passed with no issues. The final `flutter test` run passed all relevant UI
-  coverage but reported 15 unrelated Windows backend/environment failures:
-  CRLF/UTF-8/path-separator assertions, interactive-rebase process failures,
-  and a submodule cleanup timeout.
-- Generated Flutter plugin markers were cleared from the working tree by
-  staging their unchanged content; no plugin content change is part of these
-  commits.
+  `lib/src/features/repository/comparison_dialog.dart`,
+  `lib/src/features/repository/history_screen.dart`,
+  `lib/src/features/repository/workspace_controller.dart`,
+  `lib/src/features/repository/workspace_screen.dart`,
+  `lib/src/features/repository/welcome_screen.dart`,
+  `test/features/repository/workspace_controller_test.dart`, and
+  `test/features/repository/welcome_screen_test.dart`.
+- Verification: the first RED workspace and recent-row fixtures failed before
+  implementation because their action affordance keys were absent. After
+  implementation, the workspace/recent repository test suites passed (17
+  tests total), and `flutter analyze` passed with no issues.
 - Blockers: none.
 
 ## Previous checkpoint
