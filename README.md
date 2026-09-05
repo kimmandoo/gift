@@ -247,11 +247,13 @@ flutter build windows --release
 
 The release files are written to `build/windows/x64/runner/Release/`.
 The Windows helper creates a single-file portable launcher at
-`build/windows/x64/runner/gift-portable.exe` and a per-user installer at
-`build/windows/x64/runner/gift-setup.exe`. The installer places gift under
-`%LOCALAPPDATA%\Programs\gift`, creates Start Menu and Desktop shortcuts, and
-registers an uninstaller for the current Windows user. The portable launcher
-does not install files or create shortcuts. Git must still be installed
+`build/windows/x64/runner/gift-portable.exe` and an interactive per-user
+installation wizard at `build/windows/x64/runner/gift-setup.exe`. The setup
+wizard lets you choose the install directory and Start Menu/Desktop shortcut
+options, then installs gift under `%LOCALAPPDATA%\Programs\gift` and registers
+an uninstaller for the current Windows user. The portable launcher only
+extracts to a temporary directory, runs the app, and cleans up without
+installing files or creating shortcuts. Git must still be installed
 separately because the app uses the system Git executable.
 For a one-click build, use PowerShell or double-click the batch file:
 

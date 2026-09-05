@@ -7,7 +7,7 @@ Set fileSystem = CreateObject("Scripting.FileSystemObject")
 scriptDirectory = fileSystem.GetParentFolderName(WScript.ScriptFullName)
 payloadPath = fileSystem.BuildPath(scriptDirectory, "payload.zip")
 launcherPath = fileSystem.BuildPath(scriptDirectory, "windows_setup_launcher.ps1")
-command = "powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass -File " _
+command = "powershell.exe -NoProfile -NonInteractive -STA -ExecutionPolicy Bypass -File " _
   & Quote(launcherPath) & " -PayloadPath " & Quote(payloadPath)
 
 exitCode = shell.Run(command, 0, True)

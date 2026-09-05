@@ -1,6 +1,12 @@
 # Changelog
 
 ## 2026-09-05
+- feat(windows): changed the setup executable into an interactive per-user
+  installation wizard with selectable install and shortcut options.
+- test(windows): added packaging verification for distinct setup and portable
+  launch behavior and PowerShell syntax.
+- test(ui): extended deterministic visual QA to compact repository push and
+  clone dialogs with large text and standard light-theme fixtures.
 - test(ui): added deterministic Welcome-screen visual QA coverage across
   compact, standard, wide, dark, and light fixtures.
 - fix(ui): aligned remote and clone account selectors with surrounding
