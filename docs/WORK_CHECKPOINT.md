@@ -4,36 +4,43 @@ This file is the handoff record for continuing work across query sessions.
 
 ## Current checkpoint
 
-- Date: 2026-09-05
-- Active task: Task 39 — visual regression QA and cross-platform desktop CI
-  hardening are complete through the local Windows verification boundary.
+- Date: 2026-09-06
+- Active task: Task 38 — signed public release pipeline is implemented through
+  the local Windows verification boundary; native signing and clean-machine
+  release validation remain external gates.
 - Branch: `main`; latest source commit is
-  `83d230c fix(ci): harden desktop release matrix`.
-- Completed in this session: captured and reviewed the Windows golden matrix
-  for Welcome plus Push and Repository Setup dialog fixtures; configured
-  native Linux/macOS runner golden capture; added release artifact validation
-  for all three desktop targets; verified Windows packaging scripts; serialized
-  Git integration verification with LF fixtures; preserved UTF-8 Git process
-  output; normalized Windows Git worktree paths; and made interactive rebase
-  editors portable through `sh`.
-- Exact next action: reassess Task 38 public release readiness after the
-  release workflow runs its native Linux, macOS, and Windows build matrix.
+  `1e5753c feat(release): add signed desktop release pipeline`.
+- Completed in this session: added semver/tag validation; Linux, macOS, and
+  Windows archive packaging; Windows Authenticode and macOS
+  codesign/notarization helpers; SHA256SUMS, release metadata, CycloneDX SBOM,
+  dependency/license audit, pinned-action validation, and OIDC provenance
+  publication; and added an actionable first-run Git diagnostics card.
+- Exact next action: configure the signing secrets, push a
+  `release-v1.0.0` tag whose commit subject uses `release(scope):`, review all
+  three native archives and attestations, then perform clean-machine
+  install/launch/upgrade/downgrade/uninstall/Git-missing checks on Linux,
+  macOS, and Windows before marking Task 38 complete.
 - Current session files: `.github/workflows/ci.yml`, `CHANGELOG.md`,
-  `docs/RELEASING.md`, `docs/superpowers/plans/2026-09-02-gift-dart-mvp.md`,
-  `lib/src/backend/repository_service.dart`,
-  `test/app/visual_regression_test.dart`,
-  `test/app/goldens/windows/`, Windows backend regression tests,
-  `tool/verify.dart`, and `tool/verify_desktop_artifact.dart`.
+  `TASKS.md`, `docs/POST_MVP_ROADMAP.md`, `docs/RELEASING.md`,
+  `docs/superpowers/plans/2026-09-02-gift-dart-mvp.md`,
+  `lib/src/features/repository/welcome_screen.dart`,
+  `test/features/repository/welcome_screen_test.dart`, `pubspec.yaml`,
+  `pubspec.lock`, and `tool/{package_linux_release.sh,
+  package_macos_release.sh, package_windows_release.ps1,
+  release_metadata.dart, sign_macos_release.sh, sign_windows_release.ps1,
+  verify_workflow_pins.dart}`.
 - Verification: `dart run tool/verify.dart` passed formatting, Flutter
-  analysis, and all 292 tests on Windows; focused setup/submodule/worktree
-  path tests passed 7 tests; focused Welcome/golden tests passed 18 tests;
-  `powershell.exe -NoProfile -ExecutionPolicy Bypass -File
-  tool/build_windows.ps1` built and packaged the Windows release; Windows
-  artifact verification and packaging verification passed; and Ruby parsed
-  `.github/workflows/ci.yml`.
-- Blockers: native Linux and macOS release builds were not executable on this
-  Windows host; their GitHub Actions runners are configured to build, validate,
-  upload artifacts, and publish runner-specific golden captures.
+  analysis, and all 292 tests; focused Welcome/app boot/visual regression
+  tests passed 13 and 18 tests respectively; Windows packaging produced and
+  verified the release archive; release metadata generation and checksum
+  verification passed on a generated fixture and the Windows archive; workflow
+  YAML parsing, 11 pinned GitHub Actions, Bash syntax, and PowerShell parsing
+  passed; and the diagnostics golden layout was visually checked for
+  containment.
+- Blockers: no Apple or Windows signing credentials are available in this
+  local session, and Linux/macOS native hosts are unavailable on this Windows
+  machine. The public-tag workflow is configured to fail closed until the
+  required secrets and native clean-machine pass are available.
 
 ## Previous checkpoint
 
