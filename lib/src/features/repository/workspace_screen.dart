@@ -3,6 +3,7 @@ import 'dart:io';
 
 import 'package:flutter/services.dart';
 import 'package:gift/src/features/repository/context_actions.dart';
+import 'package:gift/src/features/repository/folder_path_field.dart';
 import 'package:gift/src/features/repository/path_actions.dart';
 
 import 'package:flutter/material.dart';
@@ -23,6 +24,9 @@ class WorkspaceScreen extends StatefulWidget {
     this.credentialStore,
     this.repositoryCredentialStore,
     this.fileManager = const PlatformFileManagerRevealer(),
+    this.selectDirectory,
+    this.pathHistory,
+    this.onOpenRepositoryPath,
   });
 
   final WorkspaceController controller;
@@ -31,6 +35,10 @@ class WorkspaceScreen extends StatefulWidget {
   final GitCredentialStore? credentialStore;
   final RepositoryCredentialStore? repositoryCredentialStore;
   final FileManagerRevealer fileManager;
+  final FolderPathPicker? selectDirectory;
+  final FolderPathHistory? pathHistory;
+  final Future<void> Function(String path, int? replaceIndex)?
+  onOpenRepositoryPath;
   final bool autoInitialize;
 
   @override
@@ -307,12 +315,20 @@ class _WorkspaceScreenState extends State<WorkspaceScreen> {
         autoInitialize: widget.autoInitialize,
         credentialStore: widget.credentialStore,
         repositoryCredentialStore: widget.repositoryCredentialStore,
+        pathHistory: widget.pathHistory,
       );
     }
+    final replaceIndex = widget.controller.state.tabs.indexOf(tab);
     return _UnavailableWorkspaceTab(
       tab: tab,
-      onReplace: () =>
-          widget.onOpenRepository(widget.controller.state.tabs.indexOf(tab)),
+      selectDirectory: widget.selectDirectory,
+      pathHistory: widget.pathHistory,
+      onReplace: (path) {
+        final openPath = widget.onOpenRepositoryPath;
+        return openPath == null
+            ? widget.onOpenRepository(replaceIndex)
+            : openPath(path, replaceIndex);
+      },
     );
   }
 
@@ -520,11 +536,47 @@ class _WorkspaceTab extends StatelessWidget {
   }
 }
 
-class _UnavailableWorkspaceTab extends StatelessWidget {
-  const _UnavailableWorkspaceTab({required this.tab, required this.onReplace});
+class _UnavailableWorkspaceTab extends StatefulWidget {
+  const _UnavailableWorkspaceTab({
+    required this.tab,
+    required this.onReplace,
+    this.selectDirectory,
+    this.pathHistory,
+  });
 
   final WorkspaceTab tab;
-  final VoidCallback onReplace;
+  final Future<void> Function(String path) onReplace;
+  final FolderPathPicker? selectDirectory;
+  final FolderPathHistory? pathHistory;
+
+  @override
+  State<_UnavailableWorkspaceTab> createState() =>
+      _UnavailableWorkspaceTabState();
+}
+
+class _UnavailableWorkspaceTabState extends State<_UnavailableWorkspaceTab> {
+  final _pathController = TextEditingController();
+  final _fieldKey = GlobalKey<FolderPathFieldState>();
+
+  @override
+  void dispose() {
+    _pathController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _replace() async {
+    final validation = _fieldKey.currentState?.validateNow();
+    if (validation == null || !validation.isValid) return;
+    await widget.onReplace(_pathController.text.trim());
+  }
+
+  Future<void> _chooseOrReplace() async {
+    if (_pathController.text.trim().isEmpty) {
+      await _fieldKey.currentState?.browse();
+      return;
+    }
+    await _replace();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -538,16 +590,36 @@ class _UnavailableWorkspaceTab extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                tab.displayName,
+                widget.tab.displayName,
                 style: Theme.of(context).textTheme.headlineSmall,
               ),
               const SizedBox(height: 8),
-              Text(tab.path, style: Theme.of(context).textTheme.bodySmall),
+              Text(
+                widget.tab.path,
+                style: Theme.of(context).textTheme.bodySmall,
+              ),
               const SizedBox(height: 12),
-              Text(tab.error?.userMessage ?? 'This repository is unavailable.'),
+              Text(
+                widget.tab.error?.userMessage ??
+                    'This repository is unavailable.',
+              ),
               const SizedBox(height: 16),
+              FolderPathField(
+                key: _fieldKey,
+                fieldKey: const Key('workspace-replacement-path'),
+                browseKey: const Key('workspace-replacement-browse'),
+                controller: _pathController,
+                purpose: FolderPathPurpose.replaceWorkspaceRoot,
+                label: 'Replacement folder',
+                hint: 'Absolute existing folder',
+                picker: widget.selectDirectory,
+                history: widget.pathHistory,
+                onSubmitted: (_) => _replace(),
+              ),
+              const SizedBox(height: 12),
               OutlinedButton.icon(
-                onPressed: onReplace,
+                key: const Key('workspace-choose-replacement'),
+                onPressed: _chooseOrReplace,
                 icon: const Icon(Icons.folder_open, size: 17),
                 label: const Text('Choose replacement folder'),
               ),

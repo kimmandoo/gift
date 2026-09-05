@@ -2,6 +2,7 @@ import 'package:flutter/services.dart';
 import 'package:gift/src/features/repository/context_actions.dart';
 import 'package:gift/src/features/repository/path_actions.dart';
 import 'package:gift/src/features/repository/recent_repository_store.dart';
+import 'package:gift/src/features/repository/folder_path_field.dart';
 import 'package:gift/src/features/repository/changes_screen.dart';
 import 'package:gift/src/features/repository/repository_controller.dart';
 import 'package:gift/src/features/settings/git_settings_controller.dart';
@@ -56,10 +57,15 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
   late final RepositoryController _repositoryController;
   GitSettingsController? _gitSettingsController;
   WorkspaceController? _workspaceController;
+  late final TextEditingController _openPathController;
+  final _openPathFieldKey = GlobalKey<FolderPathFieldState>();
+  late final FolderPathHistory _folderHistory;
 
   @override
   void initState() {
     super.initState();
+    _openPathController = TextEditingController();
+    _folderHistory = FolderPathHistory(preferences: widget.preferences);
     // The controller owns loading and errors; this widget only rebuilds when
     // the controller tells it that visible state changed.
     if (widget.preferences case final preferences?) {
@@ -82,6 +88,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
 
   @override
   void dispose() {
+    _openPathController.dispose();
     _repositoryController
       ..removeListener(_onChanged)
       ..dispose();
@@ -104,6 +111,12 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
         onWorkspaceEmpty: _repositoryController.closeRepository,
         credentialStore: widget.credentialStore,
         repositoryCredentialStore: widget.repositoryCredentialStore,
+        selectDirectory: widget.selectDirectory == null
+            ? null
+            : ({String? initialDirectory}) => widget.selectDirectory!(),
+        pathHistory: _folderHistory,
+        onOpenRepositoryPath: (path, replaceIndex) =>
+            _openPath(path, replaceIndex: replaceIndex),
       );
     }
     if (state.openedRepository case final opened?) {
@@ -113,6 +126,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
         onBack: _repositoryController.closeRepository,
         credentialStore: widget.credentialStore,
         repositoryCredentialStore: widget.repositoryCredentialStore,
+        pathHistory: _folderHistory,
       );
     }
     return Scaffold(
@@ -161,13 +175,26 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
                     ),
                   ),
                   const SizedBox(height: 16),
-                  Text(
-                    'Open a Git repository',
-                    style: textTheme.headlineMedium,
-                  ),
+                  Text('Open a Git repository'),
                   const SizedBox(height: 8),
                   const Text(
                     'Choose a working folder to start reviewing changes.',
+                  ),
+                  const SizedBox(height: 16),
+                  FolderPathField(
+                    key: _openPathFieldKey,
+                    fieldKey: const Key('open-repository-path'),
+                    browseKey: const Key('open-repository-browse'),
+                    controller: _openPathController,
+                    purpose: FolderPathPurpose.openRepository,
+                    label: 'Repository folder',
+                    hint: 'Absolute existing folder',
+                    picker: widget.selectDirectory == null
+                        ? null
+                        : ({String? initialDirectory}) =>
+                              widget.selectDirectory!(),
+                    history: _folderHistory,
+                    onSubmitted: (_) => _selectAndOpen(),
                   ),
                   const SizedBox(height: 24),
                   LayoutBuilder(
@@ -422,21 +449,48 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
   }
 
   Future<void> _selectAndOpen([int? replaceIndex]) async {
-    final path = widget.selectDirectory == null
-        ? await getDirectoryPath(confirmButtonText: 'Open')
-        : await widget.selectDirectory!();
+    final typed = _openPathController.text.trim();
+    final path = typed.isNotEmpty
+        ? (_openPathFieldKey.currentState?.validateNow().isValid == true
+              ? typed
+              : null)
+        : await _pickDirectory();
     if (path == null || path.isEmpty) return;
     await _openPath(path, replaceIndex: replaceIndex);
   }
 
+  Future<String?> _pickDirectory() {
+    if (widget.selectDirectory case final picker?) return picker();
+    return getDirectoryPath(
+      confirmButtonText: 'Open',
+      initialDirectory: _folderHistory.initialDirectory(
+        FolderPathPurpose.openRepository,
+      ),
+    );
+  }
+
   Future<void> _openPath(String path, {int? replaceIndex}) async {
+    final normalizedPath = path.trim();
     final workspace = _workspaceController;
     if (workspace == null) {
-      await _repositoryController.openPath(path);
+      await _repositoryController.openPath(normalizedPath);
+      if (_repositoryController.state.openedRepository case final opened?) {
+        await _folderHistory.remember(
+          FolderPathPurpose.openRepository,
+          opened.root,
+        );
+      }
       return;
     }
-    final opened = await workspace.openPath(path, replaceIndex: replaceIndex);
+    final opened = await workspace.openPath(
+      normalizedPath,
+      replaceIndex: replaceIndex,
+    );
     if (opened?.repository != null) {
+      await _folderHistory.remember(
+        FolderPathPurpose.openRepository,
+        opened!.repository!.root,
+      );
       await _repositoryController.reloadRecent();
     }
   }
@@ -487,6 +541,10 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
       builder: (_) => RepositorySetupDialog(
         gateway: widget.gateway,
         credentialStore: widget.credentialStore,
+        selectDirectory: widget.selectDirectory == null
+            ? null
+            : ({String? initialDirectory}) => widget.selectDirectory!(),
+        pathHistory: _folderHistory,
       ),
     );
     if (!mounted || repository == null) return;

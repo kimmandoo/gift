@@ -31,6 +31,7 @@ import 'package:gift/src/features/repository/ignore_dialog.dart';
 import 'package:gift/src/features/repository/submodule_dialog.dart';
 import 'package:gift/src/features/repository/recovery_dialog.dart';
 import 'package:gift/src/features/repository/repository_setup_dialog.dart';
+import 'package:gift/src/features/repository/folder_path_field.dart';
 import 'package:gift/src/features/repository/hosting_dialog.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -57,6 +58,7 @@ class ChangesScreen extends StatelessWidget {
     this.credentialStore,
     this.repositoryCredentialStore,
     this.fileManager = const PlatformFileManagerRevealer(),
+    this.pathHistory,
     this.autoInitialize = true,
   });
 
@@ -70,6 +72,7 @@ class ChangesScreen extends StatelessWidget {
   final RepositoryCredentialStore? repositoryCredentialStore;
   final FileManagerRevealer fileManager;
   final bool autoInitialize;
+  final FolderPathHistory? pathHistory;
 
   @override
   Widget build(BuildContext context) {
@@ -87,6 +90,7 @@ class ChangesScreen extends StatelessWidget {
         credentialStore: credentialStore,
         repositoryCredentialStore: repositoryCredentialStore,
         fileManager: fileManager,
+        pathHistory: pathHistory,
       ),
     );
   }
@@ -103,6 +107,7 @@ class _ChangesScreenBody extends ConsumerStatefulWidget {
     this.repositoryCredentialStore,
     this.onOpenRepository,
     required this.fileManager,
+    this.pathHistory,
     required this.autoInitialize,
   });
 
@@ -116,6 +121,7 @@ class _ChangesScreenBody extends ConsumerStatefulWidget {
   final RepositoryCredentialStore? repositoryCredentialStore;
   final FileManagerRevealer fileManager;
   final bool autoInitialize;
+  final FolderPathHistory? pathHistory;
 
   @override
   ConsumerState<_ChangesScreenBody> createState() => _ChangesScreenBodyState();
@@ -2220,6 +2226,7 @@ class _ChangesScreenBodyState extends ConsumerState<_ChangesScreenBody> {
       builder: (_) => WorktreeDialog(
         gateway: widget.gateway,
         repository: widget.repository,
+        pathHistory: widget.pathHistory,
       ),
     );
     if (!context.mounted || opened == null) return;
@@ -2282,6 +2289,7 @@ class _ChangesScreenBodyState extends ConsumerState<_ChangesScreenBody> {
         gateway: widget.gateway,
         repository: widget.repository,
         credentialStore: widget.credentialStore,
+        pathHistory: widget.pathHistory,
       ),
     );
     if (!context.mounted) return;

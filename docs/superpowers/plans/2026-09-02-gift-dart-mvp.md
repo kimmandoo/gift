@@ -869,14 +869,27 @@ system Git 2.35+.
    without treating tab removal as filesystem deletion.
 4. Verified the workspace/recent repository fixtures and `flutter analyze`.
 
-## Active vertical: Native folder chooser UX (Task 46)
+## Completed vertical: Native folder chooser UX (Task 46)
 
-1. Record the purpose-scoped path validation and browse-assisted absolute-path
-   field behavior before changing repository setup and Git settings dialogs.
-2. Add the first RED fixture for editable absolute paths and native browse
-   affordances.
-3. Reuse the existing selector boundary while keeping manual entry, purpose
-   validation, and recent-location feedback explicit.
+1. Recorded PATH-01 for purpose-scoped absolute folder validation, safe
+   remembered locations, and native browse/manual-entry parity.
+2. Added one editable folder-field control with native picker injection, clear
+   and paste support, keyboard submission, full-path tooltips, and inline
+   validation for missing, inaccessible, file, and non-empty paths.
+3. Applied it to repository open/replacement, clone local source and
+   destination, initialization, nested-root scans, and worktree destinations;
+   relative worktree input remains supported without traversal.
+4. Reused the history through Welcome, workspace replacement, Changes, setup,
+   and worktree flows, and verified the folder workflow suites plus analysis.
+
+## Active vertical: Repository path navigation (Task 47)
+
+1. Record bounded tracked-path query and file/folder-kind behavior before
+   changing repository-relative path inputs.
+2. Add the first RED fixture for a searchable path field with manual entry and
+   a browse affordance.
+3. Reuse repository snapshots and validated relative paths so suggestions never
+   escape the active root or address stale rows.
 
 ## Completed follow-up: visible push progress
 

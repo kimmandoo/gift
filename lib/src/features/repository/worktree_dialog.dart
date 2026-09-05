@@ -5,6 +5,7 @@ import 'package:gift/src/backend/domain.dart';
 import 'package:gift/src/backend/error.dart';
 import 'package:gift/src/backend/git_gateway.dart';
 import 'package:gift/src/backend/worktree.dart';
+import 'package:gift/src/features/repository/folder_path_field.dart';
 
 /// Lists and manages the linked worktrees belonging to one repository.
 ///
@@ -16,10 +17,14 @@ class WorktreeDialog extends StatefulWidget {
     super.key,
     required this.gateway,
     required this.repository,
+    this.selectDirectory,
+    this.pathHistory,
   });
 
   final GitGateway gateway;
   final RepositoryOpened repository;
+  final FolderPathPicker? selectDirectory;
+  final FolderPathHistory? pathHistory;
 
   @override
   State<WorktreeDialog> createState() => _WorktreeDialogState();
@@ -140,16 +145,17 @@ class _WorktreeDialogState extends State<WorktreeDialog> {
           style: Theme.of(context).textTheme.titleSmall,
         ),
         children: [
-          TextField(
-            key: const Key('worktree-path'),
+          FolderPathField(
+            fieldKey: const Key('worktree-path'),
+            browseKey: const Key('worktree-path-browse'),
             controller: _pathController,
-            enabled: !_isBusy,
-            decoration: const InputDecoration(
-              labelText: 'Destination path',
-              hintText: 'Absolute path or folder below this repository',
-              border: OutlineInputBorder(),
-              isDense: true,
-            ),
+            purpose: FolderPathPurpose.worktreeDestination,
+            label: 'Destination path',
+            hint: 'Absolute path or folder below this repository',
+            allowMissing: true,
+            allowRelative: true,
+            picker: widget.selectDirectory,
+            history: widget.pathHistory,
             onSubmitted: (_) => _createWorktree(),
           ),
           const SizedBox(height: 8),
@@ -417,12 +423,19 @@ class _WorktreeDialogState extends State<WorktreeDialog> {
     final path = _pathController.text.trim();
     final branch = _branchController.text.trim();
     final startPoint = _startPointController.text.trim();
-    if (path.isEmpty || (!_detach && branch.isEmpty)) {
+    final validation = validateAbsoluteFolderPath(
+      path,
+      allowMissing: true,
+      allowRelative: true,
+    );
+    if (!validation.isValid || (!_detach && branch.isEmpty)) {
       setState(
-        () => _error = const GitError(
+        () => _error = GitError(
           category: GitErrorCategory.parseFailure,
-          userMessage: 'Enter a destination and branch name.',
-          diagnostic: 'worktree form was incomplete',
+          userMessage: validation.isValid
+              ? 'Enter a branch name or choose Detached HEAD.'
+              : validation.message ?? 'Enter a valid destination folder.',
+          diagnostic: 'worktree form was incomplete or path was invalid',
           retryable: false,
         ),
       );
@@ -439,6 +452,12 @@ class _WorktreeDialogState extends State<WorktreeDialog> {
           detach: _detach,
         ),
       );
+      final history = widget.pathHistory ?? FolderPathHistory.shared;
+      if (path.startsWith('/') ||
+          path.startsWith('\\') ||
+          RegExp(r'^[A-Za-z]:[\\\\/]').hasMatch(path)) {
+        await history.remember(FolderPathPurpose.worktreeDestination, path);
+      }
       if (!mounted) return;
       setState(() {
         _snapshot = result.snapshot;

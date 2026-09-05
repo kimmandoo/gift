@@ -6,6 +6,7 @@ import 'package:gift/src/backend/error.dart';
 import 'package:gift/src/backend/git_gateway.dart';
 import 'package:gift/src/backend/setup.dart';
 import 'package:gift/src/backend/credentials.dart';
+import 'package:gift/src/features/repository/folder_path_field.dart';
 
 /// Provides clone/init actions for Welcome and shallow-history/root mapping
 /// actions for an already opened repository. All path and branch validation
@@ -16,11 +17,15 @@ class RepositorySetupDialog extends StatefulWidget {
     required this.gateway,
     this.credentialStore,
     this.repository,
+    this.selectDirectory,
+    this.pathHistory,
   });
 
   final GitCredentialStore? credentialStore;
   final GitGateway gateway;
   final RepositoryOpened? repository;
+  final FolderPathPicker? selectDirectory;
+  final FolderPathHistory? pathHistory;
 
   @override
   State<RepositorySetupDialog> createState() => _RepositorySetupDialogState();
@@ -40,6 +45,7 @@ class _RepositorySetupDialogState extends State<RepositorySetupDialog> {
   var _isBusy = false;
   List<GitCredentialAccount>? _accounts;
   String? _credentialId;
+  var _localCloneSource = false;
   var _recursive = false;
 
   @override
@@ -155,20 +161,57 @@ class _RepositorySetupDialogState extends State<RepositorySetupDialog> {
   Widget _cloneView(BuildContext context) => ListView(
     key: const Key('clone-view'),
     children: [
-      _field(
-        onChanged: (_) => setState(() => _credentialId = null),
-        key: const Key('clone-source'),
-        controller: _sourceController,
-        label: 'Source URL or local path',
-        hint: 'https://host.example/team/project.git',
+      SwitchListTile(
+        key: const Key('clone-recursive'),
+        contentPadding: EdgeInsets.zero,
+        title: const Text('Clone submodules recursively'),
+        value: _recursive,
+        onChanged: _isBusy
+            ? null
+            : (value) => setState(() => _recursive = value),
       ),
+      SwitchListTile(
+        key: const Key('clone-local-source'),
+        contentPadding: EdgeInsets.zero,
+        title: const Text('Clone from a local folder'),
+        value: _localCloneSource,
+        onChanged: _isBusy
+            ? null
+            : (value) => setState(() => _localCloneSource = value),
+      ),
+      if (_localCloneSource)
+        FolderPathField(
+          fieldKey: const Key('clone-source'),
+          browseKey: const Key('clone-source-browse'),
+          controller: _sourceController,
+          purpose: FolderPathPurpose.cloneSource,
+          label: 'Local source folder',
+          hint: 'Absolute existing repository folder',
+          picker: widget.selectDirectory,
+          history: widget.pathHistory,
+          onChanged: (_) => setState(() => _credentialId = null),
+        )
+      else
+        _field(
+          onChanged: (_) => setState(() => _credentialId = null),
+          key: const Key('clone-source'),
+          controller: _sourceController,
+          label: 'Source URL or local path',
+          hint: 'https://host.example/team/project.git',
+        ),
       _credentialSelector(context),
       const SizedBox(height: 8),
-      _field(
-        key: const Key('clone-destination'),
+      FolderPathField(
+        fieldKey: const Key('clone-destination'),
+        browseKey: const Key('clone-destination-browse'),
         controller: _cloneDestinationController,
+        purpose: FolderPathPurpose.cloneDestination,
         label: 'Destination folder',
         hint: 'Absolute empty folder',
+        allowMissing: true,
+        requireEmpty: true,
+        picker: widget.selectDirectory,
+        history: widget.pathHistory,
       ),
       const SizedBox(height: 8),
       _field(
@@ -185,15 +228,6 @@ class _RepositorySetupDialogState extends State<RepositorySetupDialog> {
         hint: 'Leave blank for full history',
         keyboardType: TextInputType.number,
       ),
-      SwitchListTile(
-        key: const Key('clone-recursive'),
-        contentPadding: EdgeInsets.zero,
-        title: const Text('Clone submodules recursively'),
-        value: _recursive,
-        onChanged: _isBusy
-            ? null
-            : (value) => setState(() => _recursive = value),
-      ),
       Align(
         alignment: Alignment.centerRight,
         child: FilledButton.icon(
@@ -209,11 +243,16 @@ class _RepositorySetupDialogState extends State<RepositorySetupDialog> {
   Widget _initView(BuildContext context) => ListView(
     key: const Key('initialize-view'),
     children: [
-      _field(
-        key: const Key('init-path'),
+      FolderPathField(
+        fieldKey: const Key('init-path'),
+        browseKey: const Key('init-path-browse'),
         controller: _initPathController,
+        purpose: FolderPathPurpose.initializeRepository,
         label: 'Repository folder',
         hint: 'Existing or new empty folder',
+        allowMissing: true,
+        picker: widget.selectDirectory,
+        history: widget.pathHistory,
       ),
       const SizedBox(height: 8),
       _field(
@@ -242,11 +281,16 @@ class _RepositorySetupDialogState extends State<RepositorySetupDialog> {
   Widget _rootsView(BuildContext context) => ListView(
     key: const Key('roots-view'),
     children: [
-      _field(
-        key: const Key('roots-path'),
+      FolderPathField(
+        fieldKey: const Key('roots-path'),
+        browseKey: const Key('roots-path-browse'),
         controller: _rootPathController,
+        purpose: FolderPathPurpose.nestedRootScan,
         label: 'Folder to scan',
-        hint: 'Absolute folder',
+        hint: 'Absolute existing folder',
+        allowMissing: false,
+        picker: widget.selectDirectory,
+        history: widget.pathHistory,
       ),
       const SizedBox(height: 8),
       Wrap(
@@ -378,6 +422,27 @@ class _RepositorySetupDialogState extends State<RepositorySetupDialog> {
     );
   }
 
+  bool _requireFolder(
+    String value, {
+    required bool allowMissing,
+    bool requireEmpty = false,
+    required String diagnostic,
+  }) {
+    final validation = validateAbsoluteFolderPath(
+      value,
+      allowMissing: allowMissing,
+      requireEmpty: requireEmpty,
+    );
+    if (validation.isValid) return true;
+    setState(
+      () => _error = setupInputError(
+        validation.message ?? 'Choose a valid folder.',
+        diagnostic,
+      ),
+    );
+    return false;
+  }
+
   List<GitCredentialAccount> _matchingAccounts(GitRemoteEndpoint endpoint) {
     final accounts = _accounts;
     if (accounts == null) return const [];
@@ -422,13 +487,29 @@ class _RepositorySetupDialogState extends State<RepositorySetupDialog> {
   }
 
   Future<void> _clone() async {
+    if (_localCloneSource &&
+        !_requireFolder(
+          _sourceController.text,
+          allowMissing: false,
+          diagnostic: 'local clone source was invalid',
+        )) {
+      return;
+    }
+    if (!_requireFolder(
+      _cloneDestinationController.text,
+      allowMissing: true,
+      requireEmpty: true,
+      diagnostic: 'clone destination was invalid',
+    )) {
+      return;
+    }
     final depthText = _depthController.text.trim();
     final depth = depthText.isEmpty ? null : int.tryParse(depthText);
     await _run(() async {
       final result = await widget.gateway.cloneRepository(
         GitCloneRequest(
           source: _sourceController.text,
-          destination: _cloneDestinationController.text,
+          destination: _cloneDestinationController.text.trim(),
           branch: _cloneBranchController.text.trim().isEmpty
               ? null
               : _cloneBranchController.text.trim(),
@@ -437,19 +518,36 @@ class _RepositorySetupDialogState extends State<RepositorySetupDialog> {
           credentialId: _credentialId,
         ),
       );
+      final history = widget.pathHistory ?? FolderPathHistory.shared;
+      await history.remember(
+        FolderPathPurpose.cloneDestination,
+        _cloneDestinationController.text,
+      );
       if (mounted) Navigator.of(context).pop(result.repository);
     });
   }
 
   Future<void> _initialize() async {
+    if (!_requireFolder(
+      _initPathController.text,
+      allowMissing: true,
+      diagnostic: 'repository initialization path was invalid',
+    )) {
+      return;
+    }
     await _run(() async {
       final result = await widget.gateway.initRepository(
         GitInitRequest(
-          path: _initPathController.text,
+          path: _initPathController.text.trim(),
           initialBranch: _initBranchController.text.trim().isEmpty
               ? null
               : _initBranchController.text.trim(),
         ),
+      );
+      final history = widget.pathHistory ?? FolderPathHistory.shared;
+      await history.remember(
+        FolderPathPurpose.initializeRepository,
+        _initPathController.text,
       );
       if (mounted) Navigator.of(context).pop(result.repository);
     });
@@ -481,8 +579,20 @@ class _RepositorySetupDialogState extends State<RepositorySetupDialog> {
   }
 
   Future<void> _discoverRoots() async {
+    if (!_requireFolder(
+      _rootPathController.text,
+      allowMissing: false,
+      diagnostic: 'nested-root scan path was invalid',
+    )) {
+      return;
+    }
     await _run(() async {
       final roots = await widget.gateway.discoverRepositoryRoots(
+        _rootPathController.text.trim(),
+      );
+      final history = widget.pathHistory ?? FolderPathHistory.shared;
+      await history.remember(
+        FolderPathPurpose.nestedRootScan,
         _rootPathController.text,
       );
       if (mounted) setState(() => _roots = roots);

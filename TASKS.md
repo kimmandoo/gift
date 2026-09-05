@@ -6,10 +6,10 @@
 
 ## Progress
 
-- **Completed:** 45 / 48
-- **Current Active Task:** Task 46 — Native folder chooser UX.
-- **Next priority:** activate Task 46, then Task 47, Task 39 visual
-  regression QA, and finally Task 38 public release.
+- **Completed:** 46 / 48
+- **Current Active Task:** Task 47 — Repository path navigation.
+- **Next priority:** activate Task 47, then Task 39 visual regression QA, and
+  finally Task 38 public release.
 
 | # | Scope | Dart backend deliverables | Flutter deliverables | Status |
 |---|---|---|---|:---:|
@@ -58,8 +58,8 @@
 | **42** | Multi-commit operations | Ordered batch cherry-pick/revert state machine | Multi-select history actions and conflict progress | ✅ |
 | **43** | Change and file actions | Selection-safe path operations and reveal contracts | Changes/diff/history-file context menus | ✅ |
 | **44** | Branch and remote actions | Ref-bound operation routing and freshness checks | Local/remote branch context menus | ✅ |
-| **45** | Workspace context actions | Root-bound tab and recent-repository operations | Tab/recent/nested-root context menus | ⬜ |
-| **46** | Native folder chooser UX | Purpose-scoped path validation and recent locations | Browse-assisted editable absolute-path fields | ⬜ |
+| **45** | Workspace context actions | Root-bound tab and recent-repository operations | Tab/recent/nested-root context menus | ✅ |
+| **46** | Native folder chooser UX | Purpose-scoped path validation and recent locations | Browse-assisted editable absolute-path fields | ✅ |
 | **47** | Repository path navigation | Bounded tracked-path queries and path validation | Searchable file/folder pickers with manual entry | ⬜ |
 
 ## Completed foundations
@@ -707,3 +707,20 @@ Task 45 is the next activation ahead of Tasks 46–47 and Task 39.
 
 Task 45 is complete. Task 46 is now the active priority, followed by Task 47
 and Task 39 visual regression QA.
+
+### ✅ Task 46: Native folder chooser UX
+
+- [x] Record PATH-01 for purpose-scoped absolute folder selection.
+- [x] Add one editable browse-assisted folder field with native picker
+  injection, clear/paste, keyboard submission, full-path tooltip, and inline
+  validation.
+- [x] Apply purpose-specific fields to repository open/replacement, clone
+  source/destination, initialization, nested-root scans, and worktree
+  destinations.
+- [x] Remember safe picker locations and preserve relative worktree expert
+  entry without allowing traversal.
+- [x] Verify setup, worktree, workspace, welcome, Changes, and analysis
+  coverage.
+
+Task 46 is complete. Task 47 is now the active priority, followed by Task 39
+visual regression QA.

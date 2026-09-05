@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:gift/src/backend/domain.dart';
@@ -32,13 +34,66 @@ void main() {
 
     await tester.tap(find.text('Roots'));
     await tester.pumpAndSettle();
-    await tester.enterText(find.byKey(const Key('roots-path')), '/workspace');
+    await tester.enterText(
+      find.byKey(const Key('roots-path')),
+      Directory.current.path,
+    );
     await tester.tap(find.byKey(const Key('discover-roots')));
     await tester.pumpAndSettle();
     expect(gateway.discovered, isTrue);
     expect(find.text('Selected folder'), findsOneWidget);
     expect(find.text('1 Git root found'), findsOneWidget);
     expect(tester.takeException(), isNull);
+  });
+  testWidgets('exposes editable browse-assisted absolute folder fields', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      MaterialApp(home: RepositorySetupDialog(gateway: _SetupGateway())),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Initialize'));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('init-path-browse')), findsOneWidget);
+
+    await tester.enterText(find.byKey(const Key('init-path')), 'relative/path');
+    await tester.pump();
+    expect(find.text('Enter an absolute folder path.'), findsOneWidget);
+  });
+  testWidgets('uses the injected native folder picker and remembers purpose', (
+    tester,
+  ) async {
+    String? pickedInitialDirectory;
+    await tester.pumpWidget(
+      MaterialApp(
+        home: RepositorySetupDialog(
+          gateway: _SetupGateway(),
+          selectDirectory: ({String? initialDirectory}) async {
+            pickedInitialDirectory = initialDirectory;
+            return Directory.current.path;
+          },
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Initialize'));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byKey(const Key('init-path-browse')));
+    await tester.pumpAndSettle();
+
+    expect(
+      tester
+          .widget<TextField>(find.byKey(const Key('init-path')))
+          .controller!
+          .text,
+      Directory.current.path,
+    );
+    expect(pickedInitialDirectory, isNull);
+    await tester.tap(find.byKey(const Key('init-path-browse')));
+    await tester.pumpAndSettle();
+    expect(pickedInitialDirectory, Directory.current.path);
   });
   testWidgets('shows an account selector for a clone remote', (tester) async {
     final store = InMemoryGitCredentialStore(

@@ -1,6 +1,8 @@
 # Changelog
 
 ## 2026-09-05
+- feat(paths): added purpose-scoped editable folder fields with native browse,
+  remembered safe locations, keyboard submission, and inline validation.
 - feat(workspace): added root-bound tab and recent-repository context actions
   with stale-target guards, nested-root opening, and direct file-manager reveal.
 - feat(actions): added full-ref local and remote branch context menus with
