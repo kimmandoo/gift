@@ -572,8 +572,8 @@ ordinary app storage, logs, or operation history.
 
 ## Task 38 — Signed public release pipeline
 
-**Depends on:** Tasks 36, 37, and 38A. **Priority:** Deferred until Task 39
-and Tasks 41–47 are complete.
+**Depends on:** Tasks 36, 37, and 38A. **Priority:** Active after Task 39
+and Tasks 41–47.
 
 **Goal:** Produce trustworthy installable releases rather than unsigned build
 folders.
@@ -588,6 +588,13 @@ folders.
   telemetry or crash data without an explicit privacy design and consent.
 - Verify clean-machine install, launch, upgrade, downgrade warning, uninstall,
   and artifact naming on all three platforms.
+
+**Current implementation:** Release tags now validate the semantic version,
+package all three native outputs, generate checksums/update metadata/SBOM and
+license reports, require full-SHA pinned Actions, attest package provenance,
+and publish a GitHub release. Native Windows signing and Apple
+signing/notarization are enforced by the release workflow through repository
+secrets; the clean-machine pass remains a maintainer gate.
 
 **Done when:** A `release-*` tag on a matching release commit creates reviewed,
 signed, checksum-verifiable artifacts and the public documentation explains

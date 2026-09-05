@@ -44,6 +44,13 @@ jobs:
           flutter --version
           dart --version
           git --version
+      - name: Install Dart dependencies
+        run: dart pub get
+      - name: Validate release version
+        if: github.event_name == 'push'
+        run: dart run tool/release_metadata.dart validate "${GITHUB_REF_NAME}"
+      - name: Verify pinned Actions
+        run: dart run tool/verify_workflow_pins.dart
 
       - name: Run formatter, analyzer, and tests
         run: dart run tool/verify.dart
@@ -100,6 +107,52 @@ jobs:
         if: matrix.target == 'windows'
         shell: pwsh
         run: ./tool/build_windows.ps1
+      - name: Sign and notarize macOS app
+        if: matrix.target == 'macos' && github.event_name == 'push'
+        shell: bash
+        env:
+          MACOS_CERTIFICATE_BASE64: ${{ secrets.MACOS_CERTIFICATE_BASE64 }}
+          MACOS_CERTIFICATE_PASSWORD: ${{ secrets.MACOS_CERTIFICATE_PASSWORD }}
+          MACOS_KEYCHAIN_PASSWORD: ${{ secrets.MACOS_KEYCHAIN_PASSWORD }}
+          MACOS_SIGNING_IDENTITY: ${{ secrets.MACOS_SIGNING_IDENTITY }}
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          APPLE_APP_PASSWORD: ${{ secrets.APPLE_APP_PASSWORD }}
+        run: ./tool/sign_macos_release.sh
+      - name: Sign Windows executables
+        if: matrix.target == 'windows' && github.event_name == 'push'
+        shell: pwsh
+        env:
+          WINDOWS_CERTIFICATE_BASE64: ${{ secrets.WINDOWS_CERTIFICATE_BASE64 }}
+          WINDOWS_CERTIFICATE_PASSWORD: ${{ secrets.WINDOWS_CERTIFICATE_PASSWORD }}
+          WINDOWS_TIMESTAMP_URL: ${{ secrets.WINDOWS_TIMESTAMP_URL }}
+        run: ./tool/sign_windows_release.ps1
+      - name: Package Linux release
+        if: matrix.target == 'linux' && github.event_name == 'push'
+        shell: bash
+        env:
+          GIFT_RELEASE_TAG: ${{ github.ref_name }}
+        run: ./tool/package_linux_release.sh
+      - name: Package macOS release
+        if: matrix.target == 'macos' && github.event_name == 'push'
+        shell: bash
+        env:
+          GIFT_RELEASE_TAG: ${{ github.ref_name }}
+        run: ./tool/package_macos_release.sh
+      - name: Package Windows release
+        if: matrix.target == 'windows' && github.event_name == 'push'
+        shell: pwsh
+        env:
+          GIFT_RELEASE_TAG: ${{ github.ref_name }}
+        run: ./tool/package_windows_release.ps1
+      - name: Upload signed release package
+        if: github.event_name == 'push'
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: gift-release-${{ matrix.target }}
+          path: dist/
+          if-no-files-found: error
+
       - name: Capture platform visual goldens
         if: matrix.target != 'windows'
         env:
@@ -121,3 +174,57 @@ jobs:
           name: ${{ matrix.artifact }}
           path: ${{ matrix.path }}
           if-no-files-found: error
+
+  release:
+    name: Publish signed release
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/release-')
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      id-token: write
+      attestations: write
+    steps:
+      - name: Check out source
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - name: Set up Flutter
+        uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2
+        with:
+          flutter-version: '3.47.2'
+          channel: stable
+          cache: true
+      - name: Download signed release packages
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          pattern: gift-release-*
+          path: dist
+          merge-multiple: true
+      - name: Generate release reports
+        env:
+          GIFT_RELEASE_TAG: ${{ github.ref_name }}
+        run: |
+          dart pub get
+          dart run tool/release_metadata.dart validate "$GITHUB_REF_NAME"
+          dart run tool/release_metadata.dart generate "$GITHUB_REF_NAME" "$GITHUB_SHA" dist --require-licenses
+          dart run tool/release_metadata.dart verify dist dist/SHA256SUMS.txt
+          test "$(find dist -maxdepth 1 -type f \( -name '*.tar.gz' -o -name '*.zip' \) | wc -l)" -eq 3
+      - name: Attest release package provenance
+        uses: actions/attest-build-provenance@c074443f1aee8d4aeeae555aebba3282517141b2 # v2.2.3
+        with:
+          subject-path: |
+            dist/gift-*.tar.gz
+            dist/gift-*.zip
+      - name: Publish GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          shopt -s nullglob
+          assets=(dist/*)
+          if gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1; then
+            gh release upload "$GITHUB_REF_NAME" "${assets[@]}" --clobber
+          else
+            gh release create "$GITHUB_REF_NAME" "${assets[@]}" \
+              --verify-tag \
+              --title "GIFT ${GITHUB_REF_NAME#release-v}" \
+              --generate-notes
+          fi

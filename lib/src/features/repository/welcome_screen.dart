@@ -14,6 +14,7 @@ import 'package:gift/src/app/app_preferences.dart';
 import 'package:gift/src/app/preferences_dialog.dart';
 import 'package:gift/src/backend/git_gateway.dart';
 import 'package:gift/src/backend/domain.dart';
+import 'package:gift/src/backend/error.dart';
 import 'package:gift/src/backend/credentials.dart';
 import 'package:gift/src/app/repository_credential_store.dart';
 import 'package:file_selector/file_selector.dart';
@@ -99,6 +100,8 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
     final textTheme = Theme.of(context).textTheme;
     final compact = MediaQuery.sizeOf(context).width < 480;
     final workspace = _workspaceController;
+    final needsGitDiagnostics =
+        state.gitInstallation == null && state.error != null;
     if (workspace != null &&
         (workspace.state.isRestoring || workspace.state.tabs.isNotEmpty)) {
       return WorkspaceScreen(
@@ -177,6 +180,10 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
                     'Open an existing repository, or clone and initialize one.',
                   ),
                   const SizedBox(height: 24),
+                  if (needsGitDiagnostics) ...[
+                    _gitDiagnosticsCard(context, state.error!),
+                    const SizedBox(height: 16),
+                  ],
                   LayoutBuilder(
                     builder: (context, constraints) {
                       final openButton = FilledButton.icon(
@@ -218,16 +225,18 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
                     const SizedBox(height: 12),
                     const LinearProgressIndicator(),
                   ],
-                  if (state.errorMessage case final message?) ...[
-                    const SizedBox(height: 16),
-                    Text(
-                      message,
-                      key: const Key('repository-error'),
-                      style: TextStyle(
-                        color: Theme.of(context).colorScheme.error,
+                  if (state.errorMessage case final message?)
+                    if (!needsGitDiagnostics) ...[
+                      const SizedBox(height: 16),
+                      Text(
+                        message,
+                        key: const Key('repository-error'),
+                        style: TextStyle(
+                          color: Theme.of(context).colorScheme.error,
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+
                   const SizedBox(height: 32),
                   Text('Recent repositories', style: textTheme.titleLarge),
                   const SizedBox(height: 8),
@@ -236,6 +245,44 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
               ),
             ),
           ),
+        ),
+      ),
+    );
+  }
+
+  Widget _gitDiagnosticsCard(BuildContext context, GitError error) {
+    final colors = Theme.of(context).colorScheme;
+    return Card(
+      key: const Key('first-run-git-diagnostics'),
+      color: colors.errorContainer,
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Git setup required',
+              style: Theme.of(context).textTheme.titleMedium,
+            ),
+            const SizedBox(height: 6),
+            const Text(
+              'GIFT needs Git 2.35 or newer before it can open or create a repository.',
+            ),
+            const SizedBox(height: 8),
+            Text(
+              error.userMessage,
+              key: const Key('first-run-git-error'),
+              style: TextStyle(color: colors.onErrorContainer),
+            ),
+            if (_gitSettingsController != null) ...[
+              const SizedBox(height: 10),
+              OutlinedButton(
+                key: const Key('first-run-open-git-settings'),
+                onPressed: _showGitSettings,
+                child: const Text('Open Git settings'),
+              ),
+            ],
+          ],
         ),
       ),
     );

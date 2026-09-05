@@ -83,6 +83,7 @@ mascot source.
 The workflow starts automatically only for a `release-*` tag. The tagged
 commit must have a subject such as
 `release(v1.0.0): publish desktop artifacts`; otherwise verification fails.
+The tag version must also match the `major.minor.patch` part of `pubspec.yaml`.
 For example:
 
 ```bash
@@ -92,14 +93,63 @@ git push origin main release-v1.0.0
 ```
 
 Ordinary branch pushes create no workflow run. Use manual dispatch when a
-maintainer needs a deliberate rerun.
-After all three checks pass, it builds one release bundle per platform and
-uploads the bundles as workflow artifacts. Each build also verifies the
-platform-specific executable and runtime files before upload. Linux and macOS
-jobs capture their runner-specific visual goldens as separate review artifacts;
-the reviewed Windows goldens live under `test/app/goldens/windows/`. A tagged
-public release can attach the release artifacts after a maintainer has reviewed
-and signed them.
+maintainer needs a deliberate build/check rerun without publishing a release.
+After all three checks pass, it builds and validates one release bundle per
+platform. The release packages are:
+
+- `gift-<version>-linux-x64.tar.gz`
+- `gift-<version>-macos-<x64|arm64>.zip`
+- `gift-<version>-windows-x64.zip`
+
+The Windows archive contains the Flutter `Release` directory plus the portable
+and setup executables. A public tag additionally requires the following GitHub
+Actions secrets; the workflow fails before publication when any required
+secret is absent rather than publishing an unsigned package:
+
+- Windows: `WINDOWS_CERTIFICATE_BASE64` and
+  `WINDOWS_CERTIFICATE_PASSWORD`; `WINDOWS_TIMESTAMP_URL` is optional.
+- macOS: `MACOS_CERTIFICATE_BASE64`, `MACOS_CERTIFICATE_PASSWORD`,
+  `MACOS_KEYCHAIN_PASSWORD`, and `MACOS_SIGNING_IDENTITY`.
+- Apple notarization: `APPLE_ID`, `APPLE_TEAM_ID`, and
+  `APPLE_APP_PASSWORD`.
+
+Windows executables and the macOS app bundle are signed by their native
+platform steps. GitHub's OIDC-backed build provenance attestation covers every
+release archive, including Linux.
+
+The release job publishes these verification files beside the packages:
+
+- `SHA256SUMS.txt` — SHA-256 checksums for each installable archive.
+- `release-metadata.json` — version, tag, commit, asset names, sizes, hashes,
+  and release download URLs for opt-in update clients.
+- `sbom.cdx.json` — CycloneDX 1.5 dependency inventory.
+- `dependency-audit.json` — resolved dependency graph and discovered license
+  files; missing hosted-package licenses fail the public release job.
+
+Linux and macOS jobs capture their runner-specific visual goldens as separate
+review artifacts; the reviewed Windows goldens live under
+`test/app/goldens/windows/`.
+
+### Trust verification
+
+Download an archive and its checksum file from the same GitHub release, then
+run:
+
+```bash
+sha256sum -c SHA256SUMS.txt
+gh attestation verify gift-1.0.0-linux-x64.tar.gz \
+  --repo <owner>/<repository>
+```
+
+On macOS, Gatekeeper and the notarization ticket provide the native trust
+check. On Windows, the signed executables expose the Authenticode publisher
+and timestamp in Explorer's digital-signature properties. The release
+metadata is informational and opt-in; GIFT does not silently download updates,
+send telemetry, or collect crash data.
+
+Before a public release, a maintainer must still perform a clean-machine pass
+for install, launch, upgrade, downgrade warning, uninstall, and Git-missing
+first-run diagnostics on all three platforms.
 
 The Flutter version is pinned in the workflow and in
 [`tool/versions.json`](../tool/versions.json), which keeps local and CI

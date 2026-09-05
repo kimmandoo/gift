@@ -4,12 +4,10 @@
 > familiar IDE-style workflows, a minimal 2D pixel-game UI, a Flutter Desktop
 > frontend, and a pure Dart backend for Windows, macOS, and Linux.
 
-## Progress
-
 - **Completed:** 47 / 48
-- **Current Active Task:** Task 39 — Visual regression QA.
-- **Next priority:** activate Task 39 visual regression QA, then Task 38
-  public release.
+- **Current Active Task:** Task 38 — Public release.
+- **Next priority:** configure release signing secrets and complete the
+  maintainer-only clean-machine release pass.
 
 | # | Scope | Dart backend deliverables | Flutter deliverables | Status |
 |---|---|---|---|:---:|
@@ -51,8 +49,8 @@
 | **36** | Scale & resilience | File watching, cache invalidation, process supervision | Large-repository responsiveness | ✅ |
 | **37** | Accessibility & preferences | Versioned settings and locale-ready text contracts | Scaling, remapping, themes, and accessibility | ✅ |
 | **38A** | Credential management | Secure provider/account credentials, host matching, and Git auth injection | Account manager, credential test, and private-remote recovery | ✅ |
-| **38** | Public release | Signed packages, provenance, update metadata, and release checks | Installers and first-run diagnostics | Deferred until Tasks 38A, 39, and 41–47 |
-| **39** | Visual regression QA | Deterministic fixture states and platform font checks | Golden matrix, overflow guards, and interaction snapshots | Planned after Tasks 38A and 41–47 |
+| **38** | Public release | Signed packages, provenance, update metadata, and release checks | Installers and first-run diagnostics | In progress — native signing secrets and clean-machine pass remain |
+| **39** | Visual regression QA | Deterministic fixture states and platform font checks | Golden matrix, overflow guards, and interaction snapshots | ✅ |
 | **40** | Contextual action foundation | Typed action availability, immutable targets, and preview routing | Shared secondary-click, keyboard, and overflow action menus | ✅ |
 | **41** | Commit context actions | OID-bound cherry-pick and existing history mutations | History-row action menu and prefilled previews | ✅ |
 | **42** | Multi-commit operations | Ordered batch cherry-pick/revert state machine | Multi-select history actions and conflict progress | ✅ |

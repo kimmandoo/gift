@@ -898,7 +898,7 @@ system Git 2.35+.
 5. Added widget coverage for browse/search/normalization/traversal and verified
    affected repository flows plus analysis.
 
-## Active vertical: Visual regression QA (Task 39)
+## Completed vertical: Visual regression QA (Task 39)
 
 1. Added deterministic Welcome-screen fixtures for compact, standard, and wide
    windows in dark and light themes, including a 1.2x compact text-scale case.
@@ -908,8 +908,8 @@ system Git 2.35+.
 3. Captured and reviewed the Windows golden matrix for all welcome and dialog
    fixtures. CI captures Linux and macOS runner-specific goldens as review
    artifacts without pretending their rasterization matches Windows.
-4. Next: finish the cross-platform CI build audit and verify all three release
-   artifact layouts.
+4. Passed focused visual verification and the full Windows verification suite;
+   Task 39 is complete.
 
 ## Completed follow-up: cross-platform CI hardening
 
@@ -919,6 +919,21 @@ system Git 2.35+.
    command path on every desktop platform, including Windows Git Bash.
 3. Added release-bundle structure checks, Windows packaging-script checks,
    and Linux/macOS runner-specific golden capture to the GitHub Actions matrix.
+
+## Active vertical: signed public release pipeline (Task 38)
+
+1. Added semver validation for `release-v<version>` tags and deterministic
+   Linux, macOS, and Windows release archive names.
+2. Added native Windows Authenticode and macOS signing/notarization entry
+   points that fail closed when the required release secrets are absent.
+3. Added SHA-256 checksums, opt-in release metadata, CycloneDX SBOM,
+   dependency/license audit reports, full-SHA action verification, and
+   GitHub OIDC provenance attestations.
+4. Added a first-run Git diagnostics card that directs users to Git settings
+   when no supported Git executable is available.
+5. Next: configure repository signing secrets and complete the native
+   three-platform clean-machine release pass; do not mark Task 38 complete
+   before those checks pass.
 
 ## Completed follow-up: visible push progress
 

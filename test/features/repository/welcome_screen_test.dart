@@ -212,6 +212,8 @@ void main() {
 
     final button = tester.widget<FilledButton>(find.byType(FilledButton));
     expect(button.onPressed, isNull);
+    expect(find.byKey(const Key('first-run-git-diagnostics')), findsOneWidget);
+    expect(find.text('Git setup required'), findsOneWidget);
     expect(find.text('Git could not be found.'), findsOneWidget);
   });
 }

@@ -1,5 +1,12 @@
 # Changelog
 
+## 2026-09-06
+- feat(release): added semver-validated Linux, macOS, and Windows release
+  archives with checksums, update metadata, CycloneDX SBOM, dependency license
+  audit, and OIDC-backed provenance attestation.
+- feat(ui): added an actionable first-run Git diagnostics card that directs
+  users to Git settings when the required executable is unavailable.
+
 ## 2026-09-05
 - feat(ci): added required artifact checks and runner-specific visual golden
   capture for Linux, macOS, and Windows desktop release jobs.
