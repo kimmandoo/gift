@@ -33,6 +33,8 @@ void main() {
         ),
       );
       await tester.pumpAndSettle();
+      expect(find.text('Reset branch'), findsOneWidget);
+      expect(find.text('Preview reset'), findsOneWidget);
 
       expect(find.byKey(const Key('rollback-target-commit')), findsOneWidget);
       expect(

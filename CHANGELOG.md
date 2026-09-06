@@ -38,6 +38,9 @@
 - fix(ui): added the conventional Ctrl+Shift+P command-palette alias,
   exposed the toolbar trigger for automation and discoverability, and
   verified shortcuts while the commit editor held focus.
+- fix(ui): made History commit actions directly visible for cherry-pick,
+  revert, reset, branch creation, and comparison, and made rollback entry
+  points action-specific.
 
 ## 2026-09-05
 - feat(ci): added required artifact checks and runner-specific visual golden

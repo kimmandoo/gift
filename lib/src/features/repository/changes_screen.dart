@@ -289,8 +289,29 @@ class _ChangesScreenBodyState extends ConsumerState<_ChangesScreenBody> {
                 case _ChangesMenuAction.fileHistory:
                   unawaited(_openFileHistory(context));
                   break;
-                case _ChangesMenuAction.historyRollback:
-                  unawaited(_openHistoryRollback(context));
+                case _ChangesMenuAction.resetBranch:
+                  unawaited(
+                    _openHistoryRollback(
+                      context,
+                      initialAction: GitHistoryRollbackAction.reset,
+                    ),
+                  );
+                  break;
+                case _ChangesMenuAction.undoCommit:
+                  unawaited(
+                    _openHistoryRollback(
+                      context,
+                      initialAction: GitHistoryRollbackAction.undo,
+                    ),
+                  );
+                  break;
+                case _ChangesMenuAction.revertCommits:
+                  unawaited(
+                    _openHistoryRollback(
+                      context,
+                      initialAction: GitHistoryRollbackAction.revert,
+                    ),
+                  );
                   break;
                 case _ChangesMenuAction.worktrees:
                   unawaited(_openWorktrees(context));
@@ -372,9 +393,19 @@ class _ChangesScreenBodyState extends ConsumerState<_ChangesScreenBody> {
                 'File history & blame',
               ),
               _menuItem(
-                _ChangesMenuAction.historyRollback,
+                _ChangesMenuAction.resetBranch,
                 Icons.history_toggle_off,
-                'Undo, reset, or revert',
+                'Reset branch to a revision',
+              ),
+              _menuItem(
+                _ChangesMenuAction.undoCommit,
+                Icons.undo,
+                'Undo latest unpushed commit',
+              ),
+              _menuItem(
+                _ChangesMenuAction.revertCommits,
+                Icons.reply,
+                'Revert commit(s) with new commit(s)',
               ),
               const PopupMenuDivider(),
               _menuHeading(context, 'REPOSITORY TOOLS'),
@@ -617,11 +648,34 @@ class _ChangesScreenBodyState extends ConsumerState<_ChangesScreenBody> {
           onInvoke: () => _openFileHistory(context),
         ),
         CommandPaletteAction(
-          id: 'history-rollback',
-          label: 'Undo, reset, or revert',
+          id: 'reset-branch',
+          label: 'Reset branch to a revision',
           icon: Icons.history_toggle_off,
-          keywords: const ['rollback', 'reset', 'revert'],
-          onInvoke: () => _openHistoryRollback(context),
+          keywords: const ['reset', 'rollback', 'head'],
+          onInvoke: () => _openHistoryRollback(
+            context,
+            initialAction: GitHistoryRollbackAction.reset,
+          ),
+        ),
+        CommandPaletteAction(
+          id: 'undo-commit',
+          label: 'Undo latest unpushed commit',
+          icon: Icons.undo,
+          keywords: const ['undo', 'rollback', 'uncommit'],
+          onInvoke: () => _openHistoryRollback(
+            context,
+            initialAction: GitHistoryRollbackAction.undo,
+          ),
+        ),
+        CommandPaletteAction(
+          id: 'revert-commits',
+          label: 'Revert commit(s) with new commit(s)',
+          icon: Icons.reply,
+          keywords: const ['revert', 'rollback', 'commit'],
+          onInvoke: () => _openHistoryRollback(
+            context,
+            initialAction: GitHistoryRollbackAction.revert,
+          ),
         ),
         CommandPaletteAction(
           id: 'recovery',
@@ -2509,11 +2563,17 @@ class _ChangesScreenBodyState extends ConsumerState<_ChangesScreenBody> {
     );
   }
 
-  Future<void> _openHistoryRollback(BuildContext context) async {
+  Future<void> _openHistoryRollback(
+    BuildContext context, {
+    GitHistoryRollbackAction? initialAction,
+  }) async {
     final result = await showDialog<GitHistoryRollbackResult>(
       context: context,
-      builder: (_) =>
-          ResetDialog(gateway: widget.gateway, repository: widget.repository),
+      builder: (_) => ResetDialog(
+        gateway: widget.gateway,
+        repository: widget.repository,
+        initialAction: initialAction,
+      ),
     );
     if (!context.mounted || result == null) return;
     await _activeController.refresh();
@@ -2949,7 +3009,9 @@ enum _ChangesMenuAction {
   threeWayComparison,
   shelves,
   fileHistory,
-  historyRollback,
+  resetBranch,
+  undoCommit,
+  revertCommits,
   worktrees,
   ignoreMetadata,
   submodules,

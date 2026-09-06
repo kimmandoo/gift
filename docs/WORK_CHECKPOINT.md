@@ -597,3 +597,23 @@ This file is the handoff record for continuing work across query sessions.
   test/features/repository/changes_screen_test.dart` passed with 24 tests.
 - Blockers: none.
 - Next action: commit this shortcut correction.
+
+## Current session: JetBrains-style History action UX
+
+- Date: 2026-09-06.
+- Reported issue: Git reset and related history controls felt cumbersome and
+  unlike the direct action flow in JetBrains Git history.
+- Fix: selected History commits now expose labeled Cherry-pick, Revert,
+  Reset branch, Create branch, and Compare with HEAD actions in the detail
+  pane. Changes menu and command-palette entries now open Reset, Undo, and
+  Revert with the matching action preselected instead of starting from a
+  generic rollback picker. Reset dialog titles and preview/execute labels now
+  follow the selected operation while retaining preview, stale-state, and
+  hard-reset acknowledgement safeguards.
+- Changed files: `CHANGELOG.md`, this checkpoint,
+  `lib/src/features/repository/{changes_screen,history_screen,reset_dialog}.dart`,
+  and tests under `test/features/repository/`.
+- Verification: focused History, Reset, and Changes tests passed with 36
+  tests; `flutter analyze` passed.
+- Blockers: none.
+- Next action: commit this History action UX correction.

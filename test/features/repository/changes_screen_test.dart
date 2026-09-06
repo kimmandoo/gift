@@ -775,6 +775,15 @@ void main() {
     );
     await tester.pump();
     expect(find.byKey(const Key('command-palette-worktrees')), findsOneWidget);
+    await tester.enterText(
+      find.byKey(const Key('command-palette-search')),
+      'reset',
+    );
+    await tester.pump();
+    expect(
+      find.byKey(const Key('command-palette-reset-branch')),
+      findsOneWidget,
+    );
 
     await tester.enterText(
       find.byKey(const Key('command-palette-search')),

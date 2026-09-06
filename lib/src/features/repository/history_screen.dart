@@ -1067,6 +1067,54 @@ class _HistoryScreenState extends State<HistoryScreen> {
                 _formatDate(commit.authoredAt),
                 style: Theme.of(context).textTheme.bodySmall,
               ),
+              const SizedBox(height: 16),
+              Wrap(
+                key: const Key('history-commit-actions'),
+                spacing: 8,
+                runSpacing: 8,
+                children: [
+                  OutlinedButton.icon(
+                    key: Key('history-detail-cherry-pick:${commit.oid}'),
+                    onPressed: state.isLoading
+                        ? null
+                        : () => unawaited(_openCommitCherryPick(commit.oid)),
+                    icon: const Icon(Icons.merge_type, size: 18),
+                    label: const Text('Cherry-pick'),
+                  ),
+                  OutlinedButton.icon(
+                    key: Key('history-detail-revert:${commit.oid}'),
+                    onPressed: state.isLoading
+                        ? null
+                        : () => unawaited(_openCommitRevert(commit.oid)),
+                    icon: const Icon(Icons.undo, size: 18),
+                    label: const Text('Revert commit'),
+                  ),
+                  OutlinedButton.icon(
+                    key: Key('history-detail-reset:${commit.oid}'),
+                    onPressed: state.isLoading
+                        ? null
+                        : () => unawaited(_openCommitReset(commit.oid)),
+                    icon: const Icon(Icons.history_toggle_off, size: 18),
+                    label: const Text('Reset branch'),
+                  ),
+                  OutlinedButton.icon(
+                    key: Key('history-detail-branch:${commit.oid}'),
+                    onPressed: state.isLoading
+                        ? null
+                        : () => unawaited(_openCreateBranch(commit.oid)),
+                    icon: const Icon(Icons.call_split, size: 18),
+                    label: const Text('Create branch'),
+                  ),
+                  OutlinedButton.icon(
+                    key: Key('history-detail-compare:${commit.oid}'),
+                    onPressed: state.isLoading
+                        ? null
+                        : () => unawaited(_openCommitComparison(commit.oid)),
+                    icon: const Icon(Icons.compare_arrows, size: 18),
+                    label: const Text('Compare with HEAD'),
+                  ),
+                ],
+              ),
               if (commit.refs.isNotEmpty) ...[
                 const SizedBox(height: 16),
                 const Text('Refs'),

@@ -75,6 +75,14 @@ void main() {
     await tester.pump();
     expect(find.text(first.oid), findsOneWidget);
     expect(find.text('First body'), findsOneWidget);
+    expect(find.byKey(const Key('history-commit-actions')), findsOneWidget);
+    expect(
+      find.byKey(ValueKey('history-detail-reset:${first.oid}')),
+      findsOneWidget,
+    );
+    expect(find.text('Cherry-pick'), findsOneWidget);
+    expect(find.text('Revert commit'), findsOneWidget);
+    expect(find.text('Create branch'), findsOneWidget);
 
     await tester.tap(find.text('Load more'));
     await tester.pumpAndSettle();
@@ -778,6 +786,9 @@ void main() {
     );
     await tester.tap(find.byKey(ValueKey('commit:${commit.oid}')));
     await tester.pumpAndSettle();
+    await tester.ensureVisible(
+      find.byKey(ValueKey('commit-file-actions:${commit.oid}:lib/app.dart')),
+    );
     await tester.tap(
       find.byKey(ValueKey('commit-file-actions:${commit.oid}:lib/app.dart')),
     );

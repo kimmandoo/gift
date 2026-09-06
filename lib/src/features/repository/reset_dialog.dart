@@ -75,11 +75,11 @@ class _ResetDialogState extends State<ResetDialog> {
         horizontal: compact ? 14 : 40,
         vertical: 22,
       ),
-      title: const Row(
+      title: Row(
         children: [
-          Icon(Icons.history_toggle_off),
-          SizedBox(width: 10),
-          Expanded(child: Text('Undo, reset, or revert')),
+          const Icon(Icons.history_toggle_off),
+          const SizedBox(width: 10),
+          Expanded(child: Text(_actionTitle)),
         ],
       ),
       content: SizedBox(
@@ -283,7 +283,7 @@ class _ResetDialogState extends State<ResetDialog> {
                             child: CircularProgressIndicator(strokeWidth: 2),
                           )
                         : const Icon(Icons.visibility_outlined),
-                    label: const Text('Preview effect'),
+                    label: Text(_previewLabel),
                   ),
                 ],
               ),
@@ -330,12 +330,29 @@ class _ResetDialogState extends State<ResetDialog> {
                 ? () => unawaited(_execute(preview))
                 : null,
             icon: const Icon(Icons.play_arrow),
-            label: const Text('Run reviewed action'),
+            label: Text(_executeLabel),
           ),
       ],
     );
   }
 
+  String get _actionTitle => switch (_action) {
+    GitHistoryRollbackAction.reset => 'Reset branch',
+    GitHistoryRollbackAction.undo => 'Undo latest commit',
+    GitHistoryRollbackAction.revert => 'Revert commits',
+  };
+
+  String get _previewLabel => switch (_action) {
+    GitHistoryRollbackAction.reset => 'Preview reset',
+    GitHistoryRollbackAction.undo => 'Preview undo',
+    GitHistoryRollbackAction.revert => 'Preview revert',
+  };
+
+  String get _executeLabel => switch (_action) {
+    GitHistoryRollbackAction.reset => 'Reset branch',
+    GitHistoryRollbackAction.undo => 'Undo commit',
+    GitHistoryRollbackAction.revert => 'Create revert commit',
+  };
   bool _canExecute(GitHistoryRollbackPreview preview) {
     if (!preview.canExecute) return false;
     return preview.request.mode != GitResetMode.hard || _confirmHardReset;
