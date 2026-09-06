@@ -161,7 +161,6 @@ class _CommandPaletteDialogState extends State<CommandPaletteDialog> {
                     controller: _queryController,
                     autofocus: true,
                     decoration: const InputDecoration(
-                      prefixIcon: Icon(Icons.search),
                       labelText: 'Search actions',
                       hintText: 'Type an action name or keyword',
                       border: OutlineInputBorder(),

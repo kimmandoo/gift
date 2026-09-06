@@ -48,6 +48,8 @@
   surfaced ahead, behind, diverged, and same-tip status in the branch list.
 - fix(ui): rendered History commit timestamps in the user's local timezone
   while keeping Git query boundaries normalized for backend use.
+- fix(ui): removed the redundant search icon from the command-palette
+  search field.
 
 ## 2026-09-05
 - feat(ci): added required artifact checks and runner-specific visual golden

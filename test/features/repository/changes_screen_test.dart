@@ -754,6 +754,13 @@ void main() {
     await tester.sendKeyUpEvent(LogicalKeyboardKey.controlLeft);
     await tester.pumpAndSettle();
     expect(find.byKey(const Key('command-palette-dialog')), findsOneWidget);
+    expect(
+      find.descendant(
+        of: find.byKey(const Key('command-palette-search')),
+        matching: find.byIcon(Icons.search),
+      ),
+      findsNothing,
+    );
 
     await tester.sendKeyEvent(LogicalKeyboardKey.escape);
     await tester.pumpAndSettle();
