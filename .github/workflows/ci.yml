@@ -70,7 +70,7 @@ jobs:
           - os: macos-latest
             target: macos
             artifact: gift-macos
-            path: build/macos/Build/Products/Release/
+            path: build/macos/ci/gift-macos.app.zip
           - os: windows-latest
             target: windows
             artifact: gift-windows-x64
@@ -115,6 +115,14 @@ jobs:
         if: matrix.target == 'macos'
         shell: bash
         run: ./tool/sign_macos_release.sh
+      - name: Archive macOS build artifact
+        if: matrix.target == 'macos'
+        shell: bash
+        run: |
+          mkdir -p build/macos/ci
+          ditto -c -k --sequesterRsrc --keepParent \
+            build/macos/Build/Products/Release/gift.app \
+            build/macos/ci/gift-macos.app.zip
       - name: Package Linux release
         if: matrix.target == 'linux' && github.event_name == 'push'
         shell: bash

@@ -19,11 +19,12 @@ This file is the handoff record for continuing work across query sessions.
   Linux/macOS build steps in the workflow, and pinned the object-management
   fixture branch so host Git defaults cannot block verification.
 - CI run `34036380774` passed all verify and build jobs, and the macOS build
-  produced and signed `gift.app`; its downloaded artifact flattened the app
-  directory because the upload path pointed at `gift.app` itself.
-- Exact next action: commit the macOS artifact-parent-path correction, dispatch
-  the workflow again, and verify the downloaded `gift-macos` artifact contains
-  `gift.app/Contents/MacOS/gift`.
+  produced and signed `gift.app`; downloading the directory artifact exposed a
+  bundle-format error because GitHub's artifact archive did not preserve the
+  signed framework bundle correctly.
+- Exact next action: commit the `ditto`-zip artifact correction, dispatch the
+  workflow again, download `gift-macos`, extract its nested zip, and verify
+  `gift.app/Contents/MacOS/gift` plus codesign integrity.
 - Verification: the full repository verification suite passed formatting,
   analysis, and all 301 tests; the full backend Git test file passed 25 tests;
   local macOS build/sign/desktop-artifact verification and release packaging

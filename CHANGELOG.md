@@ -9,6 +9,8 @@
   cannot block CI verification.
 - fix(ci): preserved the `gift.app` directory in the downloaded macOS build
   artifact by uploading its Release parent directory.
+- fix(ci): archived the macOS app with `ditto` so the downloaded artifact
+  preserves the signed bundle and its framework symlinks.
 - release(v1.0.1): prepared the corrected desktop release after fixing
   commit-specific history inspection.
 - fix(history): passed the requested commit revision to commit inspection so
