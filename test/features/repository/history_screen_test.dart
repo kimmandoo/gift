@@ -75,6 +75,16 @@ void main() {
     await tester.pump();
     expect(find.text(first.oid), findsOneWidget);
     expect(find.text('First body'), findsOneWidget);
+    final localFirst = first.authoredAt.toLocal();
+    String two(int value) => value.toString().padLeft(2, '0');
+    expect(
+      find.text(
+        '${localFirst.year}-${two(localFirst.month)}-'
+        '${two(localFirst.day)} ${two(localFirst.hour)}:'
+        '${two(localFirst.minute)}',
+      ),
+      findsOneWidget,
+    );
     expect(find.byKey(const Key('history-commit-actions')), findsOneWidget);
     expect(
       find.byKey(ValueKey('history-detail-reset:${first.oid}')),
@@ -812,7 +822,7 @@ GitCommit makeCommit(String oid, String subject) {
     parents: const [],
     authorName: 'Kimmandoo',
     authorEmail: 'kimmandoo@example.test',
-    authoredAt: DateTime(2026, 9, 2, 12),
+    authoredAt: DateTime.utc(2026, 9, 2, 12),
     subject: subject,
     body: 'First body',
   );

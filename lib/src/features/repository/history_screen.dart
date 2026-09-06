@@ -2073,7 +2073,8 @@ class _CommitGraphPainter extends CustomPainter {
 }
 
 String _formatDate(DateTime date) {
+  final local = date.toLocal();
   String two(int value) => value.toString().padLeft(2, '0');
-  return '${date.year}-${two(date.month)}-${two(date.day)} '
-      '${two(date.hour)}:${two(date.minute)}';
+  return '${local.year}-${two(local.month)}-${two(local.day)} '
+      '${two(local.hour)}:${two(local.minute)}';
 }

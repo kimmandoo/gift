@@ -655,3 +655,19 @@ This file is the handoff record for continuing work across query sessions.
   still has the known Windows CRLF fixture failure outside this change.
 - Blockers: none.
 - Next action: commit this relationship-aware branch action fix.
+
+## Current session: Local timezone History display
+
+- Date: 2026-09-06.
+- Reported issue: History commit timestamps were rendered from UTC values
+  without converting them to the user's local timezone.
+- Fix: History list and commit detail formatting now call `DateTime.toLocal()`
+  before rendering the date and time. Backend query boundaries continue to
+  normalize to UTC, so filtering semantics are unchanged.
+- Changed files: `CHANGELOG.md`, this checkpoint,
+  `lib/src/features/repository/history_screen.dart`, and
+  `test/features/repository/history_screen_test.dart`.
+- Verification: all 12 focused History tests passed; `flutter analyze`
+  passed.
+- Blockers: none.
+- Next action: commit this timezone display fix.
