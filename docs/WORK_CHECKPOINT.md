@@ -5,28 +5,28 @@ This file is the handoff record for continuing work across query sessions.
 ## Current checkpoint
 
 - Date: 2026-09-06.
-- Active task: Task 38 — public release; macOS ad hoc signing review is
-  active.
-- Branch: `main`; latest source commit is
-  `a3f5bc4 fix(ui): repair command palette shortcut alias`.
-- Decision: the macOS signing step must run for both tag-triggered pushes and
+- Active task: Task 38 — public release; release commit and local tag are
+  prepared.
+- Branch: `main`; latest source commit is the release commit tagged
+  `release-v1.0.0`.
+- Decision: the macOS signing step runs for both tag-triggered pushes and
   manual `workflow_dispatch` builds. Release packaging remains tag-only.
-- Completed this session: inspected the macOS build/sign/package path; found
-  that the signing step was gated by `github.event_name == 'push'`, so manual
-  macOS CI artifacts skipped the ad hoc signature. Updated the workflow to
-  sign every macOS build, made the helper assert `Signature=adhoc`, and
-  documented the behavior.
-- Exact next action: commit the macOS CI signing fix, then inspect the next
-  tag-triggered and manual macOS workflow results and verify the downloaded
-  archive on macOS.
-- Verification: `bash -n tool/sign_macos_release.sh
-  tool/build_macos.sh tool/package_macos_release.sh` passed; Ruby YAML parsing
-  of `.github/workflows/ci.yml` passed; a real temporary macOS app was
-  ad-hoc signed and reported `Signature=adhoc`; signed macOS packaging
-  produced a ZIP rooted at `gift.app`; `git diff --check` passed.
-- Local reproduction blocker: the installed Flutter 3.44.0/Dart 3.12.0
-  cannot resolve this repository's required Dart 3.13.2; CI pins Flutter
-  3.47.2. The native Flutter release build therefore remains CI-only here.
+- Completed this session: corrected manual macOS CI signing, made the signing
+  helper assert `Signature=adhoc`, documented the behavior, created the
+  `release(v1.0.0): publish desktop artifacts` commit, and created annotated
+  tag `release-v1.0.0`.
+- Exact next action: push `main` and `release-v1.0.0`, then inspect the
+  tag-triggered workflow and verify the Linux, macOS, and Windows release
+  archives and reports. Run a separate manual dispatch to confirm macOS
+  signing remains active without packaging.
+- Verification: release version/tag shape validated as `1.0.0` /
+  `release-v1.0.0`; Ruby YAML parsing of `.github/workflows/ci.yml` passed;
+  `git diff --check` passed; the previous temporary macOS ad hoc signing and
+  packaging smoke tests passed.
+- Local release-tool blocker: the installed Flutter 3.44.0/Dart 3.12.0
+  cannot resolve the repository's required Dart 3.13.2, so
+  `dart run tool/release_metadata.dart validate release-v1.0.0` could not
+  run locally. CI pins Flutter 3.47.2.
 
 ## Previous checkpoint
 
