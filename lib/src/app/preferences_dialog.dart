@@ -69,7 +69,9 @@ class _PreferencesDialogState extends State<PreferencesDialog> {
         'remote',
         'commandPalette',
       ])
-        id: TextEditingController(text: preferences.shortcut(id)),
+        id: TextEditingController(
+          text: formatShortcut(preferences.shortcut(id)),
+        ),
     };
   }
 
@@ -208,6 +210,8 @@ class _PreferencesDialogState extends State<PreferencesDialog> {
               GiftStrings.shortcuts,
               style: Theme.of(context).textTheme.titleSmall,
             ),
+            const SizedBox(height: 4),
+            const Text('Use combinations such as Ctrl+R or Ctrl+Shift+P.'),
             for (final entry in _shortcutControllers.entries) ...[
               TextField(
                 key: ValueKey('preference-shortcut-${entry.key}'),

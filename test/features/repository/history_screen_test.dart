@@ -70,6 +70,10 @@ void main() {
       ),
     );
 
+    expect(
+      find.text('Ctrl+R refresh · Ctrl+F search · Esc back'),
+      findsOneWidget,
+    );
     expect(find.text('Add history'), findsOneWidget);
     await tester.tap(find.byKey(ValueKey('commit:${first.oid}')));
     await tester.pump();

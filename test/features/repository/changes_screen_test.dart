@@ -12,6 +12,7 @@ import 'package:gift/src/backend/status.dart';
 import 'package:gift/src/features/repository/changes_controller.dart';
 import 'package:gift/src/features/repository/changes_screen.dart';
 import 'package:gift/src/app/pixel_theme.dart';
+import 'package:gift/src/app/app_preferences.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -681,7 +682,7 @@ void main() {
     controller.dispose();
   });
 
-  testWidgets('refreshes from the visible Ctrl+R shortcut and status strip', (
+  testWidgets('shows the configured refresh shortcut and status hints', (
     tester,
   ) async {
     final repository = const RepositoryOpened(
@@ -700,24 +701,35 @@ void main() {
 
     await tester.pumpWidget(
       MaterialApp(
-        home: ChangesScreen(
-          gateway: gateway,
-          repository: repository,
-          controller: controller,
-          autoInitialize: false,
+        home: AppPreferencesScope(
+          preferences: GiftPreferences.defaults.copyWith(
+            shortcuts: const {
+              'refresh': 'ctrl+alt+r',
+              'history': 'alt+h',
+              'commandPalette': 'ctrl+alt+p',
+            },
+          ),
+          update: (_) async {},
+          child: ChangesScreen(
+            gateway: gateway,
+            repository: repository,
+            controller: controller,
+            autoInitialize: false,
+          ),
         ),
       ),
     );
-    await tester.pump();
     await tester.sendKeyDownEvent(LogicalKeyboardKey.controlLeft);
+    await tester.sendKeyDownEvent(LogicalKeyboardKey.altLeft);
     await tester.sendKeyEvent(LogicalKeyboardKey.keyR);
+    await tester.sendKeyUpEvent(LogicalKeyboardKey.altLeft);
     await tester.sendKeyUpEvent(LogicalKeyboardKey.controlLeft);
     await tester.pumpAndSettle();
 
     expect(gateway.statusCalls, 2);
     expect(find.byKey(const Key('status-strip')), findsOneWidget);
     expect(
-      find.text('Ctrl+R refresh · Ctrl+H history · Ctrl+K palette'),
+      find.text('Ctrl+Alt+R refresh · Alt+H history · Ctrl+Alt+P palette'),
       findsOneWidget,
     );
     controller.dispose();

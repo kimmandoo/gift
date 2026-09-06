@@ -311,6 +311,33 @@ class GiftPreferencesLoadResult {
 String _canonicalShortcut(String value) =>
     value.trim().toLowerCase().replaceAll(RegExp(r'\s+'), '');
 
+/// Formats a stored shortcut binding for visible keyboard hints.
+String formatShortcut(String value) {
+  final tokens = _canonicalShortcut(value).split('+');
+  if (tokens.length == 1 && tokens.single.isEmpty) return 'Unassigned';
+  return tokens
+      .map(
+        (token) => switch (token) {
+          'ctrl' || 'control' => 'Ctrl',
+          'shift' => 'Shift',
+          'alt' || 'option' => 'Alt',
+          'meta' || 'cmd' || 'command' => 'Cmd',
+          'enter' || 'return' => 'Enter',
+          'escape' || 'esc' => 'Esc',
+          'tab' => 'Tab',
+          'arrowup' => 'Arrow Up',
+          'arrowdown' => 'Arrow Down',
+          'arrowleft' => 'Arrow Left',
+          'arrowright' => 'Arrow Right',
+          'space' => 'Space',
+          'backspace' => 'Backspace',
+          'delete' => 'Delete',
+          _ => token.length == 1 ? token.toUpperCase() : token,
+        },
+      )
+      .join('+');
+}
+
 /// Parses the canonical shortcut strings accepted by GiftPreferences.
 ShortcutActivator? shortcutActivator(String value) {
   final tokens = _canonicalShortcut(value).split('+');

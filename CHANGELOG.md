@@ -52,6 +52,10 @@
   search field.
 - fix(ui): removed the redundant Changes toolbar command-palette button and
   exposed `Ctrl+K palette` beside the existing keyboard shortcut hints.
+- fix(ui): made Changes and History shortcut hints follow the configured
+  bindings and exposed the History search shortcut.
+- fix(ui): rendered shortcut preferences as readable key combinations and
+  added input-format guidance.
 
 ## 2026-09-05
 - feat(ci): added required artifact checks and runner-specific visual golden

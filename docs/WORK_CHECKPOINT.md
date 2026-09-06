@@ -702,3 +702,26 @@ This file is the handoff record for continuing work across query sessions.
   passed all 21 tests; `flutter analyze` passed; `git diff --check` passed.
 - Blockers: none.
 - Next action: commit this Changes shortcut-hint correction.
+
+## Current session: Full-app UX audit
+
+- Date: 2026-09-06.
+- Scope: audited Welcome, workspace tabs, Changes, History, command palette,
+  preferences, dialogs, action menus, responsive layouts, keyboard shortcuts,
+  and visual-regression coverage.
+- Findings fixed: Changes and History status hints now render the user's
+  configured shortcut bindings; History now advertises its `Ctrl+F` search
+  shortcut; shortcut preference fields now display readable key combinations
+  and explain the accepted format.
+- Changed files: `CHANGELOG.md`, this checkpoint,
+  `lib/src/app/{app_preferences,preferences_dialog}.dart`,
+  `lib/src/features/repository/{changes_screen,history_screen}.dart`, and
+  related app/feature tests.
+- Verification: the affected preference, Changes, and History suites passed
+  all 41 tests; visual regression passed all 11 fixtures; `flutter analyze`
+  passed; `git diff --check` passed.
+- Full-suite note: `flutter test` completed with 8 pre-existing Windows-only
+  backend failures involving CRLF expectations, history fixture cardinality,
+  and submodule file-lock cleanup. No affected UX test failed.
+- Blockers: none for the UX audit.
+- Next action: commit the UX audit changes.

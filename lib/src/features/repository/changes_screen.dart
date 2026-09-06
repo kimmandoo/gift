@@ -962,6 +962,14 @@ class _ChangesScreenBodyState extends ConsumerState<_ChangesScreenBody> {
     ChangesState state,
   ) {
     final compact = MediaQuery.sizeOf(context).width < 480;
+    final preferences =
+        AppPreferencesScope.maybeOf(context)?.preferences ??
+        GiftPreferences.defaults;
+    final shortcutHint = [
+      '${formatShortcut(preferences.shortcut('refresh'))} refresh',
+      '${formatShortcut(preferences.shortcut('history'))} history',
+      '${formatShortcut(preferences.shortcut('commandPalette'))} palette',
+    ].join(' · ');
     final status = state.isCommitting
         ? 'Committing…'
         : state.isMutating
@@ -995,7 +1003,7 @@ class _ChangesScreenBodyState extends ConsumerState<_ChangesScreenBody> {
               Expanded(child: Text(status, overflow: TextOverflow.ellipsis)),
               const SizedBox(width: 12),
               Text(
-                'Ctrl+R refresh · Ctrl+H history · Ctrl+K palette',
+                shortcutHint,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: Theme.of(context).textTheme.labelSmall,

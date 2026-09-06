@@ -109,6 +109,14 @@ class _HistoryScreenState extends State<HistoryScreen> {
     final state = _controller.state;
     final page = state.page;
     final selectionMode = _selectionMode || state.selectedOids.isNotEmpty;
+    final preferences =
+        AppPreferencesScope.maybeOf(context)?.preferences ??
+        GiftPreferences.defaults;
+    final shortcutHint = [
+      '${formatShortcut(preferences.shortcut('refresh'))} refresh',
+      '${formatShortcut(preferences.shortcut('focusSearch'))} search',
+      '${formatShortcut(preferences.shortcut('cancel'))} back',
+    ].join(' · ');
     final scaffold = Scaffold(
       appBar: AppBar(
         leading: IconButton(
@@ -197,7 +205,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
                   vertical: 7,
                 ),
                 child: Text(
-                  'Ctrl+R refresh · Esc back',
+                  shortcutHint,
                   style: Theme.of(context).textTheme.labelSmall,
                 ),
               ),
@@ -205,9 +213,6 @@ class _HistoryScreenState extends State<HistoryScreen> {
         ),
       ),
     );
-    final preferences =
-        AppPreferencesScope.maybeOf(context)?.preferences ??
-        GiftPreferences.defaults;
     final bindings = <ShortcutActivator, VoidCallback>{};
     void bind(String id, VoidCallback action) {
       final activator = shortcutActivator(preferences.shortcut(id));

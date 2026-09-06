@@ -36,6 +36,12 @@ void main() {
     });
   });
 
+  test('formats shortcut bindings for visible hints', () {
+    expect(formatShortcut('ctrl+shift+p'), 'Ctrl+Shift+P');
+    expect(formatShortcut('escape'), 'Esc');
+    expect(formatShortcut(''), 'Unassigned');
+  });
+
   test('round trips accessibility and repository preferences', () async {
     SharedPreferences.setMockInitialValues({});
     final storage = await SharedPreferences.getInstance();
@@ -98,6 +104,15 @@ void main() {
     await tester.tap(find.byKey(const Key('preference-high-contrast')));
     await tester.drag(find.byType(ListView), const Offset(0, -420));
     await tester.pumpAndSettle();
+    expect(
+      tester
+          .widget<TextField>(
+            find.byKey(const Key('preference-shortcut-refresh')),
+          )
+          .controller
+          ?.text,
+      'Ctrl+R',
+    );
     await tester.enterText(
       find.byKey(const Key('preference-shortcut-refresh')),
       'ctrl+alt+r',
