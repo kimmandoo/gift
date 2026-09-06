@@ -95,6 +95,8 @@ git push origin main release-v1.0.0
 
 Ordinary branch pushes create no workflow run. Use manual dispatch when a
 maintainer needs a deliberate build/check rerun without publishing a release.
+The macOS build is ad hoc signed in both tag-triggered and manually dispatched
+build jobs; only tag-triggered jobs create the versioned release package.
 After all three checks pass, it builds and validates one release bundle per
 platform. The release packages are:
 

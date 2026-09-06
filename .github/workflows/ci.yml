@@ -108,7 +108,7 @@ jobs:
         shell: pwsh
         run: ./tool/build_windows.ps1
       - name: Apply ad hoc signature to macOS app
-        if: matrix.target == 'macos' && github.event_name == 'push'
+        if: matrix.target == 'macos'
         shell: bash
         run: ./tool/sign_macos_release.sh
       - name: Package Linux release

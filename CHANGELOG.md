@@ -1,6 +1,9 @@
 # Changelog
 
 ## 2026-09-06
+- fix(ci): applied the macOS ad hoc signature step to manual and
+  tag-triggered build jobs, and verified that the resulting app reports an
+  ad hoc signature.
 - feat(release): added semver-validated Linux, macOS, and Windows release
   archives with checksums, update metadata, CycloneDX SBOM, dependency license
   audit, and OIDC-backed provenance attestation.
