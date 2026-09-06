@@ -5,25 +5,24 @@ This file is the handoff record for continuing work across query sessions.
 ## Current checkpoint
 
 - Date: 2026-09-06.
-- Active task: Task 38 — public release; corrected release 1.0.1 is prepared
-  locally.
+- Active task: Task 38 — public release; corrected release 1.0.1 is published
+  to the remote branch and tag.
 - Branch: `main`; `release-v1.0.0` remains on the failed pre-fix release
-  commit, and `release-v1.0.1` points to the corrected release commit.
-- Decision: publish the corrected build as `release-v1.0.1`; do not rewrite
-  the existing `release-v1.0.0` tag.
-- Completed this session: bumped `pubspec.yaml` to `1.0.1+1`, updated the
-  Windows uninstall display version and release documentation examples,
-  recorded the 1.0.1 changelog entry, created
-  `release(v1.0.1): publish desktop artifacts`, and created annotated tag
-  `release-v1.0.1`.
-- Exact next action: push `main` and `release-v1.0.1`, then inspect the
-  tag-triggered CI result and verify all three release archives and reports.
-- Verification: version/tag shape validated as `1.0.1` /
-  `release-v1.0.1`; the workflow YAML parsed; `git diff --check` passed; the
-  history fix passed the focused three-test history suite.
+  commit, and `release-v1.0.1` points to corrected release commit `8289634`.
+- Decision: the macOS build receives an ad hoc signature on both manual and
+  tag-triggered CI runs; release packaging remains tag-only.
+- Completed this session: verified the macOS build/sign/package scripts and
+  workflow YAML, confirmed the release commit subject and tag target, and
+  published `main` plus annotated tag `release-v1.0.1`.
+- Exact next action: inspect the tag-triggered GitHub Actions result and verify
+  the Linux, macOS, and Windows release archives, checksums, metadata, SBOM,
+  and attestations. Then complete the clean-machine release pass.
+- Verification: `bash -n` passed for all macOS release scripts; workflow YAML
+  parsing passed; `git diff release-v1.0.1^ release-v1.0.1 --check` passed;
+  the remote tag resolves to release commit `8289634`.
 - Local release-tool blocker: installed Flutter 3.44.0/Dart 3.12.0 cannot
   satisfy the repository's Dart 3.13.2 constraint, so release metadata
-  validation must run under CI's Flutter 3.47.2.
+  validation runs under CI's pinned Flutter 3.47.2.
 
 ## Previous checkpoint
 
