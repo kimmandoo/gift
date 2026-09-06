@@ -781,8 +781,10 @@ class _BranchDialogState extends State<BranchDialog> {
           controller: _operationSourceController,
           enabled: !_isMutating,
           decoration: InputDecoration(
-            labelText: _operation == GitBranchOperation.cherryPick
-                ? 'Source commit or ref'
+            labelText:
+                _operation == GitBranchOperation.cherryPick ||
+                    _operation == GitBranchOperation.merge
+                ? 'Source branch or commit'
                 : 'Source branch',
             border: const OutlineInputBorder(),
           ),

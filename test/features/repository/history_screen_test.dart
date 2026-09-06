@@ -83,6 +83,7 @@ void main() {
     expect(find.text('Cherry-pick'), findsOneWidget);
     expect(find.text('Revert commit'), findsOneWidget);
     expect(find.text('Create branch'), findsOneWidget);
+    expect(find.text('Merge into current'), findsOneWidget);
 
     await tester.tap(find.text('Load more'));
     await tester.pumpAndSettle();
@@ -192,6 +193,7 @@ void main() {
     await tester.tap(find.byKey(ValueKey('commit-actions:${commit.oid}')));
     await tester.pumpAndSettle();
 
+    expect(find.text('Merge into current'), findsOneWidget);
     expect(find.text('Cherry-pick onto current branch'), findsOneWidget);
     expect(find.text('Revert commit'), findsOneWidget);
     expect(find.text('Create branch here'), findsOneWidget);

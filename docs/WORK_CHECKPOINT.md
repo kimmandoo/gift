@@ -617,3 +617,20 @@ This file is the handoff record for continuing work across query sessions.
   tests; `flutter analyze` passed.
 - Blockers: none.
 - Next action: commit this History action UX correction.
+
+## Current session: History merge action
+
+- Date: 2026-09-06.
+- Reported issue: branch-to-current merge was available from Branches but not
+  from the selected commit's History actions.
+- Fix: History commit context menus and detail actions now expose `Merge into
+  current`. The action opens the reviewed branch-operation dialog with the
+  selected full commit OID as its source and the current branch as the default
+  target. Merge source fields now explain that a branch or commit is accepted.
+- Changed files: `CHANGELOG.md`, this checkpoint,
+  `lib/src/features/repository/{history_screen,branch_dialog}.dart`, and
+  `test/features/repository/history_screen_test.dart`.
+- Verification: focused History and Branch tests passed with 23 tests;
+  `flutter analyze` passed.
+- Blockers: none.
+- Next action: commit this History merge action.

@@ -41,6 +41,8 @@
 - fix(ui): made History commit actions directly visible for cherry-pick,
   revert, reset, branch creation, and comparison, and made rollback entry
   points action-specific.
+- fix(ui): added History commit-to-current merge actions with full-revision
+  prefill and clarified branch-operation source labels.
 
 ## 2026-09-05
 - feat(ci): added required artifact checks and runner-specific visual golden

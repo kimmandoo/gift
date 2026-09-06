@@ -802,6 +802,15 @@ class _HistoryScreenState extends State<HistoryScreen> {
         disabledReason: mutationReason,
       ),
       action(
+        id: ContextActionId.mergeBranch,
+        label: 'Merge into current',
+        icon: Icons.merge_type,
+        group: ContextActionGroup.workflow,
+        route: ContextActionRoute.mergeBranch,
+        enabled: mutationReason == null,
+        disabledReason: mutationReason,
+      ),
+      action(
         id: ContextActionId.createBranch,
         label: 'Create branch here',
         icon: Icons.call_split,
@@ -848,6 +857,8 @@ class _HistoryScreenState extends State<HistoryScreen> {
         await _inspectCommit(commitOid);
       case ContextActionRoute.compare:
         await _openCommitComparison(commitOid);
+      case ContextActionRoute.mergeBranch:
+        await _openCommitMerge(commitOid);
       case ContextActionRoute.copyFullHash:
         await _copyCommitHash(commitOid, short: false);
       case ContextActionRoute.copyShortHash:
@@ -932,6 +943,19 @@ class _HistoryScreenState extends State<HistoryScreen> {
       ),
     );
     if (mounted) await _controller.refresh();
+  }
+
+  Future<void> _openCommitMerge(String commitOid) async {
+    final result = await showDialog<GitBranchOperationResult>(
+      context: context,
+      builder: (_) => BranchDialog(
+        gateway: widget.gateway,
+        repository: widget.repository,
+        initialOperation: GitBranchOperation.merge,
+        initialOperationSource: commitOid,
+      ),
+    );
+    if (mounted && result != null) await _controller.refresh();
   }
 
   Future<void> _openCommitRevert(String commitOid) async {
@@ -1080,6 +1104,14 @@ class _HistoryScreenState extends State<HistoryScreen> {
                         : () => unawaited(_openCommitCherryPick(commit.oid)),
                     icon: const Icon(Icons.merge_type, size: 18),
                     label: const Text('Cherry-pick'),
+                  ),
+                  OutlinedButton.icon(
+                    key: Key('history-detail-merge:${commit.oid}'),
+                    onPressed: state.isLoading
+                        ? null
+                        : () => unawaited(_openCommitMerge(commit.oid)),
+                    icon: const Icon(Icons.merge_type, size: 18),
+                    label: const Text('Merge into current'),
                   ),
                   OutlinedButton.icon(
                     key: Key('history-detail-revert:${commit.oid}'),
