@@ -18,19 +18,24 @@ This file is the handoff record for continuing work across query sessions.
   coverage, made the macOS Flutter build certificate-free for CI, split the
   Linux/macOS build steps in the workflow, and pinned the object-management
   fixture branch so host Git defaults cannot block verification.
-- CI run `34036380774` passed all verify and build jobs, and the macOS build
-  produced and signed `gift.app`; downloading the directory artifact exposed a
-  bundle-format error because GitHub's artifact archive did not preserve the
-  signed framework bundle correctly.
-- Exact next action: commit the `ditto`-zip artifact correction, dispatch the
-  workflow again, download `gift-macos`, extract its nested zip, and verify
-  `gift.app/Contents/MacOS/gift` plus codesign integrity.
+- CI run `34038564514` passed all verify and build jobs. The macOS build
+  generated and ad hoc-signed `gift.app`, archived it with `ditto`, and
+  uploaded `gift-macos.app.zip`; the manual workflow correctly skipped Publish
+  release.
+- Downloading and extracting that CI artifact produced
+  `gift.app/Contents/MacOS/gift`; `codesign --verify --deep --strict` passed
+  on the extracted app.
+- The macOS “Apple could not verify gift.app” warning is expected for this
+  private, ad hoc-signed, non-notarized build; no public release/notarization
+  work is planned.
+- Exact next action: perform the maintainer-only clean-machine pass when a
+  signed/notarized distribution is required.
 - Verification: the full repository verification suite passed formatting,
   analysis, and all 301 tests; the full backend Git test file passed 25 tests;
   local macOS build/sign/desktop-artifact verification and release packaging
-  passed; workflow YAML and shell syntax passed.
-- Blockers: no local blocker. The corrected workflow artifact check and the
-  clean-machine release pass remain.
+  passed; three GitHub Actions matrix runs passed their verify/build jobs.
+- Blockers: no code blocker. Apple Developer ID signing and notarization are
+  intentionally unavailable for this private release path.
 
 ## Previous checkpoint
 
