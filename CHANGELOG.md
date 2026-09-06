@@ -35,6 +35,9 @@
 - fix(ui): completed command palette parity with repository actions, routed
   refresh execution from palette selection, and skipped disabled actions during
   keyboard navigation.
+- fix(ui): added the conventional Ctrl+Shift+P command-palette alias,
+  exposed the toolbar trigger for automation and discoverability, and
+  verified shortcuts while the commit editor held focus.
 
 ## 2026-09-05
 - feat(ci): added required artifact checks and runner-specific visual golden

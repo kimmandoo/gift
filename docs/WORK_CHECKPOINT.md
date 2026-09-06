@@ -576,3 +576,24 @@ This file is the handoff record for continuing work across query sessions.
   passed with 24 tests.
 - Blockers: none.
 - Next action: commit this correction and continue from the clean worktree.
+
+## Current session: Command palette shortcut and UX correction
+
+- Date: 2026-09-06.
+- Reported issue: command-palette shortcuts did not feel reliable, especially
+  when the commit editor owned focus, and the primary shortcut did not expose
+  the conventional desktop alias.
+- Diagnosis: the Changes screen exposed only the configurable shortcut, while
+  the toolbar trigger had no stable semantic key for direct interaction.
+- Fix: retained the configurable `Ctrl+K` binding, added a conflict-safe
+  `Ctrl+Shift+P` alias, exposed the toolbar trigger as
+  `open-command-palette`, and verified both shortcuts after focusing the
+  commit message editor. The toolbar tooltip now advertises both shortcuts.
+- Changed files: `CHANGELOG.md`, this checkpoint,
+  `lib/src/features/repository/changes_screen.dart`, and
+  `test/features/repository/changes_screen_test.dart`.
+- Verification: `flutter test
+  test/features/repository/command_palette_test.dart
+  test/features/repository/changes_screen_test.dart` passed with 24 tests.
+- Blockers: none.
+- Next action: commit this shortcut correction.

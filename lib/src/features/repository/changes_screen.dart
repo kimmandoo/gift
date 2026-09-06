@@ -244,7 +244,7 @@ class _ChangesScreenBodyState extends ConsumerState<_ChangesScreenBody> {
           ],
           PixelToolbarIconButton(
             key: const Key('open-command-palette'),
-            tooltip: 'Command palette',
+            tooltip: 'Command palette (Ctrl+K / Ctrl+Shift+P)',
             onPressed: () =>
                 unawaited(_openCommandPalette(context, controller)),
             icon: const Icon(Icons.search),
@@ -505,9 +505,20 @@ class _ChangesScreenBodyState extends ConsumerState<_ChangesScreenBody> {
     bind('branch', () => unawaited(_openBranches(context)));
     bind('remote', () => unawaited(_openRemotes(context)));
     bind('commit', () => unawaited(_submitCommit(controller)));
-    bind(
-      'commandPalette',
-      () => unawaited(_openCommandPalette(context, controller)),
+    void openPalette() {
+      unawaited(_openCommandPalette(context, controller));
+    }
+
+    bind('commandPalette', openPalette);
+    // Ctrl+Shift+P is the conventional command-palette shortcut. Keep it as
+    // a non-conflicting alias even when the user remaps the primary shortcut.
+    bindings.putIfAbsent(
+      const SingleActivator(
+        LogicalKeyboardKey.keyP,
+        control: true,
+        shift: true,
+      ),
+      () => openPalette,
     );
     if (widget.onBack != null) bind('cancel', widget.onBack!);
     return CallbackShortcuts(
