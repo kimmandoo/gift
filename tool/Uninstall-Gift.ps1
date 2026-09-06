@@ -47,6 +47,54 @@ function Remove-ShortcutIfTarget(
   }
 }
 
+function Remove-ShellIntegrationIfTarget(
+  [string]$KeyPath,
+  [string]$ApplicationPath,
+  [string]$ArgumentToken
+) {
+  $commandPath = Join-Path $KeyPath 'command'
+  if (-not (Test-Path -LiteralPath $commandPath)) {
+    return
+  }
+  $command = Get-ItemPropertyValue `
+    -LiteralPath $commandPath `
+    -Name '(default)' `
+    -ErrorAction SilentlyContinue
+  $expected = '"{0}" "{1}"' -f $ApplicationPath, $ArgumentToken
+  if ($command -and $command.Trim() -ieq $expected) {
+    Remove-Item -LiteralPath $KeyPath -Recurse -Force
+  }
+}
+
+function Remove-UserPathEntry([string]$InstallDirectory) {
+  $environmentKey = 'HKCU:\Environment'
+  if (-not (Test-Path -LiteralPath $environmentKey)) {
+    return
+  }
+  $currentPath = (Get-ItemProperty `
+    -LiteralPath $environmentKey `
+    -Name 'Path' `
+    -ErrorAction SilentlyContinue
+  ).Path
+  if ($null -eq $currentPath) {
+    return
+  }
+  $normalizedInstall = $InstallDirectory.TrimEnd('\')
+  $entries = @(
+    $currentPath -split ';' |
+      ForEach-Object { $_.Trim() } |
+      Where-Object {
+        -not [string]::IsNullOrWhiteSpace($_) -and
+        $_.TrimEnd('\') -ine $normalizedInstall
+      }
+  )
+  if ($entries.Count -eq 0) {
+    Remove-ItemProperty -LiteralPath $environmentKey -Name 'Path' -ErrorAction SilentlyContinue
+  } else {
+    Set-ItemProperty -LiteralPath $environmentKey -Name 'Path' -Value ($entries -join ';')
+  }
+}
+
 $scriptPath = [System.IO.Path]::GetFullPath($MyInvocation.MyCommand.Definition)
 $installDirectory = if ([string]::IsNullOrWhiteSpace($RemovePath)) {
   Split-Path -Parent $scriptPath
@@ -107,6 +155,8 @@ if ([string]::IsNullOrWhiteSpace($RemovePath)) {
     -WindowStyle Hidden
   exit 0
 }
+$shellDirectoryKey = 'HKCU:\Software\Classes\Directory\shell\GIFT'
+$shellBackgroundKey = 'HKCU:\Software\Classes\Directory\Background\shell\GIFT'
 
 try {
   Get-Process -Name 'gift' -ErrorAction SilentlyContinue | ForEach-Object {
@@ -133,6 +183,15 @@ try {
   Remove-ShortcutIfTarget `
     -Path $desktopShortcutPath `
     -Target $applicationPath
+  Remove-ShellIntegrationIfTarget `
+    -KeyPath $shellDirectoryKey `
+    -ApplicationPath $applicationPath `
+    -ArgumentToken '%1'
+  Remove-ShellIntegrationIfTarget `
+    -KeyPath $shellBackgroundKey `
+    -ApplicationPath $applicationPath `
+    -ArgumentToken '%V'
+  Remove-UserPathEntry $installDirectory
 
   if (Test-Path -LiteralPath $uninstallKey) {
     $registeredInstallPath = (

@@ -11,6 +11,10 @@ Tasks 40 through 47 may run before Tasks 36 through 39 because their listed
 dependencies are already complete. Task 38A uses the completed remote, hosting,
 and process-safety foundations; Task 39 follows the product UX backlog, while
 Task 38 is scheduled last for the stable product surface.
+Tasks 48 through 51 are complete. They add a searchable command palette,
+repository-scoped Git LFS diagnostics and pull recovery, optional commit
+signing with history verification, and VBScript-first Windows shell
+integration with safe per-user PATH and uninstall cleanup.
 Do not start a later post-MVP task until its dependencies are complete and its
 visible behavior has been recorded in the behavior ledger without copying
 proprietary implementation details or assets.
@@ -25,6 +29,7 @@ proprietary implementation details or assets.
 | Remote & repository topology | 28–34 | Remote branches, update/push safety, worktrees, ignore rules, submodules, recovery, and setup |
 | Optional integrations | 35 | GitHub/GitLab links and review handoff without coupling the core backend to a host API |
 | Product readiness foundation | 36–37 | Large-repository resilience and accessibility/preferences |
+| Daily power-user workflows | 48–51 | Command search, Git LFS recovery, commit signing, and Windows shell integration |
 | Credential and account access | 38A | Secure GitHub, GitLab, self-hosted, HTTPS, and SSH authentication |
 | Desktop interaction UX | 40–47 | Discoverable context actions, direct cherry-pick entry points, and browse-assisted path selection |
 | Visual regression QA | 39 | Final overflow, theme, font, and interaction-state validation |
@@ -848,3 +853,72 @@ search and browsing while preserving direct entry.
 **Done when:** Each repository-relative path flow can be completed by browsing
 or typing, keyboard-only selection is equivalent to pointer selection, and no
 suggestion or stale result can address a path outside the active repository.
+
+## Task 48 — Command palette
+
+**Status:** Complete.
+
+**Goal:** Make repository actions discoverable without duplicating their
+existing reviewed workflows.
+
+- Provide tokenized action search with keyboard navigation, disabled reasons,
+  and a stable command identifier.
+- Expose the palette from `Ctrl+K`, the Changes toolbar, and the repository
+  action surface.
+- Route refresh, commit, history, branches, remotes, comparisons, recovery,
+  Git LFS, and signing actions through the existing controllers and dialogs.
+
+**Done when:** Search and keyboard invocation select the same actions as visible
+controls without running Git while the palette is merely open.
+
+## Task 49 — Git LFS diagnostics and recovery
+
+**Status:** Complete.
+
+**Goal:** Explain Git LFS availability and object hydration before users commit
+or publish unusable pointer files.
+
+- Detect Git LFS installation, tracked LFS filters, pointer files, hydrated
+  objects, and missing working-tree files with bounded reads.
+- Show repository-scoped diagnostics and run a serialized credential-aware
+  `git lfs pull` through the existing mutation boundary.
+- Preserve typed errors, cancellation, refresh fingerprints, and a clear
+  post-pull summary.
+
+**Done when:** A real fixture identifies pointer files without Git LFS
+installed, and the UI offers pull only when an LFS filter is present.
+
+## Task 50 — Commit signing and verification
+
+**Status:** Complete.
+
+**Goal:** Make optional commit signing explicit and make historical signatures
+  visible without exposing raw key material.
+
+- Discover effective GPG/SSH/X.509 signing configuration and support an
+  optional per-commit key override.
+- Parse Git signature status fields into typed verified, invalid, unknown, and
+  unavailable states.
+- Show signing configuration in the repository UI and verified status beside
+  history rows.
+
+**Done when:** Unsigned commits remain the default, signing flags are exact, and
+  history preserves signature status from bounded Git output.
+
+## Task 51 — Windows shell integration
+
+**Status:** Complete.
+
+**Goal:** Make an installed Windows copy launchable from Explorer and PATH
+without requiring administrator privileges.
+
+- Register directory and directory-background `Open with GIFT` actions for
+  the current user, with optional user PATH integration.
+- Pass an Explorer-provided repository path into the existing canonical-root
+  opener.
+- Uninstall only matching shell commands and the exact installed PATH entry,
+  preserving unrelated user configuration.
+
+**Done when:** Setup, CLI launch, reinstall, and delayed uninstall are
+per-user, path-safe, and covered by PowerShell parsing and cleanup smoke
+verification.

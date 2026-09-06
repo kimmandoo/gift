@@ -67,6 +67,7 @@ class _PreferencesDialogState extends State<PreferencesDialog> {
         'previousTab',
         'branch',
         'remote',
+        'commandPalette',
       ])
         id: TextEditingController(text: preferences.shortcut(id)),
     };
@@ -223,8 +224,8 @@ class _PreferencesDialogState extends State<PreferencesDialog> {
                     'previousCommit' => GiftStrings.previousCommitShortcut,
                     'nextTab' => GiftStrings.nextTabShortcut,
                     'previousTab' => GiftStrings.previousTabShortcut,
-                    'branch' => GiftStrings.branchShortcut,
                     'remote' => GiftStrings.remoteShortcut,
+                    'commandPalette' => 'Command palette',
                     _ => entry.key,
                   },
                 ),

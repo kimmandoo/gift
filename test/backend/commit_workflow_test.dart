@@ -8,6 +8,15 @@ import 'package:gift/src/backend/error.dart';
 import 'package:gift/src/backend/executor.dart';
 
 void main() {
+  test('builds a signing flag without enabling signing by default', () {
+    expect(const GitCommitOptions(sign: true).toGitArguments(), ['--gpg-sign']);
+    expect(
+      const GitCommitOptions(sign: true, signingKey: 'ABC123').toGitArguments(),
+      ['--gpg-sign=ABC123'],
+    );
+    expect(const GitCommitOptions().toGitArguments(), isEmpty);
+  });
+
   test(
     'rejects empty messages and empty staged sets before mutation',
     () async {

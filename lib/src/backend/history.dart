@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'domain.dart';
+import 'signing.dart';
 
 /// Bounded filters applied to a history snapshot.
 class GitHistoryFilters {
@@ -148,6 +149,7 @@ class GitCommit {
     required this.subject,
     required this.body,
     this.refs = const [],
+    this.signature,
     this.lane = 0,
     this.laneCount = 1,
     this.graphSegments = const [],
@@ -162,6 +164,7 @@ class GitCommit {
   final String subject;
   final String body;
   final List<GitCommitRef> refs;
+  final GitCommitSignature? signature;
   final int lane;
   final int laneCount;
   final List<GitGraphSegment> graphSegments;
@@ -184,6 +187,7 @@ class GitCommit {
       subject: subject,
       body: body,
       refs: refs,
+      signature: signature,
       lane: lane,
       laneCount: laneCount,
       graphSegments: List.unmodifiable(graphSegments),
@@ -242,8 +246,12 @@ GitHistoryPage parseGitHistory(
     if (record.trim().isEmpty) continue;
     final fields = record.split('\u0000');
     // The format ends with a NUL before the record separator, so the split
-    // contains one final empty field after the commit body.
-    if (fields.length != 7 && fields.length != 8 && fields.length != 9) {
+    // contains one final empty field after the commit body. Newer queries add
+    // four signature fields before that terminator.
+    if (fields.length != 7 &&
+        fields.length != 8 &&
+        fields.length != 9 &&
+        fields.length != 12) {
       throw FormatException('Invalid Git history record: $record');
     }
     // Git appends a line ending after the record separator on some versions,
@@ -258,6 +266,14 @@ GitHistoryPage parseGitHistory(
     final refs = snapshotRefs
         .where((ref) => ref.targetOid == oid)
         .toList(growable: false);
+    final signature = fields.length == 12
+        ? parseGitCommitSignature(
+            status: fields[7],
+            signer: fields[8],
+            key: fields[9],
+            fingerprint: fields[10],
+          )
+        : null;
     parsed.add(
       GitCommit(
         oid: oid,
@@ -268,6 +284,7 @@ GitHistoryPage parseGitHistory(
         subject: fields[5],
         body: fields[6].trim(),
         refs: refs,
+        signature: signature,
       ),
     );
   }

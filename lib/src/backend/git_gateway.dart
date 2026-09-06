@@ -24,6 +24,8 @@ import 'submodule.dart';
 import 'recovery.dart';
 import 'setup.dart';
 import 'hosting.dart';
+import 'lfs.dart';
+import 'signing.dart';
 
 /// The small API that Flutter features depend on.
 ///
@@ -583,6 +585,17 @@ abstract interface class GitGateway {
     String message, {
     GitCommitOptions options = const GitCommitOptions(),
   });
+
+  Future<GitLfsSnapshot> getLfsStatus(RepositoryId repositoryId);
+
+  Future<GitLfsPullResult> pullLfs(
+    RepositoryId repositoryId, {
+    GitCancellationToken? cancellationToken,
+  });
+
+  Future<GitSigningConfiguration> getSigningConfiguration(
+    RepositoryId repositoryId,
+  );
 
   Future<GitHistoryRollbackPreview> previewHistoryRollback(
     RepositoryId repositoryId,

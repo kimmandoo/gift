@@ -31,18 +31,23 @@ class GitCommitOptions {
   const GitCommitOptions({
     this.amend = false,
     this.signOff = false,
+    this.sign = false,
+    this.signingKey,
     this.cleanup = GitCommitCleanupMode.defaultMode,
     this.author,
   });
 
   final bool amend;
   final bool signOff;
+  final bool sign;
+  final String? signingKey;
   final GitCommitCleanupMode cleanup;
   final GitCommitAuthor? author;
 
   List<String> toGitArguments() => [
     if (amend) '--amend',
     if (signOff) '--signoff',
+    if (sign) signingKey == null ? '--gpg-sign' : '--gpg-sign=$signingKey',
     if (cleanup != GitCommitCleanupMode.defaultMode)
       '--cleanup=${cleanup.gitValue}',
     if (author case final author?) '--author=${author.gitValue}',

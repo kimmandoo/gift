@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:gift/src/backend/domain.dart';
 import 'package:gift/src/backend/history.dart';
+import 'package:gift/src/backend/signing.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
@@ -212,6 +213,32 @@ void main() {
       expect(page.commits[2].laneCount, 1);
     },
   );
+  test('parses verified commit signatures when fields are present', () {
+    final record = [
+      'a' * 40,
+      '',
+      'Gift Test',
+      'gift@example.test',
+      '2026-09-02T12:00:00+09:00',
+      'Signed commit',
+      '',
+      'G',
+      'Gift Test',
+      'ABC123',
+      'FINGERPRINT',
+      '\u001e',
+    ].join('\u0000');
+    final page = parseGitHistory(
+      utf8.encode(record),
+      repositoryId: repositoryId,
+      offset: 0,
+      limit: 10,
+    );
+
+    expect(page.commits.single.signature?.status, GitSignatureStatus.valid);
+    expect(page.commits.single.signature?.signer, 'Gift Test');
+    expect(page.commits.single.signature?.fingerprint, 'FINGERPRINT');
+  });
 }
 
 String historyRecord({

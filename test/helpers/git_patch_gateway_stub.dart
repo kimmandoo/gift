@@ -24,6 +24,8 @@ import 'package:gift/src/backend/recovery.dart';
 import 'package:gift/src/backend/setup.dart';
 import 'package:gift/src/backend/hosting.dart';
 import 'package:gift/src/backend/repository_paths.dart';
+import 'package:gift/src/backend/lfs.dart';
+import 'package:gift/src/backend/signing.dart';
 
 /// Existing feature fakes do not need partial-patch behavior unless a test is
 /// specifically about it. This keeps those focused fakes small as the
@@ -637,6 +639,41 @@ mixin GitPatchGatewayStub {
 
   Future<GitCommitTemplate> loadCommitTemplate(RepositoryId repositoryId) =>
       throw UnimplementedError();
+
+  Future<GitLfsSnapshot> getLfsStatus(RepositoryId repositoryId) async =>
+      GitLfsSnapshot(
+        repositoryId: repositoryId,
+        installation: GitLfsInstallationStatus.missing,
+        filteredPaths: const [],
+        files: const [],
+        diagnostics: const [],
+        fingerprint: 'stub',
+      );
+
+  Future<GitLfsPullResult> pullLfs(
+    RepositoryId repositoryId, {
+    GitCancellationToken? cancellationToken,
+  }) async {
+    final snapshot = await getLfsStatus(repositoryId);
+    return GitLfsPullResult(
+      repositoryId: repositoryId,
+      snapshot: snapshot,
+      summary: 'No Git LFS paths are configured.',
+    );
+  }
+
+  Future<GitSigningConfiguration> getSigningConfiguration(
+    RepositoryId repositoryId,
+  ) async => GitSigningConfiguration(
+    repositoryId: repositoryId,
+    enabled: false,
+    format: GitSigningFormat.unknown,
+    signingKey: null,
+    program: null,
+    sshProgram: null,
+    agentAvailable: false,
+    source: '',
+  );
 
   Future<GitStatusSnapshot> stagePatch(
     RepositoryId repositoryId,

@@ -528,3 +528,34 @@ This file is the handoff record for continuing work across query sessions.
    this checkpoint describes an unresolved failure.
 5. Update this file before ending the session with exact files changed, tests
    run, observed results, blockers, and the next action.
+
+## Current session: Tasks 48–51 power-user workflows
+
+- Date: 2026-09-06.
+- Active work: implemented Tasks 48–51: command palette search and
+  `Ctrl+K` routing; Git LFS filter, pointer, and pull diagnostics; optional
+  commit signing, key overrides, and history signature badges; and
+  VBScript-first Windows Explorer/PATH integration with CLI repository-path
+  opening and target-checked uninstall cleanup.
+- Changed files: `CHANGELOG.md`, `TASKS.md`, `docs/POST_MVP_ROADMAP.md`, this
+  checkpoint, `lib/main.dart`, `lib/src/app/{app_preferences,gift_app}.dart`,
+  `lib/src/backend/{commit,dart_git_backend,dart_git_gateway,error,git_gateway,
+  history,lfs,repository_service,signing}.dart`,
+  `lib/src/features/repository/{changes_screen,command_palette,history_screen,
+  lfs_dialog,signing_dialog,welcome_screen}.dart`,
+  `test/backend/{commit_workflow_test,history_parser_test,lfs_workflow_test}.dart`,
+  `test/features/repository/command_palette_test.dart`,
+  `test/helpers/git_patch_gateway_stub.dart`, and Windows setup/uninstall and
+  packaging verification scripts.
+- Verification: `flutter analyze` passed; the focused command-palette,
+  history-parser, commit-workflow, Git LFS, Changes, and History tests passed;
+  Windows PowerShell packaging parsing/assertions passed; and a helper-level
+  shell integration smoke preserved an unrelated PATH entry while removing
+  matching GIFT shell/PATH entries. A full `flutter test` run reached 289
+  tests but reported existing Windows Git-fixture CRLF expectation failures,
+  one root-commit file-enumeration mismatch, and a submodule process-lock
+  timeout; the new focused feature tests remained green.
+- Blockers: no feature blocker. The full suite needs a separate Windows
+  fixture/process-cleanup pass before it can be reported green.
+- Next action: commit the completed Tasks 48–51 session and retain the full
+  suite failures above as the next verification cleanup.

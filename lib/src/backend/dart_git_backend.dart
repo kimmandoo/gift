@@ -26,6 +26,8 @@ import 'submodule.dart';
 import 'recovery.dart';
 import 'setup.dart';
 import 'hosting.dart';
+import 'lfs.dart';
+import 'signing.dart';
 import 'credentials.dart';
 
 /// Application-facing entry point for backend operations.
@@ -1489,6 +1491,39 @@ class DartGitBackend {
       state: _state,
       runner: _runner,
     ).commit(repositoryId, message, options: options);
+  }
+
+  Future<GitLfsSnapshot> getLfsStatus(RepositoryId repositoryId) async {
+    final installation = await getGitInstallation();
+    return RepositoryService(
+      gitPath: installation.executablePath,
+      state: _state,
+      runner: _runner,
+    ).getLfsStatus(repositoryId);
+  }
+
+  Future<GitLfsPullResult> pullLfs(
+    RepositoryId repositoryId, {
+    GitCancellationToken? cancellationToken,
+  }) async {
+    final installation = await getGitInstallation();
+    return RepositoryService(
+      gitPath: installation.executablePath,
+      state: _state,
+      runner: _runner,
+      credentialResolver: _credentialResolver,
+    ).pullLfs(repositoryId, cancellationToken: cancellationToken);
+  }
+
+  Future<GitSigningConfiguration> getSigningConfiguration(
+    RepositoryId repositoryId,
+  ) async {
+    final installation = await getGitInstallation();
+    return RepositoryService(
+      gitPath: installation.executablePath,
+      state: _state,
+      runner: _runner,
+    ).getSigningConfiguration(repositoryId);
   }
 
   Future<GitHistoryRollbackPreview> previewHistoryRollback(

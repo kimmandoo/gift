@@ -23,6 +23,7 @@ class GiftApp extends StatefulWidget {
     this.preferences,
     this.autoInitialize = false,
     this.credentialStore,
+    this.initialRepositoryPath,
   });
 
   static const themeModeKey = 'theme_mode';
@@ -32,6 +33,7 @@ class GiftApp extends StatefulWidget {
   final WorkspaceController? workspaceController;
   final SharedPreferences? preferences;
   final GitCredentialStore? credentialStore;
+  final String? initialRepositoryPath;
   final bool autoInitialize;
 
   @override
@@ -156,6 +158,7 @@ class _GiftAppState extends State<GiftApp> {
             workspaceController: _workspaceController,
             preferences: widget.preferences,
             autoInitialize: widget.autoInitialize,
+            initialRepositoryPath: widget.initialRepositoryPath,
           ),
         ),
       ),

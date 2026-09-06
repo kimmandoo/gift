@@ -4,7 +4,7 @@
 > familiar IDE-style workflows, a minimal 2D pixel-game UI, a Flutter Desktop
 > frontend, and a pure Dart backend for Windows, macOS, and Linux.
 
-- **Completed:** 47 / 48
+- **Completed:** 51 / 52
 - **Current Active Task:** Task 38 — Public release.
 - **Next priority:** complete the maintainer-only clean-machine release pass.
 
@@ -736,3 +736,58 @@ visual regression QA.
   `flutter analyze`.
 
 Task 47 is complete. Task 39 visual regression QA is now the active priority.
+
+### ✅ Task 48: Command palette
+
+- [x] Record searchable repository commands, keyboard invocation, disabled
+  reasons, and action routing.
+- [x] Add tokenized command search with keyboard navigation and visible
+  Changes-screen entry points.
+- [x] Route refresh, commit, history, branch, remote, comparison, recovery,
+  Git LFS, and commit-signing actions through the palette.
+- [x] Verify filtering, selection, invocation, responsive Changes behavior, and
+  `flutter analyze`.
+
+Task 48 is complete. Changes now exposes a searchable command palette through
+`Ctrl+K` and the toolbar, with action availability and disabled explanations
+kept beside the existing repository workflows.
+
+### ✅ Task 49: Git LFS diagnostics
+
+- [x] Record installation, filter, pointer, hydrated-object, missing-object,
+  pull, and error scenarios.
+- [x] Add bounded Git LFS discovery and tracked-file pointer diagnostics.
+- [x] Add serialized LFS pull routing with credential-aware remote access and
+  a visible status dialog.
+- [x] Verify real Git filter/pointer detection, missing-LFS diagnostics, and
+  repository UI behavior.
+
+Task 49 is complete. GIFT now detects Git LFS filters and pointer files,
+explains missing tooling or objects, and provides a reviewed LFS pull action.
+
+### ✅ Task 50: Commit signing
+
+- [x] Record signing-format configuration, optional commit signing, signature
+  parsing, verified-history display, and unavailable-key scenarios.
+- [x] Add GPG/SSH/X.509 configuration discovery and typed signature metadata.
+- [x] Add optional signing-key overrides, signing status, and history badges.
+- [x] Verify commit argument construction, signature parsing, signing failures,
+  and existing Changes/History regressions.
+
+Task 50 is complete. Commit signing is opt-in, uses the repository Git
+configuration by default, and exposes signature status in commit history.
+
+### ✅ Task 51: Windows shell integration
+
+- [x] Record per-user Explorer entries, user PATH ownership, CLI repository
+  opening, reinstall, and uninstall safety scenarios.
+- [x] Add directory/background Explorer commands and optional user PATH
+  registration to the VBScript-first setup wizard.
+- [x] Pass a shell-opened repository path into the existing workspace opener and
+  remove only matching shell/PATH entries during uninstall.
+- [x] Verify PowerShell parsing, packaging assertions, helper cleanup, and
+  path-preserving shell integration smoke behavior.
+
+Task 51 is complete. Windows setup can register per-user Explorer actions and
+PATH access without elevation, and uninstall removes only entries owned by the
+installed GIFT path.

@@ -40,6 +40,7 @@ class GiftPreferences {
     'previousTab': 'ctrl+shift+tab',
     'branch': 'ctrl+shift+b',
     'remote': 'ctrl+shift+r',
+    'commandPalette': 'ctrl+k',
   };
 
   static const defaults = GiftPreferences(

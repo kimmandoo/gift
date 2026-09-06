@@ -13,6 +13,7 @@ import 'package:gift/src/backend/reset.dart';
 import 'package:gift/src/backend/push.dart';
 import 'package:gift/src/backend/status.dart';
 import 'package:gift/src/features/repository/context_actions.dart';
+import 'package:gift/src/backend/signing.dart';
 import 'package:gift/src/features/repository/changes_controller.dart';
 import 'package:gift/src/features/repository/path_actions.dart';
 import 'package:gift/src/features/repository/branch_dialog.dart';
@@ -33,6 +34,9 @@ import 'package:gift/src/features/repository/recovery_dialog.dart';
 import 'package:gift/src/features/repository/repository_setup_dialog.dart';
 import 'package:gift/src/features/repository/folder_path_field.dart';
 import 'package:gift/src/features/repository/hosting_dialog.dart';
+import 'package:gift/src/features/repository/command_palette.dart';
+import 'package:gift/src/features/repository/lfs_dialog.dart';
+import 'package:gift/src/features/repository/signing_dialog.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter/services.dart';
@@ -133,12 +137,16 @@ class _ChangesScreenBodyState extends ConsumerState<_ChangesScreenBody> {
   late final TextEditingController _commitMessageController;
   late final TextEditingController _authorNameController;
   late final TextEditingController _authorEmailController;
+  late final TextEditingController _signingKeyController;
   var _commitOptionsExpanded = false;
   var _amend = false;
   var _signOff = false;
+  var _sign = false;
   var _cleanup = GitCommitCleanupMode.defaultMode;
   String? _loadedTemplate;
   GitError? _templateError;
+  GitSigningConfiguration? _signingConfiguration;
+  GitError? _signingError;
   final Map<String, FocusNode> _changeSelectionFocusNodes = {};
 
   @override
@@ -147,6 +155,7 @@ class _ChangesScreenBodyState extends ConsumerState<_ChangesScreenBody> {
     _commitMessageController = TextEditingController();
     _authorNameController = TextEditingController();
     _authorEmailController = TextEditingController();
+    _signingKeyController = TextEditingController();
     _providerArgs = ChangesControllerArgs(
       gateway: widget.gateway,
       repositoryId: widget.repository.repositoryId,
@@ -169,6 +178,7 @@ class _ChangesScreenBodyState extends ConsumerState<_ChangesScreenBody> {
     _commitMessageController.dispose();
     _authorNameController.dispose();
     _authorEmailController.dispose();
+    _signingKeyController.dispose();
     for (final node in _changeSelectionFocusNodes.values) {
       node.dispose();
     }
@@ -232,6 +242,13 @@ class _ChangesScreenBodyState extends ConsumerState<_ChangesScreenBody> {
               icon: const Icon(Icons.history),
             ),
           ],
+          PixelToolbarIconButton(
+            key: const Key('open-command-palette'),
+            tooltip: 'Command palette',
+            onPressed: () =>
+                unawaited(_openCommandPalette(context, controller)),
+            icon: const Icon(Icons.search),
+          ),
           if (!compactToolbar) const SizedBox(width: 4),
           PopupMenuButton<_ChangesMenuAction>(
             key: const Key('repository-actions-menu'),
@@ -295,6 +312,12 @@ class _ChangesScreenBodyState extends ConsumerState<_ChangesScreenBody> {
                   break;
                 case _ChangesMenuAction.refresh:
                   unawaited(controller.refresh());
+                  break;
+                case _ChangesMenuAction.lfs:
+                  unawaited(_openLfs(context));
+                  break;
+                case _ChangesMenuAction.signing:
+                  unawaited(_openSigning(context));
                   break;
               }
             },
@@ -390,6 +413,16 @@ class _ChangesScreenBodyState extends ConsumerState<_ChangesScreenBody> {
                 Icons.link_outlined,
                 'Hosting links & review',
               ),
+              _menuItem(
+                _ChangesMenuAction.lfs,
+                Icons.cloud_download_outlined,
+                'Git LFS status',
+              ),
+              _menuItem(
+                _ChangesMenuAction.signing,
+                Icons.verified_outlined,
+                'Commit signing status',
+              ),
               const PopupMenuDivider(),
               PopupMenuItem(
                 value: _ChangesMenuAction.refresh,
@@ -472,10 +505,118 @@ class _ChangesScreenBodyState extends ConsumerState<_ChangesScreenBody> {
     bind('branch', () => unawaited(_openBranches(context)));
     bind('remote', () => unawaited(_openRemotes(context)));
     bind('commit', () => unawaited(_submitCommit(controller)));
+    bind(
+      'commandPalette',
+      () => unawaited(_openCommandPalette(context, controller)),
+    );
     if (widget.onBack != null) bind('cancel', widget.onBack!);
     return CallbackShortcuts(
       bindings: bindings,
+
       child: Focus(autofocus: true, child: scaffold),
+    );
+  }
+
+  Future<void> _openCommandPalette(
+    BuildContext context,
+    ChangesController controller,
+  ) {
+    return showCommandPalette(
+      context,
+      actions: [
+        CommandPaletteAction(
+          id: 'refresh',
+          label: 'Refresh changes',
+          icon: Icons.refresh,
+          keywords: const ['reload', 'status'],
+          enabled: !controller.state.isRefreshing,
+          disabledReason: 'Refresh is already running.',
+          onInvoke: controller.refresh,
+        ),
+        CommandPaletteAction(
+          id: 'commit',
+          label: 'Commit staged changes',
+          icon: Icons.check,
+          keywords: const ['commit', 'save'],
+          enabled: controller.canCommit && !controller.state.isMutating,
+          disabledReason: 'Stage changes and enter a commit message first.',
+          onInvoke: () => _submitCommit(controller),
+        ),
+        CommandPaletteAction(
+          id: 'history',
+          label: 'Open history',
+          icon: Icons.history,
+          keywords: const ['log', 'commits'],
+          onInvoke: () => _openHistory(context),
+        ),
+        CommandPaletteAction(
+          id: 'branches',
+          label: 'Open branches',
+          icon: Icons.call_split,
+          keywords: const ['branch', 'checkout'],
+          onInvoke: () => _openBranches(context),
+        ),
+        CommandPaletteAction(
+          id: 'remotes',
+          label: 'Remote operations',
+          icon: Icons.cloud_outlined,
+          keywords: const ['fetch', 'pull', 'push'],
+          onInvoke: () => _openRemotes(context),
+        ),
+        CommandPaletteAction(
+          id: 'comparison',
+          label: 'Compare revisions',
+          icon: Icons.compare_arrows,
+          keywords: const ['diff', 'compare'],
+          onInvoke: () => _openComparison(context),
+        ),
+        CommandPaletteAction(
+          id: 'shelves',
+          label: 'Shelves and changelists',
+          icon: Icons.archive_outlined,
+          keywords: const ['stash', 'shelf'],
+          onInvoke: () => _openShelves(context),
+        ),
+        CommandPaletteAction(
+          id: 'recovery',
+          label: 'Recovery diagnostics',
+          icon: Icons.restore,
+          keywords: const ['reset', 'revert', 'undo'],
+          onInvoke: () => _openRecovery(context),
+        ),
+        CommandPaletteAction(
+          id: 'lfs',
+          label: 'Git LFS status',
+          icon: Icons.cloud_download_outlined,
+          keywords: const ['large files', 'objects', 'pull'],
+          onInvoke: () => _openLfs(context),
+        ),
+        CommandPaletteAction(
+          id: 'signing',
+          label: 'Commit signing status',
+          icon: Icons.verified_outlined,
+          keywords: const ['gpg', 'ssh', 'signature'],
+          onInvoke: () => _openSigning(context),
+        ),
+      ],
+    );
+  }
+
+  Future<void> _openLfs(BuildContext context) async {
+    await showDialog<void>(
+      context: context,
+      builder: (_) =>
+          GitLfsDialog(gateway: widget.gateway, repository: widget.repository),
+    );
+  }
+
+  Future<void> _openSigning(BuildContext context) async {
+    await showDialog<void>(
+      context: context,
+      builder: (_) => GitSigningDialog(
+        gateway: widget.gateway,
+        repository: widget.repository,
+      ),
     );
   }
 
@@ -737,7 +878,7 @@ class _ChangesScreenBodyState extends ConsumerState<_ChangesScreenBody> {
       child: Card(
         margin: EdgeInsets.zero,
         child: Padding(
-          padding: EdgeInsets.all(12),
+          padding: const EdgeInsets.all(12),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
@@ -805,13 +946,16 @@ class _ChangesScreenBodyState extends ConsumerState<_ChangesScreenBody> {
                   initiallyExpanded: _commitOptionsExpanded,
                   onExpansionChanged: (expanded) {
                     setState(() => _commitOptionsExpanded = expanded);
-                    if (expanded) _requestCommitPreflight(controller);
+                    if (expanded) {
+                      _requestCommitPreflight(controller);
+                      unawaited(_loadSigningConfiguration());
+                    }
                   },
                   tilePadding: EdgeInsets.zero,
                   childrenPadding: const EdgeInsets.only(top: 8),
                   title: const Text('Commit options'),
                   subtitle: const Text(
-                    'Identity, amend, sign-off, and cleanup',
+                    'Identity, amend, sign, sign-off, and cleanup',
                   ),
                   children: [
                     ConstrainedBox(
@@ -953,6 +1097,44 @@ class _ChangesScreenBodyState extends ConsumerState<_ChangesScreenBody> {
             ),
           ],
         ),
+        CheckboxListTile(
+          key: const Key('commit-sign'),
+          value: _sign,
+          onChanged: state.isMutating
+              ? null
+              : (value) {
+                  setState(() => _sign = value ?? false);
+                  _requestCommitPreflight(controller);
+                },
+          title: const Text('Sign commit'),
+          subtitle: Text(
+            _signingConfiguration == null
+                ? 'Uses the repository Git signing configuration.'
+                : '${_signingConfiguration!.formatLabel} · '
+                      '${_signingConfiguration!.agentAvailable ? 'key configured' : 'key not configured'}',
+          ),
+          controlAffinity: ListTileControlAffinity.leading,
+          contentPadding: EdgeInsets.zero,
+        ),
+        TextField(
+          key: const Key('commit-signing-key'),
+          controller: _signingKeyController,
+          enabled: !state.isMutating && _sign,
+          decoration: const InputDecoration(
+            labelText: 'Signing key override (optional)',
+            hintText: 'Uses user.signingkey when empty',
+          ),
+          onChanged: (_) => setState(() {}),
+        ),
+        if (_signingError case final error?)
+          Padding(
+            padding: const EdgeInsets.only(top: 8),
+            child: Text(
+              error.userMessage,
+              key: const Key('commit-signing-error'),
+              style: TextStyle(color: Theme.of(context).colorScheme.error),
+            ),
+          ),
         if (_templateError case final error?)
           Padding(
             padding: const EdgeInsets.only(top: 8),
@@ -1039,11 +1221,34 @@ class _ChangesScreenBodyState extends ConsumerState<_ChangesScreenBody> {
     return GitCommitOptions(
       amend: _amend,
       signOff: _signOff,
+      sign: _sign,
+      signingKey: _signingKeyController.text.trim().isEmpty
+          ? null
+          : _signingKeyController.text.trim(),
       cleanup: _cleanup,
       author: name.isEmpty && email.isEmpty
           ? null
           : GitCommitAuthor(name: name, email: email),
     );
+  }
+
+  Future<void> _loadSigningConfiguration() async {
+    if (!mounted) return;
+    setState(() => _signingError = null);
+    try {
+      final configuration = await widget.gateway.getSigningConfiguration(
+        widget.repository.repositoryId,
+      );
+      if (!mounted) return;
+      setState(() {
+        _signingConfiguration = configuration;
+        if (_sign && _signingKeyController.text.isEmpty) {
+          _signingKeyController.text = configuration.signingKey ?? '';
+        }
+      });
+    } on GitError catch (error) {
+      if (mounted) setState(() => _signingError = error);
+    }
   }
 
   void _requestCommitPreflight(ChangesController controller) {
@@ -2654,5 +2859,7 @@ enum _ChangesMenuAction {
   recovery,
   setup,
   hosting,
+  lfs,
+  signing,
   refresh,
 }

@@ -63,6 +63,8 @@ enum GitErrorCategory {
   invalidObjectName,
   objectNotFound,
   objectOperationNotAllowed,
+  lfsUnavailable,
+  lfsObjectsMissing,
 }
 
 /// A backend error has a short user-facing message and a separately redacted

@@ -16,15 +16,15 @@ $state = [pscustomobject]@{
   InstallDirectory = Join-Path $env:LOCALAPPDATA 'Programs\gift'
   CreateStartMenu = $true
   CreateDesktop = $true
+  CreateShellIntegration = $true
+  AddToPath = $true
   LaunchAfterInstall = $true
 }
 
 $form = New-Object System.Windows.Forms.Form
-$form.Text = 'GIFT Setup'
-$form.StartPosition = 'CenterScreen'
-$form.Size = [System.Drawing.Size]::new(560, 420)
-$form.MinimumSize = [System.Drawing.Size]::new(560, 420)
-$form.MaximumSize = [System.Drawing.Size]::new(560, 420)
+$form.Size = [System.Drawing.Size]::new(560, 470)
+$form.MinimumSize = [System.Drawing.Size]::new(560, 470)
+$form.MaximumSize = [System.Drawing.Size]::new(560, 470)
 $form.FormBorderStyle = [System.Windows.Forms.FormBorderStyle]::FixedDialog
 $form.MaximizeBox = $false
 $form.MinimizeBox = $false
@@ -42,14 +42,10 @@ $headerLabel.Font = [System.Drawing.Font]::new(
 )
 $form.Controls.Add($headerLabel)
 
-$contentPanel = New-Object System.Windows.Forms.Panel
-$contentPanel.Location = [System.Drawing.Point]::new(24, 64)
-$contentPanel.Size = [System.Drawing.Size]::new(500, 270)
+$contentPanel.Size = [System.Drawing.Size]::new(500, 320)
 $contentPanel.AutoScroll = $true
 $form.Controls.Add($contentPanel)
-
-$footerPanel = New-Object System.Windows.Forms.Panel
-$footerPanel.Location = [System.Drawing.Point]::new(24, 344)
+$footerPanel.Location = [System.Drawing.Point]::new(24, 394)
 $footerPanel.Size = [System.Drawing.Size]::new(500, 48)
 $form.Controls.Add($footerPanel)
 
@@ -108,7 +104,7 @@ $optionsPanel.Size = [System.Drawing.Size]::new(476, 250)
 $optionsPanel.Visible = $false
 $contentPanel.Controls.Add($optionsPanel)
 
-$installPathLabel = New-Object System.Windows.Forms.Label
+$optionsPanel.Size = [System.Drawing.Size]::new(476, 300)
 $installPathLabel.Text = 'Install location'
 $installPathLabel.Location = [System.Drawing.Point]::new(8, 10)
 $installPathLabel.Size = [System.Drawing.Size]::new(460, 24)
@@ -148,7 +144,20 @@ $optionsPanel.Controls.Add($desktopCheck)
 
 $optionsNote = New-Object System.Windows.Forms.Label
 $optionsNote.Text = 'The installer does not require administrator access. Git remains a separate system dependency.'
-$optionsNote.Location = [System.Drawing.Point]::new(8, 188)
+$optionsNote.Location = [System.Drawing.Point]::new(8, 244)
+$shellIntegrationCheck = New-Object System.Windows.Forms.CheckBox
+$shellIntegrationCheck.Text = 'Add Explorer "Open with GIFT" entries'
+$shellIntegrationCheck.Location = [System.Drawing.Point]::new(8, 174)
+$shellIntegrationCheck.Size = [System.Drawing.Size]::new(460, 28)
+$shellIntegrationCheck.Checked = $true
+$optionsPanel.Controls.Add($shellIntegrationCheck)
+
+$pathCheck = New-Object System.Windows.Forms.CheckBox
+$pathCheck.Text = 'Add GIFT to my user PATH'
+$pathCheck.Location = [System.Drawing.Point]::new(8, 206)
+$pathCheck.Size = [System.Drawing.Size]::new(460, 28)
+$pathCheck.Checked = $true
+$optionsPanel.Controls.Add($pathCheck)
 $optionsNote.Size = [System.Drawing.Size]::new(460, 42)
 $optionsNote.AutoSize = $false
 $optionsPanel.Controls.Add($optionsNote)
@@ -223,6 +232,7 @@ function New-GiftShortcut(
   New-Item -ItemType Directory -Path $shortcutDirectory -Force | Out-Null
   $shell = New-Object -ComObject WScript.Shell
   $shortcut = $shell.CreateShortcut($ShortcutPath)
+
   $shortcut.TargetPath = $ApplicationPath
   $shortcut.WorkingDirectory = $WorkingDirectory
   if (-not [string]::IsNullOrWhiteSpace($Arguments)) {
@@ -231,6 +241,36 @@ function New-GiftShortcut(
   $shortcut.IconLocation = "$ApplicationPath,0"
   $shortcut.Description = 'Launch GIFT Git client'
   $shortcut.Save()
+}
+function Set-GiftShellIntegration([string]$ApplicationPath) {
+  $directoryKey = 'HKCU:\Software\Classes\Directory\shell\GIFT'
+  $backgroundKey = 'HKCU:\Software\Classes\Directory\Background\shell\GIFT'
+  $entries = @(
+    @($directoryKey, '"{0}" "%1"' -f $ApplicationPath),
+    @($backgroundKey, '"{0}" "%V"' -f $ApplicationPath)
+  )
+  foreach ($entry in $entries) {
+    $keyPath = $entry[0]
+    $commandPath = Join-Path $keyPath 'command'
+    New-Item -Path $commandPath -Force | Out-Null
+    Set-ItemProperty -Path $keyPath -Name '(default)' -Value 'Open with GIFT'
+    Set-ItemProperty -Path $commandPath -Name '(default)' -Value $entry[1]
+  }
+}
+
+function Add-GiftUserPath([string]$InstallDirectory) {
+  $environmentKey = 'HKCU:\Environment'
+  New-Item -Path $environmentKey -Force | Out-Null
+  $currentPath = (Get-ItemProperty -Path $environmentKey -Name 'Path' -ErrorAction SilentlyContinue).Path
+  $entries = @(
+    @($currentPath -split ';') |
+      ForEach-Object { $_.Trim() } |
+      Where-Object { -not [string]::IsNullOrWhiteSpace($_) }
+  )
+  $normalizedInstall = $InstallDirectory.TrimEnd('\')
+  if (-not ($entries | Where-Object { $_.TrimEnd('\') -ieq $normalizedInstall })) {
+    Set-ItemProperty -Path $environmentKey -Name 'Path' -Value (($entries + $InstallDirectory) -join ';')
+  }
 }
 
 function Install-Gift {
@@ -271,6 +311,13 @@ function Install-Gift {
     Get-ChildItem -LiteralPath $extractDirectory -Force | ForEach-Object {
       Copy-Item -LiteralPath $_.FullName -Destination $installDirectory -Recurse -Force
     }
+    if ($shellIntegrationCheck.Checked) {
+      Set-GiftShellIntegration $applicationPath
+    }
+    if ($pathCheck.Checked) {
+      Add-GiftUserPath $installDirectory
+    }
+
     Copy-Item -LiteralPath (Join-Path $packageDirectory 'Uninstall-Gift.ps1') -Destination $uninstallScript -Force
     Copy-Item -LiteralPath (Join-Path $packageDirectory 'Uninstall-Gift.vbs') -Destination $uninstallVbs -Force
 
@@ -299,6 +346,8 @@ function Install-Gift {
     Set-ItemProperty -Path $uninstallKey -Name 'InstallLocation' -Value $installDirectory
     Set-ItemProperty -Path $uninstallKey -Name 'DisplayIcon' -Value $applicationPath
     Set-ItemProperty -Path $uninstallKey -Name 'UninstallString' -Value ('wscript.exe "{0}"' -f $uninstallVbs)
+    Set-ItemProperty -Path $uninstallKey -Name 'ShellIntegration' -Value ([int]$shellIntegrationCheck.Checked)
+    Set-ItemProperty -Path $uninstallKey -Name 'PathIntegration' -Value ([int]$pathCheck.Checked)
 
     $state.InstallDirectory = $installDirectory
     $state.LaunchAfterInstall = $launchCheck.Checked
@@ -344,6 +393,8 @@ $nextButton.Add_Click({
   if ($state.Page -eq 'options') {
     $state.CreateStartMenu = $startMenuCheck.Checked
     $state.CreateDesktop = $desktopCheck.Checked
+    $state.CreateShellIntegration = $shellIntegrationCheck.Checked
+    $state.AddToPath = $pathCheck.Checked
     $nextButton.Enabled = $false
     $backButton.Enabled = $false
     [System.Windows.Forms.Application]::DoEvents()

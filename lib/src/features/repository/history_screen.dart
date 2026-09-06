@@ -5,6 +5,7 @@ import 'package:gift/src/backend/diff.dart';
 import 'package:gift/src/backend/error.dart';
 import 'package:gift/src/backend/git_gateway.dart';
 import 'package:gift/src/backend/history.dart';
+import 'package:gift/src/backend/signing.dart';
 import 'package:gift/src/backend/history_batch.dart';
 import 'package:gift/src/backend/interactive_rebase.dart';
 import 'package:gift/src/backend/reset.dart';
@@ -681,6 +682,22 @@ class _HistoryScreenState extends State<HistoryScreen> {
                             style: Theme.of(context).textTheme.labelSmall
                                 ?.copyWith(
                                   color: Theme.of(context).colorScheme.primary,
+                                ),
+                          ),
+                        if (commit.signature case final signature?)
+                          Text(
+                            '${signature.label}${signature.signer == null ? '' : ' · ${signature.signer}'}',
+                            key: ValueKey('signature:${commit.oid}'),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: Theme.of(context).textTheme.labelSmall
+                                ?.copyWith(
+                                  color: signature.isVerified
+                                      ? scheme.primary
+                                      : signature.status ==
+                                            GitSignatureStatus.invalid
+                                      ? scheme.error
+                                      : scheme.onSurfaceVariant,
                                 ),
                           ),
                       ],

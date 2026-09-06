@@ -25,6 +25,8 @@ import 'submodule.dart';
 import 'recovery.dart';
 import 'setup.dart';
 import 'hosting.dart';
+import 'lfs.dart';
+import 'signing.dart';
 import 'history_batch.dart';
 import 'credentials.dart';
 
@@ -865,6 +867,21 @@ class DartGitGateway
     String message, {
     GitCommitOptions options = const GitCommitOptions(),
   }) => backend.commit(repositoryId, message, options: options);
+
+  @override
+  Future<GitLfsSnapshot> getLfsStatus(RepositoryId repositoryId) =>
+      backend.getLfsStatus(repositoryId);
+
+  @override
+  Future<GitLfsPullResult> pullLfs(
+    RepositoryId repositoryId, {
+    GitCancellationToken? cancellationToken,
+  }) => backend.pullLfs(repositoryId, cancellationToken: cancellationToken);
+
+  @override
+  Future<GitSigningConfiguration> getSigningConfiguration(
+    RepositoryId repositoryId,
+  ) => backend.getSigningConfiguration(repositoryId);
 
   @override
   Future<GitHistoryRollbackPreview> previewHistoryRollback(

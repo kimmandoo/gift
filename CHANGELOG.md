@@ -24,6 +24,14 @@
   Bash 3.2-compatible case matching for hosted macOS runners.
 - fix(release): corrected macOS artifact verification to inspect Flutter's
   `App.framework/Resources/flutter_assets` bundle location.
+- feat(ui): added a keyboard-driven command palette with tokenized search,
+  disabled reasons, and repository action routing.
+- feat(lfs): added bounded Git LFS filter and pointer diagnostics with a
+  credential-aware pull recovery flow.
+- feat(signing): added optional commit signing configuration, key overrides,
+  and verified signature status in history.
+- feat(windows): added optional per-user Explorer shell entries, PATH access,
+  CLI repository opening, and target-checked uninstall cleanup.
 
 ## 2026-09-05
 - feat(ci): added required artifact checks and runner-specific visual golden

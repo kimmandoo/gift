@@ -31,6 +31,8 @@ import 'recovery.dart';
 import 'setup.dart';
 import 'hosting.dart';
 import 'credentials.dart';
+import 'lfs.dart';
+import 'signing.dart';
 
 /// In-memory registry for repository roots and session-local opaque IDs.
 ///
@@ -4820,10 +4822,9 @@ class RepositoryService {
     final args = <String>[
       'log',
       '--no-color',
-      '--no-decorate',
+      '--format=%H%x00%P%x00%an%x00%ae%x00%aI%x00%s%x00%b%x00%G?%x00%GS%x00%GK%x00%GF%x00%x1e',
       '--date=iso-strict',
       '--topo-order',
-      '--format=%H%x00%P%x00%an%x00%ae%x00%aI%x00%s%x00%b%x00%x1e',
       '--max-count=${effectiveLimit + 1}',
       '--skip=$position',
     ];
@@ -4886,11 +4887,10 @@ class RepositoryService {
         program: gitPath,
         args: [
           'show',
-          '--no-patch',
+          '--format=%H%x00%P%x00%an%x00%ae%x00%aI%x00%s%x00%b%x00%G?%x00%GS%x00%GK%x00%GF%x00%x1e',
           '--no-color',
+          '--no-patch',
           '--date=iso-strict',
-          '--format=%H%x00%P%x00%an%x00%ae%x00%aI%x00%s%x00%b%x00%x1e',
-          commitOid,
         ],
         cwd: handle.root,
         kind: GitOperationKind.read,
@@ -10199,10 +10199,9 @@ class RepositoryService {
     final args = <String>[
       'log',
       '--no-color',
-      '--no-decorate',
+      '--format=%H%x00%P%x00%an%x00%ae%x00%aI%x00%s%x00%b%x00%G?%x00%GS%x00%GK%x00%GF%x00%x1e',
       '--date=iso-strict',
       '--topo-order',
-      '--format=%H%x00%P%x00%an%x00%ae%x00%aI%x00%s%x00%b%x00%x1e',
       '--max-count=${query.limit + 1}',
       '--skip=${query.offset}',
       if (query.follow) '--follow',
@@ -10752,6 +10751,259 @@ class RepositoryService {
         options: options,
       );
     });
+  }
+
+  Future<GitLfsSnapshot> getLfsStatus(RepositoryId repositoryId) async {
+    final handle = await state.lookup(repositoryId);
+    String? version;
+    var installation = GitLfsInstallationStatus.missing;
+    try {
+      final output = await _runner.run(
+        GitInvocation(
+          program: gitPath,
+          args: const ['lfs', 'version'],
+          cwd: handle.root,
+          kind: GitOperationKind.read,
+          outputPolicy: const OutputPolicy.capture(maxBytes: 64 * 1024),
+        ),
+      );
+      final firstLine = utf8
+          .decode(output.stdout, allowMalformed: true)
+          .split(RegExp(r'\r?\n'))
+          .first
+          .trim();
+      version = firstLine.isEmpty ? null : firstLine;
+      installation = GitLfsInstallationStatus.available;
+    } on GitError {
+      // Git remains useful without the optional LFS extension. The attribute
+      // and pointer scan below still explains what a missing extension means.
+    }
+
+    final trackedOutput = await _runner.run(
+      GitInvocation(
+        program: gitPath,
+        args: const ['ls-files', '-z'],
+        cwd: handle.root,
+        kind: GitOperationKind.read,
+        outputPolicy: const OutputPolicy.capture(maxBytes: 4 * 1024 * 1024),
+      ),
+    );
+    final trackedPaths = utf8
+        .decode(trackedOutput.stdout, allowMalformed: true)
+        .split('\u0000')
+        .where((path) => path.isNotEmpty)
+        .take(2000)
+        .toList(growable: false);
+
+    final filteredPaths = <String>[];
+    if (trackedPaths.isNotEmpty) {
+      final attributes = await _runner.run(
+        GitInvocation(
+          program: gitPath,
+          args: const ['check-attr', '-z', '--stdin', 'filter'],
+          cwd: handle.root,
+          stdin: utf8.encode('${trackedPaths.join('\u0000')}\u0000'),
+          kind: GitOperationKind.read,
+          outputPolicy: const OutputPolicy.capture(maxBytes: 4 * 1024 * 1024),
+        ),
+      );
+      final fields = utf8
+          .decode(attributes.stdout, allowMalformed: true)
+          .split('\u0000');
+      for (var index = 0; index + 2 < fields.length; index += 3) {
+        if (fields[index + 2].trim() == 'lfs') {
+          filteredPaths.add(fields[index]);
+        }
+      }
+    }
+
+    final files = <GitLfsFile>[];
+    for (final path in filteredPaths) {
+      final file = File(
+        '${handle.root}${Platform.pathSeparator}'
+        '${path.replaceAll('/', Platform.pathSeparator)}',
+      );
+      if (!file.existsSync()) {
+        files.add(GitLfsFile(path: path, state: GitLfsFileState.missing));
+        continue;
+      }
+      try {
+        final bytes = await file
+            .openRead(0, 1024)
+            .fold<List<int>>(
+              <int>[],
+              (current, chunk) => current..addAll(chunk),
+            );
+        final text = utf8.decode(bytes, allowMalformed: true);
+        final oid = RegExp(
+          r'^oid sha256:([0-9a-f]{64})$',
+          multiLine: true,
+        ).firstMatch(text)?.group(1);
+        final size = int.tryParse(
+          RegExp(r'^size (\d+)$', multiLine: true).firstMatch(text)?.group(1) ??
+              '',
+        );
+        final isPointer = text.startsWith(
+          'version https://git-lfs.github.com/spec/v1',
+        );
+        files.add(
+          GitLfsFile(
+            path: path,
+            state: isPointer
+                ? GitLfsFileState.pointer
+                : GitLfsFileState.hydrated,
+            oid: oid,
+            size: size,
+          ),
+        );
+      } on Object {
+        files.add(GitLfsFile(path: path, state: GitLfsFileState.missing));
+      }
+    }
+
+    final diagnostics = <String>[];
+    if (filteredPaths.isNotEmpty &&
+        installation == GitLfsInstallationStatus.missing) {
+      diagnostics.add(
+        'Git LFS is not installed, but this repository uses LFS filters.',
+      );
+    }
+    final pointerCount = files
+        .where((file) => file.state == GitLfsFileState.pointer)
+        .length;
+    if (pointerCount > 0) {
+      diagnostics.add(
+        '$pointerCount LFS pointer file(s) are present; run Git LFS pull.',
+      );
+    }
+    final fingerprint = hashGitObjectBytes(
+      utf8.encode(
+        [
+          installation.name,
+          version ?? '',
+          ...filteredPaths,
+          ...files.map(
+            (file) => '${file.path}:${file.state.name}:${file.oid ?? ''}',
+          ),
+        ].join('\n'),
+      ),
+    );
+    return GitLfsSnapshot(
+      repositoryId: repositoryId,
+      installation: installation,
+      version: version,
+      filteredPaths: List.unmodifiable(filteredPaths),
+      files: List.unmodifiable(files),
+      diagnostics: List.unmodifiable(diagnostics),
+      fingerprint: fingerprint,
+    );
+  }
+
+  Future<GitLfsPullResult> pullLfs(
+    RepositoryId repositoryId, {
+    GitCancellationToken? cancellationToken,
+  }) => state.runMutation(repositoryId, () async {
+    final before = await getLfsStatus(repositoryId);
+    if (!before.isAvailable) {
+      throw const GitError(
+        category: GitErrorCategory.lfsUnavailable,
+        userMessage: 'Git LFS is not installed.',
+        diagnostic: 'git lfs version could not be executed',
+        retryable: true,
+      );
+    }
+    if (!before.hasLfsFilters) {
+      return GitLfsPullResult(
+        repositoryId: repositoryId,
+        snapshot: before,
+        summary: 'This repository has no Git LFS filters.',
+      );
+    }
+    final handle = await state.lookup(repositoryId);
+    String? remoteUrl;
+    try {
+      final remotes = await getRemotes(repositoryId);
+      remoteUrl = remotes
+          .firstWhere(
+            (remote) => remote.name == 'origin',
+            orElse: () => remotes.first,
+          )
+          .fetchUrl;
+    } on Object {
+      remoteUrl = null;
+    }
+    try {
+      await _runWithCredentials(
+        cwd: handle.root,
+        args: const ['lfs', 'pull'],
+        kind: GitOperationKind.mutation,
+        maxBytes: 512 * 1024,
+        cancellationToken: cancellationToken,
+        remoteUrl: remoteUrl,
+      );
+    } on GitError catch (error, stackTrace) {
+      Error.throwWithStackTrace(_mapLfsError(error), stackTrace);
+    }
+    final after = await getLfsStatus(repositoryId);
+    return GitLfsPullResult(
+      repositoryId: repositoryId,
+      snapshot: after,
+      summary: after.hasPointers
+          ? 'Git LFS pull completed, but some pointer files remain.'
+          : 'Git LFS objects were pulled successfully.',
+    );
+  });
+
+  Future<GitSigningConfiguration> getSigningConfiguration(
+    RepositoryId repositoryId,
+  ) async {
+    final handle = await state.lookup(repositoryId);
+    final enabledValue = await _readConfigValue(handle, const [
+      'config',
+      '--get',
+      '--bool',
+      'commit.gpgSign',
+    ]);
+    final formatValue = await _readConfigValue(handle, const [
+      'config',
+      '--get',
+      'gpg.format',
+    ]);
+    final signingKey = await _readConfigValue(handle, const [
+      'config',
+      '--get',
+      'user.signingkey',
+    ]);
+    final program = await _readConfigValue(handle, const [
+      'config',
+      '--get',
+      'gpg.program',
+    ]);
+    final sshProgram = await _readConfigValue(handle, const [
+      'config',
+      '--get',
+      'gpg.ssh.program',
+    ]);
+    final format = switch (formatValue?.trim().toLowerCase()) {
+      'ssh' => GitSigningFormat.ssh,
+      'x509' => GitSigningFormat.x509,
+      'openpgp' || 'gpg' || null => GitSigningFormat.openpgp,
+      _ => GitSigningFormat.unknown,
+    };
+    return GitSigningConfiguration(
+      repositoryId: repositoryId,
+      enabled: enabledValue?.toLowerCase() == 'true',
+      format: format,
+      signingKey: signingKey,
+      program: program,
+      sshProgram: sshProgram,
+      agentAvailable: signingKey != null,
+      source: [
+        if (enabledValue != null) 'commit.gpgSign=$enabledValue',
+        if (formatValue != null) 'gpg.format=$formatValue',
+        if (signingKey != null) 'user.signingkey=$signingKey',
+      ].join(', '),
+    );
   }
 
   Future<DiscardPreview> createDiscardPreview(
@@ -11804,6 +12056,22 @@ GitError _staleDiscardError(String diagnostic) {
     diagnostic: diagnostic,
     retryable: true,
   );
+}
+
+GitError _mapLfsError(GitError error) {
+  if (error.category != GitErrorCategory.processFailed) return error;
+  final diagnostic = error.diagnostic;
+  if (RegExp(
+    r'(?:git lfs|lfs|pointer|smudge|filter)',
+    caseSensitive: false,
+  ).hasMatch(diagnostic)) {
+    return error.copyWith(
+      category: GitErrorCategory.lfsObjectsMissing,
+      userMessage: 'Git LFS could not download all required objects. Check the remote and try again.',
+      retryable: true,
+    );
+  }
+  return error;
 }
 
 GitError _mapCommitError(GitError error) {

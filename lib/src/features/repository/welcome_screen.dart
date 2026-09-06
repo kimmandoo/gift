@@ -36,6 +36,7 @@ class WelcomeScreen extends StatefulWidget {
     this.workspaceController,
     this.fileManager = const PlatformFileManagerRevealer(),
     this.autoInitialize = true,
+    this.initialRepositoryPath,
   });
 
   final GitGateway gateway;
@@ -49,6 +50,7 @@ class WelcomeScreen extends StatefulWidget {
   final WorkspaceController? workspaceController;
   final FileManagerRevealer fileManager;
   final bool autoInitialize;
+  final String? initialRepositoryPath;
 
   @override
   State<WelcomeScreen> createState() => _WelcomeScreenState();
@@ -59,6 +61,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
   GitSettingsController? _gitSettingsController;
   WorkspaceController? _workspaceController;
   late final FolderPathHistory _folderHistory;
+  var _initialPathOpened = false;
 
   @override
   void initState() {
@@ -541,6 +544,14 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
     if (workspace != null &&
         _repositoryController.state.gitInstallation != null) {
       await workspace.restore();
+    }
+    final initialPath = widget.initialRepositoryPath?.trim();
+    if (!_initialPathOpened &&
+        initialPath != null &&
+        initialPath.isNotEmpty &&
+        _repositoryController.state.gitInstallation != null) {
+      _initialPathOpened = true;
+      await _openPath(initialPath);
     }
   }
 

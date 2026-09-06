@@ -7,11 +7,19 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-Future<void> main() async {
+Future<void> main([List<String> args = const <String>[]]) async {
   // SharedPreferences and file selectors need Flutter's platform bindings
   // before they are used.
   WidgetsFlutterBinding.ensureInitialized();
   final preferences = await SharedPreferences.getInstance();
+  String? initialRepositoryPath;
+  for (final argument in args) {
+    final value = argument.trim();
+    if (value.isNotEmpty && !value.startsWith('-')) {
+      initialRepositoryPath = value;
+      break;
+    }
+  }
 
   final credentialStore = SecureGitCredentialStore(preferences: preferences);
   // Keep one gateway for the app. The gateway is the only object the UI needs
@@ -27,6 +35,7 @@ Future<void> main() async {
         preferences: preferences,
         credentialStore: credentialStore,
         autoInitialize: true,
+        initialRepositoryPath: initialRepositoryPath,
       ),
     ),
   );
