@@ -559,3 +559,20 @@ This file is the handoff record for continuing work across query sessions.
   fixture/process-cleanup pass before it can be reported green.
 - Next action: commit the completed Tasks 48–51 session and retain the full
   suite failures above as the next verification cleanup.
+
+## Current session: Command palette parity correction
+
+- Date: 2026-09-06.
+- Reported issue: the first palette implementation opened from Changes but
+  exposed only a partial action inventory and could start keyboard selection
+  on a disabled action.
+- Fix: added parity for push, update, three-way comparison, file history,
+  rollback, objects, Git accounts, worktrees, ignore/metadata, submodules,
+  repository setup, and hosting actions. Disabled Git account storage now
+  explains its unavailable state. Palette selection starts on the first
+  executable action, skips disabled actions with arrow navigation, and the
+  Changes integration test now verifies palette-driven refresh execution.
+- Verification: `flutter analyze` passed; command palette and Changes tests
+  passed with 24 tests.
+- Blockers: none.
+- Next action: commit this correction and continue from the clean worktree.

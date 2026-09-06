@@ -32,6 +32,9 @@
   and verified signature status in history.
 - feat(windows): added optional per-user Explorer shell entries, PATH access,
   CLI repository opening, and target-checked uninstall cleanup.
+- fix(ui): completed command palette parity with repository actions, routed
+  refresh execution from palette selection, and skipped disabled actions during
+  keyboard navigation.
 
 ## 2026-09-05
 - feat(ci): added required artifact checks and runner-specific visual golden

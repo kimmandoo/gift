@@ -75,11 +75,17 @@ class _CommandPaletteDialogState extends State<CommandPaletteDialog> {
   List<CommandPaletteAction> get _filtered =>
       filterCommandPaletteActions(widget.actions, _queryController.text);
 
+  int _firstEnabledIndex(List<CommandPaletteAction> actions) {
+    final index = actions.indexWhere((action) => action.enabled);
+    return index < 0 ? 0 : index;
+  }
+
   @override
   void initState() {
     super.initState();
     _queryController = TextEditingController()..addListener(_onQueryChanged);
     _focusNode = FocusNode(debugLabel: 'command-palette-list');
+    _selectedIndex = _firstEnabledIndex(_filtered);
   }
 
   @override
@@ -93,13 +99,21 @@ class _CommandPaletteDialogState extends State<CommandPaletteDialog> {
 
   void _onQueryChanged() {
     if (!mounted) return;
-    setState(() => _selectedIndex = 0);
+    final actions = _filtered;
+    setState(() => _selectedIndex = _firstEnabledIndex(actions));
   }
 
   void _moveSelection(int delta) {
-    final count = _filtered.length;
-    if (count == 0) return;
-    setState(() => _selectedIndex = (_selectedIndex + delta + count) % count);
+    final actions = _filtered;
+    if (actions.isEmpty || !actions.any((action) => action.enabled)) return;
+    var index = _selectedIndex;
+    for (var step = 0; step < actions.length; step++) {
+      index = (index + delta + actions.length) % actions.length;
+      if (actions[index].enabled) {
+        setState(() => _selectedIndex = index);
+        return;
+      }
+    }
   }
 
   void _invokeSelected() {

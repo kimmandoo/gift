@@ -712,6 +712,64 @@ void main() {
     controller.dispose();
   });
 
+  testWidgets('opens the command palette from Ctrl+K and the toolbar', (
+    tester,
+  ) async {
+    final repository = const RepositoryOpened(
+      repositoryId: RepositoryId(value: 'palette-repository'),
+      root: '/workspace/project',
+    );
+    final gateway = FakeChangesGateway(
+      snapshots: [snapshot(repository, changes: const <GitChange>[])],
+    );
+    final controller = ChangesController(
+      gateway: gateway,
+      repositoryId: repository.repositoryId,
+      pollInterval: const Duration(hours: 1),
+    );
+    await controller.refresh();
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: ChangesScreen(
+          gateway: gateway,
+          repository: repository,
+          controller: controller,
+          autoInitialize: false,
+        ),
+      ),
+    );
+    await tester.pump();
+
+    await tester.sendKeyDownEvent(LogicalKeyboardKey.controlLeft);
+    await tester.sendKeyEvent(LogicalKeyboardKey.keyK);
+    await tester.sendKeyUpEvent(LogicalKeyboardKey.controlLeft);
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('command-palette-dialog')), findsOneWidget);
+
+    await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('open-command-palette')));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('command-palette-dialog')), findsOneWidget);
+    await tester.enterText(
+      find.byKey(const Key('command-palette-search')),
+      'worktree',
+    );
+    await tester.pump();
+    expect(find.byKey(const Key('command-palette-worktrees')), findsOneWidget);
+
+    await tester.enterText(
+      find.byKey(const Key('command-palette-search')),
+      'refresh',
+    );
+    await tester.pump();
+    await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+    await tester.pumpAndSettle();
+    expect(gateway.statusCalls, 2);
+    controller.dispose();
+  });
+
   testWidgets('stacks the changes workspace at a narrow window width', (
     tester,
   ) async {
