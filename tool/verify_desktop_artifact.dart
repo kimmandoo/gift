@@ -25,7 +25,7 @@ Future<void> main(List<String> arguments) async {
     'windows' => <String>[
       'build/windows/x64/runner/Release/gift.exe',
       'build/windows/x64/runner/gift-portable.exe',
-      'build/windows/x64/runner/gift-setup.exe',
+      'build/windows/x64/runner/gift-setup.zip',
     ],
     _ => const <String>[],
   };

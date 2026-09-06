@@ -251,8 +251,8 @@ function Install-Gift {
     $desktopDirectory = [Environment]::GetFolderPath('Desktop')
     $desktopShortcutPath = Join-Path $desktopDirectory 'gift.lnk'
     $wscript = Join-Path $env:WINDIR 'System32\wscript.exe'
-    $uninstallScript = Join-Path $installDirectory 'windows_uninstall.ps1'
-    $uninstallVbs = Join-Path $installDirectory 'windows_uninstall.vbs'
+    $uninstallScript = Join-Path $installDirectory 'Uninstall-Gift.ps1'
+    $uninstallVbs = Join-Path $installDirectory 'Uninstall-Gift.vbs'
     $uninstallShortcutArguments = '"' + $uninstallVbs + '"'
 
     New-Item -ItemType Directory -Path $extractDirectory -Force | Out-Null
@@ -271,8 +271,8 @@ function Install-Gift {
     Get-ChildItem -LiteralPath $extractDirectory -Force | ForEach-Object {
       Copy-Item -LiteralPath $_.FullName -Destination $installDirectory -Recurse -Force
     }
-    Copy-Item -LiteralPath (Join-Path $packageDirectory 'windows_uninstall.ps1') -Destination $uninstallScript -Force
-    Copy-Item -LiteralPath (Join-Path $packageDirectory 'windows_uninstall.vbs') -Destination $uninstallVbs -Force
+    Copy-Item -LiteralPath (Join-Path $packageDirectory 'Uninstall-Gift.ps1') -Destination $uninstallScript -Force
+    Copy-Item -LiteralPath (Join-Path $packageDirectory 'Uninstall-Gift.vbs') -Destination $uninstallVbs -Force
 
     if ($startMenuCheck.Checked) {
       New-GiftShortcut $startMenuShortcutPath $applicationPath $installDirectory

@@ -18,11 +18,11 @@ if (Test-Path -LiteralPath $stage) {
 New-Item -ItemType Directory -Force -Path $stage | Out-Null
 Copy-Item -LiteralPath 'build\windows\x64\runner\Release' -Destination (Join-Path $stage 'Release') -Recurse
 Copy-Item -LiteralPath 'build\windows\x64\runner\gift-portable.exe' -Destination $stage
-Copy-Item -LiteralPath 'build\windows\x64\runner\gift-setup.exe' -Destination $stage
+Copy-Item -LiteralPath 'build\windows\x64\runner\gift-setup.zip' -Destination $stage
 
 $archive = Join-Path $outputDirectory "gift-$version-windows-x64.zip"
 if (Test-Path -LiteralPath $archive) {
     Remove-Item -LiteralPath $archive -Force
 }
-Compress-Archive -Path (Join-Path $stage 'Release'), (Join-Path $stage 'gift-portable.exe'), (Join-Path $stage 'gift-setup.exe') -DestinationPath $archive -CompressionLevel Optimal
+Compress-Archive -Path (Join-Path $stage 'Release'), (Join-Path $stage 'gift-portable.exe'), (Join-Path $stage 'gift-setup.zip') -DestinationPath $archive -CompressionLevel Optimal
 Write-Output "Windows release archive: $archive"

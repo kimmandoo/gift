@@ -7,6 +7,9 @@
 - fix(windows): hardened the per-user setup wizard with a VBScript-first
   entry point, a Start Menu uninstall shortcut, confirmation flow,
   target-checked shortcut cleanup, and safe delayed removal of installed files.
+- change(windows): replaced the IExpress setup executable with a Spull-style
+  `gift-setup.zip` bundle containing VBScript-first install and uninstall
+  launchers plus the complete Windows runtime archive.
 - feat(ui): added an actionable first-run Git diagnostics card that directs
   users to Git settings when the required executable is unavailable.
 - fix(release): removed signing-secret requirements, kept Windows executables

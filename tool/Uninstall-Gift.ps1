@@ -59,7 +59,7 @@ $uninstallShortcutPath = Join-Path $startMenuDirectory 'Uninstall GIFT.lnk'
 $desktopShortcutPath = Join-Path ([Environment]::GetFolderPath('Desktop')) 'gift.lnk'
 $uninstallKey = 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Uninstall\gift'
 $wscript = Join-Path $env:WINDIR 'System32\wscript.exe'
-$uninstaller = Join-Path $installDirectory 'windows_uninstall.vbs'
+$uninstaller = Join-Path $installDirectory 'Uninstall-Gift.vbs'
 $applicationPath = Join-Path $installDirectory 'gift.exe'
 
 if ([string]::IsNullOrWhiteSpace($RemovePath)) {

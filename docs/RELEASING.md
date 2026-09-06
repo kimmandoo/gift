@@ -54,7 +54,7 @@ The helper prints the output locations after a successful build:
 - macOS: `build/macos/Build/Products/Release/gift.app`
 - Windows release bundle: `build/windows/x64/runner/Release/`
 - Windows portable EXE: `build/windows/x64/runner/gift-portable.exe`
-- Windows installer EXE: `build/windows/x64/runner/gift-setup.exe`
+- Windows setup bundle: `build/windows/x64/runner/gift-setup.zip`
 
 The portable Windows executable is a self-extracting wrapper around the
 complete Flutter release bundle. It expands the bundle into a temporary
@@ -62,16 +62,15 @@ directory, runs `gift.exe`, waits for it to close, and removes the temporary
 files. It behaves as one file for copying and launching, but it still requires
 Git to be installed separately because the app uses the system Git executable.
 
-The Windows installer is an interactive per-user setup wizard. It lets the
-user choose the install directory and whether to create Start Menu and
-Desktop shortcuts, then installs gift under `%LOCALAPPDATA%\Programs\gift`,
-adds a Start Menu uninstall shortcut, and registers an uninstaller under the
-current user's Windows uninstall entries. The executable enters through the
-bundled VBScript/Windows Script Host launcher by default; PowerShell only
-renders the hidden implementation of the WinForms wizard. The portable
-executable only runs from a temporary extraction directory and does not
-install files, create shortcuts, or show an install wizard. Neither package
-requires administrator access. Git remains a separate system dependency.
+The Windows setup bundle follows the same layout as the reference Spull
+package. Extract `gift-setup.zip` and double-click `Install-Gift.vbs`; the
+Windows Script Host launcher starts the hidden PowerShell WinForms wizard.
+The wizard lets the user choose the install directory and whether to create
+Start Menu and Desktop shortcuts, then installs gift under
+`%LOCALAPPDATA%\Programs\gift`, adds a Start Menu uninstall shortcut, and
+registers an uninstaller under the current user's Windows uninstall entries.
+The installed folder contains `Uninstall-Gift.vbs`. Neither package requires
+administrator access. Git remains a separate system dependency.
 The desktop identity is kept in the checked-in release assets. The canonical
 pixel mascot is `assets/images/gift_icon.png`; Windows uses the derived
 multi-size `windows/runner/resources/app_icon.ico`, and macOS uses the
@@ -103,10 +102,11 @@ platform. The release packages are:
 - `gift-<version>-macos-<x64|arm64>.zip`
 - `gift-<version>-windows-x64.zip`
 
-The Windows archive contains the Flutter `Release` directory plus the portable
-and setup executables. Public release packaging requires no signing secrets.
-Windows executables are intentionally unsigned; SHA-256 checksums and GitHub's
-OIDC-backed build provenance provide the release integrity evidence.
+The Windows archive contains the Flutter `Release` directory, the portable
+launcher, and the Spull-style `gift-setup.zip` bundle. Public release
+packaging requires no signing secrets. Windows executables are intentionally
+unsigned; SHA-256 checksums and GitHub's OIDC-backed build provenance provide
+the release integrity evidence.
 
 The macOS app is signed with an ad hoc identity (`codesign --sign -`) on the
 native runner. This requires no Apple certificate or notarization account, but

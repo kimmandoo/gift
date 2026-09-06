@@ -1,7 +1,7 @@
 param(
   [string]$ReleaseDirectory = '',
   [string]$OutputPath = '',
-  [string]$InstallerOutputPath = ''
+  [string]$SetupOutputPath = ''
 )
 
 
@@ -14,15 +14,15 @@ if ([string]::IsNullOrWhiteSpace($ReleaseDirectory)) {
 if ([string]::IsNullOrWhiteSpace($OutputPath)) {
   $OutputPath = Join-Path $repositoryRoot 'build\windows\x64\runner\gift-portable.exe'
 }
-if ([string]::IsNullOrWhiteSpace($InstallerOutputPath)) {
-  $InstallerOutputPath = Join-Path $repositoryRoot 'build\windows\x64\runner\gift-setup.exe'
+if ([string]::IsNullOrWhiteSpace($SetupOutputPath)) {
+  $SetupOutputPath = Join-Path $repositoryRoot 'build\windows\x64\runner\gift-setup.zip'
 }
 
 
 $releaseDirectory = (Resolve-Path -LiteralPath $ReleaseDirectory).Path
 $iexpress = Join-Path $env:WINDIR 'System32\iexpress.exe'
 if (-not (Test-Path -LiteralPath $iexpress -PathType Leaf)) {
-  throw 'IExpress was not found. Portable Windows packaging requires iexpress.exe.'
+  throw 'IExpress was not found. Windows portable packaging requires iexpress.exe.'
 }
 
 $packageDirectory = Join-Path $env:TEMP ('gift-portable-package-' + [guid]::NewGuid().ToString('N'))
@@ -99,9 +99,9 @@ SourceFiles0="$packageDirectory"
     Remove-Item -LiteralPath $packageDirectory -Recurse -Force -ErrorAction SilentlyContinue
   }
 }
-& (Join-Path $PSScriptRoot 'package_windows_installer.ps1') `
+& (Join-Path $PSScriptRoot 'package_windows_setup.ps1') `
   -ReleaseDirectory $releaseDirectory `
-  -OutputPath $InstallerOutputPath
+  -OutputPath $SetupOutputPath
 if ($LASTEXITCODE -ne 0) {
   exit $LASTEXITCODE
 }

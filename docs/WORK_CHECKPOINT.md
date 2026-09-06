@@ -5,32 +5,30 @@ This file is the handoff record for continuing work across query sessions.
 ## Current checkpoint
 
 - Date: 2026-09-06.
-- Active task: VBScript-first Windows setup wizard and bundled uninstall
-  hardening, based on the reference flow in `C:\Users\mingy\Desktop\spull`.
+- Active task: migrated Windows setup packaging to the Spull-style archive
+  flow requested by the user.
 - Branch: `main`; latest source commit before this session is
-  `6191df5 docs(checkpoint): record macOS artifact verifier fix`.
-- Decision: keep `gift-setup.exe` as the release artifact, but make its default
-  entry point `wscript.exe windows_setup_launcher.vbs`; the hidden PowerShell
-  script remains the WinForms implementation.
-- Changed files: `CHANGELOG.md`, `README.md`, `docs/RELEASING.md`,
-  `docs/superpowers/plans/2026-09-02-gift-dart-mvp.md`,
-  `tool/windows_packaging_test.ps1`, `tool/windows_setup_launcher.ps1`,
-  `tool/windows_uninstall.ps1`, and `tool/windows_uninstall.vbs`.
-- Fix: the wizard now creates a Start Menu `Uninstall GIFT.lnk` beside the
-  app shortcut; uninstall confirms before removal, hands cleanup to a
-  temporary script, stops only the installed executable, removes only
-  matching shortcuts, guards the HKCU uninstall entry by install path, and
-  removes the bundled files.
-- Exact next action: commit this session's changes with the required
-  conventional commit message.
-- Verification: `tool/windows_packaging_test.ps1` passed PowerShell parsing
-  and setup/portable/VBScript assertions; `tool/build_windows.ps1` rebuilt the
-  Flutter release, portable EXE, and setup EXE; `dart run
-  tool/verify_desktop_artifact.dart windows` passed; the generated setup EXE
-  opened the visible `GIFT Setup` wizard; and a real uninstall smoke removed
-  temporary installed files, both shortcuts, and the HKCU uninstall entry.
-- `git diff --check` passed with only expected Git LF-to-CRLF warnings for the
-  Windows scripts.
+  `d478d46 fix(windows): harden VBScript setup uninstall flow`.
+- Decision: `gift-setup.zip` is now the setup artifact. It contains
+  `gift-runtime.zip`, `Install-Gift.vbs`, `Install-Gift.ps1`,
+  `Uninstall-Gift.vbs`, `Uninstall-Gift.ps1`, and `README.txt`; the portable
+  launcher remains `gift-portable.exe`.
+- Changed files: Windows setup/uninstall launchers and scripts, the portable
+  and setup packagers, release packager, CI artifact paths, desktop artifact
+  verification, Windows packaging smoke assertions, Windows documentation,
+  changelog, implementation plan, and this checkpoint. The obsolete IExpress
+  setup packager and old `windows_*_launcher`/`windows_uninstall` names were
+  removed.
+- Exact next action: commit this session's packaging migration with the
+  required conventional commit message.
+- Verification: `tool/windows_packaging_test.ps1` passed PowerShell parsing and
+  Spull-style assertions; `tool/build_windows.ps1` rebuilt the Flutter release,
+  portable EXE, and `gift-setup.zip`; the setup ZIP was inspected and contains
+  all six expected members; `dart run tool/verify_desktop_artifact.dart
+  windows` passed; `Install-Gift.vbs` opened the visible `GIFT Setup` wizard;
+  `Uninstall-Gift.vbs` removed temporary installed files, both shortcuts, and
+  the HKCU uninstall entry; obsolete live packaging files are absent; and
+  `git diff --check` passed with only an expected LF-to-CRLF warning.
 - Blockers: none.
 
 ## Previous checkpoint

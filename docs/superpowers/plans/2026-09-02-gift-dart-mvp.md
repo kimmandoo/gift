@@ -704,9 +704,9 @@ system Git 2.35+.
 
 ## Completed follow-up: Windows setup packaging
 
-1. Added a built-in IExpress setup executable that opens an interactive
-   per-user installation wizard and installs gift under
-   `%LOCALAPPDATA%\\Programs\\gift`.
+1. Added a Spull-style `gift-setup.zip` bundle containing the complete
+   Windows release as `gift-runtime.zip`, `Install-Gift.vbs`, and
+   `Uninstall-Gift.vbs` with their PowerShell implementations.
 2. Added wizard-controlled install-directory selection, Start Menu and Desktop
    shortcut options, current-user uninstall registration, and hidden
    PowerShell/VBScript setup and uninstall launchers.

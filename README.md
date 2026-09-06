@@ -247,19 +247,16 @@ flutter build windows --release
 
 The release files are written to `build/windows/x64/runner/Release/`.
 The Windows helper creates a single-file portable launcher at
-`build/windows/x64/runner/gift-portable.exe` and an interactive per-user
-installation wizard at `build/windows/x64/runner/gift-setup.exe`. The setup
+`build/windows/x64/runner/gift-portable.exe` and a spull-style setup bundle at
+`build/windows/x64/runner/gift-setup.zip`. Extract the setup bundle and
+double-click `Install-Gift.vbs` to open the interactive per-user wizard. The
 wizard lets you choose the install directory and Start Menu/Desktop shortcut
 options, then installs gift under `%LOCALAPPDATA%\Programs\gift`, adds a
 Start Menu uninstall shortcut, and registers an uninstaller for the current
-Windows user. The setup executable enters through the bundled
-VBScript/Windows Script Host launcher by default; the hidden PowerShell
-script only renders the WinForms wizard and performs the file operations.
-This keeps the user-facing entry point aligned with the reference Windows
-packaging flow. The portable launcher only extracts to a temporary directory,
-runs the app, and cleans up without installing files or creating shortcuts.
-Git must still be installed separately because the app uses the system Git
-executable.
+Windows user. The extracted install folder contains `Uninstall-Gift.vbs`.
+The portable launcher only extracts to a temporary directory, runs the app,
+and cleans up without installing files or creating shortcuts. Git must still
+be installed separately because the app uses the system Git executable.
 For a one-click build, use PowerShell or double-click the batch file:
 
 ```powershell
