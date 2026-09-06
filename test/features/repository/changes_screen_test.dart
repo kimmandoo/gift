@@ -716,11 +716,14 @@ void main() {
 
     expect(gateway.statusCalls, 2);
     expect(find.byKey(const Key('status-strip')), findsOneWidget);
-    expect(find.text('Ctrl+R refresh · Ctrl+H history'), findsOneWidget);
+    expect(
+      find.text('Ctrl+R refresh · Ctrl+H history · Ctrl+K palette'),
+      findsOneWidget,
+    );
     controller.dispose();
   });
 
-  testWidgets('opens the command palette from Ctrl+K and the toolbar', (
+  testWidgets('opens the command palette from keyboard shortcuts', (
     tester,
   ) async {
     final repository = const RepositoryOpened(
@@ -748,6 +751,7 @@ void main() {
       ),
     );
     await tester.pump();
+    expect(find.byKey(const Key('open-command-palette')), findsNothing);
 
     await tester.sendKeyDownEvent(LogicalKeyboardKey.controlLeft);
     await tester.sendKeyEvent(LogicalKeyboardKey.keyK);
@@ -769,11 +773,6 @@ void main() {
     await tester.sendKeyEvent(LogicalKeyboardKey.keyP);
     await tester.sendKeyUpEvent(LogicalKeyboardKey.shiftLeft);
     await tester.sendKeyUpEvent(LogicalKeyboardKey.controlLeft);
-    await tester.pumpAndSettle();
-    expect(find.byKey(const Key('command-palette-dialog')), findsOneWidget);
-    await tester.sendKeyEvent(LogicalKeyboardKey.escape);
-    await tester.pumpAndSettle();
-    await tester.tap(find.byKey(const Key('open-command-palette')));
     await tester.pumpAndSettle();
     expect(find.byKey(const Key('command-palette-dialog')), findsOneWidget);
     await tester.enterText(
@@ -841,7 +840,10 @@ void main() {
 
     expect(tester.takeException(), isNull);
     expect(find.text('Working tree is clean.'), findsOneWidget);
-    expect(find.text('Ctrl+R refresh · Ctrl+H history'), findsNothing);
+    expect(
+      find.text('Ctrl+R refresh · Ctrl+H history · Ctrl+K palette'),
+      findsNothing,
+    );
     expect(find.byKey(const Key('repository-actions-menu')), findsOneWidget);
     await tester.tap(find.byKey(const Key('repository-actions-menu')));
     await tester.pumpAndSettle();

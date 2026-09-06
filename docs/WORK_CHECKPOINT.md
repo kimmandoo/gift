@@ -687,3 +687,18 @@ This file is the handoff record for continuing work across query sessions.
   with the expected LF-to-CRLF warning for the edited Dart file.
 - Blockers: none.
 - Next action: commit this command-palette affordance fix.
+
+## Current session: Changes palette shortcut hint
+
+- Date: 2026-09-06.
+- Reported issue: the Changes toolbar search icon was unnecessary because the
+  command palette already has keyboard shortcuts.
+- Fix: removed the toolbar command-palette button and added `Ctrl+K palette`
+  to the desktop status-strip shortcut hints beside refresh and history.
+- Changed files: `CHANGELOG.md`, this checkpoint,
+  `lib/src/features/repository/changes_screen.dart`, and
+  `test/features/repository/changes_screen_test.dart`.
+- Verification: `flutter test test/features/repository/changes_screen_test.dart`
+  passed all 21 tests; `flutter analyze` passed; `git diff --check` passed.
+- Blockers: none.
+- Next action: commit this Changes shortcut-hint correction.

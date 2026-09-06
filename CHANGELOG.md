@@ -50,6 +50,8 @@
   while keeping Git query boundaries normalized for backend use.
 - fix(ui): removed the redundant search icon from the command-palette
   search field.
+- fix(ui): removed the redundant Changes toolbar command-palette button and
+  exposed `Ctrl+K palette` beside the existing keyboard shortcut hints.
 
 ## 2026-09-05
 - feat(ci): added required artifact checks and runner-specific visual golden

@@ -242,13 +242,6 @@ class _ChangesScreenBodyState extends ConsumerState<_ChangesScreenBody> {
               icon: const Icon(Icons.history),
             ),
           ],
-          PixelToolbarIconButton(
-            key: const Key('open-command-palette'),
-            tooltip: 'Command palette (Ctrl+K / Ctrl+Shift+P)',
-            onPressed: () =>
-                unawaited(_openCommandPalette(context, controller)),
-            icon: const Icon(Icons.search),
-          ),
           if (!compactToolbar) const SizedBox(width: 4),
           PopupMenuButton<_ChangesMenuAction>(
             key: const Key('repository-actions-menu'),
@@ -1002,7 +995,7 @@ class _ChangesScreenBodyState extends ConsumerState<_ChangesScreenBody> {
               Expanded(child: Text(status, overflow: TextOverflow.ellipsis)),
               const SizedBox(width: 12),
               Text(
-                'Ctrl+R refresh · Ctrl+H history',
+                'Ctrl+R refresh · Ctrl+H history · Ctrl+K palette',
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: Theme.of(context).textTheme.labelSmall,
