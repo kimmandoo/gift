@@ -131,7 +131,12 @@ void main() {
       );
       addTearDown(() => directory.delete(recursive: true));
       addTearDown(() => remoteDirectory.delete(recursive: true));
-      await git(directory.path, ['init', '--quiet']);
+      await git(directory.path, [
+        '-c',
+        'init.defaultBranch=master',
+        'init',
+        '--quiet',
+      ]);
       await git(directory.path, ['config', 'user.name', 'Objects Tester']);
       await git(directory.path, ['config', 'user.email', 'objects@test']);
       await File('${directory.path}/notes.txt').writeAsString('base\n');

@@ -1,6 +1,12 @@
 # Changelog
 
 ## 2026-09-06
+- fix(macOS): retried usable Git candidates after PATH shims failed and
+  checked the standard Apple Silicon and Intel Homebrew locations.
+- fix(ci): disabled automatic macOS signing during Flutter builds and kept
+  explicit ad hoc signing for the generated application bundle.
+- fix(test): pinned the object-management fixture branch so host Git defaults
+  cannot block CI verification.
 - release(v1.0.1): prepared the corrected desktop release after fixing
   commit-specific history inspection.
 - fix(history): passed the requested commit revision to commit inspection so

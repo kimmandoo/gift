@@ -146,6 +146,10 @@ export PATH="$PATH:$HOME/development/flutter/bin"
 ```
 
 Add the same line to `~/.zshrc` to keep it after restarting Terminal.
+When launched from Finder instead of a shell, GIFT also checks the standard
+macOS Git locations `/usr/bin/git`, `/opt/homebrew/bin/git`, and
+`/usr/local/bin/git` before reporting that Git is unavailable. The Git settings
+dialog can still select another executable explicitly.
 
 ### Windows Flutter setup
 

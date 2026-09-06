@@ -5,24 +5,28 @@ This file is the handoff record for continuing work across query sessions.
 ## Current checkpoint
 
 - Date: 2026-09-06.
-- Active task: Task 38 — public release; corrected release 1.0.1 is published
-  to the remote branch and tag.
+- Active task: Task 38 — public release; macOS Git discovery and CI bundle
+  generation corrections are implemented; the clean-machine release pass
+  remains.
 - Branch: `main`; `release-v1.0.0` remains on the failed pre-fix release
   commit, and `release-v1.0.1` points to corrected release commit `8289634`.
-- Decision: the macOS build receives an ad hoc signature on both manual and
-  tag-triggered CI runs; release packaging remains tag-only.
-- Completed this session: verified the macOS build/sign/package scripts and
-  workflow YAML, confirmed the release commit subject and tag target, and
-  published `main` plus annotated tag `release-v1.0.1`.
-- Exact next action: inspect the tag-triggered GitHub Actions result and verify
-  the Linux, macOS, and Windows release archives, checksums, metadata, SBOM,
-  and attestations. Then complete the clean-machine release pass.
-- Verification: `bash -n` passed for all macOS release scripts; workflow YAML
-  parsing passed; `git diff release-v1.0.1^ release-v1.0.1 --check` passed;
-  the remote tag resolves to release commit `8289634`.
-- Local release-tool blocker: installed Flutter 3.44.0/Dart 3.12.0 cannot
-  satisfy the repository's Dart 3.13.2 constraint, so release metadata
-  validation runs under CI's pinned Flutter 3.47.2.
+- Decision: macOS discovery validates every PATH candidate, falls back to
+  `/usr/bin/git`, `/opt/homebrew/bin/git`, and `/usr/local/bin/git`, and the
+  macOS build disables automatic signing before the explicit ad hoc signature
+  step.
+- Completed this session: added the Git candidate fallback and regression
+  coverage, made the macOS Flutter build certificate-free for CI, split the
+  Linux/macOS build steps in the workflow, and pinned the object-management
+  fixture branch so host Git defaults cannot block verification.
+- Exact next action: commit this correction, manually dispatch the workflow on
+  the corrected commit, and inspect the macOS bundle artifact before the next
+  public release tag.
+- Verification: the full repository verification suite passed formatting,
+  analysis, and all 301 tests; the full backend Git test file passed 25 tests;
+  macOS build/sign/desktop-artifact verification and release packaging passed;
+  workflow YAML and shell syntax passed.
+- Blockers: no local blocker. GitHub Actions dispatch/result inspection and
+  the clean-machine release pass remain maintainer-side checks.
 
 ## Previous checkpoint
 

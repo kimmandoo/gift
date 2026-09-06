@@ -75,11 +75,18 @@ GitVersion parseGitVersion(List<int> output) {
 }
 
 class GitInstallationService {
-  GitInstallationService({String? configuredPath, ProcessGitRunner? runner})
-    : _configuredPath = configuredPath?.isEmpty == true ? null : configuredPath,
-      _runner = runner ?? const ProcessGitRunner();
+  GitInstallationService({
+    String? configuredPath,
+    ProcessGitRunner? runner,
+    Map<String, String>? environment,
+  }) : _configuredPath = configuredPath?.isEmpty == true
+           ? null
+           : configuredPath,
+       _runner = runner ?? const ProcessGitRunner(),
+       _environment = environment ?? Platform.environment;
 
   final ProcessGitRunner _runner;
+  final Map<String, String> _environment;
   String? _configuredPath;
   _InstalledGit? _installation;
 
@@ -89,10 +96,9 @@ class GitInstallationService {
     // Reuse a validated installation so every repository operation does not
     // need to spawn `git --version` again.
     if (current case final installation?) return installation;
-    final path = _configuredPath == null
-        ? await _findGitOnPath()
-        : await _canonicalizeGitPath(_configuredPath!);
-    final installation = await _validate(path);
+    final installation = _configuredPath == null
+        ? await _discoverGit()
+        : await _validate(await _canonicalizeGitPath(_configuredPath!));
     _installation = installation;
     return installation.publicValue;
   }
@@ -123,33 +129,64 @@ class GitInstallationService {
     return _InstalledGit(path, version);
   }
 
-  Future<String> _findGitOnPath() async {
-    final pathValue =
-        Platform.environment['PATH'] ?? Platform.environment['Path'];
-    if (pathValue == null) {
-      throw const GitError(
-        category: GitErrorCategory.gitNotFound,
-        userMessage: 'Git could not be found on PATH.',
-        diagnostic: 'PATH is not configured',
-        retryable: true,
-      );
+  Future<_InstalledGit> _discoverGit() async {
+    GitError? lastError;
+    for (final candidate in await _gitCandidates()) {
+      try {
+        final canonicalPath = await _canonicalizeGitPath(candidate);
+        return await _validate(canonicalPath);
+      } on GitError catch (error) {
+        // macOS exposes /usr/bin/git even when its Xcode command-line-tools
+        // shim is unusable. Continue to a Homebrew Git instead of stopping at
+        // the first existing file.
+        lastError = error;
+      }
     }
+    throw lastError ??
+        const GitError(
+          category: GitErrorCategory.gitNotFound,
+          userMessage: 'Git could not be found on PATH.',
+          diagnostic: 'no Git executable was present in PATH entries',
+          retryable: true,
+        );
+  }
+
+  Future<List<String>> _gitCandidates() async {
+    final pathValue = _environment['PATH'] ?? _environment['Path'];
     final separator = Platform.isWindows ? ';' : ':';
     final names = Platform.isWindows ? const ['git.exe', 'git'] : const ['git'];
-    for (final directory in pathValue.split(separator)) {
-      for (final name in names) {
-        final candidate = File('$directory${Platform.pathSeparator}$name');
-        if (await candidate.exists()) {
-          return _canonicalizeGitPath(candidate.path);
+    final candidates = <String>[];
+
+    if (pathValue != null) {
+      for (final directory in pathValue.split(separator)) {
+        final directoryPath = directory.isEmpty
+            ? Directory.current.path
+            : directory;
+        for (final name in names) {
+          final candidate = File(
+            '$directoryPath${Platform.pathSeparator}$name',
+          );
+
+          if (await candidate.exists()) {
+            candidates.add(candidate.path);
+          }
         }
       }
     }
-    throw const GitError(
-      category: GitErrorCategory.gitNotFound,
-      userMessage: 'Git could not be found on PATH.',
-      diagnostic: 'no Git executable was present in PATH entries',
-      retryable: true,
-    );
+
+    if (Platform.isMacOS) {
+      for (final candidate in const [
+        '/usr/bin/git',
+        '/opt/homebrew/bin/git',
+        '/usr/local/bin/git',
+      ]) {
+        if (await File(candidate).exists() && !candidates.contains(candidate)) {
+          candidates.add(candidate);
+        }
+      }
+    }
+
+    return candidates;
   }
 }
 

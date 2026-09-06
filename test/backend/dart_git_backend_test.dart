@@ -149,6 +149,39 @@ void main() {
       expect(service.current, discovered);
     },
   );
+  test(
+    'skips an unusable Git candidate and tries the next PATH entry',
+    () async {
+      await withTempDirectory((directory) async {
+        final firstDirectory = Directory('${directory.path}/first')
+          ..createSync();
+        final secondDirectory = Directory('${directory.path}/second')
+          ..createSync();
+        final executableName = Platform.isWindows ? 'git.exe' : 'git';
+        final first = File(
+          '${firstDirectory.path}${Platform.pathSeparator}$executableName',
+        )..writeAsStringSync('');
+        final second = File(
+          '${secondDirectory.path}${Platform.pathSeparator}$executableName',
+        )..writeAsStringSync('');
+        final firstPath = first.resolveSymbolicLinksSync();
+        final runner = _DiscoveryRunner(failingPath: firstPath);
+        final pathSeparator = Platform.isWindows ? ';' : ':';
+        final service = GitInstallationService(
+          runner: runner,
+          environment: {
+            'PATH':
+                '${firstDirectory.path}$pathSeparator${secondDirectory.path}',
+          },
+        );
+
+        final installation = await service.getOrDiscover();
+
+        expect(installation.executablePath, second.resolveSymbolicLinksSync());
+        expect(runner.programs, [firstPath, installation.executablePath]);
+      });
+    },
+  );
 
   test(
     'opens a nested directory and keeps an opaque repository handle local',
@@ -835,6 +868,31 @@ void main() {
       });
     },
   );
+}
+
+class _DiscoveryRunner extends ProcessGitRunner {
+  _DiscoveryRunner({required this.failingPath});
+
+  final String failingPath;
+  final programs = <String>[];
+
+  @override
+  Future<ProcessOutput> run(GitInvocation invocation) async {
+    programs.add(invocation.program);
+    if (invocation.program == failingPath) {
+      throw const GitError(
+        category: GitErrorCategory.processFailed,
+        userMessage: 'Git reported an error.',
+        diagnostic: 'simulated unusable Git candidate',
+        retryable: true,
+      );
+    }
+    return ProcessOutput(
+      stdout: utf8.encode('git version 2.51.0\n'),
+      stderr: const <int>[],
+      exitCode: 0,
+    );
+  }
 }
 
 Future<void> createCommittedRepository(String path, String fileName) async {

@@ -99,10 +99,14 @@ jobs:
         shell: pwsh
         run: ./tool/windows_packaging_test.ps1
 
-      - name: Build release bundle
-        if: matrix.target != 'windows'
+      - name: Build Linux release bundle
+        if: matrix.target == 'linux'
         shell: bash
-        run: ./tool/build_${{ matrix.target }}.sh
+        run: ./tool/build_linux.sh
+      - name: Build macOS release bundle
+        if: matrix.target == 'macos'
+        shell: bash
+        run: ./tool/build_macos.sh
       - name: Build Windows release bundle
         if: matrix.target == 'windows'
         shell: pwsh

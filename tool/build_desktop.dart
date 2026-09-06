@@ -21,16 +21,32 @@ Future<void> main(List<String> arguments) async {
   await runCommand(flutter, ['clean']);
   await runCommand(flutter, ['config', '--enable-$target-desktop']);
   await runCommand(flutter, ['pub', 'get']);
-  await runCommand(flutter, ['build', target, '--release']);
+  await runCommand(
+    flutter,
+    ['build', target, '--release'],
+    environment: target == 'macos'
+        ? const {
+            // CI has no Apple developer certificate. The bundle is signed
+            // explicitly by sign_macos_release.sh after Flutter builds it.
+            'CODE_SIGNING_ALLOWED': 'NO',
+            'CODE_SIGNING_REQUIRED': 'NO',
+          }
+        : null,
+  );
 
   stdout.writeln('\nRelease bundle: ${artifactPath(target)}');
 }
 
-Future<void> runCommand(String executable, List<String> arguments) async {
+Future<void> runCommand(
+  String executable,
+  List<String> arguments, {
+  Map<String, String>? environment,
+}) async {
   stdout.writeln('\n> $executable ${arguments.join(' ')}');
   final result = await Process.run(
     executable,
     arguments,
+    environment: environment,
     runInShell: Platform.isWindows,
   );
   stdout.write(result.stdout);
