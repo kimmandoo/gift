@@ -341,7 +341,7 @@ function Install-Gift {
     $uninstallKey = 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Uninstall\gift'
     New-Item -Path $uninstallKey -Force | Out-Null
     Set-ItemProperty -Path $uninstallKey -Name 'DisplayName' -Value 'GIFT'
-    Set-ItemProperty -Path $uninstallKey -Name 'DisplayVersion' -Value '1.0.0'
+    Set-ItemProperty -Path $uninstallKey -Name 'DisplayVersion' -Value '1.0.1'
     Set-ItemProperty -Path $uninstallKey -Name 'Publisher' -Value 'kimmandoo'
     Set-ItemProperty -Path $uninstallKey -Name 'InstallLocation' -Value $installDirectory
     Set-ItemProperty -Path $uninstallKey -Name 'DisplayIcon' -Value $applicationPath

@@ -5,27 +5,25 @@ This file is the handoff record for continuing work across query sessions.
 ## Current checkpoint
 
 - Date: 2026-09-06.
-- Active task: Task 38 — public release; the first release CI run exposed a
-  history-inspection regression and its fix is active.
-- Branch: `main`; `release-v1.0.0` still points to the pre-fix release commit.
-- Decision: `RepositoryService.getCommit` must pass the requested commit OID to
-  Git; otherwise `git show` defaults to `HEAD` and root-commit inspection
-  returns the current commit's files.
-- Completed this session: diagnosed the single CI failure at
-  `history_exploration_test.dart:207`, added the missing `commitOid` argument,
-  and added an explicit returned-OID assertion.
-- Exact next action: commit and push the history fix, then rerun the focused
-  history checks. Do not rewrite the existing release tag; create a new
-  release version/tag only after the corrected release is intentionally
-  prepared.
-- Verification: the focused `history_exploration_test.dart` passed all 3
-  tests after the fix. The broader backend suite reached 156 tests but had
-  one unrelated local default-branch failure in
-  `object_management_test.dart` (`expected master`, actual `main`).
-- Local test note: the installed Flutter 3.44.0/Dart 3.12.0 cannot satisfy the
-  repository's Dart 3.13.2 constraint, so focused verification temporarily
-  used a throwaway SDK constraint override and restored `pubspec.yaml`,
-  `pubspec.lock`, and `.dart_tool`.
+- Active task: Task 38 — public release; corrected release 1.0.1 is prepared
+  locally.
+- Branch: `main`; `release-v1.0.0` remains on the failed pre-fix release
+  commit, and `release-v1.0.1` points to the corrected release commit.
+- Decision: publish the corrected build as `release-v1.0.1`; do not rewrite
+  the existing `release-v1.0.0` tag.
+- Completed this session: bumped `pubspec.yaml` to `1.0.1+1`, updated the
+  Windows uninstall display version and release documentation examples,
+  recorded the 1.0.1 changelog entry, created
+  `release(v1.0.1): publish desktop artifacts`, and created annotated tag
+  `release-v1.0.1`.
+- Exact next action: push `main` and `release-v1.0.1`, then inspect the
+  tag-triggered CI result and verify all three release archives and reports.
+- Verification: version/tag shape validated as `1.0.1` /
+  `release-v1.0.1`; the workflow YAML parsed; `git diff --check` passed; the
+  history fix passed the focused three-test history suite.
+- Local release-tool blocker: installed Flutter 3.44.0/Dart 3.12.0 cannot
+  satisfy the repository's Dart 3.13.2 constraint, so release metadata
+  validation must run under CI's Flutter 3.47.2.
 
 ## Previous checkpoint
 

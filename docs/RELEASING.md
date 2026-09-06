@@ -83,14 +83,14 @@ mascot source.
 `.github/workflows/ci.yml` runs verification on Ubuntu, macOS, and Windows.
 The workflow starts automatically only for a `release-*` tag. The tagged
 commit must have a subject such as
-`release(v1.0.0): publish desktop artifacts`; otherwise verification fails.
+`release(v1.0.1): publish desktop artifacts`; otherwise verification fails.
 The tag version must also match the `major.minor.patch` part of `pubspec.yaml`.
 For example:
 
 ```bash
-git commit -m "release(v1.0.0): publish desktop artifacts"
-git tag release-v1.0.0
-git push origin main release-v1.0.0
+git commit -m "release(v1.0.1): publish desktop artifacts"
+git tag release-v1.0.1
+git push origin main release-v1.0.1
 ```
 
 Ordinary branch pushes create no workflow run. Use manual dispatch when a
@@ -134,7 +134,7 @@ run:
 
 ```bash
 sha256sum -c SHA256SUMS.txt
-gh attestation verify gift-1.0.0-linux-x64.tar.gz \
+gh attestation verify gift-1.0.1-linux-x64.tar.gz \
   --repo <owner>/<repository>
 ```
 
