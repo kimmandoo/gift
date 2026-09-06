@@ -5,22 +5,22 @@ This file is the handoff record for continuing work across query sessions.
 ## Current checkpoint
 
 - Date: 2026-09-06.
-- Active task: migrated Windows setup packaging to the Spull-style archive
-  flow requested by the user.
-- Branch: `main`; latest source commit before this session is
-  `d478d46 fix(windows): harden VBScript setup uninstall flow`.
+- Active task: Task 38 — public release; Windows setup packaging now matches
+  the Spull-style archive flow.
+- Branch: `main`; latest source commit is
+  `6fffbe6 change(windows): use Spull-style setup bundle`.
 - Decision: `gift-setup.zip` is now the setup artifact. It contains
   `gift-runtime.zip`, `Install-Gift.vbs`, `Install-Gift.ps1`,
   `Uninstall-Gift.vbs`, `Uninstall-Gift.ps1`, and `README.txt`; the portable
   launcher remains `gift-portable.exe`.
-- Changed files: Windows setup/uninstall launchers and scripts, the portable
-  and setup packagers, release packager, CI artifact paths, desktop artifact
-  verification, Windows packaging smoke assertions, Windows documentation,
-  changelog, implementation plan, and this checkpoint. The obsolete IExpress
-  setup packager and old `windows_*_launcher`/`windows_uninstall` names were
-  removed.
-- Exact next action: commit this session's packaging migration with the
-  required conventional commit message.
+- Completed this session: replaced the IExpress setup executable, migrated
+  CI/release verification to the setup ZIP, updated Windows documentation and
+  changelog, and verified VBScript install/uninstall smoke flows.
+- Exact next action: complete the maintainer-only clean-machine release pass:
+  inspect the corrected tag-triggered workflow result and review the Linux,
+  macOS, and Windows archives, checksums, metadata, SBOM, and attestations.
+  Then install, launch, upgrade, downgrade-warning, uninstall, and
+  Git-missing checks on clean machines before marking Task 38 complete.
 - Verification: `tool/windows_packaging_test.ps1` passed PowerShell parsing and
   Spull-style assertions; `tool/build_windows.ps1` rebuilt the Flutter release,
   portable EXE, and `gift-setup.zip`; the setup ZIP was inspected and contains
@@ -29,7 +29,9 @@ This file is the handoff record for continuing work across query sessions.
   `Uninstall-Gift.vbs` removed temporary installed files, both shortcuts, and
   the HKCU uninstall entry; obsolete live packaging files are absent; and
   `git diff --check` passed with only an expected LF-to-CRLF warning.
-- Blockers: none.
+- Blockers: local `gh` CLI is unavailable, Linux/macOS native hosts are
+  unavailable for clean-machine testing, and public Windows executables remain
+  unsigned by design.
 
 ## Previous checkpoint
 
