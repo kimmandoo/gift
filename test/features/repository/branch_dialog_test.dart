@@ -77,7 +77,7 @@ void main() {
     );
     final gateway = FakeBranchGateway(
       branches: const [
-        GitBranch(name: 'feature/demo'),
+        GitBranch(name: 'feature/demo', relation: GitBranchRelation.sameTip),
         GitBranch(name: 'main', isCurrent: true),
       ],
       action: GitBranchActionResult(
@@ -102,6 +102,7 @@ void main() {
       ),
     );
     await tester.pumpAndSettle();
+    expect(find.text('Local branch · Same tip as current'), findsOneWidget);
     await tester.tap(find.byKey(const ValueKey('branch-actions:feature/demo')));
     await tester.pumpAndSettle();
 
@@ -119,6 +120,10 @@ void main() {
     ]) {
       expect(find.text(label), findsOneWidget, reason: label);
     }
+    expect(
+      find.text('Both branches point to the same commit.'),
+      findsNWidgets(3),
+    );
   });
   testWidgets('exposes the complete remote branch action inventory', (
     tester,

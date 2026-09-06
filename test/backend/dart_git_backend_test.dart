@@ -4,6 +4,7 @@ import 'dart:io';
 import 'dart:math';
 
 import 'package:gift/src/backend/dart_git_backend.dart';
+import 'package:gift/src/backend/branch.dart';
 import 'package:gift/src/backend/commit.dart';
 import 'package:gift/src/backend/discard.dart';
 import 'package:gift/src/backend/diff.dart';
@@ -585,6 +586,12 @@ void main() {
       expect(
         branches.singleWhere((branch) => branch.isCurrent).name,
         'feature/history',
+      );
+      expect(
+        branches
+            .singleWhere((branch) => branch.name == originalBranch)
+            .relation,
+        GitBranchRelation.sameTip,
       );
 
       final switched = await backend.switchBranch(

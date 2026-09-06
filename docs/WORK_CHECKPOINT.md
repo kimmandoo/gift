@@ -634,3 +634,24 @@ This file is the handoff record for continuing work across query sessions.
   `flutter analyze` passed.
 - Blockers: none.
 - Next action: commit this History merge action.
+
+## Current session: Relationship-aware branch actions
+
+- Date: 2026-09-06.
+- Reported issue: Branch context menus showed merge/rebase/compare actions
+  without reflecting whether the selected branch actually differed from the
+  current branch.
+- Fix: local branch loading now computes each branch's relation to the current
+  tip (`sameTip`, `currentAhead`, `branchAhead`, or `diverged`). No-op merge
+  and rebase actions, same-tip comparison, self-checkout, and detached-target
+  cases are disabled with explanations. Branch rows now show ahead/behind,
+  diverged, and same-tip status.
+- Changed files: `CHANGELOG.md`, this checkpoint,
+  `lib/src/backend/{branch,repository_service}.dart`,
+  `lib/src/features/repository/branch_dialog.dart`, and focused backend/UI
+  tests.
+- Verification: all 10 Branch dialog tests passed; the targeted backend
+  branch-refresh test passed; `flutter analyze` passed. The full backend file
+  still has the known Windows CRLF fixture failure outside this change.
+- Blockers: none.
+- Next action: commit this relationship-aware branch action fix.

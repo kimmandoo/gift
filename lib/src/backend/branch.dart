@@ -3,6 +3,9 @@ import 'dart:convert';
 import 'domain.dart';
 import 'status.dart';
 
+/// Relationship of a local branch tip to the currently checked-out branch.
+enum GitBranchRelation { unknown, sameTip, currentAhead, branchAhead, diverged }
+
 /// A local branch and the upstream information Git reports for it.
 class GitBranch {
   const GitBranch({
@@ -12,6 +15,7 @@ class GitBranch {
     this.isCurrent = false,
     this.ahead = 0,
     this.behind = 0,
+    this.relation = GitBranchRelation.unknown,
   });
 
   final String name;
@@ -20,8 +24,19 @@ class GitBranch {
   final bool isCurrent;
   final int ahead;
   final int behind;
+  final GitBranchRelation relation;
 
   bool get hasUpstream => upstream != null && upstream!.isNotEmpty;
+
+  GitBranch copyWith({GitBranchRelation? relation}) => GitBranch(
+    name: name,
+    oid: oid,
+    upstream: upstream,
+    isCurrent: isCurrent,
+    ahead: ahead,
+    behind: behind,
+    relation: relation ?? this.relation,
+  );
 }
 
 /// The refreshed repository state after creating or switching a branch.

@@ -273,6 +273,14 @@ class _BranchDialogState extends State<BranchDialog> {
 
   Widget _localBranchTile(GitBranch branch) {
     final snapshot = _branchActionSnapshot(branch);
+    final tracking = branch.isCurrent
+        ? branch.hasUpstream
+              ? 'Current · tracks ${branch.upstream}'
+              : 'Current · not linked to a remote'
+        : branch.hasUpstream
+        ? 'Tracks ${branch.upstream}'
+        : 'Local branch';
+    final relationship = _branchRelationshipLabel(branch);
     return ContextActionMenu(
       key: ValueKey('branch-action-menu:${branch.name}'),
       snapshot: snapshot,
@@ -285,13 +293,7 @@ class _BranchDialogState extends State<BranchDialog> {
         ),
         title: Text(branch.name),
         subtitle: Text(
-          branch.isCurrent
-              ? branch.hasUpstream
-                    ? 'Current · tracks ${branch.upstream}'
-                    : 'Current · not linked to a remote'
-              : branch.hasUpstream
-              ? 'Tracks ${branch.upstream}'
-              : 'Local branch',
+          relationship == null ? tracking : '$tracking · $relationship',
         ),
         trailing: _branchActionButton(branch),
         onTap: branch.isCurrent || _isMutating
@@ -300,6 +302,17 @@ class _BranchDialogState extends State<BranchDialog> {
       ),
     );
   }
+
+  String? _branchRelationshipLabel(GitBranch branch) =>
+      switch (branch.relation) {
+        GitBranchRelation.unknown => null,
+        GitBranchRelation.sameTip when !branch.isCurrent =>
+          'Same tip as current',
+        GitBranchRelation.currentAhead => 'Behind current',
+        GitBranchRelation.branchAhead => 'Ahead of current',
+        GitBranchRelation.diverged => 'Diverged from current',
+        GitBranchRelation.sameTip => null,
+      };
 
   Widget _branchActionButton(GitBranch branch) {
     final button = ContextActionMenuButton(
@@ -358,7 +371,8 @@ class _BranchDialogState extends State<BranchDialog> {
 
   String _branchSnapshotFingerprint() =>
       '${_branches?.map((branch) => '${branch.name}:${branch.oid ?? ''}:'
-              '${branch.upstream ?? ''}:${branch.isCurrent}').join('|') ?? ''}:'
+              '${branch.upstream ?? ''}:${branch.isCurrent}:'
+              '${branch.relation.name}').join('|') ?? ''}:'
       '${_remoteSnapshot?.fingerprint ?? ''}:${_remoteSnapshot?.currentBranch ?? ''}';
 
   String? _currentBranchName() =>
@@ -374,6 +388,13 @@ class _BranchDialogState extends State<BranchDialog> {
         ? 'A branch operation is already running.'
         : null;
     final isCurrent = branch.isCurrent || branch.name == current;
+    final relationReason = switch (branch.relation) {
+      GitBranchRelation.sameTip when !isCurrent =>
+        'Both branches point to the same commit.',
+      GitBranchRelation.currentAhead =>
+        'This branch is already contained in the current branch.',
+      _ => null,
+    };
     ContextActionDescriptor action({
       required ContextActionId id,
       required String label,
@@ -408,12 +429,12 @@ class _BranchDialogState extends State<BranchDialog> {
         icon: Icons.merge,
         group: ContextActionGroup.workflow,
         route: ContextActionRoute.mergeBranch,
-        enabled: !isCurrent && current != null,
+        enabled: !isCurrent && current != null && relationReason == null,
         disabledReason: isCurrent
             ? 'A branch cannot merge into itself.'
             : current == null
             ? 'Detached HEAD has no current branch target.'
-            : null,
+            : relationReason,
       ),
       action(
         id: ContextActionId.rebaseBranch,
@@ -421,12 +442,12 @@ class _BranchDialogState extends State<BranchDialog> {
         icon: Icons.call_merge,
         group: ContextActionGroup.workflow,
         route: ContextActionRoute.rebaseBranch,
-        enabled: !isCurrent && current != null,
+        enabled: !isCurrent && current != null && relationReason == null,
         disabledReason: isCurrent
             ? 'A branch cannot rebase onto itself.'
             : current == null
             ? 'Detached HEAD has no current branch target.'
-            : null,
+            : relationReason,
       ),
       action(
         id: ContextActionId.compareBranch,
@@ -434,11 +455,16 @@ class _BranchDialogState extends State<BranchDialog> {
         icon: Icons.compare_arrows,
         group: ContextActionGroup.inspect,
         route: ContextActionRoute.compareBranch,
-        enabled: !isCurrent && current != null,
+        enabled:
+            !isCurrent &&
+            current != null &&
+            branch.relation != GitBranchRelation.sameTip,
         disabledReason: isCurrent
             ? 'This branch is already current.'
             : current == null
             ? 'Detached HEAD has no current branch target.'
+            : branch.relation == GitBranchRelation.sameTip
+            ? 'Both branches point to the same commit.'
             : null,
       ),
       action(

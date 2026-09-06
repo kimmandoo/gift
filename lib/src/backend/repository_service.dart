@@ -5005,7 +5005,27 @@ class RepositoryService {
       ),
     );
     try {
-      return parseGitBranches(output.stdout);
+      final branches = parseGitBranches(output.stdout);
+      final current = branches.where((branch) => branch.isCurrent).firstOrNull;
+      if (current?.oid == null) return branches;
+      final enriched = <GitBranch>[];
+      for (final branch in branches) {
+        if (branch.oid == null) {
+          enriched.add(branch);
+          continue;
+        }
+        final (ahead, behind) = await _readAheadBehind(
+          handle,
+          current!.oid,
+          branch.oid,
+        );
+        enriched.add(
+          branch.copyWith(
+            relation: _branchRelation(ahead: ahead, behind: behind),
+          ),
+        );
+      }
+      return List.unmodifiable(enriched);
     } on FormatException catch (error, stackTrace) {
       Error.throwWithStackTrace(
         GitError(
@@ -6221,6 +6241,13 @@ class RepositoryService {
     final behind = int.tryParse(values[0]) ?? 0;
     final ahead = int.tryParse(values[1]) ?? 0;
     return (ahead, behind);
+  }
+
+  GitBranchRelation _branchRelation({required int ahead, required int behind}) {
+    if (ahead == 0 && behind == 0) return GitBranchRelation.sameTip;
+    if (ahead == 0) return GitBranchRelation.currentAhead;
+    if (behind == 0) return GitBranchRelation.branchAhead;
+    return GitBranchRelation.diverged;
   }
 
   Future<String?> _readMergeBase(

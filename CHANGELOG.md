@@ -43,6 +43,9 @@
   points action-specific.
 - fix(ui): added History commit-to-current merge actions with full-revision
   prefill and clarified branch-operation source labels.
+- fix(ui): computed local branch relationships before rendering branch actions,
+  disabled no-op merge/rebase/compare operations with explanations, and
+  surfaced ahead, behind, diverged, and same-tip status in the branch list.
 
 ## 2026-09-05
 - feat(ci): added required artifact checks and runner-specific visual golden
