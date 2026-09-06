@@ -70,7 +70,7 @@ jobs:
           - os: macos-latest
             target: macos
             artifact: gift-macos
-            path: build/macos/Build/Products/Release/gift.app
+            path: build/macos/Build/Products/Release/
           - os: windows-latest
             target: windows
             artifact: gift-windows-x64

@@ -18,15 +18,18 @@ This file is the handoff record for continuing work across query sessions.
   coverage, made the macOS Flutter build certificate-free for CI, split the
   Linux/macOS build steps in the workflow, and pinned the object-management
   fixture branch so host Git defaults cannot block verification.
-- Exact next action: commit this correction, manually dispatch the workflow on
-  the corrected commit, and inspect the macOS bundle artifact before the next
-  public release tag.
+- CI run `34036380774` passed all verify and build jobs, and the macOS build
+  produced and signed `gift.app`; its downloaded artifact flattened the app
+  directory because the upload path pointed at `gift.app` itself.
+- Exact next action: commit the macOS artifact-parent-path correction, dispatch
+  the workflow again, and verify the downloaded `gift-macos` artifact contains
+  `gift.app/Contents/MacOS/gift`.
 - Verification: the full repository verification suite passed formatting,
   analysis, and all 301 tests; the full backend Git test file passed 25 tests;
-  macOS build/sign/desktop-artifact verification and release packaging passed;
-  workflow YAML and shell syntax passed.
-- Blockers: no local blocker. GitHub Actions dispatch/result inspection and
-  the clean-machine release pass remain maintainer-side checks.
+  local macOS build/sign/desktop-artifact verification and release packaging
+  passed; workflow YAML and shell syntax passed.
+- Blockers: no local blocker. The corrected workflow artifact check and the
+  clean-machine release pass remain.
 
 ## Previous checkpoint
 

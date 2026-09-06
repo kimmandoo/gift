@@ -7,6 +7,8 @@
   explicit ad hoc signing for the generated application bundle.
 - fix(test): pinned the object-management fixture branch so host Git defaults
   cannot block CI verification.
+- fix(ci): preserved the `gift.app` directory in the downloaded macOS build
+  artifact by uploading its Release parent directory.
 - release(v1.0.1): prepared the corrected desktop release after fixing
   commit-specific history inspection.
 - fix(history): passed the requested commit revision to commit inspection so
