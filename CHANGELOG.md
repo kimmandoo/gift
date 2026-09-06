@@ -56,6 +56,8 @@
   bindings and exposed the History search shortcut.
 - fix(ui): rendered shortcut preferences as readable key combinations and
   added input-format guidance.
+- fix(ui): repaired the `Ctrl+Shift+P` command-palette alias so it opens the
+  palette instead of silently doing nothing.
 
 ## 2026-09-05
 - feat(ci): added required artifact checks and runner-specific visual golden

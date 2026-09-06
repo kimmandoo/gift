@@ -542,7 +542,8 @@ class _ChangesScreenBodyState extends ConsumerState<_ChangesScreenBody> {
         control: true,
         shift: true,
       ),
-      () => openPalette,
+      () =>
+          () => openPalette(),
     );
     if (widget.onBack != null) bind('cancel', widget.onBack!);
     return CallbackShortcuts(

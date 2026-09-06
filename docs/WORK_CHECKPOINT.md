@@ -725,3 +725,22 @@ This file is the handoff record for continuing work across query sessions.
   and submodule file-lock cleanup. No affected UX test failed.
 - Blockers: none for the UX audit.
 - Next action: commit the UX audit changes.
+
+## Current session: Command palette alias repair
+
+- Date: 2026-09-06.
+- Reported issue: the command-palette keyboard shortcut did not open the
+  palette in the user's flow.
+- Cause: the conventional `Ctrl+Shift+P` alias registered a callback factory
+  that returned the palette callback without invoking it.
+- Fix: changed the alias factory to return a callback that invokes
+  `openPalette()`, and strengthened the test to assert the first palette is
+  closed before exercising the alias.
+- Changed files: `CHANGELOG.md`, this checkpoint,
+  `lib/src/features/repository/changes_screen.dart`, and
+  `test/features/repository/changes_screen_test.dart`.
+- Verification: `flutter test test/features/repository/changes_screen_test.dart`
+  passed all 21 tests; `flutter analyze` passed; `dart format` passed; and
+  `git diff --check` passed.
+- Blockers: none.
+- Next action: commit the command-palette shortcut repair.
