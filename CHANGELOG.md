@@ -1,6 +1,8 @@
 # Changelog
 
 ## 2026-09-06
+- fix(history): passed the requested commit revision to commit inspection so
+  root-commit file lists no longer loaded the current HEAD.
 - fix(ci): applied the macOS ad hoc signature step to manual and
   tag-triggered build jobs, and verified that the resulting app reports an
   ad hoc signature.

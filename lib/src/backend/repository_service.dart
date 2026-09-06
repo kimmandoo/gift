@@ -4891,6 +4891,7 @@ class RepositoryService {
           '--no-color',
           '--no-patch',
           '--date=iso-strict',
+          commitOid,
         ],
         cwd: handle.root,
         kind: GitOperationKind.read,

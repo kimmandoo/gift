@@ -5,28 +5,27 @@ This file is the handoff record for continuing work across query sessions.
 ## Current checkpoint
 
 - Date: 2026-09-06.
-- Active task: Task 38 — public release; release commit and local tag are
+- Active task: Task 38 — public release; the first release CI run exposed a
+  history-inspection regression and its fix is active.
+- Branch: `main`; `release-v1.0.0` still points to the pre-fix release commit.
+- Decision: `RepositoryService.getCommit` must pass the requested commit OID to
+  Git; otherwise `git show` defaults to `HEAD` and root-commit inspection
+  returns the current commit's files.
+- Completed this session: diagnosed the single CI failure at
+  `history_exploration_test.dart:207`, added the missing `commitOid` argument,
+  and added an explicit returned-OID assertion.
+- Exact next action: commit and push the history fix, then rerun the focused
+  history checks. Do not rewrite the existing release tag; create a new
+  release version/tag only after the corrected release is intentionally
   prepared.
-- Branch: `main`; latest source commit is the release commit tagged
-  `release-v1.0.0`.
-- Decision: the macOS signing step runs for both tag-triggered pushes and
-  manual `workflow_dispatch` builds. Release packaging remains tag-only.
-- Completed this session: corrected manual macOS CI signing, made the signing
-  helper assert `Signature=adhoc`, documented the behavior, created the
-  `release(v1.0.0): publish desktop artifacts` commit, and created annotated
-  tag `release-v1.0.0`.
-- Exact next action: push `main` and `release-v1.0.0`, then inspect the
-  tag-triggered workflow and verify the Linux, macOS, and Windows release
-  archives and reports. Run a separate manual dispatch to confirm macOS
-  signing remains active without packaging.
-- Verification: release version/tag shape validated as `1.0.0` /
-  `release-v1.0.0`; Ruby YAML parsing of `.github/workflows/ci.yml` passed;
-  `git diff --check` passed; the previous temporary macOS ad hoc signing and
-  packaging smoke tests passed.
-- Local release-tool blocker: the installed Flutter 3.44.0/Dart 3.12.0
-  cannot resolve the repository's required Dart 3.13.2, so
-  `dart run tool/release_metadata.dart validate release-v1.0.0` could not
-  run locally. CI pins Flutter 3.47.2.
+- Verification: the focused `history_exploration_test.dart` passed all 3
+  tests after the fix. The broader backend suite reached 156 tests but had
+  one unrelated local default-branch failure in
+  `object_management_test.dart` (`expected master`, actual `main`).
+- Local test note: the installed Flutter 3.44.0/Dart 3.12.0 cannot satisfy the
+  repository's Dart 3.13.2 constraint, so focused verification temporarily
+  used a throwaway SDK constraint override and restored `pubspec.yaml`,
+  `pubspec.lock`, and `.dart_tool`.
 
 ## Previous checkpoint
 

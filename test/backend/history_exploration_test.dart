@@ -200,6 +200,7 @@ void main() {
       expect(binary.isBinary, isTrue);
 
       final root = await backend.getCommit(opened.repositoryId, rootOid);
+      expect(root.oid, rootOid);
       final rootFiles = await backend.getCommitFiles(
         opened.repositoryId,
         root.oid,
