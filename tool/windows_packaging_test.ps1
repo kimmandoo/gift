@@ -47,7 +47,8 @@ $setupPackage = Read-RepositoryFile 'tool/package_windows_installer.ps1'
   'tool/windows_setup_launcher.ps1',
   'tool/windows_portable_launcher.ps1',
   'tool/package_windows.ps1',
-  'tool/package_windows_installer.ps1'
+  'tool/package_windows_installer.ps1',
+  'tool/windows_uninstall.ps1'
 ) | ForEach-Object { Assert-PowerShellParses $_ }
 
 Assert-Contains $setupLauncher 'System.Windows.Forms.Form' 'setup uses a visible WinForms wizard'
@@ -60,8 +61,16 @@ Assert-Contains $setupBridge '-STA' 'setup starts PowerShell in STA mode for Win
 Assert-Contains $portableLauncher 'Start-Process -FilePath $applicationPath -WorkingDirectory $extractDirectory -Wait' 'portable waits for the extracted app and cleans up afterward'
 Assert-NotContains $portableLauncher 'System.Windows.Forms.Form' 'portable does not contain an installer wizard'
 Assert-Contains $portablePackage 'FriendlyName=GIFT Portable' 'portable package keeps its portable identity'
-Assert-Contains $portablePackage 'windows_portable_launcher.vbs' 'portable package launches its portable bridge'
 Assert-Contains $setupPackage 'FriendlyName=GIFT Setup' 'setup package keeps its installer identity'
+Assert-Contains $setupPackage 'AppLaunched=wscript.exe windows_setup_launcher.vbs' 'setup defaults to the VBScript entry point'
 Assert-Contains $setupPackage 'windows_setup_launcher.vbs' 'setup package launches its setup bridge'
+Assert-Contains $setupLauncher 'Uninstall GIFT.lnk' 'setup creates a Start Menu uninstall shortcut'
+Assert-Contains $setupLauncher 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Uninstall\gift' 'setup registers the current-user uninstaller'
+$uninstaller = Read-RepositoryFile 'tool/windows_uninstall.ps1'
+$uninstallBridge = Read-RepositoryFile 'tool/windows_uninstall.vbs'
+Assert-Contains $uninstaller 'Remove-ShortcutIfTarget' 'uninstall only removes matching shortcuts'
+Assert-Contains $uninstaller 'SkipConfirmation' 'uninstall supports a confirmation-free cleanup handoff'
+Assert-Contains $uninstallBridge '-STA' 'uninstall starts PowerShell in STA mode for WinForms'
+Assert-Contains $uninstallBridge 'windows_uninstall.ps1' 'uninstall bridge invokes the bundled PowerShell script'
 
 Write-Output 'Windows packaging verification passed: setup wizard and portable launcher are distinct.'

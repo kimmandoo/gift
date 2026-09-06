@@ -5,7 +5,7 @@ Set shell = CreateObject("WScript.Shell")
 Set fileSystem = CreateObject("Scripting.FileSystemObject")
 
 scriptPath = fileSystem.BuildPath(fileSystem.GetParentFolderName(WScript.ScriptFullName), "windows_uninstall.ps1")
-command = "powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass -File " & Quote(scriptPath)
+command = "powershell.exe -NoProfile -STA -ExecutionPolicy Bypass -WindowStyle Hidden -File " & Quote(scriptPath)
 exitCode = shell.Run(command, 0, True)
 WScript.Quit exitCode
 

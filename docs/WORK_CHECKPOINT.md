@@ -4,45 +4,34 @@ This file is the handoff record for continuing work across query sessions.
 
 ## Current checkpoint
 
-- Date: 2026-09-06
-- Active task: Task 38 — corrected `v1.0.0` release candidate was committed
-  and pushed as `release-v1.0.0`; the corrected GitHub Actions run and native
-  clean-machine review remain.
-- Branch: `main`; latest release source commit is
-  `7598982 release(v1.0.0): republish desktop artifacts`.
-- Completed in this session: fixed Windows PowerShell tag validation by using
-  the GitHub ref expression; stabilized the native filesystem watcher test by
-  awaiting its first callback; made the cherry-pick test assert applied
-  history/tree state rather than timing-dependent commit identity; removed the
-  unsupported Flutter macOS `--no-codesign` flag; added Linux
-  `libsecret-1-dev`; replaced the Bash 4-only macOS architecture expansion
-  with Bash 3.2-compatible case matching; corrected macOS artifact verification
-  to inspect `Contents/Frameworks/App.framework/Resources/flutter_assets`;
-  pushed the fixes; and force-updated `release-v1.0.0` to `7598982`.
-- Exact next action: inspect the corrected tag-triggered workflow result, review
-  the Linux, ad hoc-signed macOS, and unsigned Windows archives plus
-  attestations, then perform clean-machine install/launch/upgrade/downgrade/
-  uninstall/Git-missing checks on all three platforms before marking Task 38
-  complete.
-- Current session files: `.github/workflows/ci.yml`, `CHANGELOG.md`,
-  `tool/build_desktop.dart`, `tool/package_macos_release.sh`,
-  `tool/verify_desktop_artifact.dart`,
-  `test/backend/history_batch_test.dart`,
-  `test/features/repository/repository_refresh_coordinator_test.dart`, and
-  `docs/WORK_CHECKPOINT.md`.
-- Verification: the reported Windows release-tag, native build, macOS
-  packaging, and macOS artifact verification failures were fixed; focused
-  repository-refresh and history-batch tests passed all 10 tests; Flutter
-  analysis, the macOS build-helper smoke test, packaging architecture smoke
-  tests, and App.framework artifact-verification smoke test passed; workflow
-  YAML parsing, 11 pinned Actions, release-tag validation for
-  `release-v1.0.0`, `dart format`, Dart analysis, Bash syntax, and
-  `git diff --check` passed; and both `main` and the forced release tag were
-  pushed successfully.
-- Blockers: the local environment does not include the `gh` CLI, so the
-  corrected workflow result was not queried locally. Linux/macOS native hosts
-  are unavailable for the clean-machine review; Windows binaries remain
-  unsigned and macOS remains intentionally ad hoc-signed and not notarized.
+- Date: 2026-09-06.
+- Active task: VBScript-first Windows setup wizard and bundled uninstall
+  hardening, based on the reference flow in `C:\Users\mingy\Desktop\spull`.
+- Branch: `main`; latest source commit before this session is
+  `6191df5 docs(checkpoint): record macOS artifact verifier fix`.
+- Decision: keep `gift-setup.exe` as the release artifact, but make its default
+  entry point `wscript.exe windows_setup_launcher.vbs`; the hidden PowerShell
+  script remains the WinForms implementation.
+- Changed files: `CHANGELOG.md`, `README.md`, `docs/RELEASING.md`,
+  `docs/superpowers/plans/2026-09-02-gift-dart-mvp.md`,
+  `tool/windows_packaging_test.ps1`, `tool/windows_setup_launcher.ps1`,
+  `tool/windows_uninstall.ps1`, and `tool/windows_uninstall.vbs`.
+- Fix: the wizard now creates a Start Menu `Uninstall GIFT.lnk` beside the
+  app shortcut; uninstall confirms before removal, hands cleanup to a
+  temporary script, stops only the installed executable, removes only
+  matching shortcuts, guards the HKCU uninstall entry by install path, and
+  removes the bundled files.
+- Exact next action: commit this session's changes with the required
+  conventional commit message.
+- Verification: `tool/windows_packaging_test.ps1` passed PowerShell parsing
+  and setup/portable/VBScript assertions; `tool/build_windows.ps1` rebuilt the
+  Flutter release, portable EXE, and setup EXE; `dart run
+  tool/verify_desktop_artifact.dart windows` passed; the generated setup EXE
+  opened the visible `GIFT Setup` wizard; and a real uninstall smoke removed
+  temporary installed files, both shortcuts, and the HKCU uninstall entry.
+- `git diff --check` passed with only expected Git LF-to-CRLF warnings for the
+  Windows scripts.
+- Blockers: none.
 
 ## Previous checkpoint
 

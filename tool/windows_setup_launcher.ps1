@@ -216,7 +216,8 @@ function Set-Page([string]$page) {
 function New-GiftShortcut(
   [string]$ShortcutPath,
   [string]$ApplicationPath,
-  [string]$WorkingDirectory
+  [string]$WorkingDirectory,
+  [string]$Arguments = ''
 ) {
   $shortcutDirectory = Split-Path -Parent $ShortcutPath
   New-Item -ItemType Directory -Path $shortcutDirectory -Force | Out-Null
@@ -224,6 +225,9 @@ function New-GiftShortcut(
   $shortcut = $shell.CreateShortcut($ShortcutPath)
   $shortcut.TargetPath = $ApplicationPath
   $shortcut.WorkingDirectory = $WorkingDirectory
+  if (-not [string]::IsNullOrWhiteSpace($Arguments)) {
+    $shortcut.Arguments = $Arguments
+  }
   $shortcut.IconLocation = "$ApplicationPath,0"
   $shortcut.Description = 'Launch GIFT Git client'
   $shortcut.Save()
@@ -243,10 +247,13 @@ function Install-Gift {
     $applicationPath = Join-Path $installDirectory 'gift.exe'
     $startMenuDirectory = Join-Path ([Environment]::GetFolderPath('StartMenu')) 'Programs\gift'
     $startMenuShortcutPath = Join-Path $startMenuDirectory 'gift.lnk'
+    $uninstallShortcutPath = Join-Path $startMenuDirectory 'Uninstall GIFT.lnk'
     $desktopDirectory = [Environment]::GetFolderPath('Desktop')
     $desktopShortcutPath = Join-Path $desktopDirectory 'gift.lnk'
+    $wscript = Join-Path $env:WINDIR 'System32\wscript.exe'
     $uninstallScript = Join-Path $installDirectory 'windows_uninstall.ps1'
     $uninstallVbs = Join-Path $installDirectory 'windows_uninstall.vbs'
+    $uninstallShortcutArguments = '"' + $uninstallVbs + '"'
 
     New-Item -ItemType Directory -Path $extractDirectory -Force | Out-Null
     Expand-Archive -LiteralPath $payload -DestinationPath $extractDirectory -Force
@@ -269,8 +276,14 @@ function Install-Gift {
 
     if ($startMenuCheck.Checked) {
       New-GiftShortcut $startMenuShortcutPath $applicationPath $installDirectory
+      New-GiftShortcut `
+        $uninstallShortcutPath `
+        $wscript `
+        $installDirectory `
+        $uninstallShortcutArguments
     } else {
       Remove-Item -LiteralPath $startMenuShortcutPath -Force -ErrorAction SilentlyContinue
+      Remove-Item -LiteralPath $uninstallShortcutPath -Force -ErrorAction SilentlyContinue
     }
     if ($desktopCheck.Checked) {
       New-GiftShortcut $desktopShortcutPath $applicationPath $installDirectory

@@ -4,6 +4,9 @@
 - feat(release): added semver-validated Linux, macOS, and Windows release
   archives with checksums, update metadata, CycloneDX SBOM, dependency license
   audit, and OIDC-backed provenance attestation.
+- fix(windows): hardened the per-user setup wizard with a VBScript-first
+  entry point, a Start Menu uninstall shortcut, confirmation flow,
+  target-checked shortcut cleanup, and safe delayed removal of installed files.
 - feat(ui): added an actionable first-run Git diagnostics card that directs
   users to Git settings when the required executable is unavailable.
 - fix(release): removed signing-secret requirements, kept Windows executables

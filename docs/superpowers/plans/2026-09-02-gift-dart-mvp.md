@@ -713,6 +713,10 @@ system Git 2.35+.
 3. Kept `gift-portable.exe` as a temporary self-extracting launcher without
    an installation wizard, shortcut creation, or persistent installation, and
    published both Windows artifacts alongside the Release bundle.
+4. Kept VBScript/Windows Script Host as the default setup entry point, then
+   added a visible Start Menu uninstall shortcut, confirmation-aware uninstall
+   handoff, target-checked shortcut cleanup, and guarded current-user
+   uninstall registration removal.
 
 ## Planned follow-up: contextual actions and path selection
 
