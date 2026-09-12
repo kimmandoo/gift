@@ -1,5 +1,10 @@
 # Changelog
 
+## 2026-09-13
+- feat(push): added reviewed raw force push for existing remote branches,
+  including protected-name branches, with remote overwrite previews and
+  explicit branch-name confirmation.
+
 ## 2026-09-12
 - feat(welcome): added a bordered pixel mascot lockup and visible GIFT title
   to the first-run screen.

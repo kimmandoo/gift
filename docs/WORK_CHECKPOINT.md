@@ -741,3 +741,36 @@ This file is the handoff record for continuing work across query sessions.
   `git diff --check` passed.
 - Blockers: none.
 - Next action: commit the command-palette shortcut repair.
+
+## Current session: Reviewed raw force push release
+
+- Date: 2026-09-13.
+- Active task: Delivered the reviewed raw force-push mode requested for the
+  Push dialog and prepared release v1.0.3.
+- Decision: Replaced the push boolean with `GitPushMode`; normal,
+  force-with-lease, and raw force modes now share the reviewed token and
+  fingerprint contract. Raw force uses explicit `--force` only for existing
+  branches whose remote history is locally inspectable. Tags and new remote
+  branches remain blocked. `main`, `master`, `develop`, and `release/*` no
+  longer receive the local protected-name block; they still require fresh
+  review, remote-tip inspection, and UI confirmation.
+- Changed files: `CHANGELOG.md`, `TASKS.md`, `docs/research/jetbrains-git-mvp-behavior.md`,
+  `pubspec.yaml`, `lib/src/backend/push.dart`,
+  `lib/src/backend/repository_service.dart`,
+  `lib/src/features/repository/push_dialog.dart`,
+  `test/backend/push_test.dart`, `test/features/repository/push_dialog_test.dart`,
+  and this checkpoint.
+- Verification: focused backend and Push dialog tests passed all 16 tests;
+  the compact dropdown audit initially exposed an open-menu hit-test issue,
+  which was fixed in the test and passed on rerun. `dart run tool/verify.dart`
+  passed formatting, analyzer, and all 310 Flutter tests. Release metadata
+  validation passed for `release-v1.0.3`. `./tool/build_macos.sh` produced
+  `build/macos/Build/Products/Release/gift.app` (63.5 MB) and staged the
+  distribution bundle. `GIFT_RELEASE_TAG=release-v1.0.3
+  ./tool/package_macos_release.sh` produced
+  `dist/gift-1.0.3-macos-universal.app.zip`.
+- Build note: Xcode emitted its existing non-fatal warning that the Flutter
+  Assemble run script has no declared outputs.
+- Blockers: none. Existing untracked `.DS_Store` files were left untouched.
+- Next action: create `release(v1.0.3): add reviewed raw force push`, create
+  tag `release-v1.0.3`, and push `main` plus the tag to `origin`.

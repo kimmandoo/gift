@@ -69,6 +69,63 @@ void main() {
     expect(gateway.executedRequest?.setUpstream, isTrue);
     expect(tester.takeException(), isNull);
   });
+  testWidgets('reviews and confirms a raw force push', (tester) async {
+    addTearDown(tester.view.reset);
+    tester.view.physicalSize = const Size(420, 760);
+    tester.view.devicePixelRatio = 1;
+    final repository = const RepositoryOpened(
+      repositoryId: RepositoryId(value: 'push-force-ui-repository'),
+      root: '/workspace/project',
+    );
+    final gateway = _PushGateway(repository);
+
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: buildPixelTheme(),
+        home: PushDialog(gateway: gateway, repository: repository),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.ensureVisible(find.byKey(const Key('push-advanced-options')));
+    await tester.tap(find.byKey(const Key('push-advanced-options')));
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(find.byKey(const Key('push-mode')));
+    await tester.tap(find.byKey(const Key('push-mode')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Force push (unsafe)'));
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const Key('push-force-warning')), findsOneWidget);
+    await tester.tap(find.byKey(const Key('preview-push')));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('push-force-preview-warning')), findsOneWidget);
+    expect(find.text('Force push to origin'), findsOneWidget);
+
+    await tester.tap(find.byKey(const Key('execute-push')));
+    await tester.pumpAndSettle();
+    expect(find.text('Confirm force push'), findsOneWidget);
+    final confirm = tester.widget<FilledButton>(
+      find.widgetWithText(FilledButton, 'Force push'),
+    );
+    expect(confirm.onPressed, isNull);
+
+    await tester.enterText(
+      find.byKey(const Key('force-push-confirmation')),
+      'main',
+    );
+    await tester.pumpAndSettle();
+    final enabledConfirm = tester.widget<FilledButton>(
+      find.widgetWithText(FilledButton, 'Force push'),
+    );
+    expect(enabledConfirm.onPressed, isNotNull);
+    await tester.tap(find.widgetWithText(FilledButton, 'Force push'));
+    await tester.pumpAndSettle();
+
+    expect(gateway.executedRequest?.mode, GitPushMode.force);
+    expect(gateway.executedRequest?.confirmationToken, 'push-token');
+    expect(tester.takeException(), isNull);
+  });
 
   testWidgets('separates the push account field from the remote field', (
     tester,
@@ -204,6 +261,16 @@ void main() {
     );
     expect(commitLabel.maxLines, 1);
     expect(commitLabel.overflow, TextOverflow.ellipsis);
+    await tester.tap(find.textContaining('Publish this'));
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(find.byKey(const Key('push-mode')));
+    await tester.tap(find.byKey(const Key('push-mode')));
+    await tester.pumpAndSettle();
+    final forceModeLabel = tester.widget<Text>(
+      find.text('Force push (unsafe)'),
+    );
+    expect(forceModeLabel.maxLines, 1);
+    expect(forceModeLabel.overflow, TextOverflow.ellipsis);
   });
   testWidgets('uses the configured upstream before a preferred remote', (
     tester,

@@ -6913,7 +6913,7 @@ class RepositoryService {
         credentialId: request.credentialId,
       );
     } on GitError catch (error, stackTrace) {
-      final mapped = _mapPushError(error, request.forceWithLease);
+      final mapped = _mapPushError(error, request.mode);
       final afterFailure = await getStatus(repositoryId);
       if (mapped.category == GitErrorCategory.cancelled) {
         return GitPushResult(
@@ -6975,10 +6975,8 @@ class RepositoryService {
     var blockingMessage = <String>[];
 
     if (request.target == GitPushTarget.allTags) {
-      if (request.forceWithLease) {
-        blockingMessage.add(
-          'Force-with-lease is available for branches, not tags.',
-        );
+      if (request.mode != GitPushMode.normal) {
+        blockingMessage.add('Force push is available for branches, not tags.');
       }
       if (request.setUpstream) {
         blockingMessage.add(
@@ -7087,31 +7085,36 @@ class RepositoryService {
       );
     }
     final protectedBranch = _isProtectedPushBranch(targetBranch);
-    if (request.forceWithLease) {
-      if (protectedBranch) {
-        blockingMessage.add(
-          'Force push is blocked for protected branch $targetBranch.',
-        );
-      } else if (remoteHead == null) {
-        blockingMessage.add(
-          'Force-with-lease needs an existing remote branch tip to review.',
-        );
-      } else if (request.expectedRemoteOid == null ||
-          request.expectedRemoteOid!.isEmpty) {
-        blockingMessage.add(
-          'Refresh the remote tip before confirming force-with-lease.',
-        );
-      } else if (request.expectedRemoteOid != remoteHead) {
-        blockingMessage.add(
-          'The remote branch moved. Refresh the push review before continuing.',
-        );
-      } else {
-        _validateCommitOid(request.expectedRemoteOid!);
-      }
-    }
     final remoteHeadAvailableLocally =
         remoteHead == null ||
         await _tryResolve(handle, '$remoteHead^{commit}') != null;
+    if (request.mode != GitPushMode.normal) {
+      if (remoteHead == null) {
+        blockingMessage.add(
+          request.mode == GitPushMode.forceWithLease
+              ? 'Force-with-lease needs an existing remote branch tip to review.'
+              : 'Force push is only available when replacing an existing remote branch.',
+        );
+      } else if (request.mode == GitPushMode.forceWithLease) {
+        if (request.expectedRemoteOid == null ||
+            request.expectedRemoteOid!.isEmpty) {
+          blockingMessage.add(
+            'Refresh the remote tip before confirming force-with-lease.',
+          );
+        } else if (request.expectedRemoteOid != remoteHead) {
+          blockingMessage.add(
+            'The remote branch moved. Refresh the push review before continuing.',
+          );
+        } else {
+          _validateCommitOid(request.expectedRemoteOid!);
+        }
+      } else if (!remoteHeadAvailableLocally) {
+        blockingMessage.add(
+          'Force push needs the remote branch history locally. '
+          'Fetch the remote branch before continuing.',
+        );
+      }
+    }
     final canCompareCommits = remoteHeadAvailableLocally;
     final commits = remoteHead == targetOid || !canCompareCommits
         ? const <GitPushCommit>[]
@@ -7119,6 +7122,17 @@ class RepositoryService {
     final changedPaths = remoteHead == targetOid || !canCompareCommits
         ? const <String>[]
         : await _readPushChangedPaths(handle, remoteHead, targetOid);
+    final remoteOnlyCandidates =
+        request.mode == GitPushMode.force &&
+            remoteHead != null &&
+            remoteHead != targetOid &&
+            canCompareCommits
+        ? await _readPushCommits(handle, targetOid, remoteHead, maxCount: 101)
+        : const <GitPushCommit>[];
+    final remoteOnlyCommitsTruncated = remoteOnlyCandidates.length > 100;
+    final remoteOnlyCommits = remoteOnlyCommitsTruncated
+        ? remoteOnlyCandidates.take(100).toList(growable: false)
+        : remoteOnlyCandidates;
     final fingerprint = hashGitObjectBytes(
       utf8.encode(
         [
@@ -7129,8 +7143,11 @@ class RepositoryService {
           localHead,
           targetOid,
           remoteHead ?? '<missing>',
+          remoteHeadAvailableLocally,
           ...commits.map((commit) => commit.oid),
           ...changedPaths,
+          ...remoteOnlyCommits.map((commit) => commit.oid),
+          remoteOnlyCommitsTruncated,
         ].join('|'),
       ),
     );
@@ -7145,10 +7162,13 @@ class RepositoryService {
       remoteHead: remoteHead,
       commits: commits,
       changedPaths: changedPaths,
+      remoteOnlyCommits: remoteOnlyCommits,
+      remoteOnlyCommitsTruncated: remoteOnlyCommitsTruncated,
+      remoteHistoryAvailable: remoteHeadAvailableLocally,
       tags: tags,
       dirtyWorktree: !status.isClean,
       protectedBranch: protectedBranch,
-      requiresConfirmation: request.forceWithLease,
+      requiresConfirmation: request.mode != GitPushMode.normal,
       fingerprint: fingerprint,
       blockingMessage: blockingMessage.isEmpty
           ? null
@@ -7172,6 +7192,9 @@ class RepositoryService {
     remoteHead: preview.remoteHead,
     commits: preview.commits,
     changedPaths: preview.changedPaths,
+    remoteOnlyCommits: preview.remoteOnlyCommits,
+    remoteOnlyCommitsTruncated: preview.remoteOnlyCommitsTruncated,
+    remoteHistoryAvailable: preview.remoteHistoryAvailable,
     tags: preview.tags,
     dirtyWorktree: preview.dirtyWorktree,
     protectedBranch: preview.protectedBranch,
@@ -7181,12 +7204,12 @@ class RepositoryService {
     token: token,
     expiresAt: expiresAt,
   );
-
   Future<List<GitPushCommit>> _readPushCommits(
     RepositoryHandle handle,
     String? remoteHead,
-    String targetOid,
-  ) async {
+    String targetOid, {
+    int maxCount = 100,
+  }) async {
     if (targetOid.isEmpty) return const [];
     final output = await _runner.run(
       GitInvocation(
@@ -7194,7 +7217,7 @@ class RepositoryService {
         args: [
           'log',
           '--reverse',
-          '--max-count=100',
+          '--max-count=$maxCount',
           '--no-decorate',
           '--format=%H%x00%s%x00%x1e',
           if (remoteHead == null) targetOid else '$remoteHead..$targetOid',
@@ -7208,9 +7231,10 @@ class RepositoryService {
     final text = utf8.decode(output.stdout, allowMalformed: true);
     for (final record in text.split('\u001e')) {
       final fields = record.split('\u0000');
-      if (fields.length < 2 || fields[0].isEmpty) continue;
-      if (!_isCommitOid(fields[0])) continue;
-      commits.add(GitPushCommit(oid: fields[0], subject: fields[1]));
+      final oid = fields.isEmpty ? '' : fields[0].trim();
+      if (fields.length < 2 || oid.isEmpty) continue;
+      if (!_isCommitOid(oid)) continue;
+      commits.add(GitPushCommit(oid: oid, subject: fields[1]));
     }
     return commits;
   }
@@ -7281,7 +7305,8 @@ class RepositoryService {
     }
     return [
       'push',
-      if (preview.request.forceWithLease)
+      if (preview.request.mode == GitPushMode.force) '--force',
+      if (preview.request.mode == GitPushMode.forceWithLease)
         '--force-with-lease=refs/heads/${preview.targetBranch}:${preview.remoteHead}',
       if (preview.request.setUpstream) '--set-upstream',
       preview.remote,
@@ -7292,9 +7317,7 @@ class RepositoryService {
   }
 
   GitError _pushBlockingError(GitPushPreview preview) {
-    final category = preview.protectedBranch && preview.request.forceWithLease
-        ? GitErrorCategory.protectedBranch
-        : preview.currentBranch.isEmpty
+    final category = preview.currentBranch.isEmpty
         ? GitErrorCategory.detachedHead
         : GitErrorCategory.stalePushPreview;
     return GitError(
@@ -12420,9 +12443,10 @@ GitError _mapRemoteError(GitError error) {
   return error;
 }
 
-GitError _mapPushError(GitError error, bool forceWithLease) {
+GitError _mapPushError(GitError error, GitPushMode mode) {
   final mapped = _mapRemoteError(error);
-  if (forceWithLease && mapped.category == GitErrorCategory.nonFastForward) {
+  if (mode == GitPushMode.forceWithLease &&
+      mapped.category == GitErrorCategory.nonFastForward) {
     return mapped.copyWith(
       category: GitErrorCategory.staleRemoteRef,
       userMessage: 'The remote branch moved before the lease was accepted.',

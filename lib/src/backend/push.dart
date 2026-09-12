@@ -6,17 +6,20 @@ import 'status.dart';
 /// The destination selected by a push review.
 enum GitPushTarget { currentBranch, selectedCommit, allTags }
 
+/// The safety mode selected for a reviewed push.
+enum GitPushMode { normal, forceWithLease, force }
+
 /// A push request contains only structured values. The backend turns it into
 /// an explicit refspec after validating the reviewed repository state.
 class GitPushRequest {
   const GitPushRequest({
     required this.remote,
     this.target = GitPushTarget.currentBranch,
+    this.mode = GitPushMode.normal,
     this.branch,
     this.commitOid,
     this.tagNames = const [],
     this.setUpstream = false,
-    this.forceWithLease = false,
     this.expectedRemoteOid,
     this.confirmationToken,
     this.credentialId,
@@ -24,11 +27,11 @@ class GitPushRequest {
 
   final String remote;
   final GitPushTarget target;
+  final GitPushMode mode;
   final String? branch;
   final String? commitOid;
   final List<String> tagNames;
   final bool setUpstream;
-  final bool forceWithLease;
   final String? expectedRemoteOid;
   final String? confirmationToken;
   final String? credentialId;
@@ -36,11 +39,11 @@ class GitPushRequest {
   String get queryKey => [
     remote,
     target.name,
+    mode.name,
     branch ?? '',
     commitOid ?? '',
     ...tagNames,
     setUpstream,
-    forceWithLease,
     expectedRemoteOid ?? '',
     credentialId ?? '',
   ].join('|');
@@ -49,11 +52,11 @@ class GitPushRequest {
       GitPushRequest(
         remote: remote,
         target: target,
+        mode: mode,
         branch: branch,
         commitOid: commitOid,
         tagNames: tagNames,
         setUpstream: setUpstream,
-        forceWithLease: forceWithLease,
         expectedRemoteOid: expectedRemoteOid,
         confirmationToken: confirmationToken ?? this.confirmationToken,
         credentialId: credentialId ?? this.credentialId,
@@ -84,6 +87,9 @@ class GitPushPreview {
     required this.remoteHead,
     required this.commits,
     required this.changedPaths,
+    this.remoteOnlyCommits = const [],
+    this.remoteOnlyCommitsTruncated = false,
+    this.remoteHistoryAvailable = true,
     required this.tags,
     required this.dirtyWorktree,
     required this.protectedBranch,
@@ -104,6 +110,9 @@ class GitPushPreview {
   final String? remoteHead;
   final List<GitPushCommit> commits;
   final List<String> changedPaths;
+  final List<GitPushCommit> remoteOnlyCommits;
+  final bool remoteOnlyCommitsTruncated;
+  final bool remoteHistoryAvailable;
   final List<GitTag> tags;
   final bool dirtyWorktree;
   final bool protectedBranch;

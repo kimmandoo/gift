@@ -163,7 +163,7 @@ void main() {
     },
   );
 
-  test('blocks force-with-lease on protected branches', () async {
+  test('allows reviewed force-with-lease on protected branches', () async {
     final fixture = await _createFixture('gift-push-protected-');
     addTearDown(() => fixture.root.delete(recursive: true));
     await _commitLocal(fixture.repository, 'local', 'local.txt', 'local\n');
@@ -177,14 +177,22 @@ void main() {
       opened.repositoryId,
       GitPushRequest(
         remote: 'origin',
-        forceWithLease: true,
+        mode: GitPushMode.forceWithLease,
         expectedRemoteOid: remoteHead,
       ),
     );
 
     expect(preview.protectedBranch, isTrue);
-    expect(preview.canExecute, isFalse);
-    expect(preview.blockingMessage, contains('protected branch'));
+    expect(preview.canExecute, isTrue);
+    final result = await backend.executePush(
+      opened.repositoryId,
+      preview.request,
+    );
+    expect(result.state, GitPushState.completed);
+    expect(
+      await _gitOutput(fixture.remote.path, ['rev-parse', 'refs/heads/main']),
+      preview.localHead,
+    );
   });
 
   test(
@@ -216,7 +224,7 @@ void main() {
         GitPushRequest(
           remote: 'origin',
           branch: 'feature',
-          forceWithLease: true,
+          mode: GitPushMode.forceWithLease,
           expectedRemoteOid: remoteHead,
         ),
       );
@@ -237,6 +245,191 @@ void main() {
       );
     },
   );
+  test('allows reviewed raw force push on protected branches', () async {
+    final fixture = await _createFixture('gift-push-force-protected-');
+    addTearDown(() => fixture.root.delete(recursive: true));
+    await _commitLocal(fixture.repository, 'local', 'local.txt', 'local\n');
+    final backend = DartGitBackend();
+    final opened = await backend.openRepository(fixture.repository.path);
+    final preview = await backend.previewPush(
+      opened.repositoryId,
+      const GitPushRequest(remote: 'origin', mode: GitPushMode.force),
+    );
+
+    expect(preview.protectedBranch, isTrue);
+    expect(preview.canExecute, isTrue);
+    final result = await backend.executePush(
+      opened.repositoryId,
+      preview.request,
+    );
+    expect(result.state, GitPushState.completed);
+    expect(
+      await _gitOutput(fixture.remote.path, ['rev-parse', 'refs/heads/main']),
+      preview.localHead,
+    );
+  });
+
+  test(
+    'reviews replaced commits and rejects a stale raw force review',
+    () async {
+      final fixture = await _createFixture('gift-push-force-review-');
+      addTearDown(() => fixture.root.delete(recursive: true));
+      await _git(fixture.repository.path, ['switch', '--create', 'feature']);
+      await _git(fixture.repository.path, [
+        'push',
+        '--quiet',
+        '--set-upstream',
+        'origin',
+        'feature',
+      ]);
+      await _commitLocal(
+        fixture.repository,
+        'local rewrite',
+        'local.txt',
+        'local\n',
+      );
+      await _createRemoteCommit(fixture, branch: 'feature');
+      await _git(fixture.repository.path, [
+        'fetch',
+        '--quiet',
+        'origin',
+        'feature',
+      ]);
+
+      final backend = DartGitBackend();
+      final opened = await backend.openRepository(fixture.repository.path);
+      final review = await backend.previewPush(
+        opened.repositoryId,
+        const GitPushRequest(
+          remote: 'origin',
+          branch: 'feature',
+          mode: GitPushMode.force,
+        ),
+      );
+
+      expect(review.canExecute, isTrue);
+      expect(review.remoteHistoryAvailable, isTrue);
+      expect(review.remoteOnlyCommits.map((commit) => commit.subject), [
+        'remote',
+      ]);
+
+      await _createRemoteCommit(
+        fixture,
+        branch: 'feature',
+        updaterName: 'updater-two',
+        commitLabel: 'remote-two',
+      );
+      await _git(fixture.repository.path, [
+        'fetch',
+        '--quiet',
+        'origin',
+        'feature',
+      ]);
+      GitError? stale;
+      try {
+        await backend.executePush(opened.repositoryId, review.request);
+      } on GitError catch (error) {
+        stale = error;
+      }
+      expect(stale?.category, GitErrorCategory.stalePushPreview);
+
+      final freshReview = await backend.previewPush(
+        opened.repositoryId,
+        const GitPushRequest(
+          remote: 'origin',
+          branch: 'feature',
+          mode: GitPushMode.force,
+        ),
+      );
+      expect(freshReview.canExecute, isTrue);
+      expect(freshReview.remoteOnlyCommits.map((commit) => commit.subject), [
+        'remote',
+        'remote-two',
+      ]);
+      final result = await backend.executePush(
+        opened.repositoryId,
+        freshReview.request,
+      );
+      expect(result.state, GitPushState.completed);
+      expect(
+        await _gitOutput(fixture.remote.path, [
+          'rev-parse',
+          'refs/heads/feature',
+        ]),
+        freshReview.localHead,
+      );
+    },
+  );
+
+  test(
+    'blocks raw force when the remote branch history is unavailable',
+    () async {
+      final fixture = await _createFixture('gift-push-force-unknown-');
+      addTearDown(() => fixture.root.delete(recursive: true));
+      await _git(fixture.repository.path, ['switch', '--create', 'feature']);
+      await _git(fixture.repository.path, [
+        'push',
+        '--quiet',
+        '--set-upstream',
+        'origin',
+        'feature',
+      ]);
+      await _commitLocal(
+        fixture.repository,
+        'local rewrite',
+        'local.txt',
+        'local\n',
+      );
+      await _createRemoteCommit(fixture, branch: 'feature');
+
+      final backend = DartGitBackend();
+      final opened = await backend.openRepository(fixture.repository.path);
+      final preview = await backend.previewPush(
+        opened.repositoryId,
+        const GitPushRequest(
+          remote: 'origin',
+          branch: 'feature',
+          mode: GitPushMode.force,
+        ),
+      );
+
+      expect(preview.remoteHistoryAvailable, isFalse);
+      expect(preview.canExecute, isFalse);
+      expect(preview.blockingMessage, contains('history locally'));
+    },
+  );
+
+  test('blocks raw force for tags and new remote branches', () async {
+    final fixture = await _createFixture('gift-push-force-scope-');
+    addTearDown(() => fixture.root.delete(recursive: true));
+    await _git(fixture.repository.path, ['tag', 'v1']);
+    final backend = DartGitBackend();
+    final opened = await backend.openRepository(fixture.repository.path);
+
+    final tags = await backend.previewPush(
+      opened.repositoryId,
+      const GitPushRequest(
+        remote: 'origin',
+        target: GitPushTarget.allTags,
+        mode: GitPushMode.force,
+      ),
+    );
+    expect(tags.canExecute, isFalse);
+    expect(tags.blockingMessage, contains('branches, not tags'));
+
+    final branch = await backend.previewPush(
+      opened.repositoryId,
+      const GitPushRequest(
+        remote: 'origin',
+        branch: 'new-target',
+        mode: GitPushMode.force,
+      ),
+    );
+    expect(branch.remoteHead, isNull);
+    expect(branch.canExecute, isFalse);
+    expect(branch.blockingMessage, contains('existing remote branch'));
+  });
+
   test(
     'publishes an untracked branch and links its chosen destination',
     () async {
@@ -330,20 +523,30 @@ Future<void> _commitLocal(
   await _git(repository.path, ['commit', '--quiet', '-m', subject]);
 }
 
-Future<void> _createRemoteCommit(_PushFixture fixture) async {
-  final updater = Directory('${fixture.root.path}/updater');
+Future<void> _createRemoteCommit(
+  _PushFixture fixture, {
+  String branch = 'main',
+  String updaterName = 'updater',
+  String commitLabel = 'remote',
+}) async {
+  final updater = Directory('${fixture.root.path}/$updaterName');
   await _git(fixture.root.path, [
     'clone',
     '--quiet',
     '--branch',
-    'main',
+    branch,
     fixture.remote.path,
     updater.path,
   ]);
   await _git(updater.path, ['config', 'user.name', 'Remote Tester']);
   await _git(updater.path, ['config', 'user.email', 'remote@test']);
-  await _commitLocal(updater, 'remote', 'remote.txt', 'remote\n');
-  await _git(updater.path, ['push', '--quiet', 'origin', 'main']);
+  await _commitLocal(
+    updater,
+    commitLabel,
+    '$commitLabel.txt',
+    '$commitLabel\n',
+  );
+  await _git(updater.path, ['push', '--quiet', 'origin', branch]);
 }
 
 Future<void> _git(String cwd, List<String> args) async {

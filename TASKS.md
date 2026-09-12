@@ -474,17 +474,24 @@ Task 28 and its History diff viewer follow-up are complete. Task 29 is complete.
 ### ✅ Task 29: Push safety
 
 - [x] Record push review, target selection, all-tags scope, lease freshness,
-  protected branches, rejection classification, and merge/rebase recovery
-  scenarios in the behavior ledger.
+  raw force scope, protected-branch review, rejection classification, and
+  merge/rebase recovery scenarios in the behavior ledger.
 - [x] Add the first RED real-bare-remote push review fixture.
 - [x] Implement a typed push preview and execution contract with explicit
-  target refspecs, expected remote tips, and force-with-lease validation.
-- [x] Add responsive Push review UI and rejection recovery actions.
+  target refspecs, expected remote tips, force-with-lease validation, and
+  reviewed raw force support.
+- [x] Add responsive Push review UI, explicit force confirmation, and
+  rejection recovery actions.
 - [x] Verify new branches, selected commit targets, tags, non-fast-forward,
-  lease failure, protected branches, and merge/rebase recovery.
+  lease failure, raw force replacement, protected-name branches, and merge or
+  rebase recovery.
+- [x] Removed the local protected-name block for reviewed force modes;
+  `main`, `master`, `develop`, and `release/*` still require the same fresh
+  review and confirmation flow.
 
-Task 29 is complete. The review-first push backend and responsive dialog passed
-the full Flutter verification suite. Task 30 is complete; Task 31 is next.
+Task 29 is complete. The review-first push backend and responsive dialog now
+support normal, force-with-lease, and explicitly confirmed raw force modes.
+Task 30 is complete; Task 31 is next.
 
 ### ✅ Task 30: Git worktrees
 

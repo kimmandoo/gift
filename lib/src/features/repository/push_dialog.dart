@@ -55,7 +55,7 @@ class _PushDialogState extends State<PushDialog> {
   GitPushResult? _result;
   GitError? _error;
   GitCancellationToken? _cancellation;
-  var _forceWithLease = false;
+  GitPushMode _pushMode = GitPushMode.normal;
   var _setUpstream = false;
   var _busy = false;
 
@@ -141,11 +141,7 @@ class _PushDialogState extends State<PushDialog> {
           FilledButton(
             key: const Key('execute-push'),
             onPressed: _executePush,
-            child: Text(
-              _forceWithLease
-                  ? 'Force push to ${preview!.remote}'
-                  : 'Push to ${preview!.remote}',
-            ),
+            child: Text(_pushActionLabel(_pushMode, preview!.remote)),
           ),
         TextButton(
           onPressed: _busy ? null : () => Navigator.of(context).pop(),
@@ -417,23 +413,46 @@ class _PushDialogState extends State<PushDialog> {
           ),
         ],
         const SizedBox(height: 4),
-        CheckboxListTile(
-          key: const Key('push-force-with-lease'),
-          value: _forceWithLease,
-          contentPadding: EdgeInsets.zero,
-          controlAffinity: ListTileControlAffinity.leading,
-          title: const Text('Force-with-lease'),
-          subtitle: const Text(
-            'Replace history only if the reviewed remote tip is unchanged.',
+        DropdownButtonFormField<GitPushMode>(
+          key: const Key('push-mode'),
+          initialValue: _pushMode,
+          isExpanded: true,
+          decoration: const InputDecoration(
+            labelText: 'Push mode',
+            helperText: 'Normal push is the safe default.',
           ),
+          items: [
+            for (final mode in GitPushMode.values)
+              DropdownMenuItem(
+                value: mode,
+                child: pixelDropdownText(_pushModeLabel(mode)),
+              ),
+          ],
           onChanged: _busy
               ? null
-              : (value) => setState(() {
-                  _forceWithLease = value ?? false;
-                  _preview = null;
-                  _result = null;
-                }),
+              : (value) {
+                  if (value == null) return;
+                  setState(() {
+                    _pushMode = value;
+                    _invalidateReview(clearRemoteTip: true);
+                  });
+                },
         ),
+        if (_pushMode == GitPushMode.force)
+          Card(
+            key: const Key('push-force-warning'),
+            color: Theme.of(context).colorScheme.errorContainer,
+            child: Padding(
+              padding: const EdgeInsets.all(12),
+              child: Text(
+                'Force push replaces the remote branch without a lease. '
+                'Remote-only commits may be lost.',
+                style: TextStyle(
+                  color: Theme.of(context).colorScheme.onErrorContainer,
+                ),
+              ),
+            ),
+          ),
       ],
     );
   }
@@ -597,6 +616,30 @@ class _PushDialogState extends State<PushDialog> {
             if (preview.remoteHead case final remoteHead?)
               Text('Remote currently at: ${_shortOid(remoteHead)}'),
             Text('Remote will point to: ${_shortOid(preview.targetOid)}'),
+            if (preview.request.mode == GitPushMode.force) ...[
+              Padding(
+                key: const Key('push-force-preview-warning'),
+                padding: const EdgeInsets.only(top: 8),
+                child: Text(
+                  'Force push replaces $destination without a lease. '
+                  'Remote-only commits may be lost.',
+                  style: TextStyle(color: Theme.of(context).colorScheme.error),
+                ),
+              ),
+              if (preview.remoteOnlyCommits.isNotEmpty) ...[
+                const SizedBox(height: 8),
+                Text(
+                  'Remote commits to replace',
+                  style: Theme.of(context).textTheme.labelLarge,
+                ),
+                for (final commit in preview.remoteOnlyCommits.take(8))
+                  Text('${_shortOid(commit.oid)} ${commit.subject}'),
+                if (preview.remoteOnlyCommitsTruncated)
+                  const Text('+ more remote commits'),
+              ],
+              if (!preview.remoteHistoryAvailable)
+                const Text('Remote history could not be inspected.'),
+            ],
             if (preview.dirtyWorktree)
               const Padding(
                 padding: EdgeInsets.only(top: 6),
@@ -621,10 +664,12 @@ class _PushDialogState extends State<PushDialog> {
               Text(message, key: const Key('push-preview-blocked')),
             ],
             if (preview.requiresConfirmation && preview.blockingMessage == null)
-              const Padding(
-                padding: EdgeInsets.only(top: 8),
+              Padding(
+                padding: const EdgeInsets.only(top: 8),
                 child: Text(
-                  'The final Push button confirms this reviewed remote tip.',
+                  preview.request.mode == GitPushMode.force
+                      ? 'The final Force push button confirms this remote history replacement.'
+                      : 'The final Force-with-lease button confirms this reviewed remote tip.',
                 ),
               ),
           ],
@@ -797,13 +842,15 @@ class _PushDialogState extends State<PushDialog> {
         GitPushRequest(
           remote: remote,
           target: _target,
+          mode: _pushMode,
           branch: _branchController.text.trim().isEmpty
               ? null
               : _branchController.text.trim(),
           commitOid: _selectedCommit,
           setUpstream: _setUpstream && _target == GitPushTarget.currentBranch,
-          forceWithLease: _forceWithLease,
-          expectedRemoteOid: _forceWithLease ? _expectedRemoteOid : null,
+          expectedRemoteOid: _pushMode == GitPushMode.forceWithLease
+              ? _expectedRemoteOid
+              : null,
           credentialId: _credentialId ?? _storedCredentialForRemote(remote),
         ),
       );
@@ -822,27 +869,8 @@ class _PushDialogState extends State<PushDialog> {
   Future<void> _executePush() async {
     final preview = _preview;
     if (preview == null || !preview.canExecute || _busy) return;
-    if (_forceWithLease) {
-      final confirmed = await showDialog<bool>(
-        context: context,
-        builder: (context) => AlertDialog(
-          title: const Text('Confirm force-with-lease'),
-          content: Text(
-            'Replace ${preview.targetBranch} only if remote tip '
-            '${_shortOid(preview.remoteHead ?? 'missing')} is unchanged?',
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(false),
-              child: const Text('Cancel'),
-            ),
-            FilledButton(
-              onPressed: () => Navigator.of(context).pop(true),
-              child: const Text('Confirm'),
-            ),
-          ],
-        ),
-      );
+    if (preview.request.mode != GitPushMode.normal) {
+      final confirmed = await _confirmPush(preview);
       if (confirmed != true || !mounted) return;
     }
     final cancellation = GitCancellationToken();
@@ -876,6 +904,67 @@ class _PushDialogState extends State<PushDialog> {
     }
   }
 
+  Future<bool?> _confirmPush(GitPushPreview preview) {
+    var typedBranch = '';
+    return showDialog<bool>(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setState) {
+          final isForce = preview.request.mode == GitPushMode.force;
+          final branchMatches = typedBranch == preview.targetBranch;
+          return AlertDialog(
+            title: Text(
+              isForce ? 'Confirm force push' : 'Confirm force-with-lease',
+            ),
+            content: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Text(
+                    isForce
+                        ? 'Replace ${preview.remote}/${preview.targetBranch} '
+                              'unconditionally with '
+                              '${_shortOid(preview.targetOid)}. '
+                              'Remote-only commits may be lost.'
+                        : 'Replace ${preview.targetBranch} only if remote tip '
+                              '${_shortOid(preview.remoteHead ?? 'missing')} '
+                              'is unchanged?',
+                  ),
+                  if (isForce) ...[
+                    const SizedBox(height: 12),
+                    Text('Type ${preview.targetBranch} to continue.'),
+                    const SizedBox(height: 8),
+                    TextField(
+                      key: const Key('force-push-confirmation'),
+                      autofocus: true,
+                      onChanged: (value) {
+                        typedBranch = value;
+                        setState(() {});
+                      },
+                    ),
+                  ],
+                ],
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(false),
+                child: const Text('Cancel'),
+              ),
+              FilledButton(
+                onPressed: !isForce || branchMatches
+                    ? () => Navigator.of(context).pop(true)
+                    : null,
+                child: Text(isForce ? 'Force push' : 'Confirm'),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+
   Future<void> _openRecovery(GitPushRecoveryAction action) async {
     final strategy = switch (action) {
       GitPushRecoveryAction.merge => GitUpdateStrategy.merge,
@@ -904,6 +993,18 @@ class _PushDialogState extends State<PushDialog> {
     if (clearRemoteTip) _expectedRemoteOid = null;
   }
 }
+
+String _pushModeLabel(GitPushMode mode) => switch (mode) {
+  GitPushMode.normal => 'Normal push',
+  GitPushMode.forceWithLease => 'Force-with-lease (recommended)',
+  GitPushMode.force => 'Force push (unsafe)',
+};
+
+String _pushActionLabel(GitPushMode mode, String remote) => switch (mode) {
+  GitPushMode.normal => 'Push to $remote',
+  GitPushMode.forceWithLease => 'Force-with-lease to $remote',
+  GitPushMode.force => 'Force push to $remote',
+};
 
 String _targetLabel(GitPushTarget target) => switch (target) {
   GitPushTarget.currentBranch => 'Current branch',
