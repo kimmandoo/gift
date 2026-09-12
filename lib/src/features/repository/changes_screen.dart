@@ -470,6 +470,8 @@ class _ChangesScreenBodyState extends ConsumerState<_ChangesScreenBody> {
             if (snapshot != null) ...[
               _summary(context, snapshot),
               if (showQuickActions) _quickActions(context, compactToolbar),
+              if (snapshot.staged.isEmpty)
+                _actionAvailability(context, snapshot, state),
               if (snapshot.conflicts.isNotEmpty)
                 _conflictWorkspaceBanner(context, snapshot),
               if (controller.state.selectedPaths.isNotEmpty)
@@ -893,6 +895,62 @@ class _ChangesScreenBodyState extends ConsumerState<_ChangesScreenBody> {
             ],
           );
         },
+      ),
+    );
+  }
+
+  Widget _actionAvailability(
+    BuildContext context,
+    GitStatusSnapshot snapshot,
+    ChangesState state,
+  ) {
+    final unavailable = <String>[
+      if (state.isMutating) 'Repository busy: wait for the current operation.',
+      if (snapshot.staged.isEmpty && snapshot.changes.isNotEmpty)
+        'Commit: stage at least one path first.',
+      if (snapshot.conflicts.isNotEmpty)
+        'Commit: resolve conflicts before committing.',
+      if (snapshot.branch.head == null || snapshot.branch.isDetached)
+        'Push: check out a branch before publishing.',
+      if (!snapshot.branch.hasUpstream)
+        'Update: configure an upstream branch before pulling.',
+    ];
+    if (unavailable.isEmpty) return const SizedBox.shrink();
+    final theme = Theme.of(context);
+    return Semantics(
+      container: true,
+      label: 'Action availability. ${unavailable.join(' ')}',
+      child: Container(
+        key: const Key('action-availability'),
+        padding: const EdgeInsets.symmetric(
+          horizontal: PixelSpacing.lg,
+          vertical: PixelSpacing.xs,
+        ),
+        color: theme.colorScheme.surfaceContainer,
+        child: Row(
+          children: [
+            Icon(
+              Icons.info_outline,
+              size: 16,
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+            const SizedBox(width: PixelSpacing.sm),
+            Text(
+              'Unavailable',
+              style: theme.textTheme.labelLarge?.copyWith(
+                color: theme.colorScheme.primary,
+              ),
+            ),
+            const SizedBox(width: PixelSpacing.sm),
+            Expanded(
+              child: Text(
+                unavailable.join(' · '),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

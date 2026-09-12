@@ -275,6 +275,8 @@ void main() {
     expect(find.text('Untracked (1)'), findsOneWidget);
     expect(find.text('lib/app.dart'), findsOneWidget);
     expect(find.text('notes/todo.txt'), findsOneWidget);
+    expect(find.byKey(const Key('action-availability')), findsOneWidget);
+    expect(find.textContaining('Commit: stage'), findsOneWidget);
 
     await tester.tap(find.text('notes/todo.txt'));
     await tester.pumpAndSettle();
