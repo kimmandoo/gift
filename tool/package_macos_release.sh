@@ -51,4 +51,12 @@ cp "$launcher_path" "$package_directory/Run-Gift.command"
 chmod +x "$package_directory/Run-Gift.command"
 ditto -c -k --sequesterRsrc --keepParent \
   "$package_directory" "$archive"
+archive_entries="$(unzip -Z1 "$archive")"
+case "$archive_entries" in
+  *"/Run-Gift.command"*) ;;
+  *)
+    echo "macOS archive is missing Run-Gift.command: $archive" >&2
+    exit 67
+    ;;
+esac
 printf 'macOS universal release archive: %s\n' "$archive"

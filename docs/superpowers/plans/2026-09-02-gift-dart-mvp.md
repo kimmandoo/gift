@@ -1039,3 +1039,17 @@ system Git 2.35+.
    availability state.
 6. Verified formatting, analysis, all 305 Flutter tests, and a macOS release
    build. Native macOS integration (#18) remained intentionally excluded.
+
+## Completed follow-up: macOS launcher artifact packaging
+
+1. Confirmed the release ZIP already contained `Run-Gift.command`; the
+   missing file was limited to the separately uploaded desktop artifact,
+   which previously contained only `gift.app`.
+2. Made the macOS build helper stage an upload-ready
+   `build/macos/Distribution/` directory with `gift.app` and an executable
+   `Run-Gift.command` side by side.
+3. Pointed the CI macOS desktop artifact at that staged directory, extended
+   artifact verification to require the launcher, and made ZIP packaging
+   fail when the launcher is absent.
+4. Verified the macOS release build, staged artifact, packaged ZIP, workflow
+   pins, formatting, analysis, and all 305 Flutter tests.

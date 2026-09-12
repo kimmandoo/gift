@@ -19,8 +19,9 @@ Future<void> main(List<String> arguments) async {
       'build/linux/x64/release/bundle/lib/libflutter_linux_gtk.so',
     ],
     'macos' => <String>[
-      'build/macos/Build/Products/Release/gift.app/Contents/MacOS/gift',
-      'build/macos/Build/Products/Release/gift.app/Contents/Frameworks/App.framework/Resources/flutter_assets',
+      'build/macos/Distribution/gift.app/Contents/MacOS/gift',
+      'build/macos/Distribution/gift.app/Contents/Frameworks/App.framework/Resources/flutter_assets',
+      'build/macos/Distribution/Run-Gift.command',
     ],
     'windows' => <String>[
       'build/windows/x64/runner/Release/gift.exe',

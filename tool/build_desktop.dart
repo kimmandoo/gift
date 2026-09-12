@@ -33,8 +33,36 @@ Future<void> main(List<String> arguments) async {
           }
         : null,
   );
+  if (target == 'macos') {
+    await stageMacOSDesktopArtifact();
+  }
 
   stdout.writeln('\nRelease bundle: ${artifactPath(target)}');
+}
+
+Future<void> stageMacOSDesktopArtifact() async {
+  const releaseDirectory = 'build/macos/Build/Products/Release';
+  const distributionDirectory = 'build/macos/Distribution';
+  final app = Directory('$releaseDirectory/gift.app');
+  final launcher = File('tool/Run-Gift.command');
+  final distribution = Directory(distributionDirectory);
+  if (!await app.exists()) {
+    throw StateError('Missing macOS app bundle: ${app.path}');
+  }
+  if (!await launcher.exists()) {
+    throw StateError('Missing macOS launcher: ${launcher.path}');
+  }
+  if (await distribution.exists()) {
+    await distribution.delete(recursive: true);
+  }
+  await distribution.create(recursive: true);
+  await runCommand('/usr/bin/ditto', [
+    app.path,
+    '$distributionDirectory/gift.app',
+  ]);
+  final destination = File('$distributionDirectory/Run-Gift.command');
+  await launcher.copy(destination.path);
+  await runCommand('/bin/chmod', ['+x', destination.path]);
 }
 
 Future<void> runCommand(

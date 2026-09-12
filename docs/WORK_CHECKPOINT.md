@@ -3,41 +3,35 @@
 This file is the handoff record for continuing work across query sessions.
 
 - Date: 2026-09-12.
-- Active task: Follow-up improvements 1–17 are complete. Improvement 18
-  (macOS native integration) remained intentionally excluded per the user
-  request. This request's implementation and delivery are complete.
-- Branch: `main` is synchronized with `origin/main`; the latest delivery
-  commit before this final checkpoint is `e9bf5bd
-  docs(checkpoint): record UX follow-up delivery`.
-- Decisions: kept portable Ctrl shortcuts on non-macOS platforms and selected
-  platform-aware Cmd defaults on macOS; kept advanced repository actions in a
-  searchable overflow entry; capped visible History at 600 commits; retained
-  polling as the watcher fallback; kept recovery actions safe by retrying
-  status/history rather than replaying destructive mutations.
-- UX changes: Changes now exposes adaptive action labels, sticky multi-file
-  staging, inline stage/unstage, guided Stage & commit, action availability
-  reasons, watcher/polling state, and retry CTAs. History now separates Undo,
-  Revert, and Reset, summarizes filters, and explains large-repository
-  performance mode. Welcome recent cards show the repository name, full path,
-  and availability state.
-- Changed files: `CHANGELOG.md`, `docs/superpowers/plans/2026-09-02-gift-dart-mvp.md`,
-  `docs/WORK_CHECKPOINT.md`, `lib/src/app/{app_preferences,error_dialog,
-  gift_app,pixel_theme}.dart`, `lib/src/features/repository/{changes_controller,
-  changes_screen,history_controller,history_screen,recent_repository_store,
-  repository_refresh_coordinator,welcome_screen}.dart`, and the affected
-  repository/app tests. The pre-existing `.gitignore` edit remains unchanged.
-- Verification: `dart run tool/verify.dart` passed formatting, analysis, and
-  all 305 Flutter tests. Focused Changes, History, Welcome, and watcher
-  coordinator suites passed. `./tool/build_macos.sh` produced
-  `build/macos/Build/Products/Release/gift.app` (63.5 MB).
-- Smoke: widget tests exercised the changed desktop surfaces; the macOS
-  release build compiled successfully. No unlocked native-window visual
-  capture was available in this session.
+- Active task: Recheck the macOS release artifact after the user reported that
+  `Run-Gift.command` was missing from the CI result. The release ZIP already
+  contained the launcher; the CI desktop artifact path contained only
+  `gift.app`. The packaging fix is implemented and awaits commit/push.
+- Branch: `main`; latest pushed commit before this fix is
+  `5a9f888 docs(checkpoint): record pushed UX delivery`. The pre-existing
+  `.gitignore` edit remains unchanged.
+- Decision: stage `build/macos/Distribution/` during the macOS release helper,
+  containing `gift.app` and executable `Run-Gift.command` side by side. CI's
+  `gift-macos-universal` desktop artifact now uploads that directory instead
+  of the Flutter build-output directory. The release ZIP remains under
+  `gift-release-macos-universal`.
+- Changed files: `.github/workflows/ci.yml`, `CHANGELOG.md`,
+  `docs/RELEASING.md`, `docs/superpowers/plans/2026-09-02-gift-dart-mvp.md`,
+  `docs/WORK_CHECKPOINT.md`, `tool/build_desktop.dart`,
+  `tool/package_macos_release.sh`, and `tool/verify_desktop_artifact.dart`.
+- Verification: `./tool/build_macos.sh` rebuilt `gift.app` and staged
+  `build/macos/Distribution/Run-Gift.command`; the desktop artifact verifier
+  passed. `GIFT_RELEASE_OUTPUT_DIR=/tmp/gift-release-recheck-3
+  ./tool/package_macos_release.sh` passed and the ZIP listed
+  `gift-macos-universal/Run-Gift.command`. Workflow pin verification passed.
+  `dart run tool/verify.dart` passed formatting, analysis, and all 305 tests.
+- Smoke: the upload-ready macOS directory contains exactly `gift.app` and
+  `Run-Gift.command`; the packaged ZIP contains the launcher beside the app.
+  Native-window visual capture remains unavailable in this session.
 - Blockers: no code blocker. Apple Developer ID signing/notarization and the
-  maintainer-only clean-machine native release pass remain unavailable;
-  improvement 18 was explicitly excluded.
-- Exact next action: none for this request. If release validation resumes,
-  perform the maintainer-only clean-machine release pass and update Task 38.
+  maintainer-only clean-machine native release pass remain unavailable.
+- Exact next action: commit the packaging fix and checkpoint, push `main`, and
+  confirm `main` is synchronized with `origin/main`.
 
 ## Previous checkpoint
 

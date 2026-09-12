@@ -80,7 +80,7 @@ jobs:
             target: macos
             macos_arch: arm64
             artifact: gift-macos-universal
-            path: build/macos/Build/Products/Release/gift.app
+            path: build/macos/Distribution/
           - os: windows-latest
             target: windows
             artifact: gift-windows-x64

@@ -56,6 +56,10 @@ The helper prints the output locations after a successful build:
 - Windows portable EXE: `build/windows/x64/runner/gift-portable.exe`
 - Windows setup bundle: `build/windows/x64/runner/gift-setup.zip`
 
+For macOS, the helper also stages the upload-ready desktop artifact at
+`build/macos/Distribution/`; it contains `gift.app` and executable
+`Run-Gift.command` side by side.
+
 The portable Windows executable is a self-extracting wrapper around the
 complete Flutter release bundle. It expands the bundle into a temporary
 directory, runs `gift.exe`, waits for it to close, and removes the temporary
@@ -103,6 +107,11 @@ packages are:
 - `gift-<version>-linux-x64.tar.gz`
 - `gift-<version>-macos-universal.app.zip`
 - `gift-<version>-windows-x64.zip`
+
+The Actions desktop artifact named `gift-macos-universal` also contains
+`gift.app` and the executable `Run-Gift.command` side by side. The
+`gift-release-macos-universal` artifact contains the distributable ZIP used by
+the release job.
 
 The Windows archive contains the Flutter `Release` directory, the portable
 launcher, and the Spull-style `gift-setup.zip` bundle. Public release
