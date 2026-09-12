@@ -2,54 +2,43 @@
 
 This file is the handoff record for continuing work across query sessions.
 
-## Current checkpoint
-
 - Date: 2026-09-12.
-- Active task: Follow-up — port Spull's macOS distribution flow into GIFT and
-  complete the requested Changes/History UX audit; Task 38's clean-machine
-  release pass remains a maintainer gate.
-- Branch: `main`; latest commit is `8f44317 feat(release): align macOS
-  distribution and core UX actions`, pushed to `origin/main`.
-- Decision: macOS release builds now run on `macos-14` Apple Silicon, produce
-  an unsigned universal (`arm64` + `x86_64`) bundle, and package `gift.app`
-  with `Run-Gift.command`. The launcher clears the quarantine attribute only
-  from that local app before opening it; the obsolete ad hoc signing script was
-  removed.
-- UX changes: Push, Update, Branches, and History are directly labeled in the
-  Changes workspace on compact and wide layouts; the intermediate layout keeps
-  the existing icon buttons to avoid vertical overflow. Advanced actions stay
-  in the overflow menu. Wide History actions are labeled, the conventional
-  command-palette alias invokes its callback correctly, and primary action
-  spacing uses 8-pixel Wrap gaps with a compact vertical footprint.
-- Changed files: `.github/workflows/ci.yml`, `CHANGELOG.md`, `README.md`,
-  `docs/POST_MVP_ROADMAP.md`, `docs/RELEASING.md`,
-  `docs/WORK_CHECKPOINT.md`,
-  `docs/superpowers/plans/2026-09-02-gift-dart-mvp.md`,
-  `lib/src/features/repository/changes_screen.dart`,
-  `lib/src/features/repository/history_screen.dart`,
-  `test/features/repository/changes_screen_test.dart`,
-  `tool/Run-Gift.command`, `tool/build_desktop.dart`,
-  `tool/package_macos_release.sh`, and removal of
-  `tool/sign_macos_release.sh`. The pre-existing `.gitignore` edit was
-  preserved unchanged.
+- Active task: Follow-up improvements 1–17 are implemented; improvement 18
+  (macOS native integration) was intentionally excluded per the user request.
+  Delivery remains: commit this checkpoint, then push `main`.
+- Branch: `main`; latest implementation commit is
+  `e2afed3 style(test): format history assertion`; local `main` is 13 commits
+  ahead of `origin/main`. The checkpoint commit follows this record.
+- Decisions: kept portable Ctrl shortcuts on non-macOS platforms and selected
+  platform-aware Cmd defaults on macOS; kept advanced repository actions in a
+  searchable overflow entry; capped visible History at 600 commits; retained
+  polling as the watcher fallback; kept recovery actions safe by retrying
+  status/history rather than replaying destructive mutations.
+- UX changes: Changes now exposes adaptive action labels, sticky multi-file
+  staging, inline stage/unstage, guided Stage & commit, action availability
+  reasons, watcher/polling state, and retry CTAs. History now separates Undo,
+  Revert, and Reset, summarizes filters, and explains large-repository
+  performance mode. Welcome recent cards show the repository name, full path,
+  and availability state.
+- Changed files: `CHANGELOG.md`, `docs/superpowers/plans/2026-09-02-gift-dart-mvp.md`,
+  `docs/WORK_CHECKPOINT.md`, `lib/src/app/{app_preferences,error_dialog,
+  gift_app,pixel_theme}.dart`, `lib/src/features/repository/{changes_controller,
+  changes_screen,history_controller,history_screen,recent_repository_store,
+  repository_refresh_coordinator,welcome_screen}.dart`, and the affected
+  repository/app tests. The pre-existing `.gitignore` edit remains unchanged.
 - Verification: `dart run tool/verify.dart` passed formatting, analysis, and
-  all 301 tests. Targeted Changes, History, and preferences tests passed.
-  `./tool/build_macos.sh` produced the macOS app; `lipo -archs` reported
-  `x86_64 arm64`; unsigned verification reported the expected
-  “code object is not signed at all”; desktop artifact verification passed.
-  Manual and tagged package runs produced the expected universal archive
-  names. Launcher/package shell syntax, workflow YAML parsing, and pinned
-  Action verification passed.
-- Smoke: the release executable launched with the Impeller Metal backend and
-  stayed running. The host display was at the macOS lock screen during the
-  screenshot attempt, so no unlocked native-window visual capture was
-  possible; widget tests covered the changed UX surface.
-- Blockers: no code blocker. Apple Developer ID signing/notarization and an
-  unlocked clean-machine native pass remain intentionally unavailable.
-- Delivery: commit `8f44317 feat(release): align macOS distribution and
-  core UX actions` was pushed to `origin/main`.
-- Exact next action: perform the maintainer-only clean-machine pass when
-  release validation is required.
+  all 305 Flutter tests. Focused Changes, History, Welcome, and watcher
+  coordinator suites passed. `./tool/build_macos.sh` produced
+  `build/macos/Build/Products/Release/gift.app` (63.5 MB).
+- Smoke: widget tests exercised the changed desktop surfaces; the macOS
+  release build compiled successfully. No unlocked native-window visual
+  capture was available in this session.
+- Blockers: no code blocker. Apple Developer ID signing/notarization and the
+  maintainer-only clean-machine native release pass remain unavailable;
+  improvement 18 was explicitly excluded.
+- Exact next action: commit this checkpoint with the implementation changes,
+  verify the branch/status, and push all local implementation commits to
+  `origin/main`.
 
 ## Previous checkpoint
 

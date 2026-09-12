@@ -1020,3 +1020,22 @@ system Git 2.35+.
 4. Moved explicit 10 px card and notice padding to the 12 px grid, and kept
    compact File History actions directly reachable by placing History and
    Blame side by side.
+
+## Completed follow-up: macOS-friendly desktop UX excluding native integration
+
+1. Added platform-aware macOS command defaults, adaptive toolbar labels,
+   accessible icon semantics, shared spacing primitives, and stronger
+   high-contrast action boundaries.
+2. Kept Changes operations reachable with sticky multi-file staging,
+   inline stage/unstage actions, guided Stage & commit, availability reasons,
+   and a searchable repository-action overflow entry.
+3. Split History rollback entry points, exposed active filter summaries, and
+   bounded large repositories to the first 600 visible commits with an
+   explicit refinement notice.
+4. Reattached failed filesystem watchers through fallback polling, exposed
+   watcher versus polling state independently from Git mutation state, and
+   standardized retry/refresh recovery actions.
+5. Enriched recent repository cards with repository names, full paths, and
+   availability state.
+6. Verified formatting, analysis, all 305 Flutter tests, and a macOS release
+   build. Native macOS integration (#18) remained intentionally excluded.
