@@ -774,3 +774,25 @@ This file is the handoff record for continuing work across query sessions.
 - Blockers: none. Existing untracked `.DS_Store` files were left untouched.
 - Next action: create `release(v1.0.3): add reviewed raw force push`, create
   tag `release-v1.0.3`, and push `main` plus the tag to `origin`.
+
+## Current session: Post-release CI audit
+
+- Date: 2026-09-13.
+- Release commit: `9683ea6 release(v1.0.3): add reviewed raw force push`;
+  tag `release-v1.0.3` was pushed to `origin`.
+- Remote workflow: GitHub Actions run `34703960604` completed with failure.
+  `Verify (macos-14)` and `Verify (ubuntu-latest)` passed. Windows
+  verification passed analyzer and all force-push tests but failed six
+  `welcome` visual goldens (`compact`, `standard`, and `wide`, both
+  brightnesses), so build and publish jobs were skipped.
+- Root-cause evidence: the tagged parent commit `d0a12b3
+  fix(welcome): use pixel display font for title` changed the Welcome title
+  after the checked-in Windows goldens were created in `83d230c`; this
+  release feature did not touch Welcome or its goldens.
+- Local release evidence remains green: all 310 macOS tests, analyzer,
+  formatter, release metadata validation, universal `x86_64 arm64`
+  unsigned macOS bundle verification, and macOS packaging passed.
+- Blockers: the `release-v1.0.3` tag is immutable for this session; refreshing
+  Windows goldens requires a Windows runner before a green follow-up release.
+- Next action: refresh the six Windows Welcome goldens on Windows, then cut
+  a new release tag if a fully green cross-platform release is required.
