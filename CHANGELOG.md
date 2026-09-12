@@ -1,6 +1,8 @@
 # Changelog
 
 ## 2026-09-12
+- feat(ui): adapted Changes toolbar labels to available width while keeping
+  compact intermediate layouts overflow-safe.
 - feat(input): used platform-aware Cmd shortcuts on macOS and retained
   portable Ctrl defaults elsewhere.
 - refactor(ui): centralized action-row spacing and reused the shared layout

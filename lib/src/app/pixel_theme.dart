@@ -744,6 +744,45 @@ class PixelToolbarIconButton extends StatelessWidget {
   }
 }
 
+class PixelToolbarActionButton extends StatelessWidget {
+  const PixelToolbarActionButton({
+    super.key,
+    required this.tooltip,
+    required this.onPressed,
+    required this.icon,
+    required this.label,
+    this.showLabel = false,
+  });
+
+  final String tooltip;
+  final VoidCallback? onPressed;
+  final Widget icon;
+  final String label;
+  final bool showLabel;
+
+  @override
+  Widget build(BuildContext context) {
+    if (!showLabel) {
+      return PixelToolbarIconButton(
+        tooltip: tooltip,
+        onPressed: onPressed,
+        icon: icon,
+      );
+    }
+    return Padding(
+      padding: const EdgeInsets.only(left: PixelSpacing.xs),
+      child: Tooltip(
+        message: tooltip,
+        child: TextButton.icon(
+          onPressed: onPressed,
+          icon: icon,
+          label: Text(label),
+        ),
+      ),
+    );
+  }
+}
+
 class PixelThemeToggle extends StatelessWidget {
   const PixelThemeToggle({super.key});
 

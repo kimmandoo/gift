@@ -193,9 +193,10 @@ class _ChangesScreenBodyState extends ConsumerState<_ChangesScreenBody> {
         ref.watch(changesControllerProvider(_providerArgs))!;
     final state = controller.state;
     final snapshot = state.snapshot;
-    final compactToolbar = MediaQuery.sizeOf(context).width < 720;
-    final showQuickActions =
-        compactToolbar || MediaQuery.sizeOf(context).width >= 1040;
+    final width = MediaQuery.sizeOf(context).width;
+    final compactToolbar = width < 720;
+    final showQuickActions = compactToolbar || width >= 1040;
+    final showToolbarLabels = !showQuickActions && width >= 900;
     final scaffold = Scaffold(
       appBar: AppBar(
         leading: widget.onBack == null
@@ -219,29 +220,37 @@ class _ChangesScreenBodyState extends ConsumerState<_ChangesScreenBody> {
         ),
         actions: [
           if (!showQuickActions) ...[
-            PixelToolbarIconButton(
+            PixelToolbarActionButton(
               key: const Key('open-push'),
               tooltip: 'Push to remote',
               onPressed: () => unawaited(_openPush(context)),
               icon: const Icon(Icons.cloud_upload_outlined),
+              label: 'Push',
+              showLabel: showToolbarLabels,
             ),
-            PixelToolbarIconButton(
+            PixelToolbarActionButton(
               key: const Key('update-project'),
               tooltip: 'Update project',
               onPressed: () => unawaited(_openUpdateProject(context)),
               icon: const Icon(Icons.cloud_download_outlined),
+              label: 'Update',
+              showLabel: showToolbarLabels,
             ),
-            PixelToolbarIconButton(
+            PixelToolbarActionButton(
               key: const Key('open-branches'),
               tooltip: 'Open branches',
               onPressed: () => unawaited(_openBranches(context)),
               icon: const Icon(Icons.call_split),
+              label: 'Branches',
+              showLabel: false,
             ),
-            PixelToolbarIconButton(
+            PixelToolbarActionButton(
               key: const Key('open-history'),
               tooltip: 'Open history',
               onPressed: () => unawaited(_openHistory(context)),
               icon: const Icon(Icons.history),
+              label: 'History',
+              showLabel: false,
             ),
           ],
           PopupMenuButton<_ChangesMenuAction>(
