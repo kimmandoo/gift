@@ -1112,6 +1112,77 @@ void main() {
     controller.dispose();
   });
 
+  testWidgets('stages selected paths and commits from one action', (
+    tester,
+  ) async {
+    final repository = const RepositoryOpened(
+      repositoryId: RepositoryId(value: 'stage-and-commit-repository'),
+      root: '/workspace/project',
+    );
+    final initial = snapshot(
+      repository,
+      changes: [change('lib/app.dart')],
+    );
+    final staged = snapshot(
+      repository,
+      changes: [
+        GitChange(
+          type: GitChangeType.tracked,
+          path: 'lib/app.dart',
+          indexStatus: 'M',
+          worktreeStatus: '.',
+          submoduleStatus: 'N...',
+        ),
+      ],
+    );
+    final gateway = FakeChangesGateway(
+      snapshots: [initial],
+      stageSnapshot: staged,
+      commitResult: GitCommitResult(
+        repositoryId: repository.repositoryId,
+        commitOid: '0123456789abcdef0123456789abcdef01234567',
+        status: snapshot(repository, changes: const <GitChange>[]),
+      ),
+    );
+    final controller = ChangesController(
+      gateway: gateway,
+      repositoryId: repository.repositoryId,
+      pollInterval: const Duration(hours: 1),
+    );
+    await controller.refresh();
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: ChangesScreen(
+          gateway: gateway,
+          repository: repository,
+          controller: controller,
+          autoInitialize: false,
+        ),
+      ),
+    );
+
+    await tester.tap(find.byKey(const ValueKey('change-select:lib/app.dart')));
+    await tester.pump();
+    expect(controller.state.selectedPaths, contains('lib/app.dart'));
+    await tester.tap(find.byKey(const Key('stage-and-commit')));
+    await tester.pumpAndSettle();
+    await tester.enterText(
+      find.byKey(const Key('stage-and-commit-message')),
+      'Commit selected app change',
+    );
+    await tester.pump();
+    await tester.tap(find.byKey(const Key('stage-and-commit-submit')));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('stage-and-commit-dialog')), findsNothing);
+    expect(controller.state.selectedPaths, isEmpty);
+
+    expect(gateway.stagedPaths, ['lib/app.dart']);
+    expect(gateway.commitCalls, 1);
+    expect(gateway.lastCommitMessage, 'Commit selected app change');
+    controller.dispose();
+  });
+
   testWidgets('selects multiple changed paths before staging them', (
     tester,
   ) async {

@@ -7,6 +7,8 @@
   status strip while the file list scrolls.
 - fix(changes): added inline stage and unstage affordances while retaining
   the full contextual file-action menu.
+- feat(changes): added a guided Stage & commit action that stages the
+  selected paths and submits one commit message in sequence.
 - feat(ui): surfaced concise reasons for unavailable Changes actions without
   expanding the repository status layout.
 - feat(input): used platform-aware Cmd shortcuts on macOS and retained

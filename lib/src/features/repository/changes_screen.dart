@@ -1038,6 +1038,14 @@ class _ChangesScreenBodyState extends ConsumerState<_ChangesScreenBody> {
                 : const Icon(Icons.add, size: 18),
             label: const Text('Stage selected'),
           ),
+          OutlinedButton.icon(
+            key: const Key('stage-and-commit'),
+            onPressed: state.isMutating || !controller.canStageSelectedPaths
+                ? null
+                : () => unawaited(_openStageAndCommit(context, controller)),
+            icon: const Icon(Icons.playlist_add_check, size: 18),
+            label: const Text('Stage & commit'),
+          ),
         ],
       ),
     );
@@ -1519,6 +1527,18 @@ class _ChangesScreenBodyState extends ConsumerState<_ChangesScreenBody> {
     if (!mounted || controller.state.commitResult == null) return;
     _commitMessageController.clear();
     setState(() {});
+  }
+
+  Future<void> _openStageAndCommit(
+    BuildContext context,
+    ChangesController controller,
+  ) async {
+    final message = await showDialog<String>(
+      context: context,
+      builder: (_) => const _StageAndCommitDialog(),
+    );
+    if (!mounted || message == null) return;
+    await controller.stageSelectedPathsAndCommit(message);
   }
 
   Widget _changesLayout(
@@ -3144,4 +3164,57 @@ enum _ChangesMenuAction {
   lfs,
   signing,
   refresh,
+}
+
+class _StageAndCommitDialog extends StatefulWidget {
+  const _StageAndCommitDialog();
+
+  @override
+  State<_StageAndCommitDialog> createState() => _StageAndCommitDialogState();
+}
+
+class _StageAndCommitDialogState extends State<_StageAndCommitDialog> {
+  final _controller = TextEditingController();
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final canSubmit = _controller.text.trim().isNotEmpty;
+    return AlertDialog(
+      key: const Key('stage-and-commit-dialog'),
+      title: const Text('Stage and commit'),
+      content: TextField(
+        key: const Key('stage-and-commit-message'),
+        controller: _controller,
+        autofocus: true,
+        minLines: 2,
+        maxLines: 4,
+        textInputAction: TextInputAction.newline,
+        decoration: const InputDecoration(
+          labelText: 'Commit message',
+          hintText: 'Describe the selected changes',
+        ),
+        onChanged: (_) => setState(() {}),
+      ),
+      actions: [
+        TextButton(
+          key: const Key('stage-and-commit-cancel'),
+          onPressed: () => Navigator.of(context).pop(),
+          child: const Text('Cancel'),
+        ),
+        FilledButton(
+          key: const Key('stage-and-commit-submit'),
+          onPressed: canSubmit
+              ? () => Navigator.of(context).pop(_controller.text.trim())
+              : null,
+          child: const Text('Stage & commit'),
+        ),
+      ],
+    );
+  }
 }

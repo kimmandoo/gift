@@ -476,6 +476,23 @@ class ChangesController extends ChangeNotifier {
   }
 
   Future<void> stageSelectedPaths() => _mutateSelectedPaths(gateway.stage);
+
+  /// Stages the selected paths and commits them as one guided operation.
+  Future<void> stageSelectedPathsAndCommit(
+    String message, {
+    GitCommitOptions options = const GitCommitOptions(),
+  }) async {
+    if (_disposed ||
+        _mutationInFlight ||
+        message.trim().isEmpty ||
+        !canStageSelectedPaths) {
+      return;
+    }
+    await stageSelectedPaths();
+    if (_disposed || _state.mutationError != null || !canCommit) return;
+    await commit(message.trim(), options: options);
+  }
+
   Future<void> stageSelected() => _mutateSelected(gateway.stage);
 
   Future<void> unstageSelected() => _mutateSelected(gateway.unstage);
