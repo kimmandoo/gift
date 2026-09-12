@@ -832,3 +832,18 @@ This file is the handoff record for continuing work across query sessions.
   the removal of the temporary workflow, and this checkpoint.
 - Next action: create `release(v1.0.4): refresh Windows visual baselines`,
   create tag `release-v1.0.4`, and push `main` plus the tag to `origin`.
+
+## Current session: v1.0.4 release complete
+
+- Date: 2026-09-13.
+- Release: `f414eb1 release(v1.0.4): refresh Windows visual baselines`;
+  tag `release-v1.0.4` was pushed to `origin`.
+- Remote workflow: GitHub Actions run `34705042942` passed on Ubuntu,
+  macOS, and Windows. All verification jobs, all three desktop builds,
+  artifact validation, provenance attestation, and GitHub release publishing
+  passed.
+- The original `release-v1.0.3` failure was resolved by refreshing the six
+  Windows Welcome baselines; the raw force-push implementation itself passed
+  on every verification platform.
+- Blockers: none. Existing untracked `.DS_Store` files remain untouched.
+- Next action: none; the reviewed force-push release is published as v1.0.4.
