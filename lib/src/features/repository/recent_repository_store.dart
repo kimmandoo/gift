@@ -6,6 +6,37 @@ class RecentRepository {
   const RecentRepository(this.path);
 
   final String path;
+  String get displayName {
+    final normalized = _withoutTrailingSeparators();
+    final separator = _lastSeparatorIndex(normalized);
+    if (separator < 0) return normalized;
+    final name = normalized.substring(separator + 1);
+    return name.isEmpty ? normalized : name;
+  }
+
+  String get parentPath {
+    final normalized = _withoutTrailingSeparators();
+    final separator = _lastSeparatorIndex(normalized);
+    if (separator < 0) return '';
+    if (separator == 0) return normalized.substring(0, 1);
+    return normalized.substring(0, separator);
+  }
+
+  String _withoutTrailingSeparators() {
+    var end = path.length;
+    while (end > 1) {
+      final codeUnit = path.codeUnitAt(end - 1);
+      if (codeUnit != 47 && codeUnit != 92) break;
+      end--;
+    }
+    return path.substring(0, end);
+  }
+
+  int _lastSeparatorIndex(String value) {
+    final slash = value.lastIndexOf('/');
+    final backslash = value.lastIndexOf(r'\');
+    return slash > backslash ? slash : backslash;
+  }
 
   bool get exists => Directory(path).existsSync();
 }

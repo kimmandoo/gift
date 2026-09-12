@@ -40,6 +40,15 @@ void main() {
       isFalse,
     );
   });
+  test('derives recent repository names and parent locations', () {
+    const repository = RecentRepository('/Users/mingyu/Documents/project/gift');
+    expect(repository.displayName, 'gift');
+    expect(repository.parentPath, '/Users/mingyu/Documents/project');
+
+    const root = RecentRepository('/');
+    expect(root.displayName, '/');
+    expect(root.parentPath, '/');
+  });
 
   testWidgets('opens a selected folder and stores its canonical root', (
     tester,
@@ -105,6 +114,8 @@ void main() {
       ),
     );
     await tester.pumpAndSettle();
+    expect(find.text('present'), findsOneWidget);
+    expect(find.text('/path/that/is/not/present'), findsOneWidget);
 
     expect(find.text('Missing'), findsOneWidget);
     await tester.tap(find.byTooltip('Remove'));

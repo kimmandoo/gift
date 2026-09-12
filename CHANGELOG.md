@@ -1,6 +1,8 @@
 # Changelog
 
 ## 2026-09-12
+- feat(welcome): enriched recent repository cards with repository names,
+  full paths, and availability status.
 - fix(runtime): restored failed repository watchers through fallback
   reattachment, exposed polling state separately from Git mutations, and
   standardized retry recovery actions.

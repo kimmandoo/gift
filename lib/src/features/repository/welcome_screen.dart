@@ -322,12 +322,20 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
                 color: available ? colors.primary : colors.error,
               ),
               title: Text(
-                repository.path,
-                maxLines: 2,
+                repository.displayName,
+                maxLines: 1,
                 overflow: TextOverflow.ellipsis,
               ),
-              subtitle: Text(
-                available ? 'Available · click to open' : 'Missing',
+              subtitle: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    repository.path,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  Text(available ? 'Available · click to open' : 'Missing'),
+                ],
               ),
               onTap: available ? () => _openPath(repository.path) : null,
               trailing: Row(
