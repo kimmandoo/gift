@@ -57,6 +57,34 @@ const pixelTitleLargeSize = 17.0;
 const pixelHeadlineSmallSize = 20.0;
 const pixelHeadlineMediumSize = 22.0;
 
+abstract final class PixelSpacing {
+  static const xs = 4.0;
+  static const sm = 8.0;
+  static const md = 12.0;
+  static const lg = 16.0;
+  static const xl = 24.0;
+}
+
+class PixelActionRow extends StatelessWidget {
+  const PixelActionRow({
+    super.key,
+    required this.children,
+    this.alignment = WrapAlignment.start,
+  });
+
+  final List<Widget> children;
+  final WrapAlignment alignment;
+
+  @override
+  Widget build(BuildContext context) => Wrap(
+    alignment: alignment,
+    spacing: PixelSpacing.sm,
+    runSpacing: PixelSpacing.sm,
+    crossAxisAlignment: WrapCrossAlignment.center,
+    children: children,
+  );
+}
+
 ThemeData buildPixelTheme({
   Brightness brightness = Brightness.dark,
   double uiScale = 1,
@@ -196,13 +224,15 @@ ThemeData buildPixelTheme({
       }
       return BorderSide(
         color: scheme.onPrimary.withValues(
-          alpha:
-              states.contains(WidgetState.hovered) ||
-                  states.contains(WidgetState.focused) ||
-                  states.contains(WidgetState.pressed)
+          alpha: highContrast
+              ? 1
+              : states.contains(WidgetState.hovered) ||
+                    states.contains(WidgetState.focused) ||
+                    states.contains(WidgetState.pressed)
               ? 0.82
               : 0.55,
         ),
+        width: highContrast ? 1.5 : 1,
       );
     }),
     tapTargetSize: MaterialTapTargetSize.shrinkWrap,
@@ -282,6 +312,13 @@ ThemeData buildPixelTheme({
         return primary.withValues(alpha: 0.07);
       }
       return Colors.transparent;
+    }),
+    side: WidgetStateProperty.resolveWith((states) {
+      if (!highContrast) return BorderSide.none;
+      if (states.contains(WidgetState.disabled)) {
+        return BorderSide(color: muted.withValues(alpha: 0.32), width: 1.5);
+      }
+      return BorderSide(color: primary, width: 1.5);
     }),
     textStyle: WidgetStatePropertyAll(buttonTextStyle),
     iconSize: const WidgetStatePropertyAll(18),
@@ -552,12 +589,20 @@ ThemeData buildPixelTheme({
           return Colors.transparent;
         }),
         side: WidgetStateProperty.resolveWith((states) {
+          if (highContrast) {
+            return BorderSide(
+              color: states.contains(WidgetState.disabled)
+                  ? muted.withValues(alpha: 0.32)
+                  : primary,
+              width: 1.5,
+            );
+          }
           if (states.contains(WidgetState.hovered) ||
               states.contains(WidgetState.focused) ||
               states.contains(WidgetState.pressed)) {
             return BorderSide(color: primary);
           }
-          return const BorderSide(color: Colors.transparent);
+          return BorderSide.none;
         }),
         padding: const WidgetStatePropertyAll(EdgeInsets.all(8)),
         tapTargetSize: MaterialTapTargetSize.shrinkWrap,
@@ -687,8 +732,14 @@ class PixelToolbarIconButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.only(left: 4),
-      child: IconButton(tooltip: tooltip, onPressed: onPressed, icon: icon),
+      padding: const EdgeInsets.only(left: PixelSpacing.xs),
+      child: Semantics(
+        excludeSemantics: true,
+        button: true,
+        enabled: onPressed != null,
+        label: tooltip,
+        child: IconButton(tooltip: tooltip, onPressed: onPressed, icon: icon),
+      ),
     );
   }
 }

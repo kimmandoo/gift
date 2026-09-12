@@ -13,6 +13,7 @@ import 'package:gift/src/backend/remote.dart';
 import 'package:gift/src/features/repository/history_controller.dart';
 import 'package:gift/src/features/repository/history_screen.dart';
 import 'package:gift/src/app/pixel_theme.dart';
+import 'package:gift/src/app/app_preferences.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -71,7 +72,12 @@ void main() {
     );
 
     expect(
-      find.text('Ctrl+R refresh · Ctrl+F search · Esc back'),
+      find.text(
+        '${formatShortcut(GiftPreferences.defaults.shortcut('refresh'))} '
+        'refresh · '
+        '${formatShortcut(GiftPreferences.defaults.shortcut('focusSearch'))} '
+        'search · Esc back',
+      ),
       findsOneWidget,
     );
     expect(find.text('Add history'), findsOneWidget);

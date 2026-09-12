@@ -508,17 +508,10 @@ class _ChangesScreenBodyState extends ConsumerState<_ChangesScreenBody> {
     }
 
     bind('commandPalette', openPalette);
-    // Ctrl+Shift+P is the conventional command-palette shortcut. Keep it as
-    // a non-conflicting alias even when the user remaps the primary shortcut.
+    // Ctrl+Shift+P or Cmd+Shift+P remains available as a conventional alias.
     bindings.putIfAbsent(
-      const SingleActivator(
-        LogicalKeyboardKey.keyP,
-        control: true,
-        shift: true,
-      ),
-      () => () {
-        openPalette();
-      },
+      conventionalCommandPaletteActivator(),
+      () => openPalette,
     );
     if (widget.onBack != null) bind('cancel', widget.onBack!);
     return CallbackShortcuts(
@@ -789,9 +782,7 @@ class _ChangesScreenBodyState extends ConsumerState<_ChangesScreenBody> {
           ),
         ),
       ),
-      child: Wrap(
-        spacing: 8,
-        runSpacing: 8,
+      child: PixelActionRow(
         children: [
           FilledButton.icon(
             key: const Key('open-push'),
@@ -1577,7 +1568,9 @@ class _ChangesScreenBodyState extends ConsumerState<_ChangesScreenBody> {
       actions: _changeActions(change, state, actionSnapshot),
       onAction: _handleChangeAction,
       child: Semantics(
-        label: change.path,
+        container: true,
+        label: '${change.path}, ${_groupText(change)}',
+        hint: 'Double tap to inspect. More actions opens file operations.',
         child: ListTile(
           key: ValueKey('${group.name}:${change.path}'),
           dense: true,
@@ -1603,6 +1596,7 @@ class _ChangesScreenBodyState extends ConsumerState<_ChangesScreenBody> {
                 ),
           trailing: ContextActionMenuButton(
             key: ValueKey('change-actions:${change.path}'),
+            semanticLabel: 'More actions for ${change.path}',
           ),
           onTap: () => unawaited(_activeController.selectChange(change)),
         ),
@@ -2297,9 +2291,7 @@ class _ChangesScreenBodyState extends ConsumerState<_ChangesScreenBody> {
     final controller = _activeController;
     final hasPartialStage = controller.canStagePatch;
     final hasPartialUnstage = controller.canUnstagePatch;
-    return Wrap(
-      spacing: 8,
-      runSpacing: 8,
+    return PixelActionRow(
       children: [
         if (controller.canStagePatch)
           FilledButton.icon(

@@ -211,7 +211,11 @@ class _PreferencesDialogState extends State<PreferencesDialog> {
               style: Theme.of(context).textTheme.titleSmall,
             ),
             const SizedBox(height: 4),
-            const Text('Use combinations such as Ctrl+R or Ctrl+Shift+P.'),
+            Text(
+              'Use combinations such as '
+              '${formatShortcut(isMacOSPlatform ? 'meta+r' : 'ctrl+r')} or '
+              '${formatShortcut(isMacOSPlatform ? 'meta+shift+p' : 'ctrl+shift+p')}.',
+            ),
             for (final entry in _shortcutControllers.entries) ...[
               TextField(
                 key: ValueKey('preference-shortcut-${entry.key}'),

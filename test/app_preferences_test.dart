@@ -111,7 +111,7 @@ void main() {
           )
           .controller
           ?.text,
-      'Ctrl+R',
+      formatShortcut(GiftPreferences.defaults.shortcut('refresh')),
     );
     await tester.enterText(
       find.byKey(const Key('preference-shortcut-refresh')),

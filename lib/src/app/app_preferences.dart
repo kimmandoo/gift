@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -43,15 +44,36 @@ class GiftPreferences {
     'commandPalette': 'ctrl+k',
   };
 
-  static const defaults = GiftPreferences(
+  static const macOSShortcutBindings = <String, String>{
+    'refresh': 'meta+r',
+    'history': 'meta+h',
+    'commit': 'meta+enter',
+    'fileHistory': 'meta+shift+h',
+    'focusSearch': 'meta+f',
+    'cancel': 'escape',
+    'nextCommit': 'arrowdown',
+    'previousCommit': 'arrowup',
+    'nextTab': 'meta+tab',
+    'previousTab': 'meta+shift+tab',
+    'branch': 'meta+shift+b',
+    'remote': 'meta+shift+r',
+    'commandPalette': 'meta+k',
+  };
+
+  static Map<String, String> get platformDefaultShortcutBindings =>
+      defaultTargetPlatform == TargetPlatform.macOS
+      ? macOSShortcutBindings
+      : defaultShortcutBindings;
+
+  static final defaults = GiftPreferences._validated(
     uiScale: 1,
     reducedMotion: false,
     highContrast: false,
     colorSafeGraph: true,
-    shortcuts: defaultShortcutBindings,
+    shortcuts: platformDefaultShortcutBindings,
     defaultBranch: null,
     defaultRemote: null,
-    refreshInterval: Duration(seconds: 30),
+    refreshInterval: const Duration(seconds: 30),
     themeMode: ThemeMode.dark,
   );
 
@@ -240,7 +262,7 @@ class GiftPreferences {
     required this.themeMode,
   }) : uiScale = uiScale.clamp(_minimumUiScale, _maximumUiScale).toDouble(),
        shortcuts = Map.unmodifiable({
-         ...defaultShortcutBindings,
+         ...platformDefaultShortcutBindings,
          for (final entry in shortcuts.entries)
            entry.key: _canonicalShortcut(entry.value),
        }),
@@ -337,6 +359,16 @@ String formatShortcut(String value) {
       )
       .join('+');
 }
+
+bool get isMacOSPlatform => defaultTargetPlatform == TargetPlatform.macOS;
+
+/// Returns the platform convention used by command-palette menus.
+ShortcutActivator conventionalCommandPaletteActivator() => SingleActivator(
+  LogicalKeyboardKey.keyP,
+  shift: true,
+  control: !isMacOSPlatform,
+  meta: isMacOSPlatform,
+);
 
 /// Parses the canonical shortcut strings accepted by GiftPreferences.
 ShortcutActivator? shortcutActivator(String value) {

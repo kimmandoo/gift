@@ -524,25 +524,37 @@ class _ContextActionMenuScope extends InheritedWidget {
 
 /// An overflow affordance that invokes the parent [ContextActionMenu].
 class ContextActionMenuButton extends StatelessWidget {
-  const ContextActionMenuButton({super.key, this.icon = Icons.more_vert});
+  const ContextActionMenuButton({
+    super.key,
+    this.icon = Icons.more_vert,
+    this.semanticLabel,
+  });
 
   final IconData icon;
+  final String? semanticLabel;
 
   @override
   Widget build(BuildContext context) {
     final openTrigger = ContextActionMenu.openTriggerOf(context);
     final baseStyle = Theme.of(context).iconButtonTheme.style;
-    return IconButton(
-      tooltip: 'More actions',
-      onPressed: openTrigger == null ? null : () => openTrigger(context),
-      style: baseStyle?.copyWith(
-        backgroundColor: const WidgetStatePropertyAll(Colors.transparent),
-        side: const WidgetStatePropertyAll(BorderSide.none),
-        minimumSize: const WidgetStatePropertyAll(Size(32, 32)),
-        maximumSize: const WidgetStatePropertyAll(Size(32, 32)),
-        padding: const WidgetStatePropertyAll(EdgeInsets.all(7)),
+    final label = semanticLabel ?? 'More actions';
+    return Semantics(
+      excludeSemantics: true,
+      button: true,
+      enabled: openTrigger != null,
+      label: label,
+      child: IconButton(
+        tooltip: label,
+        onPressed: openTrigger == null ? null : () => openTrigger(context),
+        style: baseStyle?.copyWith(
+          backgroundColor: const WidgetStatePropertyAll(Colors.transparent),
+          side: const WidgetStatePropertyAll(BorderSide.none),
+          minimumSize: const WidgetStatePropertyAll(Size(32, 32)),
+          maximumSize: const WidgetStatePropertyAll(Size(32, 32)),
+          padding: const WidgetStatePropertyAll(EdgeInsets.all(7)),
+        ),
+        icon: Icon(icon, size: 18),
       ),
-      icon: Icon(icon, size: 18),
     );
   }
 }

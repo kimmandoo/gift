@@ -1,6 +1,12 @@
 # Changelog
 
 ## 2026-09-12
+- feat(input): used platform-aware Cmd shortcuts on macOS and retained
+  portable Ctrl defaults elsewhere.
+- refactor(ui): centralized action-row spacing and reused the shared layout
+  primitive in repository mutation controls.
+- fix(a11y): exposed explicit toolbar and file-action semantics and stronger
+  high-contrast button boundaries.
 - change(release): matched Spull's unsigned universal macOS archive and
   quarantine-clearing launcher flow.
 - fix(ui): surfaced Push, Update, Branches, and History as labeled repository

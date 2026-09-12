@@ -53,7 +53,7 @@ class _GiftAppState extends State<GiftApp> {
   void initState() {
     super.initState();
     final loaded = widget.preferences == null
-        ? const GiftPreferencesLoadResult(preferences: GiftPreferences.defaults)
+        ? GiftPreferencesLoadResult(preferences: GiftPreferences.defaults)
         : GiftPreferences.load(widget.preferences!);
     _preferences = loaded.preferences;
     if (widget.preferences != null && loaded.needsRewrite) {
