@@ -474,8 +474,6 @@ class _ChangesScreenBodyState extends ConsumerState<_ChangesScreenBody> {
                 _actionAvailability(context, snapshot, state),
               if (snapshot.conflicts.isNotEmpty)
                 _conflictWorkspaceBanner(context, snapshot),
-              if (controller.state.selectedPaths.isNotEmpty)
-                _multiStageSelectionBar(context, controller, state),
               if (state.error case final error?) _errorBanner(context, error),
             ],
             if (state.isLoading) const LinearProgressIndicator(),
@@ -495,6 +493,8 @@ class _ChangesScreenBodyState extends ConsumerState<_ChangesScreenBody> {
                   ? const Center(child: CircularProgressIndicator())
                   : _changesLayout(context, snapshot, state),
             ),
+            if (snapshot != null && controller.state.selectedPaths.isNotEmpty)
+              _multiStageSelectionBar(context, controller, state),
             if (snapshot != null) _statusStrip(context, snapshot, state),
           ],
         ),
@@ -992,24 +992,30 @@ class _ChangesScreenBodyState extends ConsumerState<_ChangesScreenBody> {
   ) {
     final count = state.selectedPaths.length;
     final label = '$count file${count == 1 ? '' : 's'} selected';
+    final theme = Theme.of(context);
     return Container(
       key: const Key('multi-stage-selection'),
-      padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
-      color: Theme.of(context).colorScheme.primaryContainer,
-      child: Wrap(
-        crossAxisAlignment: WrapCrossAlignment.center,
-        spacing: 12,
-        runSpacing: 8,
+      padding: const EdgeInsets.fromLTRB(
+        PixelSpacing.lg,
+        PixelSpacing.xs,
+        PixelSpacing.lg,
+        PixelSpacing.xs,
+      ),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.primaryContainer,
+        border: Border(top: BorderSide(color: theme.colorScheme.primary)),
+      ),
+      child: PixelActionRow(
         children: [
           Icon(
             Icons.checklist,
             size: 18,
-            color: Theme.of(context).colorScheme.onPrimaryContainer,
+            color: theme.colorScheme.onPrimaryContainer,
           ),
           Text(
             label,
             style: TextStyle(
-              color: Theme.of(context).colorScheme.onPrimaryContainer,
+              color: theme.colorScheme.onPrimaryContainer,
               fontWeight: FontWeight.w700,
             ),
           ),
