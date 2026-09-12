@@ -1041,6 +1041,7 @@ void main() {
         find.byKey(const ValueKey('change-actions:lib/app.dart')),
         findsOneWidget,
       );
+      expect(find.byTooltip('Stage lib/app.dart'), findsOneWidget);
       final gesture = await tester.startGesture(
         tester.getCenter(row),
         buttons: kSecondaryMouseButton,

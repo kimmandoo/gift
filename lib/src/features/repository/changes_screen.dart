@@ -1667,14 +1667,52 @@ class _ChangesScreenBodyState extends ConsumerState<_ChangesScreenBody> {
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
-          trailing: ContextActionMenuButton(
-            key: ValueKey('change-actions:${change.path}'),
-            semanticLabel: 'More actions for ${change.path}',
+          trailing: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              _inlineChangeAction(change, state),
+              ContextActionMenuButton(
+                key: ValueKey('change-actions:${change.path}'),
+                semanticLabel: 'More actions for ${change.path}',
+              ),
+            ],
           ),
           onTap: () => unawaited(_activeController.selectChange(change)),
         ),
       ),
     );
+  }
+
+  Widget _inlineChangeAction(GitChange change, ChangesState state) {
+    final controller = _activeController;
+    final canStage = controller.canStagePath(change);
+    final canUnstage =
+        !change.isConflicted && change.isStaged && !change.isUntracked;
+    if (!canStage && !canUnstage) return const SizedBox.shrink();
+    final stage = canStage;
+    final label = stage ? 'Stage ${change.path}' : 'Unstage ${change.path}';
+    return IconButton(
+      key: ValueKey('${stage ? 'stage' : 'unstage'}-change:${change.path}'),
+      tooltip: label,
+      onPressed: state.isMutating
+          ? null
+          : () => unawaited(_runInlineChangeAction(change, stage: stage)),
+      icon: Icon(stage ? Icons.add : Icons.undo, size: 18),
+      visualDensity: VisualDensity.compact,
+    );
+  }
+
+  Future<void> _runInlineChangeAction(
+    GitChange change, {
+    required bool stage,
+  }) async {
+    final controller = _activeController;
+    controller.selectPath(change.path);
+    if (stage) {
+      await controller.stageSelected();
+    } else {
+      await controller.unstageSelected();
+    }
   }
 
   Widget _changeSelectionBox(GitChange change, ChangesState state) {
