@@ -1,0 +1,30 @@
+name: Refresh Windows visual goldens
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  refresh:
+    runs-on: windows-latest
+    steps:
+      - name: Check out source
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - name: Set up Flutter
+        uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2
+        with:
+          flutter-version: '3.47.2'
+          channel: stable
+          cache: true
+      - name: Update Windows visual goldens
+        run: |
+          dart pub get
+          flutter test --update-goldens test/app/visual_regression_test.dart
+      - name: Upload Windows visual goldens
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: windows-visual-goldens
+          path: test/app/goldens/windows/
+          if-no-files-found: error
