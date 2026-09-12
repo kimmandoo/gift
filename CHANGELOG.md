@@ -1,6 +1,8 @@
 # Changelog
 
 ## 2026-09-12
+- feat(welcome): added a bordered pixel mascot lockup and visible GIFT title
+  to the first-run screen.
 - fix(ci): included `Run-Gift.command` in the macOS desktop artifact and
   validated its presence in the packaged archive.
 - feat(welcome): enriched recent repository cards with repository names,

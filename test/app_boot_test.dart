@@ -12,20 +12,18 @@ void main() {
     await tester.pumpWidget(const GiftApp());
     expect(find.text('Open Repository'), findsOneWidget);
     expect(find.byKey(const Key('welcome-logo')), findsOneWidget);
+    expect(find.byKey(const Key('welcome-brand')), findsOneWidget);
     expect(find.byType(MaterialApp), findsOneWidget);
   });
 
-  testWidgets('keeps the welcome action compact and aligned with the logo', (
+  testWidgets('keeps the welcome action compact and identity visible', (
     tester,
   ) async {
     await tester.pumpWidget(const GiftApp());
 
     final action = find.widgetWithText(FilledButton, 'Open Repository');
     expect(tester.getSize(action).height, lessThanOrEqualTo(44));
-    expect(
-      tester.getTopLeft(find.byKey(const Key('welcome-logo'))).dx,
-      tester.getTopLeft(find.text('Get started')).dx,
-    );
+    expect(find.byKey(const Key('welcome-brand')), findsOneWidget);
   });
 
   test('uses the documented pixel theme tokens', () {

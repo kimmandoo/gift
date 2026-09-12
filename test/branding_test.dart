@@ -10,7 +10,7 @@ void main() {
 
     final app = tester.widget<MaterialApp>(find.byType(MaterialApp));
     expect(app.title, 'gift');
-    expect(find.text('GIFT'), findsOneWidget);
+    expect(find.byKey(const Key('welcome-brand')), findsOneWidget);
     expect(find.bySemanticsLabel('GIFT pixel mascot'), findsOneWidget);
   });
 

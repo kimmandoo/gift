@@ -101,6 +101,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
   Widget build(BuildContext context) {
     final state = _repositoryController.state;
     final textTheme = Theme.of(context).textTheme;
+    final colors = Theme.of(context).colorScheme;
     final compact = MediaQuery.sizeOf(context).width < 480;
     final workspace = _workspaceController;
     final needsGitDiagnostics =
@@ -165,15 +166,40 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
               ),
               child: ListView(
                 children: [
-                  Align(
-                    alignment: Alignment.centerLeft,
-                    child: Image(
-                      key: const Key('welcome-logo'),
-                      image: const AssetImage('assets/images/gift_icon.png'),
-                      width: compact ? 80 : 96,
-                      height: compact ? 80 : 96,
-                      filterQuality: FilterQuality.none,
-                      semanticLabel: 'GIFT pixel mascot',
+                  Container(
+                    key: const Key('welcome-brand-lockup'),
+                    padding: EdgeInsets.symmetric(
+                      horizontal: compact ? 12 : 16,
+                      vertical: compact ? 8 : 12,
+                    ),
+                    decoration: BoxDecoration(
+                      color: colors.surfaceContainerHighest,
+                      border: Border.all(color: colors.primary, width: 2),
+                    ),
+                    child: Row(
+                      children: [
+                        Image(
+                          key: const Key('welcome-logo'),
+                          image: const AssetImage(
+                            'assets/images/gift_icon.png',
+                          ),
+                          width: compact ? 72 : 96,
+                          height: compact ? 72 : 96,
+                          filterQuality: FilterQuality.none,
+                          semanticLabel: 'GIFT pixel mascot',
+                        ),
+                        SizedBox(width: compact ? 12 : 20),
+                        Expanded(
+                          child: Text(
+                            'GIFT',
+                            key: const Key('welcome-brand'),
+                            style: textTheme.displaySmall?.copyWith(
+                              letterSpacing: 3,
+                              fontWeight: FontWeight.w900,
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                   const SizedBox(height: 16),

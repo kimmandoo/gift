@@ -1053,3 +1053,15 @@ system Git 2.35+.
    fail when the launcher is absent.
 4. Verified the macOS release build, staged artifact, packaged ZIP, workflow
    pins, formatting, analysis, and all 305 Flutter tests.
+
+## Completed follow-up: Welcome screen pixel identity
+
+1. Replaced the first-run screen's square mascot placement with a bordered
+   pixel-art lockup that uses the existing GIFT mascot asset without distortion.
+2. Added an explicit, accessible `GIFT` title beside the mascot and kept the
+   lockup responsive at compact, standard, and wide desktop sizes.
+3. Added boot and visual-regression assertions for the visible identity and
+   its bounded layout.
+4. Verified the focused Welcome, boot, and visual-regression tests plus a
+   macOS golden capture; the capture was reviewed locally and not committed
+   because CI stores non-Windows goldens as runner artifacts.

@@ -83,6 +83,7 @@ void main() {
 
       final viewport = Offset.zero & fixture.size;
       final logo = tester.getRect(find.byKey(const Key('welcome-logo')));
+      final brand = tester.getRect(find.byKey(const Key('welcome-brand')));
       final themeToggle = tester.getRect(find.byKey(const Key('theme-toggle')));
       final preferences = tester.getRect(
         find.byKey(const Key('open-preferences')),
@@ -93,6 +94,7 @@ void main() {
       final setup = tester.getRect(find.byKey(const Key('setup-repository')));
 
       expect(logo, completelyWithin(viewport));
+      expect(brand, completelyWithin(viewport));
       expect(themeToggle, completelyWithin(viewport));
       expect(preferences, completelyWithin(viewport));
       expect(open, completelyWithin(viewport));

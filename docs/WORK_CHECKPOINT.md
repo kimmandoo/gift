@@ -3,26 +3,31 @@
 This file is the handoff record for continuing work across query sessions.
 
 - Date: 2026-09-12.
-- Active task: Prepare release `v1.0.2` for the verified macOS launcher
-  artifact fix. The release commit must use the required
-  `release(v1.0.2): ...` subject and the matching `release-v1.0.2` tag.
-- Branch: `main`; latest pushed commit is
-  `2c05cd2 fix(ci): include macOS launcher artifact`. The working tree has
-  the intentional `pubspec.yaml` version bump to `1.0.2+1` and the
-  pre-existing `.gitignore` edit.
-- Decision: publish the already-verified macOS packaging fix as patch release
-  `v1.0.2`; do not reuse the existing `release-v1.0.1` tag.
-- Changed files for this release commit: `pubspec.yaml` and
-  `docs/WORK_CHECKPOINT.md`. The packaging implementation is already pushed
-  in `2c05cd2`.
-- Verification: `dart run tool/release_metadata.dart validate
-  release-v1.0.2` passed and reported a match with version `1.0.2+1`.
-  The prior macOS build, staged artifact verification, ZIP launcher check,
-  workflow pin verification, and full 305-test verification all passed.
-- Blockers: no code blocker. Apple Developer ID signing/notarization and the
-  maintainer-only clean-machine native release pass remain unavailable.
-- Exact next action: create the `release(v1.0.2): publish desktop artifacts`
-  commit, create `release-v1.0.2`, push both, and confirm the remote state.
+- Active task: Ship the Welcome first-run pixel identity update. The release
+  preparation from the previous session is complete: `aacf8d0
+  release(v1.0.2): publish desktop artifacts` and the matching
+  `release-v1.0.2` tag are pushed.
+- Branch: `main`; the current working tree contains the Welcome source, test,
+  changelog, plan, and checkpoint edits plus the pre-existing `.gitignore`
+  edit. Do not overwrite or stage that unrelated `.gitignore` change.
+- Decision: reuse the bundled pixel mascot asset, place it in a bordered
+  responsive lockup, and render an explicit accessible `GIFT` title beside
+  it. The wide `gift_logo.png` asset was intentionally not added to the
+  Flutter bundle.
+- Changed files for this task: `lib/src/features/repository/welcome_screen.dart`,
+  `test/app_boot_test.dart`, `test/app/visual_regression_test.dart`,
+  `test/branding_test.dart`, `CHANGELOG.md`,
+  `docs/superpowers/plans/2026-09-02-gift-dart-mvp.md`, and this checkpoint.
+- Verification: `dart run tool/verify.dart` passed formatting, analysis, and
+  all 305 Flutter tests. The focused Welcome/boot/visual command passed all
+  25 tests. A forced macOS visual-golden capture passed all 11 fixtures and
+  was reviewed; generated macOS goldens were removed because CI stores
+  non-Windows captures as artifacts.
+- Blockers: no code blocker. The pre-existing `.gitignore` edit is user-owned
+  and must remain unstaged; Windows golden regeneration is not available on
+  this macOS host.
+- Exact next action: commit the Welcome update and checkpoint with a
+  `feat(welcome): ...` subject, push `main`, and confirm the remote state.
 
 ## Previous checkpoint
 
