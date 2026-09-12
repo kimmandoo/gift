@@ -3,31 +3,31 @@
 This file is the handoff record for continuing work across query sessions.
 
 - Date: 2026-09-12.
-- Active task: Ship the Welcome first-run pixel identity update. The release
-  preparation from the previous session is complete: `aacf8d0
-  release(v1.0.2): publish desktop artifacts` and the matching
-  `release-v1.0.2` tag are pushed.
-- Branch: `main`; the current working tree contains the Welcome source, test,
-  changelog, plan, and checkpoint edits plus the pre-existing `.gitignore`
-  edit. Do not overwrite or stage that unrelated `.gitignore` change.
+- Active task: Complete. The Welcome first-run pixel identity update is
+  shipped in `6acbdf6 feat(welcome): add pixel-game first-run identity`.
+- Branch: `main`; `6acbdf6` is pushed to `origin/main`. The working tree
+  retains only the pre-existing `.gitignore` edit after this checkpoint
+  update is committed. Do not overwrite or stage that unrelated change.
 - Decision: reuse the bundled pixel mascot asset, place it in a bordered
   responsive lockup, and render an explicit accessible `GIFT` title beside
   it. The wide `gift_logo.png` asset was intentionally not added to the
   Flutter bundle.
-- Changed files for this task: `lib/src/features/repository/welcome_screen.dart`,
+- Changed files in the shipped feature: `lib/src/features/repository/welcome_screen.dart`,
   `test/app_boot_test.dart`, `test/app/visual_regression_test.dart`,
-  `test/branding_test.dart`, `CHANGELOG.md`,
-  `docs/superpowers/plans/2026-09-02-gift-dart-mvp.md`, and this checkpoint.
+  `test/branding_test.dart`, `CHANGELOG.md`, and
+  `docs/superpowers/plans/2026-09-02-gift-dart-mvp.md`. This checkpoint
+  records the final post-push state in a separate checkpoint commit.
 - Verification: `dart run tool/verify.dart` passed formatting, analysis, and
   all 305 Flutter tests. The focused Welcome/boot/visual command passed all
   25 tests. A forced macOS visual-golden capture passed all 11 fixtures and
   was reviewed; generated macOS goldens were removed because CI stores
   non-Windows captures as artifacts.
 - Blockers: no code blocker. The pre-existing `.gitignore` edit is user-owned
-  and must remain unstaged; Windows golden regeneration is not available on
-  this macOS host.
-- Exact next action: commit the Welcome update and checkpoint with a
-  `feat(welcome): ...` subject, push `main`, and confirm the remote state.
+  and remains unstaged; Windows golden regeneration was not available on this
+  macOS host.
+- Exact next action: none for this session. A future session should read this
+  checkpoint, `AGENTS.md`, `TASKS.md`, and the active plan section before
+  starting new work.
 
 ## Previous checkpoint
 
