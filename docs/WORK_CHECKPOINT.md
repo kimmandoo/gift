@@ -3,35 +3,26 @@
 This file is the handoff record for continuing work across query sessions.
 
 - Date: 2026-09-12.
-- Active task: Recheck the macOS release artifact after the user reported that
-  `Run-Gift.command` was missing from the CI result. The release ZIP already
-  contained the launcher; the CI desktop artifact path contained only
-  `gift.app`. The packaging fix is implemented and awaits commit/push.
-- Branch: `main`; latest pushed commit before this fix is
-  `5a9f888 docs(checkpoint): record pushed UX delivery`. The pre-existing
-  `.gitignore` edit remains unchanged.
-- Decision: stage `build/macos/Distribution/` during the macOS release helper,
-  containing `gift.app` and executable `Run-Gift.command` side by side. CI's
-  `gift-macos-universal` desktop artifact now uploads that directory instead
-  of the Flutter build-output directory. The release ZIP remains under
-  `gift-release-macos-universal`.
-- Changed files: `.github/workflows/ci.yml`, `CHANGELOG.md`,
-  `docs/RELEASING.md`, `docs/superpowers/plans/2026-09-02-gift-dart-mvp.md`,
-  `docs/WORK_CHECKPOINT.md`, `tool/build_desktop.dart`,
-  `tool/package_macos_release.sh`, and `tool/verify_desktop_artifact.dart`.
-- Verification: `./tool/build_macos.sh` rebuilt `gift.app` and staged
-  `build/macos/Distribution/Run-Gift.command`; the desktop artifact verifier
-  passed. `GIFT_RELEASE_OUTPUT_DIR=/tmp/gift-release-recheck-3
-  ./tool/package_macos_release.sh` passed and the ZIP listed
-  `gift-macos-universal/Run-Gift.command`. Workflow pin verification passed.
-  `dart run tool/verify.dart` passed formatting, analysis, and all 305 tests.
-- Smoke: the upload-ready macOS directory contains exactly `gift.app` and
-  `Run-Gift.command`; the packaged ZIP contains the launcher beside the app.
-  Native-window visual capture remains unavailable in this session.
+- Active task: Prepare release `v1.0.2` for the verified macOS launcher
+  artifact fix. The release commit must use the required
+  `release(v1.0.2): ...` subject and the matching `release-v1.0.2` tag.
+- Branch: `main`; latest pushed commit is
+  `2c05cd2 fix(ci): include macOS launcher artifact`. The working tree has
+  the intentional `pubspec.yaml` version bump to `1.0.2+1` and the
+  pre-existing `.gitignore` edit.
+- Decision: publish the already-verified macOS packaging fix as patch release
+  `v1.0.2`; do not reuse the existing `release-v1.0.1` tag.
+- Changed files for this release commit: `pubspec.yaml` and
+  `docs/WORK_CHECKPOINT.md`. The packaging implementation is already pushed
+  in `2c05cd2`.
+- Verification: `dart run tool/release_metadata.dart validate
+  release-v1.0.2` passed and reported a match with version `1.0.2+1`.
+  The prior macOS build, staged artifact verification, ZIP launcher check,
+  workflow pin verification, and full 305-test verification all passed.
 - Blockers: no code blocker. Apple Developer ID signing/notarization and the
   maintainer-only clean-machine native release pass remain unavailable.
-- Exact next action: commit the packaging fix and checkpoint, push `main`, and
-  confirm `main` is synchronized with `origin/main`.
+- Exact next action: create the `release(v1.0.2): publish desktop artifacts`
+  commit, create `release-v1.0.2`, push both, and confirm the remote state.
 
 ## Previous checkpoint
 
