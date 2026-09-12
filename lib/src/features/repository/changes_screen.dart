@@ -41,6 +41,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter/services.dart';
 import 'package:gift/src/app/pixel_theme.dart';
+import 'package:gift/src/app/error_dialog.dart';
 import 'package:gift/src/app/app_preferences.dart';
 import 'package:gift/src/backend/credentials.dart';
 import 'package:gift/src/app/credentials_dialog.dart';
@@ -1081,6 +1082,10 @@ class _ChangesScreenBodyState extends ConsumerState<_ChangesScreenBody> {
         : snapshot.isClean
         ? 'Working tree clean'
         : '${snapshot.staged.length} staged · ${snapshot.unstaged.length} unstaged';
+    final refreshMode = state.isWatching
+        ? 'Watching files'
+        : 'Polling for changes';
+    final statusLabel = '$status · $refreshMode';
     return Container(
       key: const Key('status-strip'),
       color: Theme.of(context).colorScheme.surfaceContainerHighest,
@@ -1096,7 +1101,13 @@ class _ChangesScreenBodyState extends ConsumerState<_ChangesScreenBody> {
               children: [
                 icon,
                 const SizedBox(width: 8),
-                Expanded(child: Text(status, overflow: TextOverflow.ellipsis)),
+                Expanded(
+                  child: Text(
+                    statusLabel,
+                    key: const Key('changes-status-message'),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
               ],
             );
           }
@@ -1104,7 +1115,13 @@ class _ChangesScreenBodyState extends ConsumerState<_ChangesScreenBody> {
             children: [
               icon,
               const SizedBox(width: 8),
-              Expanded(child: Text(status, overflow: TextOverflow.ellipsis)),
+              Expanded(
+                child: Text(
+                  statusLabel,
+                  key: const Key('changes-status-message'),
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
               const SizedBox(width: 12),
               Text(
                 shortcutHint,
@@ -1437,6 +1454,12 @@ class _ChangesScreenBodyState extends ConsumerState<_ChangesScreenBody> {
   }
 
   Widget _commitError(GitError error) {
+    final controller = _activeController;
+    final canRetry =
+        error.commitOutcome != GitCommitOutcome.createdButRefreshFailed &&
+        controller.canCommit &&
+        !controller.state.isMutating &&
+        _commitMessageController.text.trim().isNotEmpty;
     final historyMessage =
         error.commitOutcome == GitCommitOutcome.createdButRefreshFailed
         ? 'History changed, but the repository status could not be refreshed. '
@@ -1453,6 +1476,23 @@ class _ChangesScreenBodyState extends ConsumerState<_ChangesScreenBody> {
             style: TextStyle(color: Theme.of(context).colorScheme.error),
           ),
           Text(historyMessage),
+          const SizedBox(height: 8),
+          GiftRecoveryActions(
+            key: const Key('commit-recovery-actions'),
+            actions: [
+              if (canRetry)
+                GiftRecoveryAction(
+                  label: 'Retry commit',
+                  icon: Icons.refresh,
+                  onPressed: () => unawaited(_submitCommit(controller)),
+                ),
+              GiftRecoveryAction(
+                label: 'Refresh status',
+                icon: Icons.sync,
+                onPressed: () => unawaited(controller.refresh()),
+              ),
+            ],
+          ),
         ],
       ),
     );
@@ -3100,30 +3140,59 @@ class _ChangesScreenBodyState extends ConsumerState<_ChangesScreenBody> {
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(24),
-        child: Text(error.userMessage, key: const Key('changes-error')),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(error.userMessage, key: const Key('changes-error')),
+            const SizedBox(height: 12),
+            GiftRecoveryActions(
+              key: const Key('changes-recovery-actions'),
+              actions: [
+                GiftRecoveryAction(
+                  label: 'Retry',
+                  icon: Icons.refresh,
+                  onPressed: () => unawaited(_activeController.refresh()),
+                ),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }
 
   Widget _errorBanner(BuildContext context, GitError error) {
+    final colors = Theme.of(context).colorScheme;
     return Container(
       key: const Key('changes-refresh-error'),
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-      color: Theme.of(context).colorScheme.errorContainer,
-      child: Row(
+      color: colors.errorContainer,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(
-            Icons.warning_amber_rounded,
-            color: Theme.of(context).colorScheme.onErrorContainer,
-          ),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Text(
-              error.userMessage,
-              style: TextStyle(
-                color: Theme.of(context).colorScheme.onErrorContainer,
+          Row(
+            children: [
+              Icon(Icons.warning_amber_rounded, color: colors.onErrorContainer),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  error.userMessage,
+                  style: TextStyle(color: colors.onErrorContainer),
+                ),
               ),
-            ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          GiftRecoveryActions(
+            key: const Key('changes-refresh-recovery-actions'),
+            actions: [
+              GiftRecoveryAction(
+                label: 'Retry',
+                icon: Icons.refresh,
+                onPressed: () => unawaited(_activeController.refresh()),
+              ),
+            ],
           ),
         ],
       ),

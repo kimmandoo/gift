@@ -58,6 +58,7 @@ class ChangesState {
     this.discardError,
     this.isLoading = false,
     this.isRefreshing = false,
+    this.isWatching = false,
     this.isDiffLoading = false,
     this.isMutating = false,
     this.isCommitting = false,
@@ -84,6 +85,7 @@ class ChangesState {
   final GitError? discardError;
   final bool isLoading;
   final bool isRefreshing;
+  final bool isWatching;
   final bool isDiffLoading;
   final bool isMutating;
   final bool isCommitting;
@@ -128,6 +130,7 @@ class ChangesState {
     bool clearDiscardError = false,
     bool? isLoading,
     bool? isRefreshing,
+    bool? isWatching,
     bool? isDiffLoading,
     bool? isMutating,
     bool? isCommitting,
@@ -169,6 +172,7 @@ class ChangesState {
           : discardError ?? this.discardError,
       isLoading: isLoading ?? this.isLoading,
       isRefreshing: isRefreshing ?? this.isRefreshing,
+      isWatching: isWatching ?? this.isWatching,
       isDiffLoading: isDiffLoading ?? this.isDiffLoading,
       isMutating: isMutating ?? this.isMutating,
       isCommitting: isCommitting ?? this.isCommitting,
@@ -225,6 +229,11 @@ class ChangesController extends ChangeNotifier {
     _refreshCoordinator = RepositoryRefreshCoordinator(
       root: repositoryRoot,
       fallbackInterval: pollInterval,
+      onWatchingChanged: (watching) {
+        if (!_disposed) {
+          _setState(_state.copyWith(isWatching: watching));
+        }
+      },
       onRefresh: () => _refresh(showProgress: false),
     )..start();
     unawaited(refresh());

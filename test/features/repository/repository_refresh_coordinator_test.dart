@@ -35,11 +35,33 @@ void main() {
     expect(refreshes, 1);
   });
 
+  test('reports watcher failure for fallback recovery', () async {
+    final events = StreamController<FileSystemEvent>.broadcast();
+    addTearDown(events.close);
+    final watchingStates = <bool>[];
+    final coordinator = RepositoryRefreshCoordinator(
+      events: events.stream,
+      fallbackInterval: const Duration(hours: 1),
+      onWatchingChanged: watchingStates.add,
+      onRefresh: () {},
+    );
+    addTearDown(coordinator.dispose);
+
+    coordinator.start();
+    expect(coordinator.isWatching, isTrue);
+    events.addError(StateError('watcher failed'));
+    await Future<void>.delayed(Duration.zero);
+
+    expect(coordinator.isWatching, isFalse);
+    expect(watchingStates, [true, false]);
+  });
+
   test('watches a real repository root when available', () async {
     final directory = await Directory.systemTemp.createTemp('gift-watch-');
     addTearDown(() => directory.delete(recursive: true));
     final refreshObserved = Completer<void>();
     var refreshes = 0;
+    final watchingStates = <bool>[];
     final coordinator = RepositoryRefreshCoordinator(
       root: directory.path,
       debounce: const Duration(milliseconds: 5),
@@ -50,9 +72,11 @@ void main() {
           refreshObserved.complete();
         }
       },
+      onWatchingChanged: watchingStates.add,
     )..start();
     addTearDown(coordinator.dispose);
 
+    expect(watchingStates, [true]);
     expect(coordinator.isWatching, isTrue);
     await File('${directory.path}/changed.txt').writeAsString('changed');
     await refreshObserved.future.timeout(const Duration(seconds: 2));

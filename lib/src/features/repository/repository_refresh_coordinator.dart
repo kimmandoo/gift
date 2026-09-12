@@ -11,6 +11,7 @@ class RepositoryRefreshCoordinator {
     required this.onRefresh,
     this.root,
     this.events,
+    this.onWatchingChanged,
     this.debounce = const Duration(milliseconds: 180),
     this.fallbackInterval = const Duration(seconds: 30),
   }) : assert(debounce >= Duration.zero),
@@ -19,6 +20,7 @@ class RepositoryRefreshCoordinator {
   final FutureOr<void> Function() onRefresh;
   final String? root;
   final Stream<FileSystemEvent>? events;
+  final void Function(bool watching)? onWatchingChanged;
   final Duration debounce;
   final Duration fallbackInterval;
 
@@ -29,10 +31,11 @@ class RepositoryRefreshCoordinator {
   bool _disposed = false;
   bool _refreshInFlight = false;
   bool _refreshPending = false;
+  bool _watching = false;
 
   bool get isStarted => _started;
   bool get isDisposed => _disposed;
-  bool get isWatching => _subscription != null;
+  bool get isWatching => _watching;
 
   /// Starts watching once. Missing or inaccessible roots degrade to fallback.
   void start() {
@@ -40,23 +43,11 @@ class RepositoryRefreshCoordinator {
       return;
     }
     _started = true;
-    _fallbackTimer = Timer.periodic(
-      fallbackInterval,
-      (_) => unawaited(_refresh()),
-    );
-
-    final stream = events ?? _watchRoot();
-    if (stream == null) {
-      return;
-    }
-    _subscription = stream.listen(
-      (_) => _scheduleRefresh(),
-      onError: (_, _) {
-        // Filesystem watchers can fail when a repository is moved or its
-        // permissions change. The fallback timer remains authoritative.
-      },
-      cancelOnError: false,
-    );
+    _fallbackTimer = Timer.periodic(fallbackInterval, (_) {
+      _ensureWatcher();
+      unawaited(_refresh());
+    });
+    _ensureWatcher();
   }
 
   void _scheduleRefresh() {
@@ -87,6 +78,44 @@ class RepositoryRefreshCoordinator {
     }
   }
 
+  void _ensureWatcher() {
+    if (_disposed || _subscription != null) {
+      return;
+    }
+    final stream = events ?? _watchRoot();
+    if (stream == null) {
+      _setWatching(false);
+      return;
+    }
+    late final StreamSubscription<FileSystemEvent> subscription;
+    subscription = stream.listen(
+      (_) => _scheduleRefresh(),
+      onError: (_, _) {
+        if (identical(_subscription, subscription)) {
+          _subscription = null;
+          _setWatching(false);
+        }
+      },
+      onDone: () {
+        if (identical(_subscription, subscription)) {
+          _subscription = null;
+          _setWatching(false);
+        }
+      },
+      cancelOnError: false,
+    );
+    _subscription = subscription;
+    _setWatching(true);
+  }
+
+  void _setWatching(bool watching) {
+    if (_watching == watching) {
+      return;
+    }
+    _watching = watching;
+    onWatchingChanged?.call(watching);
+  }
+
   Stream<FileSystemEvent>? _watchRoot() {
     final path = root;
     if (path == null || !Directory(path).existsSync()) {
@@ -111,7 +140,9 @@ class RepositoryRefreshCoordinator {
     _debounceTimer = null;
     _fallbackTimer = null;
     _refreshPending = false;
-    await _subscription?.cancel();
+    final subscription = _subscription;
     _subscription = null;
+    _setWatching(false);
+    await subscription?.cancel();
   }
 }

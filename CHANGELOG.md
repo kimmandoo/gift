@@ -1,6 +1,9 @@
 # Changelog
 
 ## 2026-09-12
+- fix(runtime): restored failed repository watchers through fallback
+  reattachment, exposed polling state separately from Git mutations, and
+  standardized retry recovery actions.
 - feat(ui): adapted Changes toolbar labels to available width while keeping
   compact intermediate layouts overflow-safe.
 - fix(changes): kept the multi-file staging action bar anchored above the

@@ -25,6 +25,7 @@ import 'package:gift/src/features/repository/hosting_dialog.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:gift/src/app/pixel_theme.dart';
+import 'package:gift/src/app/error_dialog.dart';
 import 'package:gift/src/app/app_preferences.dart';
 
 class HistoryScreen extends StatefulWidget {
@@ -219,12 +220,13 @@ class _HistoryScreenState extends State<HistoryScreen> {
           children: [
             _filtersPanel(context, state),
             if (state.isLoading) const LinearProgressIndicator(),
-            if (state.error case final error?) _errorBanner(context, error),
+            if (state.error case final error?)
+              _errorBanner(context, error, state),
             _batchSelectionBar(context, state, selectionMode),
             Expanded(
               child: page == null
                   ? state.error != null
-                        ? _emptyError(state.error!)
+                        ? _emptyError(state.error!, state)
                         : const Center(child: CircularProgressIndicator())
                   : _historyLayout(context, page, state, selectionMode),
             ),
@@ -1960,20 +1962,68 @@ class _HistoryScreenState extends State<HistoryScreen> {
     GitDiffLineKind.context => ' ',
   };
 
-  Widget _emptyError(GitError error) {
+  Widget _emptyError(GitError error, HistoryState state) {
     return Center(
-      child: Text(error.userMessage, key: const Key('history-error')),
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(error.userMessage, key: const Key('history-error')),
+            const SizedBox(height: 12),
+            _historyRecoveryActions(
+              state,
+              key: const Key('history-empty-recovery-actions'),
+            ),
+          ],
+        ),
+      ),
     );
   }
 
-  Widget _errorBanner(BuildContext context, GitError error) {
+  Widget _historyRecoveryActions(HistoryState state, {required Key key}) {
+    return GiftRecoveryActions(
+      key: key,
+      actions: [
+        GiftRecoveryAction(
+          label: 'Retry',
+          icon: Icons.refresh,
+          onPressed: () => unawaited(_controller.refresh()),
+        ),
+        if (!state.filters.isEmpty)
+          GiftRecoveryAction(
+            label: 'Clear filters',
+            icon: Icons.filter_alt_off,
+            onPressed: _clearFilters,
+          ),
+      ],
+    );
+  }
+
+  Widget _errorBanner(
+    BuildContext context,
+    GitError error,
+    HistoryState state,
+  ) {
+    final colors = Theme.of(context).colorScheme;
     return Container(
       key: const Key('history-error-banner'),
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-      color: Theme.of(context).colorScheme.errorContainer,
-      child: Text(
-        error.userMessage,
-        style: TextStyle(color: Theme.of(context).colorScheme.onErrorContainer),
+      color: colors.errorContainer,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            error.userMessage,
+            style: TextStyle(color: colors.onErrorContainer),
+          ),
+          const SizedBox(height: 8),
+          _historyRecoveryActions(
+            state,
+            key: const Key('history-banner-recovery-actions'),
+          ),
+        ],
       ),
     );
   }
