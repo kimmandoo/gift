@@ -69,10 +69,11 @@ void main() {
     await controller.refresh();
     await controller.loadMore();
 
-    expect(
-      controller.state.page?.commits.map((commit) => commit.oid),
-      [first.oid, second.oid, third.oid],
-    );
+    expect(controller.state.page?.commits.map((commit) => commit.oid), [
+      first.oid,
+      second.oid,
+      third.oid,
+    ]);
     expect(controller.state.isPerformanceLimited, isTrue);
     expect(controller.state.page?.hasMore, isFalse);
     expect(gateway.historyCalls, [0, 2]);
