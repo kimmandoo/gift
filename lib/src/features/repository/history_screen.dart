@@ -639,23 +639,35 @@ class _HistoryScreenState extends State<HistoryScreen> {
     // disappear. Stretching the same lanes to fill the available gutter made
     // short histories look loose and wide histories look cramped.
     final graphWidth = (maxLaneCount * 16.0 + 24).clamp(48.0, 152.0);
-    final extraRows = page.hasMore ? 1 : 0;
+    final canLoadMore = page.hasMore && !state.isPerformanceLimited;
+    final extraRows =
+        (canLoadMore ? 1 : 0) + (state.isPerformanceLimited ? 1 : 0);
     return ListView.builder(
       padding: const EdgeInsets.symmetric(vertical: 8),
       itemCount: page.commits.length + extraRows,
       itemBuilder: (context, index) {
-        if (index == page.commits.length) {
-          return Padding(
-            padding: const EdgeInsets.all(12),
-            child: OutlinedButton(
-              onPressed: state.isLoadingMore ? null : _controller.loadMore,
-              child: state.isLoadingMore
-                  ? const SizedBox(
-                      width: 18,
-                      height: 18,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    )
-                  : const Text('Load more'),
+        if (index >= page.commits.length) {
+          if (canLoadMore) {
+            return Padding(
+              padding: const EdgeInsets.all(12),
+              child: OutlinedButton(
+                onPressed: state.isLoadingMore ? null : _controller.loadMore,
+                child: state.isLoadingMore
+                    ? const SizedBox(
+                        width: 18,
+                        height: 18,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Text('Load more'),
+              ),
+            );
+          }
+          return const Padding(
+            padding: EdgeInsets.fromLTRB(12, 12, 12, 20),
+            child: Text(
+              'Performance mode: showing the first '
+              '$maxLoadedHistoryCommits commits. Refine filters to search older history.',
+              key: Key('history-performance-limit'),
             ),
           );
         }

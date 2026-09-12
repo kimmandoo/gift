@@ -21,6 +21,63 @@ import 'package:flutter_test/flutter_test.dart';
 import '../../helpers/git_patch_gateway_stub.dart';
 
 void main() {
+  test('caps loaded history for large repositories', () async {
+    final repository = const RepositoryOpened(
+      repositoryId: RepositoryId(value: 'large-history-repository'),
+      root: '/workspace/project',
+    );
+    final first = makeCommit('a' * 40, 'First');
+    final second = makeCommit('b' * 40, 'Second');
+    final third = makeCommit('c' * 40, 'Third');
+    final fourth = makeCommit('d' * 40, 'Fourth');
+    final gateway = FakeHistoryGateway(
+      pages: {
+        0: GitHistoryPage(
+          repositoryId: repository.repositoryId,
+          commits: [first, second],
+          offset: 0,
+          limit: 2,
+          hasMore: true,
+          nextCursor: GitHistoryCursor(
+            snapshotTips: const [],
+            position: 2,
+            queryKey: const GitHistoryFilters().queryKey,
+          ),
+        ),
+        2: GitHistoryPage(
+          repositoryId: repository.repositoryId,
+          commits: [third, fourth],
+          offset: 2,
+          limit: 2,
+          hasMore: true,
+          nextCursor: GitHistoryCursor(
+            snapshotTips: const [],
+            position: 4,
+            queryKey: const GitHistoryFilters().queryKey,
+          ),
+        ),
+      },
+    );
+    final controller = HistoryController(
+      gateway: gateway,
+      repositoryId: repository.repositoryId,
+      pageSize: 2,
+      maxLoadedCommits: 3,
+    );
+    addTearDown(controller.dispose);
+
+    await controller.refresh();
+    await controller.loadMore();
+
+    expect(
+      controller.state.page?.commits.map((commit) => commit.oid),
+      [first.oid, second.oid, third.oid],
+    );
+    expect(controller.state.isPerformanceLimited, isTrue);
+    expect(controller.state.page?.hasMore, isFalse);
+    expect(gateway.historyCalls, [0, 2]);
+  });
+
   testWidgets('shows commit details and loads the next history page', (
     tester,
   ) async {

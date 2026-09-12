@@ -7,6 +7,8 @@ import 'package:gift/src/backend/error.dart';
 import 'package:gift/src/backend/git_gateway.dart';
 import 'package:gift/src/backend/history.dart';
 
+const maxLoadedHistoryCommits = 600;
+
 class HistoryState {
   const HistoryState({
     this.page,
@@ -24,6 +26,7 @@ class HistoryState {
     this.isLoadingMore = false,
     this.isLoadingCommitFiles = false,
     this.isLoadingCommitDiff = false,
+    this.isPerformanceLimited = false,
   });
 
   final GitHistoryPage? page;
@@ -40,6 +43,7 @@ class HistoryState {
   final bool isLoading;
   final bool isLoadingMore;
   final bool isLoadingCommitFiles;
+  final bool isPerformanceLimited;
   final bool isLoadingCommitDiff;
 
   GitCommit? get selectedCommit {
@@ -80,6 +84,7 @@ class HistoryState {
     bool? isLoadingMore,
     bool? isLoadingCommitFiles,
     bool? isLoadingCommitDiff,
+    bool? isPerformanceLimited,
   }) {
     return HistoryState(
       page: clearPage ? null : page ?? this.page,
@@ -106,6 +111,7 @@ class HistoryState {
       isLoading: isLoading ?? this.isLoading,
       isLoadingMore: isLoadingMore ?? this.isLoadingMore,
       isLoadingCommitFiles: isLoadingCommitFiles ?? this.isLoadingCommitFiles,
+      isPerformanceLimited: isPerformanceLimited ?? this.isPerformanceLimited,
       isLoadingCommitDiff: isLoadingCommitDiff ?? this.isLoadingCommitDiff,
     );
   }
@@ -117,11 +123,13 @@ class HistoryController extends ChangeNotifier {
     required this.gateway,
     required this.repositoryId,
     this.pageSize = 30,
+    this.maxLoadedCommits = maxLoadedHistoryCommits,
   });
 
   final GitGateway gateway;
   final RepositoryId repositoryId;
   final int pageSize;
+  final int maxLoadedCommits;
   HistoryState _state = const HistoryState();
   var _historyRequestId = 0;
   var _detailsRequestId = 0;
@@ -157,6 +165,7 @@ class HistoryController extends ChangeNotifier {
         isLoadingMore: false,
         isLoadingCommitFiles: false,
         isLoadingCommitDiff: false,
+        isPerformanceLimited: false,
       ),
     );
     try {
@@ -165,8 +174,14 @@ class HistoryController extends ChangeNotifier {
         query: GitHistoryQuery(limit: pageSize, filters: nextFilters),
       );
       if (requestId != _historyRequestId) return;
+      final limited = page.commits.length > maxLoadedCommits;
       _setState(
-        _state.copyWith(page: page, clearError: true, isLoading: false),
+        _state.copyWith(
+          page: limited ? _boundedPage(page) : page,
+          clearError: true,
+          isLoading: false,
+          isPerformanceLimited: limited,
+        ),
       );
     } on GitError catch (error) {
       if (requestId != _historyRequestId) return;
@@ -183,6 +198,10 @@ class HistoryController extends ChangeNotifier {
         page.nextCursor == null) {
       return;
     }
+    if (page.commits.length >= maxLoadedCommits) {
+      _setState(_state.copyWith(isPerformanceLimited: true));
+      return;
+    }
     final requestId = ++_historyRequestId;
     _setState(_state.copyWith(clearError: true, isLoadingMore: true));
     try {
@@ -196,25 +215,30 @@ class HistoryController extends ChangeNotifier {
       );
       if (requestId != _historyRequestId) return;
       final combinedCommits = [...page.commits, ...nextPage.commits];
+      final reachedLimit = combinedCommits.length >= maxLoadedCommits;
+      final visibleCommits = reachedLimit
+          ? combinedCommits.take(maxLoadedCommits).toList()
+          : combinedCommits;
       final collapseToSingleLane =
           page.collapseToSingleLane &&
           nextPage.collapseToSingleLane &&
-          combinedCommits.every((commit) => commit.parents.length <= 1);
+          visibleCommits.every((commit) => commit.parents.length <= 1);
       _setState(
         _state.copyWith(
           page: GitHistoryPage(
             repositoryId: page.repositoryId,
             commits: collapseToSingleLane
-                ? assignSingleGraphLane(combinedCommits)
-                : assignGraphLanes(combinedCommits),
+                ? assignSingleGraphLane(visibleCommits)
+                : assignGraphLanes(visibleCommits),
             offset: page.offset,
             limit: page.limit,
-            hasMore: nextPage.hasMore,
-            nextCursor: nextPage.nextCursor,
+            hasMore: nextPage.hasMore && !reachedLimit,
+            nextCursor: reachedLimit ? null : nextPage.nextCursor,
             collapseToSingleLane: collapseToSingleLane,
           ),
           clearError: true,
           isLoadingMore: false,
+          isPerformanceLimited: reachedLimit,
         ),
       );
     } on GitError catch (error) {
@@ -418,6 +442,15 @@ class HistoryController extends ChangeNotifier {
       requestId == _diffRequestId &&
       _state.selectedOid == commitOid &&
       _state.selectedPath == path;
+
+  GitHistoryPage _boundedPage(GitHistoryPage page) => GitHistoryPage(
+    repositoryId: page.repositoryId,
+    commits: page.commits.take(maxLoadedCommits).toList(growable: false),
+    offset: page.offset,
+    limit: page.limit,
+    hasMore: false,
+    collapseToSingleLane: page.collapseToSingleLane,
+  );
 
   @override
   void dispose() {
