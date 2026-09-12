@@ -81,6 +81,13 @@ void main() {
       findsOneWidget,
     );
     expect(find.text('Add history'), findsOneWidget);
+    await tester.tap(find.byKey(const Key('history-rollback')));
+    await tester.pumpAndSettle();
+    expect(find.text('Undo latest unpushed commit'), findsOneWidget);
+    expect(find.text('Revert commit(s) with new commit(s)'), findsOneWidget);
+    expect(find.text('Reset branch to a revision'), findsOneWidget);
+    await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+    await tester.pumpAndSettle();
     await tester.tap(find.byKey(ValueKey('commit:${first.oid}')));
     await tester.pump();
     expect(find.text(first.oid), findsOneWidget);

@@ -171,13 +171,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
           ],
         ),
         actions: [
-          toolbarAction(
-            key: const Key('history-rollback'),
-            tooltip: 'Undo, reset, or revert history',
-            label: 'Rollback',
-            onPressed: () => unawaited(_openHistoryRollback(context)),
-            icon: const Icon(Icons.history_toggle_off),
-          ),
+          _historyRollbackMenu(context),
           toolbarAction(
             key: const Key('history-interactive-rebase'),
             tooltip: 'Interactive rebase',
@@ -265,6 +259,33 @@ class _HistoryScreenState extends State<HistoryScreen> {
     return CallbackShortcuts(
       bindings: bindings,
       child: Focus(autofocus: true, child: scaffold),
+    );
+  }
+
+  PopupMenuButton<GitHistoryRollbackAction> _historyRollbackMenu(
+    BuildContext context,
+  ) {
+    return PopupMenuButton<GitHistoryRollbackAction>(
+      key: const Key('history-rollback'),
+      tooltip: 'History actions',
+      icon: const Icon(Icons.history_toggle_off),
+      onSelected: (action) => unawaited(
+        _openHistoryRollback(context, initialAction: action),
+      ),
+      itemBuilder: (_) => const [
+        PopupMenuItem(
+          value: GitHistoryRollbackAction.undo,
+          child: Text('Undo latest unpushed commit'),
+        ),
+        PopupMenuItem(
+          value: GitHistoryRollbackAction.revert,
+          child: Text('Revert commit(s) with new commit(s)'),
+        ),
+        PopupMenuItem(
+          value: GitHistoryRollbackAction.reset,
+          child: Text('Reset branch to a revision'),
+        ),
+      ],
     );
   }
 
@@ -1928,11 +1949,17 @@ class _HistoryScreenState extends State<HistoryScreen> {
     if (mounted) setState(() {});
   }
 
-  Future<void> _openHistoryRollback(BuildContext context) async {
+  Future<void> _openHistoryRollback(
+    BuildContext context, {
+    GitHistoryRollbackAction? initialAction,
+  }) async {
     final result = await showDialog<GitHistoryRollbackResult>(
       context: context,
-      builder: (_) =>
-          ResetDialog(gateway: widget.gateway, repository: widget.repository),
+      builder: (_) => ResetDialog(
+        gateway: widget.gateway,
+        repository: widget.repository,
+        initialAction: initialAction,
+      ),
     );
     if (!context.mounted || result == null) return;
     await _controller.refresh();
