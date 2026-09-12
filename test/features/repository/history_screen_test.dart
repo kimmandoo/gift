@@ -617,6 +617,7 @@ void main() {
     await tester.tap(find.byKey(const Key('history-apply-filters')));
     await tester.pumpAndSettle();
     expect(controller.state.filters.text, 'Inspect');
+    expect(find.text('Filters: text: Inspect'), findsOneWidget);
     expect(tester.takeException(), isNull);
     controller.dispose();
   });

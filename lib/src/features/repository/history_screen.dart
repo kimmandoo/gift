@@ -217,7 +217,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            _filtersPanel(context),
+            _filtersPanel(context, state),
             if (state.isLoading) const LinearProgressIndicator(),
             if (state.error case final error?) _errorBanner(context, error),
             _batchSelectionBar(context, state, selectionMode),
@@ -269,9 +269,8 @@ class _HistoryScreenState extends State<HistoryScreen> {
       key: const Key('history-rollback'),
       tooltip: 'History actions',
       icon: const Icon(Icons.history_toggle_off),
-      onSelected: (action) => unawaited(
-        _openHistoryRollback(context, initialAction: action),
-      ),
+      onSelected: (action) =>
+          unawaited(_openHistoryRollback(context, initialAction: action)),
       itemBuilder: (_) => const [
         PopupMenuItem(
           value: GitHistoryRollbackAction.undo,
@@ -384,7 +383,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
     );
   }
 
-  Widget _filtersPanel(BuildContext context) {
+  Widget _filtersPanel(BuildContext context, HistoryState state) {
     final filterFields = Padding(
       padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
       child: LayoutBuilder(
@@ -439,7 +438,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
       minVerticalPadding: 8,
       child: ExpansionTile(
         key: const Key('history-filters-toggle'),
-        initiallyExpanded: false,
+        initiallyExpanded: !state.filters.isEmpty,
         title: LayoutBuilder(
           builder: (context, constraints) {
             final searchField = TextField(
@@ -479,6 +478,12 @@ class _HistoryScreenState extends State<HistoryScreen> {
             );
           },
         ),
+        subtitle: Text(
+          _filterSummary(state.filters),
+          key: const Key('history-filter-summary'),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+        ),
         children: [
           if (MediaQuery.sizeOf(context).height < 560)
             SizedBox(
@@ -490,6 +495,22 @@ class _HistoryScreenState extends State<HistoryScreen> {
         ],
       ),
     );
+  }
+
+  String _filterSummary(GitHistoryFilters filters) {
+    final active = <String>[
+      if (filters.text.isNotEmpty) 'text: ${filters.text}',
+      if (filters.author.isNotEmpty) 'author: ${filters.author}',
+      if (filters.ref.isNotEmpty) 'ref: ${filters.ref}',
+      if (filters.path.isNotEmpty) 'path: ${filters.path}',
+      if (filters.authoredAfter case final date?)
+        'after: ${date.toIso8601String().split('T').first}',
+      if (filters.authoredBefore case final date?)
+        'before: ${date.toIso8601String().split('T').first}',
+    ];
+    return active.isEmpty
+        ? 'Filters: none · expand for author, ref, path, and dates'
+        : 'Filters: ${active.join(' · ')}';
   }
 
   Widget _filterField(

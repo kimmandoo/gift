@@ -11,6 +11,8 @@
   selected paths and submits one commit message in sequence.
 - feat(history): split Undo, Revert, and Reset into labeled History actions
   before opening the preview-first operation dialog.
+- feat(history): exposed active filter summaries beside the always-available
+  commit search field and expanded filtered results automatically.
 - feat(ui): surfaced concise reasons for unavailable Changes actions without
   expanding the repository status layout.
 - feat(input): used platform-aware Cmd shortcuts on macOS and retained
