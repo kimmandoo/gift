@@ -194,8 +194,9 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
                             'GIFT',
                             key: const Key('welcome-brand'),
                             style: textTheme.displaySmall?.copyWith(
+                              fontFamily: pixelDisplayFontFamily,
                               letterSpacing: 3,
-                              fontWeight: FontWeight.w900,
+                              fontWeight: FontWeight.w400,
                             ),
                           ),
                         ),

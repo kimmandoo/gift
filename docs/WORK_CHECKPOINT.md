@@ -3,31 +3,32 @@
 This file is the handoff record for continuing work across query sessions.
 
 - Date: 2026-09-12.
-- Active task: Complete. The Welcome first-run pixel identity update is
-  shipped in `6acbdf6 feat(welcome): add pixel-game first-run identity`.
-- Branch: `main`; `6acbdf6` is pushed to `origin/main`. The working tree
-  retains only the pre-existing `.gitignore` edit after this checkpoint
-  update is committed. Do not overwrite or stage that unrelated change.
-- Decision: reuse the bundled pixel mascot asset, place it in a bordered
-  responsive lockup, and render an explicit accessible `GIFT` title beside
-  it. The wide `gift_logo.png` asset was intentionally not added to the
-  Flutter bundle.
-- Changed files in the shipped feature: `lib/src/features/repository/welcome_screen.dart`,
-  `test/app_boot_test.dart`, `test/app/visual_regression_test.dart`,
-  `test/branding_test.dart`, `CHANGELOG.md`, and
-  `docs/superpowers/plans/2026-09-02-gift-dart-mvp.md`. This checkpoint
-  records the final post-push state in a separate checkpoint commit.
-- Verification: `dart run tool/verify.dart` passed formatting, analysis, and
-  all 305 Flutter tests. The focused Welcome/boot/visual command passed all
-  25 tests. A forced macOS visual-golden capture passed all 11 fixtures and
-  was reviewed; generated macOS goldens were removed because CI stores
-  non-Windows captures as artifacts.
+- Active task: Ship the pixel-font refinement for the Welcome first-run
+  identity. The base update is already pushed in `6acbdf6
+  feat(welcome): add pixel-game first-run identity`; the current correction
+  explicitly applies `Jersey 15` to the visible `GIFT` title.
+- Branch: `main`; the latest pushed commit is `de513bb
+  chore(checkpoint): record Welcome identity shipment`. The working tree
+  contains the typography correction, this checkpoint update, and the
+  pre-existing `.gitignore` edit. Do not overwrite or stage that unrelated
+  change.
+- Decision: keep the bundled pixel mascot and bordered responsive lockup,
+  and use the shared `pixelDisplayFontFamily` token for the accessible
+  `GIFT` title. The wide `gift_logo.png` asset remains intentionally outside
+  the Flutter bundle.
+- Changed files for this follow-up: `lib/src/features/repository/welcome_screen.dart`
+  and this checkpoint.
+- Verification: formatting passed; the focused Welcome, boot, visual, and
+  branding command passed all 27 tests. `dart run tool/verify.dart` passed
+  formatting, analysis, and all 305 Flutter tests. A forced macOS
+  visual-golden capture passed all 11 fixtures and was reviewed; generated
+  macOS goldens were removed because CI stores non-Windows captures as
+  artifacts.
 - Blockers: no code blocker. The pre-existing `.gitignore` edit is user-owned
-  and remains unstaged; Windows golden regeneration was not available on this
+  and remains unstaged; Windows golden regeneration is not available on this
   macOS host.
-- Exact next action: none for this session. A future session should read this
-  checkpoint, `AGENTS.md`, `TASKS.md`, and the active plan section before
-  starting new work.
+- Exact next action: commit this typography correction with the checkpoint,
+  push `main`, confirm the remote state, then close the session.
 
 ## Previous checkpoint
 
