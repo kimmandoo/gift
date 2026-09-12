@@ -796,3 +796,39 @@ This file is the handoff record for continuing work across query sessions.
   Windows goldens requires a Windows runner before a green follow-up release.
 - Next action: refresh the six Windows Welcome goldens on Windows, then cut
   a new release tag if a fully green cross-platform release is required.
+
+## Current session: Windows golden repair
+
+- Date: 2026-09-13.
+- Finding: the failed `release-v1.0.3` Windows job was caused by six stale
+  Welcome goldens left behind after `d0a12b3` changed the title font.
+- Repair: a temporary pinned Windows workflow captured the current six
+  baselines on GitHub Actions run `34704635685`; the run passed and the
+  artifact was downloaded. The temporary workflow and branch were removed.
+- Changed files: the six PNGs under `test/app/goldens/windows/`,
+  `CHANGELOG.md`, `pubspec.yaml`, and this checkpoint. The net workflow
+  change is empty after removing the temporary capture workflow.
+- Release candidate: package version `1.0.4+1`; next release tag
+  `release-v1.0.4`.
+- Next action: rerun local verification and the macOS release build/package,
+  then create and push the green `release(v1.0.4)` commit and tag.
+
+## Current session: Green release candidate
+
+- Date: 2026-09-13.
+- Verification: `dart run tool/verify.dart` passed formatting, analyzer, and
+  all 310 Flutter tests; `release_metadata.dart validate release-v1.0.4`
+  passed. The Windows golden refresh run passed after replacing exactly six
+  Welcome baselines.
+- Build: `./tool/build_macos.sh` produced the unsigned universal
+  `build/macos/Build/Products/Release/gift.app` (63.5 MB); `x86_64 arm64`
+  architecture and no app `_CodeSignature` were verified.
+- Package: `GIFT_RELEASE_TAG=release-v1.0.4
+  ./tool/package_macos_release.sh` produced
+  `dist/gift-1.0.4-macos-universal.app.zip`; the archive contains
+  `Run-Gift.command`.
+- Changed files for the release commit: `CHANGELOG.md`, `pubspec.yaml`,
+  `test/app/goldens/windows/{compact-dark-large-text,compact-light-large-text,standard-dark,standard-light,wide-dark,wide-light}.png`,
+  the removal of the temporary workflow, and this checkpoint.
+- Next action: create `release(v1.0.4): refresh Windows visual baselines`,
+  create tag `release-v1.0.4`, and push `main` plus the tag to `origin`.
