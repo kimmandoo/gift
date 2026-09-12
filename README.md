@@ -219,12 +219,31 @@ flutter build macos --release
 ```
 
 The application bundle is written to
-`build/macos/Build/Products/Release/gift.app`.
+`build/macos/Build/Products/Release/gift.app`. Release builds are unsigned
+universal bundles (`arm64` + `x86_64`) and do not require an Apple Developer
+account.
+
 After the toolchain is installed, the same build is one command:
 
 ```bash
 ./tool/build_macos.sh
 ```
+
+To create the local distribution archive used by CI:
+
+```bash
+./tool/package_macos_release.sh
+```
+
+This writes `dist/gift-macos-universal.app.zip`. A tagged build uses
+`GIFT_RELEASE_TAG=release-v1.0.1 ./tool/package_macos_release.sh` and writes
+`gift-1.0.1-macos-universal.app.zip`.
+
+Extract the complete archive and keep `Run-Gift.command` beside `gift.app`.
+Double-click the launcher instead of opening the app bundle directly. It
+removes the download quarantine attribute from this local app only, then
+opens it. The bundle is not notarized; macOS may still show a first-launch
+warning that requires explicit approval.
 
 ### Windows
 

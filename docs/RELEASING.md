@@ -94,14 +94,14 @@ git push origin main release-v1.0.1
 ```
 
 Ordinary branch pushes create no workflow run. Use manual dispatch when a
-maintainer needs a deliberate build/check rerun without publishing a release.
-The macOS build is ad hoc signed in both tag-triggered and manually dispatched
-build jobs; only tag-triggered jobs create the versioned release package.
-After all three checks pass, it builds and validates one release bundle per
-platform. The release packages are:
+maintainer needs a deliberate build/check rerun. macOS builds use the
+`macos-14` Apple Silicon runner and produce an unsigned universal bundle.
+Both tagged pushes and manual dispatch package the macOS distribution archive;
+only tagged pushes create the versioned release package set. The release
+packages are:
 
 - `gift-<version>-linux-x64.tar.gz`
-- `gift-<version>-macos-<x64|arm64>.zip`
+- `gift-<version>-macos-universal.app.zip`
 - `gift-<version>-windows-x64.zip`
 
 The Windows archive contains the Flutter `Release` directory, the portable
@@ -110,9 +110,11 @@ packaging requires no signing secrets. Windows executables are intentionally
 unsigned; SHA-256 checksums and GitHub's OIDC-backed build provenance provide
 the release integrity evidence.
 
-The macOS app is signed with an ad hoc identity (`codesign --sign -`) on the
-native runner. This requires no Apple certificate or notarization account, but
-it does not establish an Apple developer identity or provide notarization.
+The macOS archive contains `gift.app` and `Run-Gift.command` in the same
+top-level directory. Extract the complete archive and launch it with
+`Run-Gift.command`; the launcher clears the download quarantine attribute only
+from that local app before opening it. No Apple certificate or notarization
+account is used, so macOS may require explicit first-launch approval.
 
 The release job publishes these verification files beside the packages:
 
@@ -138,13 +140,14 @@ gh attestation verify gift-1.0.1-linux-x64.tar.gz \
   --repo <owner>/<repository>
 ```
 
-On macOS, ad hoc signing verifies bundle integrity but does not provide an
-Apple developer identity or notarization; a downloaded app may require the
-user to approve its first launch. On Windows, the executables are unsigned and
-may trigger SmartScreen or an equivalent download warning. Checksums and the
-GitHub attestation are the release trust signals. The release metadata is
-informational and opt-in; GIFT does not silently download updates, send
-telemetry, or collect crash data.
+On macOS, the unsigned universal bundle is launched through
+`Run-Gift.command`, which clears the download quarantine attribute from this
+local app only. It does not provide an Apple developer identity or
+notarization, so macOS may require explicit first-launch approval. On Windows,
+the executables are unsigned and may trigger SmartScreen or an equivalent
+download warning. Checksums and the GitHub attestation are the release trust
+signals. The release metadata is informational and opt-in; GIFT does not
+silently download updates, send telemetry, or collect crash data.
 
 Before a public release, a maintainer must still perform a clean-machine pass
 for install, launch, upgrade, downgrade warning, uninstall, and Git-missing

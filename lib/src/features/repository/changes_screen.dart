@@ -194,6 +194,8 @@ class _ChangesScreenBodyState extends ConsumerState<_ChangesScreenBody> {
     final state = controller.state;
     final snapshot = state.snapshot;
     final compactToolbar = MediaQuery.sizeOf(context).width < 720;
+    final showQuickActions =
+        compactToolbar || MediaQuery.sizeOf(context).width >= 1040;
     final scaffold = Scaffold(
       appBar: AppBar(
         leading: widget.onBack == null
@@ -216,7 +218,7 @@ class _ChangesScreenBodyState extends ConsumerState<_ChangesScreenBody> {
           ],
         ),
         actions: [
-          if (!compactToolbar) ...[
+          if (!showQuickActions) ...[
             PixelToolbarIconButton(
               key: const Key('open-push'),
               tooltip: 'Push to remote',
@@ -242,10 +244,9 @@ class _ChangesScreenBodyState extends ConsumerState<_ChangesScreenBody> {
               icon: const Icon(Icons.history),
             ),
           ],
-          if (!compactToolbar) const SizedBox(width: 4),
           PopupMenuButton<_ChangesMenuAction>(
             key: const Key('repository-actions-menu'),
-            tooltip: 'Repository actions',
+            tooltip: 'More repository actions',
             icon: const Icon(Icons.menu_open),
             onSelected: (action) {
               switch (action) {
@@ -254,18 +255,6 @@ class _ChangesScreenBodyState extends ConsumerState<_ChangesScreenBody> {
                   break;
                 case _ChangesMenuAction.gitAccounts:
                   unawaited(_openGitAccounts(context));
-                  break;
-                case _ChangesMenuAction.push:
-                  unawaited(_openPush(context));
-                  break;
-                case _ChangesMenuAction.updateProject:
-                  unawaited(_openUpdateProject(context));
-                  break;
-                case _ChangesMenuAction.branches:
-                  unawaited(_openBranches(context));
-                  break;
-                case _ChangesMenuAction.history:
-                  unawaited(_openHistory(context));
                   break;
                 case _ChangesMenuAction.objects:
                   unawaited(_openObjects(context));
@@ -342,22 +331,6 @@ class _ChangesScreenBodyState extends ConsumerState<_ChangesScreenBody> {
                 Icons.cloud_outlined,
                 'Remote operations',
               ),
-              _menuItem(
-                _ChangesMenuAction.push,
-                Icons.cloud_upload_outlined,
-                'Push',
-              ),
-              _menuItem(
-                _ChangesMenuAction.updateProject,
-                Icons.cloud_download_outlined,
-                'Update project',
-              ),
-              _menuItem(
-                _ChangesMenuAction.branches,
-                Icons.call_split,
-                'Branches',
-              ),
-              _menuItem(_ChangesMenuAction.history, Icons.history, 'History'),
               const PopupMenuDivider(),
               _menuHeading(context, 'REVIEW & HISTORY'),
               _menuItem(
@@ -487,6 +460,7 @@ class _ChangesScreenBodyState extends ConsumerState<_ChangesScreenBody> {
           children: [
             if (snapshot != null) ...[
               _summary(context, snapshot),
+              if (showQuickActions) _quickActions(context, compactToolbar),
               if (snapshot.conflicts.isNotEmpty)
                 _conflictWorkspaceBanner(context, snapshot),
               if (controller.state.selectedPaths.isNotEmpty)
@@ -542,8 +516,9 @@ class _ChangesScreenBodyState extends ConsumerState<_ChangesScreenBody> {
         control: true,
         shift: true,
       ),
-      () =>
-          () => openPalette(),
+      () => () {
+        openPalette();
+      },
     );
     if (widget.onBack != null) bind('cancel', widget.onBack!);
     return CallbackShortcuts(
@@ -795,6 +770,53 @@ class _ChangesScreenBodyState extends ConsumerState<_ChangesScreenBody> {
           Icon(icon, size: 18),
           const SizedBox(width: 12),
           Expanded(child: Text(label)),
+        ],
+      ),
+    );
+  }
+
+  Widget _quickActions(BuildContext context, bool compact) {
+    final theme = Theme.of(context);
+    final horizontalPadding = compact ? 12.0 : 16.0;
+    return Container(
+      key: const Key('repository-quick-actions'),
+      padding: EdgeInsets.fromLTRB(horizontalPadding, 4, horizontalPadding, 4),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surface,
+        border: Border(
+          bottom: BorderSide(
+            color: theme.colorScheme.outlineVariant.withValues(alpha: 0.5),
+          ),
+        ),
+      ),
+      child: Wrap(
+        spacing: 8,
+        runSpacing: 8,
+        children: [
+          FilledButton.icon(
+            key: const Key('open-push'),
+            onPressed: () => unawaited(_openPush(context)),
+            icon: const Icon(Icons.cloud_upload_outlined),
+            label: const Text('Push'),
+          ),
+          OutlinedButton.icon(
+            key: const Key('update-project'),
+            onPressed: () => unawaited(_openUpdateProject(context)),
+            icon: const Icon(Icons.cloud_download_outlined),
+            label: const Text('Update'),
+          ),
+          OutlinedButton.icon(
+            key: const Key('open-branches'),
+            onPressed: () => unawaited(_openBranches(context)),
+            icon: const Icon(Icons.call_split),
+            label: const Text('Branches'),
+          ),
+          OutlinedButton.icon(
+            key: const Key('open-history'),
+            onPressed: () => unawaited(_openHistory(context)),
+            icon: const Icon(Icons.history),
+            label: const Text('History'),
+          ),
         ],
       ),
     );
@@ -3002,10 +3024,6 @@ String _cleanupLabel(GitCommitCleanupMode mode) => switch (mode) {
 enum _ChangesMenuAction {
   remotes,
   gitAccounts,
-  push,
-  updateProject,
-  branches,
-  history,
   objects,
   comparison,
   threeWayComparison,

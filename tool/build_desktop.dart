@@ -26,8 +26,8 @@ Future<void> main(List<String> arguments) async {
     ['build', target, '--release'],
     environment: target == 'macos'
         ? const {
-            // CI has no Apple developer certificate. The bundle is signed
-            // explicitly by sign_macos_release.sh after Flutter builds it.
+            // Keep macOS builds certificate-free. The distribution archive
+            // ships Run-Gift.command beside the unsigned app.
             'CODE_SIGNING_ALLOWED': 'NO',
             'CODE_SIGNING_REQUIRED': 'NO',
           }

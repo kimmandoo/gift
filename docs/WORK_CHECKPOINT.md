@@ -4,38 +4,50 @@ This file is the handoff record for continuing work across query sessions.
 
 ## Current checkpoint
 
-- Date: 2026-09-06.
-- Active task: Task 38 — public release; macOS Git discovery and CI bundle
-  generation corrections are implemented; the clean-machine release pass
-  remains.
-- Branch: `main`; `release-v1.0.0` remains on the failed pre-fix release
-  commit, and `release-v1.0.1` points to corrected release commit `8289634`.
-- Decision: macOS discovery validates every PATH candidate, falls back to
-  `/usr/bin/git`, `/opt/homebrew/bin/git`, and `/usr/local/bin/git`, and the
-  macOS build disables automatic signing before the explicit ad hoc signature
-  step.
-- Completed this session: added the Git candidate fallback and regression
-  coverage, made the macOS Flutter build certificate-free for CI, split the
-  Linux/macOS build steps in the workflow, and pinned the object-management
-  fixture branch so host Git defaults cannot block verification.
-- CI run `34038564514` passed all verify and build jobs. The macOS build
-  generated and ad hoc-signed `gift.app`, archived it with `ditto`, and
-  uploaded `gift-macos.app.zip`; the manual workflow correctly skipped Publish
-  release.
-- Downloading and extracting that CI artifact produced
-  `gift.app/Contents/MacOS/gift`; `codesign --verify --deep --strict` passed
-  on the extracted app.
-- The macOS “Apple could not verify gift.app” warning is expected for this
-  private, ad hoc-signed, non-notarized build; no public release/notarization
-  work is planned.
-- Exact next action: perform the maintainer-only clean-machine pass when a
-  signed/notarized distribution is required.
-- Verification: the full repository verification suite passed formatting,
-  analysis, and all 301 tests; the full backend Git test file passed 25 tests;
-  local macOS build/sign/desktop-artifact verification and release packaging
-  passed; three GitHub Actions matrix runs passed their verify/build jobs.
-- Blockers: no code blocker. Apple Developer ID signing and notarization are
-  intentionally unavailable for this private release path.
+- Date: 2026-09-12.
+- Active task: Follow-up — port Spull's macOS distribution flow into GIFT and
+- Branch: `main`; base commit was `ff4e46f docs(checkpoint): record macOS
+  artifact verification`; this session's changes are ready for the session
+  commit.
+- Decision: macOS release builds now run on `macos-14` Apple Silicon, produce
+  an unsigned universal (`arm64` + `x86_64`) bundle, and package `gift.app`
+  with `Run-Gift.command`. The launcher clears the quarantine attribute only
+  from that local app before opening it; the obsolete ad hoc signing script was
+  removed.
+- UX changes: Push, Update, Branches, and History are directly labeled in the
+  Changes workspace on compact and wide layouts; the intermediate layout keeps
+  the existing icon buttons to avoid vertical overflow. Advanced actions stay
+  in the overflow menu. Wide History actions are labeled, the conventional
+  command-palette alias invokes its callback correctly, and primary action
+  spacing uses 8-pixel Wrap gaps with a compact vertical footprint.
+- Changed files: `.github/workflows/ci.yml`, `CHANGELOG.md`, `README.md`,
+  `docs/POST_MVP_ROADMAP.md`, `docs/RELEASING.md`,
+  `docs/WORK_CHECKPOINT.md`,
+  `docs/superpowers/plans/2026-09-02-gift-dart-mvp.md`,
+  `lib/src/features/repository/changes_screen.dart`,
+  `lib/src/features/repository/history_screen.dart`,
+  `test/features/repository/changes_screen_test.dart`,
+  `tool/Run-Gift.command`, `tool/build_desktop.dart`,
+  `tool/package_macos_release.sh`, and removal of
+  `tool/sign_macos_release.sh`. The pre-existing `.gitignore` edit was
+  preserved unchanged.
+- Verification: `dart run tool/verify.dart` passed formatting, analysis, and
+  all 301 tests. Targeted Changes, History, and preferences tests passed.
+  `./tool/build_macos.sh` produced the macOS app; `lipo -archs` reported
+  `x86_64 arm64`; unsigned verification reported the expected
+  “code object is not signed at all”; desktop artifact verification passed.
+  Manual and tagged package runs produced the expected universal archive
+  names. Launcher/package shell syntax, workflow YAML parsing, and pinned
+  Action verification passed.
+- Smoke: the release executable launched with the Impeller Metal backend and
+  stayed running. The host display was at the macOS lock screen during the
+  screenshot attempt, so no unlocked native-window visual capture was
+  possible; widget tests covered the changed UX surface.
+- Blockers: no code blocker. Apple Developer ID signing/notarization and an
+  unlocked clean-machine native pass remain intentionally unavailable.
+- Exact next action: commit this checkpoint with the session changes, push
+  `main` to `origin`, then perform the maintainer-only clean-machine pass when
+  release validation is required.
 
 ## Previous checkpoint
 

@@ -1,2 +1,12 @@
 #include "../../Flutter/Flutter-Release.xcconfig"
 #include "Warnings.xcconfig"
+// Match the Spull local-distribution path: build one unsigned universal
+// bundle, then launch it through the quarantine-clearing companion script.
+ARCHS = arm64 x86_64
+ONLY_ACTIVE_ARCH = NO
+CODE_SIGNING_ALLOWED = NO
+CODE_SIGNING_REQUIRED = NO
+CODE_SIGN_IDENTITY =
+CODE_SIGN_STYLE = Manual
+DEVELOPMENT_TEAM =
+PROVISIONING_PROFILE_SPECIFIER =

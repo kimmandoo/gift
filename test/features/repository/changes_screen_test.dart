@@ -853,11 +853,11 @@ void main() {
 
     expect(tester.takeException(), isNull);
     expect(find.text('Working tree is clean.'), findsOneWidget);
-    expect(
-      find.text('Ctrl+R refresh · Ctrl+H history · Ctrl+K palette'),
-      findsNothing,
-    );
-    expect(find.byKey(const Key('repository-actions-menu')), findsOneWidget);
+    expect(find.byKey(const Key('repository-quick-actions')), findsOneWidget);
+    expect(find.byKey(const Key('open-push')), findsOneWidget);
+    expect(find.byKey(const Key('update-project')), findsOneWidget);
+    expect(find.byKey(const Key('open-branches')), findsOneWidget);
+    expect(find.byKey(const Key('open-history')), findsOneWidget);
     await tester.tap(find.byKey(const Key('repository-actions-menu')));
     await tester.pumpAndSettle();
     expect(find.text('SYNC & NAVIGATION'), findsOneWidget);

@@ -117,6 +117,40 @@ class _HistoryScreenState extends State<HistoryScreen> {
       '${formatShortcut(preferences.shortcut('focusSearch'))} search',
       '${formatShortcut(preferences.shortcut('cancel'))} back',
     ].join(' · ');
+    final labeledToolbar = MediaQuery.sizeOf(context).width >= 1040;
+    Widget toolbarAction({
+      Key? key,
+      required String tooltip,
+      required String label,
+      required VoidCallback? onPressed,
+      required Widget icon,
+    }) {
+      if (!labeledToolbar) {
+        return PixelToolbarIconButton(
+          key: key,
+          tooltip: tooltip,
+          onPressed: onPressed,
+          icon: icon,
+        );
+      }
+      return Tooltip(
+        message: tooltip,
+        child: Padding(
+          padding: const EdgeInsets.only(left: 4),
+          child: TextButton.icon(
+            key: key,
+            onPressed: onPressed,
+            icon: icon,
+            label: Text(label),
+            style: TextButton.styleFrom(
+              minimumSize: const Size(40, 40),
+              padding: const EdgeInsets.symmetric(horizontal: 8),
+            ),
+          ),
+        ),
+      );
+    }
+
     final scaffold = Scaffold(
       appBar: AppBar(
         leading: IconButton(
@@ -137,31 +171,35 @@ class _HistoryScreenState extends State<HistoryScreen> {
           ],
         ),
         actions: [
-          PixelToolbarIconButton(
+          toolbarAction(
             key: const Key('history-rollback'),
             tooltip: 'Undo, reset, or revert history',
+            label: 'Rollback',
             onPressed: () => unawaited(_openHistoryRollback(context)),
             icon: const Icon(Icons.history_toggle_off),
           ),
-          PixelToolbarIconButton(
+          toolbarAction(
             key: const Key('history-interactive-rebase'),
             tooltip: 'Interactive rebase',
+            label: 'Rebase',
             onPressed: state.isLoading
                 ? null
                 : () => unawaited(_openInteractiveRebase(context)),
             icon: const Icon(Icons.reorder),
           ),
-          PixelToolbarIconButton(
+          toolbarAction(
             key: const Key('history-hosting'),
             tooltip: 'Open hosting links',
+            label: 'Hosting',
             onPressed: state.selectedCommit == null
                 ? null
                 : () => unawaited(_openHosting(context, state)),
             icon: const Icon(Icons.link_outlined),
           ),
-          PixelToolbarIconButton(
+          toolbarAction(
             key: const Key('history-select-mode'),
             tooltip: selectionMode ? 'Exit commit selection' : 'Select commits',
+            label: selectionMode ? 'Done' : 'Select',
             onPressed: selectionMode
                 ? _exitSelectionMode
                 : () => setState(() => _selectionMode = true),

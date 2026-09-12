@@ -18,8 +18,9 @@ jobs:
         include:
           - os: ubuntu-latest
             target: linux
-          - os: macos-latest
+          - os: macos-14
             target: macos
+            macos_arch: arm64
           - os: windows-latest
             target: windows
     steps:
@@ -39,6 +40,14 @@ jobs:
           cache: true
       - name: Enable desktop target
         run: flutter config --enable-${{ matrix.target }}-desktop
+      - name: Check macOS runner architecture
+        if: matrix.target == 'macos'
+        shell: bash
+        env:
+          EXPECTED_ARCH: ${{ matrix.macos_arch }}
+        run: |
+          test "$(uname -m)" = "$EXPECTED_ARCH"
+          echo "Building macOS $EXPECTED_ARCH on $(sw_vers -productVersion)."
       - name: Check toolchain
         run: |
           flutter --version
@@ -67,10 +76,11 @@ jobs:
             target: linux
             artifact: gift-linux-x64
             path: build/linux/x64/release/bundle/
-          - os: macos-latest
+          - os: macos-14
             target: macos
-            artifact: gift-macos
-            path: build/macos/ci/gift-macos.app.zip
+            macos_arch: arm64
+            artifact: gift-macos-universal
+            path: build/macos/Build/Products/Release/gift.app
           - os: windows-latest
             target: windows
             artifact: gift-windows-x64
@@ -89,6 +99,14 @@ jobs:
           cache: true
       - name: Enable desktop target
         run: flutter config --enable-${{ matrix.target }}-desktop
+      - name: Check macOS runner architecture
+        if: matrix.target == 'macos'
+        shell: bash
+        env:
+          EXPECTED_ARCH: ${{ matrix.macos_arch }}
+        run: |
+          test "$(uname -m)" = "$EXPECTED_ARCH"
+          echo "Building macOS $EXPECTED_ARCH on $(sw_vers -productVersion)."
       - name: Install Linux desktop dependencies
         if: matrix.target == 'linux'
         run: |
@@ -111,29 +129,38 @@ jobs:
         if: matrix.target == 'windows'
         shell: pwsh
         run: ./tool/build_windows.ps1
-      - name: Apply ad hoc signature to macOS app
+      - name: Verify macOS universal unsigned bundle
         if: matrix.target == 'macos'
         shell: bash
-        run: ./tool/sign_macos_release.sh
-      - name: Archive macOS build artifact
-        if: matrix.target == 'macos'
-        shell: bash
+        env:
+          BUNDLE_PATH: build/macos/Build/Products/Release/gift.app
         run: |
-          mkdir -p build/macos/ci
-          ditto -c -k --sequesterRsrc --keepParent \
-            build/macos/Build/Products/Release/gift.app \
-            build/macos/ci/gift-macos.app.zip
+          executable="$BUNDLE_PATH/Contents/MacOS/gift"
+          archs="$(lipo -archs "$executable")"
+          case " $archs " in
+            *" arm64 "*) ;;
+            *) echo "The macOS bundle is missing arm64."; exit 1 ;;
+          esac
+          case " $archs " in
+            *" x86_64 "*) ;;
+            *) echo "The macOS bundle is missing x86_64."; exit 1 ;;
+          esac
+          test ! -d "$BUNDLE_PATH/Contents/_CodeSignature"
+          if codesign --verify --deep --strict "$BUNDLE_PATH" >/dev/null 2>&1; then
+            echo "The macOS bundle is signed; expected an unsigned release."
+            exit 1
+          fi
       - name: Package Linux release
         if: matrix.target == 'linux' && github.event_name == 'push'
         shell: bash
         env:
           GIFT_RELEASE_TAG: ${{ github.ref_name }}
         run: ./tool/package_linux_release.sh
-      - name: Package macOS release
-        if: matrix.target == 'macos' && github.event_name == 'push'
+      - name: Package macOS distribution
+        if: matrix.target == 'macos' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
         shell: bash
         env:
-          GIFT_RELEASE_TAG: ${{ github.ref_name }}
+          GIFT_RELEASE_TAG: ${{ github.event_name == 'push' && github.ref_name || '' }}
         run: ./tool/package_macos_release.sh
       - name: Package Windows release
         if: matrix.target == 'windows' && github.event_name == 'push'
@@ -142,10 +169,17 @@ jobs:
           GIFT_RELEASE_TAG: ${{ github.ref_name }}
         run: ./tool/package_windows_release.ps1
       - name: Upload release package
-        if: github.event_name == 'push'
+        if: github.event_name == 'push' && matrix.target != 'macos'
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: gift-release-${{ matrix.target }}
+          path: dist/
+          if-no-files-found: error
+      - name: Upload macOS distribution package
+        if: matrix.target == 'macos' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: gift-release-macos-universal
           path: dist/
           if-no-files-found: error
 

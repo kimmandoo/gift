@@ -1,5 +1,13 @@
 # Changelog
 
+## 2026-09-12
+- change(release): matched Spull's unsigned universal macOS archive and
+  quarantine-clearing launcher flow.
+- fix(ui): surfaced Push, Update, Branches, and History as labeled repository
+  actions instead of hiding them behind the toolbar overflow menu.
+- fix(ui): labeled wide history-toolbar actions and normalized compact
+  repository-action spacing.
+
 ## 2026-09-06
 - fix(macOS): retried usable Git candidates after PATH shims failed and
   checked the standard Apple Silicon and Intel Homebrew locations.

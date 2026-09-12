@@ -33,7 +33,7 @@ proprietary implementation details or assets.
 | Credential and account access | 38A | Secure GitHub, GitLab, self-hosted, HTTPS, and SSH authentication |
 | Desktop interaction UX | 40–47 | Discoverable context actions, direct cherry-pick entry points, and browse-assisted path selection |
 | Visual regression QA | 39 | Final overflow, theme, font, and interaction-state validation |
-| Public release | 38 | Checksum- and provenance-backed installers with ad hoc macOS signing and update metadata after the product surface stabilizes |
+| Public release | 38 | Checksum- and provenance-backed installers with an unsigned universal macOS bundle and update metadata after the product surface stabilizes |
 
 Every task must include backend tests with isolated Git fixtures, controller
 tests for async state changes, responsive widget tests, beginner-oriented
@@ -585,8 +585,9 @@ build folders.
 
 - Define semantic versioning, release notes, compatibility policy, and a
   repeatable release checklist.
-- Produce a Windows installer/archive, an ad hoc-signed macOS app/package, and
-  a Linux archive plus an agreed package format without signing secrets.
+- Produce a Windows installer/archive, an unsigned universal macOS app/package
+  with a quarantine-clearing launcher, and a Linux archive plus an agreed
+  package format without signing secrets.
 - Generate checksums, SBOM, provenance, pinned-action verification, and
   dependency/license audit reports.
 - Add opt-in update metadata and first-run diagnostics; do not collect
@@ -597,13 +598,14 @@ build folders.
 **Current implementation:** Release tags validate the semantic version, package
 all three native outputs, generate checksums/update metadata/SBOM and license
 reports, require full-SHA pinned Actions, attest package provenance, and
-publish a GitHub release. Windows executables remain unsigned, macOS apps use
-ad hoc codesigning, and no signing secrets are required; the clean-machine
-pass remains a maintainer gate.
+publish a GitHub release. Windows executables remain unsigned, and macOS uses
+an unsigned universal bundle plus `Run-Gift.command`; no signing secrets are
+required. The clean-machine pass remains a maintainer gate.
 
 **Done when:** A `release-*` tag on a matching release commit creates reviewed,
-checksum-verifiable artifacts, the macOS package has an ad hoc signature, and
-the public documentation explains installation and trust verification.
+checksum-verifiable artifacts, the macOS archive contains the unsigned
+universal app and launcher, and the public documentation explains installation
+and trust verification.
 
 ## Task 39 — Cross-platform visual regression QA
 

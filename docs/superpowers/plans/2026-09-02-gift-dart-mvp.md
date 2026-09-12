@@ -929,11 +929,11 @@ system Git 2.35+.
 1. Added semver validation for `release-v<version>` tags and deterministic
    Linux, macOS, and Windows release archive names.
 2. Removed signing-secret requirements: Windows archives contain unsigned
-   executables, and macOS apps receive an ad hoc signature with
-   `codesign --sign -`; no Apple certificate or notarization account is used.
+   executables, and macOS release archives now contain an unsigned universal
+   app plus `Run-Gift.command`, matching the Spull local-distribution flow.
 3. Added SHA-256 checksums, opt-in release metadata, CycloneDX SBOM,
-   dependency/license audit reports, full-SHA action verification, and
-   GitHub OIDC provenance attestations for the release archives.
+   dependency/license audit reports, full-SHA action verification, and GitHub
+   OIDC provenance attestations for the release archives.
 4. Added a first-run Git diagnostics card that routes users to Git settings
    when the required executable is unavailable.
 5. Next: complete the native three-platform clean-machine release pass and do
