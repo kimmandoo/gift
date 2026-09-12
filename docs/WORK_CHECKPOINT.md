@@ -6,9 +6,10 @@ This file is the handoff record for continuing work across query sessions.
 
 - Date: 2026-09-12.
 - Active task: Follow-up — port Spull's macOS distribution flow into GIFT and
-- Branch: `main`; base commit was `ff4e46f docs(checkpoint): record macOS
-  artifact verification`; this session's changes are ready for the session
-  commit.
+  complete the requested Changes/History UX audit; Task 38's clean-machine
+  release pass remains a maintainer gate.
+- Branch: `main`; latest commit is `8f44317 feat(release): align macOS
+  distribution and core UX actions`, pushed to `origin/main`.
 - Decision: macOS release builds now run on `macos-14` Apple Silicon, produce
   an unsigned universal (`arm64` + `x86_64`) bundle, and package `gift.app`
   with `Run-Gift.command`. The launcher clears the quarantine attribute only
@@ -45,8 +46,9 @@ This file is the handoff record for continuing work across query sessions.
   possible; widget tests covered the changed UX surface.
 - Blockers: no code blocker. Apple Developer ID signing/notarization and an
   unlocked clean-machine native pass remain intentionally unavailable.
-- Exact next action: commit this checkpoint with the session changes, push
-  `main` to `origin`, then perform the maintainer-only clean-machine pass when
+- Delivery: commit `8f44317 feat(release): align macOS distribution and
+  core UX actions` was pushed to `origin/main`.
+- Exact next action: perform the maintainer-only clean-machine pass when
   release validation is required.
 
 ## Previous checkpoint
