@@ -3,12 +3,12 @@
 This file is the handoff record for continuing work across query sessions.
 
 - Date: 2026-09-12.
-- Active task: Follow-up improvements 1–17 are implemented; improvement 18
-  (macOS native integration) was intentionally excluded per the user request.
-  Delivery remains: commit this checkpoint, then push `main`.
-- Branch: `main`; latest implementation commit is
-  `e2afed3 style(test): format history assertion`; local `main` is 13 commits
-  ahead of `origin/main`. The checkpoint commit follows this record.
+- Active task: Follow-up improvements 1–17 are complete. Improvement 18
+  (macOS native integration) remained intentionally excluded per the user
+  request. This request's implementation and delivery are complete.
+- Branch: `main` is synchronized with `origin/main`; the latest delivery
+  commit before this final checkpoint is `e9bf5bd
+  docs(checkpoint): record UX follow-up delivery`.
 - Decisions: kept portable Ctrl shortcuts on non-macOS platforms and selected
   platform-aware Cmd defaults on macOS; kept advanced repository actions in a
   searchable overflow entry; capped visible History at 600 commits; retained
@@ -36,9 +36,8 @@ This file is the handoff record for continuing work across query sessions.
 - Blockers: no code blocker. Apple Developer ID signing/notarization and the
   maintainer-only clean-machine native release pass remain unavailable;
   improvement 18 was explicitly excluded.
-- Exact next action: commit this checkpoint with the implementation changes,
-  verify the branch/status, and push all local implementation commits to
-  `origin/main`.
+- Exact next action: none for this request. If release validation resumes,
+  perform the maintainer-only clean-machine release pass and update Task 38.
 
 ## Previous checkpoint
 
