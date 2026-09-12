@@ -259,6 +259,9 @@ class _ChangesScreenBodyState extends ConsumerState<_ChangesScreenBody> {
             icon: const Icon(Icons.menu_open),
             onSelected: (action) {
               switch (action) {
+                case _ChangesMenuAction.search:
+                  unawaited(_openCommandPalette(context, controller));
+                  break;
                 case _ChangesMenuAction.remotes:
                   unawaited(_openRemotes(context));
                   break;
@@ -334,6 +337,12 @@ class _ChangesScreenBodyState extends ConsumerState<_ChangesScreenBody> {
               }
             },
             itemBuilder: (context) => [
+              _menuItem(
+                _ChangesMenuAction.search,
+                Icons.search,
+                'Search repository actions…',
+              ),
+              const PopupMenuDivider(),
               _menuHeading(context, 'SYNC & NAVIGATION'),
               _menuItem(
                 _ChangesMenuAction.remotes,
@@ -3145,6 +3154,7 @@ String _cleanupLabel(GitCommitCleanupMode mode) => switch (mode) {
 };
 
 enum _ChangesMenuAction {
+  search,
   remotes,
   gitAccounts,
   objects,

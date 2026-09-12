@@ -13,6 +13,8 @@
   before opening the preview-first operation dialog.
 - feat(history): exposed active filter summaries beside the always-available
   commit search field and expanded filtered results automatically.
+- feat(commands): added a searchable repository-action entry to the
+  Changes overflow menu.
 - fix(history): bounded loaded commits at 600 and showed a performance-mode
   notice instead of allowing unbounded graph and row growth.
 - feat(ui): surfaced concise reasons for unavailable Changes actions without

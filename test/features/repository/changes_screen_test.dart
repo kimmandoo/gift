@@ -865,6 +865,10 @@ void main() {
     expect(find.text('SYNC & NAVIGATION'), findsOneWidget);
     expect(find.text('REVIEW & HISTORY'), findsOneWidget);
     expect(find.text('REPOSITORY TOOLS'), findsOneWidget);
+    expect(find.text('Search repository actions…'), findsOneWidget);
+    await tester.tap(find.text('Search repository actions…'));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('command-palette-dialog')), findsOneWidget);
     await tester.sendKeyEvent(LogicalKeyboardKey.escape);
     await tester.pumpAndSettle();
     controller.dispose();
@@ -1119,10 +1123,7 @@ void main() {
       repositoryId: RepositoryId(value: 'stage-and-commit-repository'),
       root: '/workspace/project',
     );
-    final initial = snapshot(
-      repository,
-      changes: [change('lib/app.dart')],
-    );
+    final initial = snapshot(repository, changes: [change('lib/app.dart')]);
     final staged = snapshot(
       repository,
       changes: [
